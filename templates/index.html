@@ -1,0 +1,760 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+    /* ========== eDox‑Inspired Premium Theme ========== */
+    :root {
+        --edox-purple: #4338ca;
+        --edox-orange: #ffb703;
+        --edox-dark: #1e1b4b;
+        --edox-light: #f8faff;
+        --edox-white: #ffffff;
+        --edox-shadow: 0 15px 35px rgba(0,0,0,0.08);
+        --edox-radius: 24px;
+    }
+
+    body {
+        background: #f5f7ff;
+    }
+
+    .hero-section {
+        background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%) !important;
+    }
+
+    .category-card, .product-card {
+        background: var(--edox-white);
+        border: 1px solid rgba(0,0,0,0.04);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.03);
+    }
+    .category-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 15px 30px rgba(67, 56, 202, 0.12) !important;
+    }
+    .product-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+    }
+
+    /* Search bar */
+    .input-group .form-control {
+        background: rgba(255,255,255,0.9);
+        border: 1px solid #e0e7ff;
+    }
+    .btn-primary {
+        background: var(--edox-dark) !important;
+        border-color: var(--edox-dark) !important;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        box-shadow: 0 10px 25px rgba(30, 27, 75, 0.3);
+        white-space: nowrap;
+    }
+    .btn-primary:hover {
+        background: #312e81 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 15px 30px rgba(30, 27, 75, 0.4);
+    }
+
+    /* Autocomplete glass */
+    .search-suggestions {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        border-radius: 0 0 20px 20px;
+    }
+
+    /* 📱 FIXED BOOK COVER – responsive, no distortion */
+    .book-cover {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 10px;
+    }
+
+    /* Toast */
+    #liveToast {
+        backdrop-filter: blur(20px);
+        background: rgba(25, 135, 84, 0.9) !important;
+        border-radius: 16px !important;
+    }
+
+    /* Modal glass */
+    #bookDetailModal .modal-content {
+        background: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(20px) !important;
+    }
+
+    /* Section titles */
+    .section-title {
+        font-weight: 800;
+        font-size: 2.5rem;
+        background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+    }
+
+    /* Category icons */
+    .category-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+
+    /* ---------- RESPONSIVE TWEAKS (Mobile First) ---------- */
+    @media (max-width: 992px) {
+        .section-title {
+            font-size: 2rem;
+        }
+        .category-icon {
+            font-size: 2rem;
+        }
+        .hero-section h1 {
+            font-size: 2.2rem;
+        }
+        .hero-section .lead {
+            font-size: 0.9rem;
+        }
+        .book-card-inner .card-body {
+            padding: 0.6rem 0.4rem;
+        }
+        .book-card-inner .card-body h6 {
+            font-size: 0.8rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .hero-section {
+            min-height: auto !important;
+            padding-top: 2rem !important;
+            padding-bottom: 2rem !important;
+        }
+        .hero-section .display-3 {
+            font-size: 2rem;
+        }
+        .product-card .card-body .badge {
+            font-size: 0.6rem;
+        }
+        .product-card .card-body .text-warning {
+            font-size: 0.7rem;
+        }
+        .product-card .card-body h6 {
+            font-size: 0.8rem;
+        }
+        .book-cover {
+            border-radius: 8px;
+        }
+        /* About section */
+        #about .display-4 {
+            font-size: 1.8rem;
+        }
+        #about .lead {
+            font-size: 0.9rem;
+        }
+        #about .social-icon {
+            width: 36px !important;
+            height: 36px !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .category-card, .product-card {
+            border-radius: 12px;
+        }
+        .category-card {
+            padding: 1rem 0.8rem !important;
+        }
+        .category-icon {
+            font-size: 1.8rem;
+        }
+        .category-card h6 {
+            font-size: 0.8rem !important;
+        }
+        .product-card .d-flex.align-items-center.justify-content-center {
+            height: 150px !important;      /* slightly reduced for mobile */
+        }
+        .product-card .card-body {
+            padding: 0.4rem 0.3rem !important;
+        }
+        .product-card .card-body h6 {
+            font-size: 0.75rem !important;
+        }
+        .product-card .card-body .small {
+            font-size: 0.65rem !important;
+        }
+        .section-title {
+            font-size: 1.6rem;
+        }
+        .carousel-item .row.g-4 {
+            --bs-gutter-x: 0.5rem;
+        }
+        .pagination .page-link {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+        /* Search bar */
+        .input-group .btn {
+            font-size: 0.8rem;
+            padding: 0.4rem 1rem;
+        }
+        .input-group .form-control {
+            font-size: 0.85rem;
+        }
+
+        /* 📱 FIX for fallback book cover (white circle + title) on mobile */
+        .product-card .d-flex.flex-column .bg-white.text-primary.rounded-circle {
+            width: 36px !important;
+            height: 36px !important;
+            font-size: 0.9rem !important;
+        }
+        .product-card .d-flex.flex-column h6.fw-bold.text-center {
+            font-size: 0.7rem !important;
+            padding-left: 4px !important;
+            padding-right: 4px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ========== HERO ========== -->
+<section class="hero-section py-5 mb-4 border-bottom position-relative overflow-hidden" style="min-height: 80vh;">
+    <div class="container py-5">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <span class="badge bg-white text-primary px-3 py-2 rounded-pill shadow-sm mb-3">📚 The DocoDive Library</span>
+                <h1 class="display-3 fw-bolder mb-3" style="line-height: 1.2;">
+                    <span style="color: #1e1b4b;">Best Place to Find Your</span><br>
+                    <span style="color: #ffb703;">Favorite Books</span>
+                </h1>
+                <p class="text-muted lead mb-4">Thousands of programming resources, curated for your growth. Instant download, zero cost.</p>
+
+                <div class="position-relative" style="max-width: 500px;">
+                    <form action="/" method="GET" class="input-group shadow-lg rounded-pill overflow-hidden bg-white p-1" id="searchForm">
+                        <input type="text" name="search_query" id="searchInput" class="form-control border-0 shadow-none ps-4" 
+                               placeholder="Search by title or author..." value="{{ search_query }}" autocomplete="off" style="font-size:1rem;">
+                        <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
+                            <i class="bi bi-search me-2"></i> Find Book
+                        </button>
+                    </form>
+                    <div id="searchSuggestions" class="search-suggestions d-none"></div>
+                </div>
+
+                {% if search_query %}
+                    <div class="mt-3 animate-fade-in">
+                        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm">
+                            Results for <strong>"{{ search_query }}"</strong>
+                            <a href="/" class="text-danger ms-2 text-decoration-none fw-bold"><i class="bi bi-x-circle-fill"></i></a>
+                        </span>
+                    </div>
+                {% endif %}
+
+                <!-- 👇 Upload button for logged‑in users -->
+                {% if session.get('user_id') %}
+                <div class="mt-4">
+                    <a href="/user/upload" class="btn btn-outline-primary rounded-pill px-4 py-2">
+                        <i class="bi bi-cloud-upload-fill me-2"></i> Upload a Book
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-lg-6 text-center d-none d-lg-block">
+                <div class="position-relative d-inline-block" style="width: 100%; max-width: 500px; height: 380px;">
+                    <div class="floating-book position-absolute top-0 start-50 translate-middle-x" style="font-size: 6rem; color: #ffb703; filter: drop-shadow(0 25px 25px rgba(0,0,0,0.15));">
+                        <i class="bi bi-book-half"></i>
+                    </div>
+                    <div class="glowing-bulb position-absolute top-50 start-0 translate-middle-y" style="font-size: 5rem; color: #4338ca; filter: drop-shadow(0 0 20px rgba(67,56,202,0.5)); animation: glowPulse 2s infinite;">
+                        <i class="bi bi-lightbulb-fill"></i>
+                    </div>
+                    <div class="stacked-books position-absolute bottom-0 end-0" style="font-size: 5rem; color: #818cf8;">
+                        <i class="bi bi-journal-bookmark-fill"></i>
+                    </div>
+                    <div class="position-absolute top-0 end-0" style="font-size: 2.5rem; color: #a5b4fc; opacity: 0.7;"><i class="bi bi-star-fill"></i></div>
+                    <div class="position-absolute bottom-0 start-0" style="font-size: 3.5rem; color: #c7d2fe; opacity: 0.6;"><i class="bi bi-cloud-fill"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="position-absolute bottom-0 start-0 w-100" style="height: 100px; background: linear-gradient(to top, white, transparent);"></div>
+</section>
+
+<!-- ========== BROWSE BY BOOK TYPES ========== -->
+<section id="categories" class="container my-4 py-4">
+    <h2 class="text-center fw-bolder mb-5">
+        <span class="section-title">Browse by <span style="color:#ffb703; -webkit-text-fill-color:#ffb703;">Book Types</span></span>
+    </h2>
+    <div class="row g-3 g-md-4 justify-content-center">
+        {% for cat in categories %}
+        <div class="col-4 col-sm-3 col-md-2 col-lg-2">
+            <a href="/?category={{ cat.level|urlencode }}" class="text-decoration-none">
+                <div class="card category-card border-0 rounded-4 p-3 p-md-4 text-center h-100">
+                    <div class="category-icon">
+                        {% if cat.level == 'Python' %}<i class="bi bi-filetype-py text-success"></i>
+                        {% elif cat.level == 'JavaScript' %}<i class="bi bi-filetype-js text-warning"></i>
+                        {% elif cat.level == 'Java' %}<i class="bi bi-cup-hot-fill text-danger"></i>
+                        {% elif cat.level == 'C / C++' %}<i class="bi bi-cpu text-secondary"></i>
+                        {% elif cat.level == 'Web Development' %}<i class="bi bi-window-fullscreen text-primary"></i>
+                        {% elif cat.level == 'Data Science' %}<i class="bi bi-bar-chart text-info"></i>
+                        {% elif cat.level == 'Machine Learning' %}<i class="bi bi-robot text-success"></i>
+                        {% elif cat.level == 'Algorithms' %}<i class="bi bi-diagram-3" style="color:#7c3aed;"></i>
+                        {% elif cat.level == 'Databases' %}<i class="bi bi-database text-warning"></i>
+                        {% elif cat.level == 'Cyber Security' %}<i class="bi bi-shield-lock text-danger"></i>
+                        {% elif cat.level == 'Mobile Apps' %}<i class="bi bi-phone text-primary"></i>
+                        {% elif cat.level == 'DevOps' %}<i class="bi bi-gear text-secondary"></i>
+                        {% else %}<i class="bi bi-collection text-dark"></i>{% endif %}
+                    </div>
+                    <h6 class="fw-bold mb-1" style="font-size:0.9rem; color:#1e1b4b;">{{ cat.level }}</h6>
+                    <span class="badge bg-light text-muted mt-2" style="font-size:0.75rem;">{{ cat.count }} Books</span>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- ========== NEW ARRIVALS (carousel) ========== -->
+{% if not search_query %}
+<section id="new-arrivals" class="container my-5 py-4 border-top" style="opacity:1 !important; transform:none !important;">
+    <div class="row align-items-end mb-4">
+        <div class="col-md-6">
+            <h2 class="section-title">New Arrivals</h2>
+        </div>
+        <div class="col-md-6">
+            <p class="text-muted text-md-end mb-0">Fresh off the press! Grab the latest resources.</p>
+        </div>
+    </div>
+    {% if pdfs %}
+    <div id="newArrivalsCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+        <div class="carousel-inner">
+            {% set chunk_size = 3 %}
+            {% for chunk in pdfs|batch(chunk_size) %}
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                <div class="row g-3 justify-content-center">
+                    {% for pdf in chunk %}
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                        <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
+                            <div class="d-flex align-items-center justify-content-center" style="height: 160px;">
+                                {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
+                                    <img src="{{ pdf.image_url }}" alt="Cover" class="book-cover">
+                                {% else %}
+                                    {% set title_safe = pdf.title | default('Book', true) | replace('_', ' ') %}
+                                    {% set words = title_safe.split() %}
+                                    {% set short_name = (words[0][:2])|upper if words|length == 1 else (words[0][0] ~ words[1][0])|upper %}
+                                    <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100" style="background: linear-gradient(135deg, #a5b4fc, #818cf8); color: white;">
+                                        <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 45px; height: 45px; font-weight: 800; font-size: 1.2rem;">{{ short_name }}</div>
+                                        <h6 class="fw-bold text-center px-2" style="font-size:0.75rem;">{{ title_safe }}</h6>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-light text-muted" style="font-size:0.6rem;">{{ pdf.level }}</span>
+                                    <span class="fw-bold text-warning" style="font-size:0.7rem;">FREE</span>
+                                </div>
+                                <h6 class="fw-bold text-truncate mb-1" style="font-size:0.8rem; color:#1e1b4b;">{{ pdf.title | replace('_', ' ') }}</h6>
+                                <p class="text-muted small mb-1" style="font-size:0.65rem;">By {{ pdf.author }}</p>
+                                <div class="d-flex justify-content-end">
+                                    <button class="btn btn-sm btn-light rounded-circle preview-trigger" data-book-id="{{ pdf.id }}" style="width: 24px; height: 24px; padding:0;">
+                                        <i class="bi bi-search" style="font-size:0.65rem;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#newArrivalsCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon bg-dark rounded-circle" aria-hidden="true"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#newArrivalsCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon bg-dark rounded-circle" aria-hidden="true"></span>
+        </button>
+    </div>
+    {% else %}
+    <div class="text-center py-5"><i class="bi bi-inbox display-4 text-muted"></i><h5 class="mt-3">No books added yet</h5></div>
+    {% endif %}
+</section>
+{% endif %}
+
+<!-- ========== ALL BOOKS / SEARCH RESULTS ========== -->
+<section id="all-books" class="container my-5 py-4 border-top" style="opacity:1 !important; transform:none !important;">
+    <h2 class="section-title mb-5">{% if search_query %}🔍 Search Results{% else %}📚 All Books{% endif %}</h2>
+    <div class="row g-3">
+        {% if pdfs %}
+            {% for pdf in pdfs %}
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
+                    <div class="d-flex align-items-center justify-content-center" style="height: 160px;">
+                        {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
+                            <img src="{{ pdf.image_url }}" alt="Cover" class="book-cover">
+                        {% else %}
+                            {% set title_safe = pdf.title | default('Book', true) | replace('_', ' ') %}
+                            {% set words = title_safe.split() %}
+                            {% set short_name = (words[0][:2])|upper if words|length == 1 else (words[0][0] ~ words[1][0])|upper %}
+                            <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100" style="background: linear-gradient(135deg, #a5b4fc, #818cf8); color: white;">
+                                <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 45px; height: 45px; font-weight: 800; font-size: 1.2rem;">{{ short_name }}</div>
+                                <h6 class="fw-bold text-center px-2" style="font-size:0.75rem;">{{ title_safe }}</h6>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge bg-light text-muted" style="font-size:0.6rem;">{{ pdf.level }}</span>
+                            <span class="fw-bold text-warning" style="font-size:0.7rem;">FREE</span>
+                        </div>
+                        <h6 class="fw-bold text-truncate mb-1" style="font-size:0.8rem; color:#1e1b4b;">{{ pdf.title | replace('_', ' ') }}</h6>
+                        <p class="text-muted small mb-1" style="font-size:0.65rem;">By {{ pdf.author }}</p>
+                        <div class="d-flex justify-content-end">
+                            <button class="btn btn-sm btn-light rounded-circle preview-trigger" data-book-id="{{ pdf.id }}" style="width: 24px; height: 24px; padding:0;">
+                                <i class="bi bi-search" style="font-size:0.65rem;"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5"><i class="bi bi-inbox display-4 text-muted"></i><h5 class="mt-3">No books found</h5></div>
+        {% endif %}
+    </div>
+    <!-- Smart pagination -->
+    {% if total_pages > 1 %}
+    <nav class="mt-5">
+        <ul class="pagination justify-content-center flex-wrap">
+            {% if page > 1 %}
+            <li class="page-item"><a class="page-link rounded-pill mx-1" href="?{% if search_query %}search_query={{ search_query|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}&{% endif %}page={{ page-1 }}#all-books">Prev</a></li>
+            {% endif %}
+            {% set window = 2 %}
+            {% set start = [page - window, 1] | max %}
+            {% set end = [page + window, total_pages] | min %}
+            {% if start > 1 %}
+                <li class="page-item"><a class="page-link rounded-pill mx-1" href="?{% if search_query %}search_query={{ search_query|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}&{% endif %}page=1#all-books">1</a></li>
+                {% if start > 2 %}<li class="page-item disabled"><span class="page-link rounded-pill mx-1">…</span></li>{% endif %}
+            {% endif %}
+            {% for p in range(start, end + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link rounded-pill mx-1" href="?{% if search_query %}search_query={{ search_query|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}&{% endif %}page={{ p }}#all-books">{{ p }}</a></li>
+            {% endfor %}
+            {% if end < total_pages %}
+                {% if end < total_pages - 1 %}<li class="page-item disabled"><span class="page-link rounded-pill mx-1">…</span></li>{% endif %}
+                <li class="page-item"><a class="page-link rounded-pill mx-1" href="?{% if search_query %}search_query={{ search_query|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}&{% endif %}page={{ total_pages }}#all-books">{{ total_pages }}</a></li>
+            {% endif %}
+            {% if page < total_pages %}
+            <li class="page-item"><a class="page-link rounded-pill mx-1" href="?{% if search_query %}search_query={{ search_query|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}&{% endif %}page={{ page+1 }}#all-books">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</section>
+
+<!-- ========== ABOUT SECTION (Light Theme, Responsive) ========== -->
+<section id="about" class="py-5 mt-5" style="background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%);">
+    <div class="container py-4">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-7">
+                <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-3 border border-primary border-opacity-25">
+                    <i class="bi bi-bookmark-star-fill me-1"></i> Since 2026
+                </span>
+                <h2 class="display-4 fw-bold mb-4" style="letter-spacing: -0.5px; color: #1e1b4b;">
+                    Empowering Learners <br> <span style="color: #ffb703;">One Book at a Time</span>
+                </h2>
+                <p class="lead text-muted mb-4" style="max-width: 550px;">
+                    DocoDive is more than a library. It's a community‑driven collection of handpicked programming books, research papers, and learning resources – all completely free.
+                </p>
+                <div class="d-flex flex-wrap gap-3 mb-5">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                        <span class="fw-semibold" style="color: #1e1b4b;">5M+ Curated Books</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                        <span class="fw-semibold" style="color: #1e1b4b;">12 Programming Categories</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                        <span class="fw-semibold" style="color: #1e1b4b;">Free Forever</span>
+                    </div>
+                </div>
+
+                <h6 class="text-uppercase fw-semibold mb-3 text-muted" style="letter-spacing: 1px;">Connect With Us</h6>
+                <div class="d-flex flex-wrap gap-3 mb-4">
+                    <a href="https://github.com/programmingpioneer" target="_blank" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:45px; height:45px; transition:0.3s;">
+                        <i class="bi bi-github fs-5"></i>
+                    </a>
+                    <a href="https://www.linkedin.com/in/sufyan-khans/" target="_blank" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:45px; height:45px; transition:0.3s;">
+                        <i class="bi bi-linkedin fs-5"></i>
+                    </a>
+                    <a href="https://x.com/programerPioner" target="_blank" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:45px; height:45px; transition:0.3s;">
+                        <i class="bi bi-twitter-x fs-5"></i>
+                    </a>
+                    <a href="https://www.instagram.com/programmingpioneer/" target="_blank" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:45px; height:45px; transition:0.3s;">
+                        <i class="bi bi-instagram fs-5"></i>
+                    </a>
+                    <a href="https://www.facebook.com/Programmingpioneer" target="_blank" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:45px; height:45px; transition:0.3s;">
+                        <i class="bi bi-facebook fs-5"></i>
+                    </a>
+                    <a href="https://t.me/Programmingpioneers" target="_blank" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:45px; height:45px; transition:0.3s;">
+                        <i class="bi bi-telegram fs-5"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5 text-center">
+                <div class="position-relative d-inline-block">
+                    <div class="position-absolute top-50 start-50 translate-middle rounded-circle" style="width: 260px; height: 260px; background: rgba(67,56,202,0.08); backdrop-filter: blur(8px); z-index:0;"></div>
+                    <div class="position-relative z-1 mx-auto" style="width: 180px; height: 180px; max-width: 100%; border-radius: 50%; overflow: hidden; border: 5px solid rgba(67,56,202,0.2); box-shadow: 0 15px 35px rgba(0,0,0,0.1);">
+                        <img src="static/Creator.png" alt="Founder" class="w-100 h-100" style="object-fit: cover;">
+                    </div>
+                    <span class="position-absolute bottom-0 start-0 bg-white text-dark px-3 py-1 rounded-pill shadow-sm small fw-semibold" style="z-index:2; border:1px solid #e0e7ff;">📚 5M+ Books</span>
+                    <span class="position-absolute top-0 end-0 text-dark px-3 py-1 rounded-pill shadow-sm small fw-semibold" style="z-index:2; background:#ffb703;">⭐ Creagittor</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- BOOK DETAIL MODAL -->
+<div class="modal fade" id="bookDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; overflow: hidden;">
+            <button type="button" class="btn-close position-absolute top-0 end-0 m-3 z-3 bg-white rounded-circle shadow-sm p-2" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-body p-0" id="modalBookContent">
+                <div class="text-center p-5"><div class="spinner-border text-primary"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // ========== LIVE CATEGORY COUNTS ==========
+    function updateCategoryCounts() {
+        fetch('/api/categories/live-counts')
+            .then(response => response.json())
+            .then(cats => {
+                if (cats && cats.length) {
+                    const catCards = document.querySelectorAll('#categories .category-card');
+                    catCards.forEach((card, index) => {
+                        if (cats[index] !== undefined) {
+                            const countBadge = card.querySelector('.badge');
+                            if (countBadge) {
+                                countBadge.textContent = cats[index].count + ' Books';
+                            }
+                        }
+                    });
+                }
+            })
+            .catch(err => console.error('Live count update failed:', err));
+    }
+    setInterval(updateCategoryCounts, 10000);
+
+    // ========== AUTO-REFRESH ON UPLOAD ==========
+    const channel = new BroadcastChannel('docodive_upload');
+    channel.onmessage = function(event) {
+        if (event.data === 'refresh') { location.reload(); }
+    };
+
+    // sticky navbar
+    const navbar = document.querySelector('.navbar');
+    window.addEventListener('scroll', () => navbar.classList.toggle('shadow', window.scrollY > 50));
+
+    // smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    // back to top
+    const backBtn = document.createElement('button');
+    backBtn.innerHTML = '<i class="bi bi-arrow-up"></i>';
+    backBtn.className = 'btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-3 shadow-lg';
+    backBtn.style.cssText = 'width:40px;height:40px;display:none;z-index:1050;';
+    document.body.appendChild(backBtn);
+    window.addEventListener('scroll', () => {
+        backBtn.style.display = window.scrollY > 300 ? 'flex' : 'none';
+        backBtn.style.alignItems = 'center';
+        backBtn.style.justifyContent = 'center';
+    });
+    backBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    // carousel indicators
+    const carousel = document.getElementById('newArrivalsCarousel');
+    if (carousel) {
+        const items = carousel.querySelectorAll('.carousel-item');
+        const dotsContainer = document.createElement('div');
+        dotsContainer.className = 'carousel-indicators position-relative mt-3';
+        dotsContainer.style.cssText = 'display:flex;justify-content:center;gap:6px;';
+        items.forEach((_, i) => {
+            const dot = document.createElement('button');
+            dot.type = 'button';
+            dot.dataset.bsTarget = '#newArrivalsCarousel';
+            dot.dataset.bsSlideTo = i;
+            dot.className = i === 0 ? 'active' : '';
+            dot.style.cssText = 'width:10px;height:10px;border-radius:50%;border:none;background:#ccc;';
+            dotsContainer.appendChild(dot);
+        });
+        carousel.parentNode.insertBefore(dotsContainer, carousel.nextSibling);
+        carousel.addEventListener('slide.bs.carousel', e => {
+            dotsContainer.querySelectorAll('button').forEach((d, idx) => d.classList.toggle('active', idx === e.to));
+        });
+    }
+
+    // ========== AUTOCOMPLETE SEARCH (opens modal) ==========
+    const searchInput = document.getElementById('searchInput');
+    const suggestionsBox = document.getElementById('searchSuggestions');
+    const searchForm = document.getElementById('searchForm');
+    const bookModal = new bootstrap.Modal(document.getElementById('bookDetailModal'));
+
+    searchInput.addEventListener('input', async function() {
+        const query = this.value.trim();
+        if (query.length < 2) { suggestionsBox.classList.add('d-none'); return; }
+        try {
+            const resp = await fetch(`/api/search/suggest?q=${encodeURIComponent(query)}`);
+            const books = await resp.json();
+            if (books.length === 0) { suggestionsBox.classList.add('d-none'); return; }
+            suggestionsBox.innerHTML = books.map(b => 
+                `<div class="search-suggestion-item" data-id="${b.id}">${b.title}</div>`
+            ).join('');
+            suggestionsBox.classList.remove('d-none');
+            suggestionsBox.querySelectorAll('.search-suggestion-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    suggestionsBox.classList.add('d-none');
+                    openBookModal(this.dataset.id);
+                });
+            });
+        } catch(err) { suggestionsBox.classList.add('d-none'); }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+            suggestionsBox.classList.add('d-none');
+        }
+    });
+
+    searchForm.addEventListener('submit', async function(e) {
+        const query = searchInput.value.trim();
+        if (query === '') return;
+        try {
+            const resp = await fetch(`/api/search/suggest?q=${encodeURIComponent(query)}`);
+            const books = await resp.json();
+            const exact = books.find(b => b.title.toLowerCase() === query.toLowerCase());
+            if (exact) {
+                e.preventDefault();
+                openBookModal(exact.id);
+            }
+        } catch(err) {}
+    });
+
+    // ========== PREVIEW TRIGGER ==========
+    document.addEventListener('click', function(e) {
+        const trigger = e.target.closest('.preview-trigger');
+        if (trigger) {
+            e.preventDefault();
+            openBookModal(trigger.dataset.bookId);
+        }
+    });
+
+    // ========== MODAL LOGIC ==========
+    async function openBookModal(bookId) {
+        document.getElementById('modalBookContent').innerHTML = `<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>`;
+        bookModal.show();
+        try {
+            const resp = await fetch(`/api/book/${bookId}`);
+            if (!resp.ok) throw new Error('Book not found');
+            const book = await resp.json();
+            renderBookModal(book);
+        } catch(err) {
+            document.getElementById('modalBookContent').innerHTML = '<p class="text-center p-5 text-danger">Failed to load book details.</p>';
+        }
+    }
+
+    function renderBookModal(book) {
+        let coverHTML;
+        if (book.image_url && book.image_url !== 'None') {
+            coverHTML = `<img src="${book.image_url}" class="img-fluid rounded-4" alt="Cover">`;
+        } else {
+            const initials = (book.title || 'Book').substring(0,2).toUpperCase();
+            coverHTML = `<div class="d-flex flex-column justify-content-center align-items-center w-100 h-100 p-4" style="background: linear-gradient(135deg, #a5b4fc, #818cf8); color: white; min-height: 280px; border-radius: 24px;">
+                <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 90px; height: 90px; font-size: 2.2rem; font-weight: 800;">${initials}</div>
+                <h5 class="fw-bold text-center">${book.title}</h5>
+            </div>`;
+        }
+        let reviewsHTML = '';
+        if (book.reviews && book.reviews.length > 0) {
+            reviewsHTML = book.reviews.map(r => `
+                <div class="border-bottom pb-2 mb-2">
+                    <strong>${r.username}</strong> - ${r.rating} ⭐
+                    <p class="text-muted small mb-0">${r.comment || ''}</p>
+                </div>`).join('');
+        } else {
+            reviewsHTML = '<p class="text-muted">No reviews yet. Be the first!</p>';
+        }
+        const favIcon = book.is_favorite ? 'bi-heart-fill' : 'bi-heart';
+        const favText = book.is_favorite ? 'Favorited' : 'Favorite';
+        document.getElementById('modalBookContent').innerHTML = `
+            <div class="row g-0">
+                <div class="col-md-5 bg-light d-flex align-items-center justify-content-center p-4" style="min-height: 320px;">
+                    ${coverHTML}
+                </div>
+                <div class="col-md-7 p-4 p-lg-5">
+                    <div class="d-flex gap-2 mb-3">
+                        <span class="badge bg-primary px-3 py-2 rounded-pill">${book.level}</span>
+                        <span class="badge bg-secondary px-3 py-2 rounded-pill">${book.language}</span>
+                    </div>
+                    <h2 class="fw-bold mb-3" style="color:#1e1b4b;">${book.title}</h2>
+                    <p class="text-muted mb-2"><i class="bi bi-person-fill me-2"></i><strong>Author:</strong> ${book.author}</p>
+                    <p class="text-muted mb-4">${book.description || ''}</p>
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        <a href="${book.link}" class="btn btn-primary rounded-pill" download onclick="fetch('/api/download/${book.id}', {method:'POST'});"><i class="bi bi-download"></i> Download</a>
+                        <a href="/book/${book.id}/read" target="_blank" class="btn btn-outline-primary rounded-pill"><i class="bi bi-book"></i> Read Online</a>
+                        ${book.is_logged_in ? `
+                        <button class="btn btn-outline-warning rounded-pill favourite-btn" data-book-id="${book.id}">
+                            <i class="bi ${favIcon}"></i> <span>${favText}</span>
+                        </button>` : ''}
+                    </div>
+                    <hr>
+                    <h5>Reviews</h5>
+                    ${book.is_logged_in ? `
+                    <form id="modalReviewForm" class="mb-3">
+                        <input type="hidden" name="book_id" value="${book.id}">
+                        <div class="mb-2">
+                            <select name="rating" class="form-select" required>
+                                <option value="5">5 - Excellent</option><option value="4">4 - Good</option><option value="3">3 - Average</option>
+                                <option value="2">2 - Poor</option><option value="1">1 - Terrible</option>
+                            </select>
+                        </div>
+                        <div class="mb-2"><textarea name="comment" class="form-control" rows="2" placeholder="Write your review..."></textarea></div>
+                        <button type="submit" class="btn btn-sm btn-primary rounded-pill">Submit</button>
+                    </form>` : ''}
+                    <div id="modalReviews">${reviewsHTML}</div>
+                </div>
+            </div>`;
+        // Attach events
+        document.querySelector('.favourite-btn')?.addEventListener('click', async function() {
+            const id = this.dataset.bookId;
+            const res = await fetch(`/user/favorite/${id}`, {method:'POST'});
+            if (res.ok) {
+                const icon = this.querySelector('i');
+                icon.classList.toggle('bi-heart-fill');
+                icon.classList.toggle('bi-heart');
+                this.querySelector('span').textContent = icon.classList.contains('bi-heart-fill') ? 'Favorited' : 'Favorite';
+            }
+        });
+        document.getElementById('modalReviewForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const res = await fetch(`/book/${book.id}/review`, {method:'POST', body: formData});
+            if (res.ok) {
+                const updated = await fetch(`/api/book/${book.id}`).then(r => r.json());
+                renderBookModal(updated);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

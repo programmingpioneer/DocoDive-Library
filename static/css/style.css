@@ -1,0 +1,154 @@
+/* ========== FONTS & ROOT VARIABLES ========== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --primary: #4338ca;
+    --secondary: #ffb703;
+    --dark-blue: #1e1b4b;
+    --light-bg: #f8f9ff;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #ffffff;
+    color: #1e1b4b;
+}
+
+/* ---- NAVBAR ---- */
+.navbar {
+    background: rgba(255,255,255,0.95) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #e5e7eb;
+}
+.nav-link.active, .nav-link:hover { color: var(--primary) !important; }
+
+/* ---- HERO ANIMATIONS ---- */
+@keyframes glowPulse {
+    0%, 100% { filter: drop-shadow(0 0 15px rgba(67,56,202,0.5)); }
+    50% { filter: drop-shadow(0 0 25px rgba(67,56,202,0.8)); }
+}
+@keyframes floatBook {
+    0%, 100% { transform: translate(-50%, 0px); }
+    50% { transform: translate(-50%, -20px); }
+}
+.floating-book { animation: floatBook 4s ease-in-out infinite; }
+
+/* ---- CATEGORY CARDS ---- */
+.category-card { transition: all 0.3s ease; }
+.category-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(67,56,202,0.1) !important;
+}
+
+/* ---- PRODUCT CARDS (New Arrivals & All Books) ---- */
+.product-card {
+    border-radius: 20px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+}
+
+.hover-zoom { transition: transform 0.3s; }
+.product-card:hover .hover-zoom { transform: scale(1.05); }
+
+/* Overlay removed (no longer used) */
+
+/* ---- BUTTONS ---- */
+.btn-primary {
+    background-color: var(--dark-blue) !important;
+    border-color: var(--dark-blue) !important;
+    border-radius: 50px;
+    padding: 10px 25px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+.btn-primary:hover {
+    background-color: #312e81 !important;
+    transform: scale(1.02);
+}
+.btn-outline-primary {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.btn-outline-primary:hover {
+    background-color: var(--primary);
+    color: #fff;
+}
+
+.text-warning { color: var(--secondary) !important; }
+
+/* ---- DARK MODE (complete coverage) ---- */
+[data-bs-theme="dark"] body {
+    background-color: #1e1e2f !important;
+    color: #e0e0e0;
+}
+[data-bs-theme="dark"] .card {
+    background-color: #2a2a3d !important;
+    color: #e0e0e0;
+}
+[data-bs-theme="dark"] .card .text-muted { color: #ccc !important; }
+[data-bs-theme="dark"] .bg-light { background-color: #333 !important; }
+[data-bs-theme="dark"] .hero-section { background: linear-gradient(135deg, #2a2a3d 0%, #1e1e2f 100%) !important; }
+[data-bs-theme="dark"] .about-section { background-color: #2a2a3d !important; }
+[data-bs-theme="dark"] .navbar { background: rgba(42,42,61,0.95) !important; }
+[data-bs-theme="dark"] .nav-link { color: #e0e0e0 !important; }
+[data-bs-theme="dark"] .nav-link.active,
+[data-bs-theme="dark"] .nav-link:hover { color: var(--primary) !important; }
+[data-bs-theme="dark"] .btn-outline-primary { border-color: #818cf8; color: #818cf8; }
+[data-bs-theme="dark"] .btn-outline-primary:hover { background-color: #818cf8; color: #fff; }
+
+/* Dark mode – badges */
+[data-bs-theme="dark"] .badge.bg-light {
+    background-color: #3a3a4d !important;
+    color: #e0e0e0 !important;
+}
+/* Dark mode – form inputs & search bar */
+[data-bs-theme="dark"] .form-control {
+    background-color: #3a3a4d !important;
+    color: #fff !important;
+    border-color: #555;
+}
+[data-bs-theme="dark"] .form-control::placeholder { color: #aaa; }
+[data-bs-theme="dark"] .input-group .btn {
+    background-color: #1e1b4b !important;
+    border-color: #1e1b4b !important;
+}
+/* Dark mode – carousel controls */
+[data-bs-theme="dark"] .carousel-control-prev-icon,
+[data-bs-theme="dark"] .carousel-control-next-icon {
+    background-color: #555 !important;
+    border-radius: 50%;
+    background-size: 60%;
+}
+/* Dark mode – pagination */
+[data-bs-theme="dark"] .pagination .page-link {
+    background-color: #2a2a3d;
+    color: #e0e0e0;
+    border-color: #444;
+}
+[data-bs-theme="dark"] .pagination .active .page-link {
+    background-color: #4338ca;
+    border-color: #4338ca;
+    color: #fff;
+}
+
+/* ---- SCROLL FADE ---- */
+.scroll-fade {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s ease;
+}
+.scroll-fade.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ---- RESPONSIVE TWEAKS ---- */
+@media (max-width: 768px) {
+    .display-3 { font-size: 2.5rem; }
+    .floating-book { font-size: 4rem !important; }
+    .glowing-bulb, .stacked-books { font-size: 3rem !important; }
+}

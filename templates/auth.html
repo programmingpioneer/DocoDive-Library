@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocoDive – Your Premium Library</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .bg-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.25;
+            z-index: 0;
+        }
+        .blob-1 { width: 300px; height: 300px; background: #4338ca; top: -80px; left: -80px; }
+        .blob-2 { width: 250px; height: 250px; background: #ffb703; bottom: -60px; right: -60px; }
+        .blob-3 { width: 180px; height: 180px; background: #818cf8; top: 40%; right: 5%; }
+
+        .container-main {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .brand-block {
+            text-align: center;
+            color: #1e1b4b;
+        }
+        .brand-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #4338ca, #818cf8);
+            border-radius: 20px;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 12px 24px rgba(67,56,202,0.2);
+            color: white;
+            font-size: 1.8rem;
+        }
+        .brand-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #1e1b4b;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+        .brand-sub {
+            color: #6b7280;
+            font-size: 0.9rem;
+            font-weight: 400;
+            margin-top: 0.25rem;
+        }
+
+        .auth-card {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 28px;
+            box-shadow: 0 20px 50px rgba(30, 27, 75, 0.1);
+            padding: 2rem 1.8rem;
+        }
+
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e7ff;
+            margin-bottom: 1.5rem;
+        }
+        .auth-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #6b7280;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .auth-tab.active {
+            color: #4338ca;
+            border-bottom-color: #4338ca;
+        }
+
+        .form-control {
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #e0e7ff;
+            border-radius: 14px;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        .form-control:focus {
+            border-color: #4338ca;
+            box-shadow: 0 0 0 3px rgba(67,56,202,0.15);
+        }
+        .form-control.is-valid {
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 3px rgba(16,185,129,0.15) !important;
+        }
+        .form-control.is-invalid {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.15) !important;
+        }
+
+        .btn-primary-custom {
+            background: #1e1b4b;
+            border: none;
+            border-radius: 50px;
+            padding: 14px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            letter-spacing: 0.3px;
+            box-shadow: 0 10px 25px rgba(30, 27, 75, 0.3);
+            transition: all 0.3s;
+        }
+        .btn-primary-custom:hover {
+            background: #312e81;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(30, 27, 75, 0.4);
+            color: white;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .text-link {
+            color: #4338ca;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .text-link:hover { text-decoration: underline; }
+
+        .alert {
+            border-radius: 14px;
+            font-size: 0.9rem;
+        }
+
+        .trust-pills {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.6rem;
+            margin-top: 1.5rem;
+        }
+        .trust-pill {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.6);
+            border-radius: 50px;
+            padding: 5px 14px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #4b5563;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            white-space: nowrap;
+        }
+        .trust-pill i { color: #4338ca; font-size: 0.8rem; }
+
+        .admin-vault-link {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 5px 16px;
+            border: 1px solid #e0e7ff;
+            border-radius: 50px;
+            color: #6b7280;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+            background: rgba(255,255,255,0.5);
+            backdrop-filter: blur(4px);
+        }
+        .admin-vault-link:hover {
+            border-color: #1e1b4b;
+            color: #1e1b4b;
+            background: rgba(30,27,75,0.04);
+            transform: translateY(-1px);
+        }
+
+        /* Feedback messages */
+        .feedback {
+            font-size: 0.75rem;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 1.5rem 0.8rem;
+                align-items: flex-start;
+                padding-top: 3rem;
+            }
+            .container-main {
+                gap: 1rem;
+            }
+            .brand-title {
+                font-size: 1.6rem;
+            }
+            .auth-card {
+                padding: 1.5rem 1.2rem;
+                border-radius: 24px;
+            }
+            .form-control {
+                padding: 10px 14px;
+                font-size: 0.9rem;
+            }
+            .btn-primary-custom {
+                padding: 12px;
+                font-size: 0.95rem;
+            }
+            .bg-blob {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+    <div class="bg-blob blob-3"></div>
+
+    <div class="container-main">
+        <div class="brand-block">
+            <div class="brand-icon">
+                <i class="bi bi-book-half"></i>
+            </div>
+            <h1 class="brand-title">Welcome to DocoDive</h1>
+            <p class="brand-sub">Your Gateway to 50000+ Free Programming Books</p>
+        </div>
+
+        <div class="auth-card">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="auth-tabs">
+                <button class="auth-tab {% if mode != 'signup' %}active{% endif %}" onclick="switchTab('login')">Login</button>
+                <button class="auth-tab {% if mode == 'signup' %}active{% endif %}" onclick="switchTab('signup')">Sign Up</button>
+            </div>
+
+            <!-- Login Tab -->
+            <div id="login-tab" class="tab-content {% if mode != 'signup' %}active{% endif %}">
+                {% if error and mode != 'signup' %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+                <form method="POST" action="/user/login">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Email</label>
+                        <input type="email" name="email" class="form-control" placeholder="you@example.com" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small">Password</label>
+                        <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                    </div>
+                    <div class="text-end mb-3">
+                        <a href="/forgot-password" class="text-muted small text-decoration-none" style="font-size: 0.8rem;">Forgot Password?</a>
+                    </div>
+                    <button type="submit" class="btn-primary-custom w-100">Login</button>
+                </form>
+                <p class="text-center mt-3 small text-muted">
+                    New here? <span class="text-link" onclick="switchTab('signup')">Create an account</span>
+                </p>
+            </div>
+
+            <!-- Signup Tab -->
+            <div id="signup-tab" class="tab-content {% if mode == 'signup' %}active{% endif %}">
+                {% if error and mode == 'signup' %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+                <form method="POST" action="/user/signup" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Username</label>
+                        <input type="text" name="username" id="username" class="form-control" placeholder="bookworm42" required>
+                        <div class="feedback small mt-1"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Email</label>
+                        <input type="email" name="email" id="email" class="form-control" placeholder="you@example.com" required>
+                        <div class="feedback small mt-1"></div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small">Password</label>
+                        <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn-primary-custom w-100">Create Free Account</button>
+                </form>
+                <p class="text-center mt-3 small text-muted">
+                    Already registered? <span class="text-link" onclick="switchTab('login')">Login</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="trust-pills">
+            <span class="trust-pill"><i class="bi bi-shield-check"></i> Secure</span>
+            <span class="trust-pill"><i class="bi bi-cloud-download"></i> Instant Download</span>
+            <span class="trust-pill"><i class="bi bi-calendar-check"></i> Updated Weekly</span>
+            <span class="trust-pill"><i class="bi bi-heart"></i> Favorites & History</span>
+        </div>
+
+        <a href="/login" class="admin-vault-link">
+            <i class="bi bi-shield-lock-fill me-1"></i> Administrator
+        </a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Tab switching
+        function switchTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.auth-tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+            document.getElementById(`${tab}-tab`).classList.add('active');
+        }
+        const mode = '{{ mode }}';
+        if (mode === 'signup') switchTab('signup');
+
+        // Live validation for signup fields
+        document.addEventListener('DOMContentLoaded', function() {
+            const usernameInput = document.getElementById('username');
+            const emailInput = document.getElementById('email');
+
+            // Get or create feedback element next to input
+            function getFeedback(input) {
+                let fb = input.parentElement.querySelector('.feedback');
+                if (!fb) {
+                    fb = document.createElement('div');
+                    fb.className = 'feedback small mt-1';
+                    input.parentElement.appendChild(fb);
+                }
+                return fb;
+            }
+
+            // Validate a field via server
+            function checkField(input, fieldType) {
+                const val = input.value.trim();
+                const fb = getFeedback(input);
+
+                if (val.length === 0) {
+                    // Clear styles and message
+                    input.classList.remove('is-valid', 'is-invalid');
+                    fb.textContent = '';
+                    fb.className = 'feedback small mt-1';
+                    return;
+                }
+
+                // Client-side format checks
+                if (fieldType === 'username') {
+                    if (val.length < 3 || val.length > 20 || !/^[a-zA-Z0-9]+$/.test(val)) {
+                        input.classList.add('is-invalid');
+                        input.classList.remove('is-valid');
+                        fb.textContent = 'Username must be 3-20 letters and numbers.';
+                        fb.className = 'feedback small mt-1 text-danger';
+                        return;
+                    }
+                } else if (fieldType === 'email') {
+                    if (!/^\S+@\S+\.\S+$/.test(val)) {
+                        input.classList.add('is-invalid');
+                        input.classList.remove('is-valid');
+                        fb.textContent = 'Please enter a valid email.';
+                        fb.className = 'feedback small mt-1 text-danger';
+                        return;
+                    }
+                }
+
+                // Server uniqueness check
+                fetch(`/api/check-availability?field=${fieldType}&value=${encodeURIComponent(val)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.exists) {
+                            input.classList.add('is-invalid');
+                            input.classList.remove('is-valid');
+                            fb.textContent = `This ${fieldType} is already taken.`;
+                            fb.className = 'feedback small mt-1 text-danger';
+                        } else {
+                            input.classList.add('is-valid');
+                            input.classList.remove('is-invalid');
+                            fb.textContent = `${fieldType.charAt(0).toUpperCase() + fieldType.slice(1)} is available.`;
+                            fb.className = 'feedback small mt-1 text-success';
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Validation error:', err);
+                        // On network error, remove all validation
+                        input.classList.remove('is-valid', 'is-invalid');
+                        fb.textContent = '';
+                    });
+            }
+
+            // Attach listeners
+            usernameInput.addEventListener('input', () => checkField(usernameInput, 'username'));
+            emailInput.addEventListener('input', () => checkField(emailInput, 'email'));
+            // Also check on blur (when field loses focus)
+            usernameInput.addEventListener('blur', () => checkField(usernameInput, 'username'));
+            emailInput.addEventListener('blur', () => checkField(emailInput, 'email'));
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary"><i class="bi bi-pencil-square me-2"></i>Edit Book</h2>
+        <a href="/admin/books" class="btn btn-outline-secondary rounded-pill px-4">
+            <i class="bi bi-arrow-left me-1"></i> Back to Manage Books
+        </a>
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-lg p-4 edit-card">
+                <div class="card-body">
+                    <form method="POST" action="/admin/edit/{{ book.id }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold edit-label">Title</label>
+                            <input type="text" name="title" class="form-control bg-light edit-input" value="{{ book.title }}" required>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold edit-label">Category</label>
+                                <select name="category" class="form-select bg-light edit-input" required>
+                                    {% for cat in categories %}
+                                        <option value="{{ cat.level }}" {% if cat.id == book.category_id %}selected{% endif %}>
+                                            {{ cat.level }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold edit-label">Author</label>
+                                <input type="text" name="author" class="form-control bg-light edit-input" value="{{ book.author }}" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold edit-label">Language</label>
+                            <input type="text" name="language" class="form-control bg-light edit-input" value="{{ book.language }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold edit-label">Description</label>
+                            <textarea name="desc" class="form-control bg-light edit-input" rows="3">{{ book.description }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold edit-label">Cover Image URL</label>
+                            <input type="url" name="img" class="form-control bg-light edit-input" value="{{ book.image_url }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold edit-label">Or Upload New Cover Image (JPG/PNG)</label>
+                            <input type="file" name="cover_image" class="form-control bg-light edit-input" accept="image/*">
+                            <small class="text-muted">Current: {{ book.image_url }}</small>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold edit-label">Replace PDF (optional)</label>
+                            <input type="file" name="pdf_file" class="form-control bg-light edit-input" accept=".pdf">
+                            <small class="text-muted">Current: {{ book.link }}</small>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 py-3 fw-bold edit-save-btn">
+                            <i class="bi bi-check-circle me-2"></i> Update Book
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    [data-bs-theme="dark"] .edit-card { background-color: #2a2a3d !important; color: #e0e0e0; }
+    [data-bs-theme="dark"] .edit-label { color: #e0e0e0 !important; }
+    [data-bs-theme="dark"] .edit-input { background-color: #3a3a4d !important; color: #fff !important; border-color: #555 !important; }
+    .edit-save-btn { border-radius: 12px; transition: 0.3s; }
+    .edit-save-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(34,197,94,0.3); }
+</style>
+{% endblock %}

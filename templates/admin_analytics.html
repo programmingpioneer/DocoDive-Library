@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <h2><i class="bi bi-graph-up"></i> Analytics</h2>
+    <div class="row g-4">
+        <div class="col-md-4"><div class="card p-4 text-center"><h5>Total Books</h5><p class="display-4">{{ total_books }}</p></div></div>
+        <div class="col-md-4"><div class="card p-4 text-center"><h5>Total Downloads</h5><p class="display-4">{{ total_downloads }}</p></div></div>
+        <div class="col-md-4"><div class="card p-4 text-center"><h5>Total Users</h5><p class="display-4">{{ total_users }}</p></div></div>
+    </div>
+</div>
+{% endblock %}

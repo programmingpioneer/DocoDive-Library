@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Book - DocoDive</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f8faff;
+            padding: 2rem 1rem;
+        }
+        .upload-card {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+            padding: 2rem;
+        }
+        .disclaimer {
+            background: #fff3cd;
+            border-left: 4px solid #ffb703;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+        .pending-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .pending-item:last-child {
+            border-bottom: none;
+        }
+        .status-badge {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="upload-card">
+            <h2 class="mb-3"><i class="bi bi-cloud-upload-fill me-2" style="color:#4338ca;"></i> Upload a Book</h2>
+            <p class="text-muted">Share a programming PDF with the DocoDive community. Your upload will be reviewed by admins before it goes public.</p>
+
+            <!-- Disclaimer -->
+            <div class="disclaimer">
+                <strong><i class="bi bi-info-circle-fill me-1"></i> Disclaimer:</strong><br>
+                • Only <strong>PDF files</strong> are accepted (max 500 MB).<br>
+                • Do not upload copyrighted material without permission.<br>
+                • Your upload will be <strong>hidden until approved</strong> by an admin.<br>
+                • You will receive an email when your book is approved or rejected.
+            </div>
+
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="pdf_file" class="form-label fw-semibold">Select PDF File</label>
+                    <input class="form-control" type="file" id="pdf_file" name="pdf_file" accept=".pdf" required>
+                    <div class="form-text">Choose a programming book, tutorial, or research paper in PDF format.</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2" style="background:#4338ca; border:none; border-radius:12px;">
+                    <i class="bi bi-upload me-1"></i> Upload for Review
+                </button>
+            </form>
+
+            <p class="text-center mt-3 small">
+                <a href="/" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Back to Library</a>
+            </p>
+
+            <!-- 👇 Your Uploads History (live status) -->
+            <hr class="my-4">
+            <h5 class="mb-3"><i class="bi bi-hourglass-split me-2"></i> Your Uploads</h5>
+            <p class="text-muted small">Track the status of all the books you've submitted. Status updates automatically when an admin reviews them.</p>
+            <div id="pending-uploads-list">
+                <p class="text-muted">Loading your uploads...</p>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+document.addEventListener("DOMContentLoaded", function() {
+    fetchUserUploads();
+});
+
+function fetchUserUploads() {
+    const listContainer = document.getElementById('pending-uploads-list');
+    fetch('/api/user/uploads')
+        .then(res => res.json())
+        .then(data => {
+            if (!data || data.length === 0) {
+                listContainer.innerHTML = '<p class="text-muted">You haven\'t uploaded any books yet.</p>';
+                return;
+            }
+            let html = '';
+            data.forEach(book => {
+                let statusBadge = '';
+                if (book.status === 'pending') {
+                    statusBadge = '<span class="status-badge bg-warning text-dark">Pending</span>';
+                } else if (book.status === 'approved') {
+                    statusBadge = '<span class="status-badge bg-success">Approved</span>';
+                } else if (book.status === 'rejected') {
+                    statusBadge = '<span class="status-badge bg-danger">Rejected</span>';
+                } else {
+                    statusBadge = '<span class="status-badge bg-secondary">' + book.status + '</span>';
+                }
+                html += `
+                <div class="pending-item">
+                    <div>
+                        <strong>${book.title}</strong><br>
+                        <small class="text-muted">by ${book.author} • ${book.created_at ? book.created_at.split(' ')[0] : ''}</small>
+                    </div>
+                    ${statusBadge}
+                </div>`;
+            });
+            listContainer.innerHTML = html;
+        })
+        .catch(err => {
+            listContainer.innerHTML = '<p class="text-muted">Could not load your uploads.</p>';
+            console.error(err);
+        });
+}
+</script>
+</body>
+</html>

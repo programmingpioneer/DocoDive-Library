@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5 animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0 text-primary">
+            <i class="bi bi-cloud-arrow-up-fill me-2"></i> Auto PDF Upload
+        </h2>
+        <div class="d-flex align-items-center gap-2">
+            <a href="/admin/pending" class="btn btn-outline-warning rounded-pill px-4 position-relative">
+                <i class="bi bi-hourglass-split me-1"></i> Pending
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="pendingBadge" style="display:none;">0</span>
+            </a>
+            <a href="/" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-house-door me-1"></i> Back to Library
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg p-4">
+                <div class="card-body text-center">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="mb-4 p-4 border border-2 border-primary rounded bg-light upload-zone">
+                            <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 3rem;"></i>
+                            <h5 class="mt-2 fw-bold">Select PDF from your System</h5>
+                            <p class="text-muted small mb-2">Title, category, author & description will be auto‑detected.</p>
+                            <input type="file" name="pdf_file" id="pdfFileInput" class="form-control mt-3" accept=".pdf" required>
+                        </div>
+
+                        <div class="progress mb-3 d-none" id="progressContainer" style="height: 25px;">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%;">0%</div>
+                        </div>
+                        <div id="statusMessage" class="text-center fw-bold mb-3"></div>
+
+                        <button type="submit" id="uploadBtn" class="btn btn-primary w-100 fw-bold py-3" style="border-radius: 12px;">
+                            <i class="bi bi-rocket-fill me-2"></i> Upload File & Publish
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast notification (center‑top) -->
+<div aria-live="polite" aria-atomic="true" class="d-flex justify-content-center align-items-center w-100" style="position: fixed; top: 20px; left: 0; z-index: 1100;">
+    <div id="liveToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i id="toastIcon" class="bi bi-check-circle-fill me-2"></i>
+                <span id="toastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .admin-upload-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(67, 56, 202, 0.3); }
+</style>
+
+<script>
+const MAX_FILE_SIZE = 500 * 1024 * 1024;
+
+// Pending count fetch
+fetch('/admin/pending/count')
+    .then(res => res.json())
+    .then(data => {
+        const badge = document.getElementById('pendingBadge');
+        if (data.count > 0) {
+            badge.textContent = data.count;
+            badge.style.display = 'inline-block';
+        }
+    });
+
+document.getElementById('pdfFileInput').addEventListener('change', function() {
+    const file = this.files[0];
+    if (file && file.size > MAX_FILE_SIZE) {
+        showToast('File too large! Maximum 500 MB allowed.', 'danger');
+        this.value = '';
+    }
+});
+
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('pdfFileInput');
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+        showToast('File too large! Maximum 500 MB allowed.', 'danger');
+        return;
+    }
+
+    let formData = new FormData(this);
+    let progressBar = document.getElementById('progressBar');
+    let progressContainer = document.getElementById('progressContainer');
+    let statusMsg = document.getElementById('statusMessage');
+    let uploadBtn = document.getElementById('uploadBtn');
+
+    progressContainer.classList.remove('d-none');
+    uploadBtn.disabled = true;
+    statusMsg.innerHTML = "<span class='text-warning'>Analyzing PDF & uploading...</span>";
+
+    let xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin', true);
+
+    xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+            let percentComplete = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percentComplete + '%';
+            progressBar.innerHTML = percentComplete + '%';
+        }
+    };
+
+    xhr.onload = function() {
+        progressContainer.classList.add('d-none');
+        if (xhr.status === 200) {
+            let data = JSON.parse(xhr.responseText);
+            showToast(data.message, 'success');
+
+            const channel = new BroadcastChannel('docodive_upload');
+            channel.postMessage('refresh');
+            channel.close();
+
+            statusMsg.innerHTML = "<span class='text-success'>Upload Successful!</span>";
+            document.getElementById('uploadForm').reset();
+            uploadBtn.disabled = false;
+
+            // Update pending badge
+            fetch('/admin/pending/count')
+                .then(res => res.json())
+                .then(d => {
+                    const badge = document.getElementById('pendingBadge');
+                    badge.textContent = d.count;
+                    badge.style.display = d.count > 0 ? 'inline-block' : 'none';
+                });
+        } else {
+            let errorMsg = 'Upload Failed.';
+            try {
+                let data = JSON.parse(xhr.responseText);
+                errorMsg = data.error || errorMsg;
+            } catch(e) {}
+            showToast(errorMsg, 'danger');
+            statusMsg.innerHTML = `<span class='text-danger'>${errorMsg}</span>`;
+            uploadBtn.disabled = false;
+        }
+    };
+
+    xhr.send(formData);
+});
+
+function showToast(message, type) {
+    const toastEl = document.getElementById('liveToast');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastIcon = document.getElementById('toastIcon');
+    
+    toastMessage.textContent = message;
+    if (type === 'danger') {
+        toastEl.classList.remove('bg-success');
+        toastEl.classList.add('bg-danger');
+        toastIcon.className = 'bi bi-exclamation-triangle-fill me-2';
+    } else {
+        toastEl.classList.remove('bg-danger');
+        toastEl.classList.add('bg-success');
+        toastIcon.className = 'bi bi-check-circle-fill me-2';
+    }
+    
+    const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+    toast.show();
+}
+</script>
+{% endblock %}

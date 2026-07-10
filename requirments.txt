@@ -1,0 +1,12 @@
+flask
+flask-mysqldb
+python-dotenv
+PyPDF2
+werkzeug
+mysql-connector-python
+google-generativeai        # optional, for AI metadata
+flask-mail                # for email notifications
+Flask==3.0.2
+Flask-MySQLdb==2.0.0
+python-dotenv==1.0.1
+gunicorn==21.2.0
