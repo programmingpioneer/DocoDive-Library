@@ -62,14 +62,6 @@
         border-radius: 0 0 20px 20px;
     }
 
-    /* 📱 FIXED BOOK COVER – responsive, no distortion */
-    .book-cover {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 10px;
-    }
-
     /* Toast */
     #liveToast {
         backdrop-filter: blur(20px);
@@ -332,9 +324,19 @@
                     {% for pdf in chunk %}
                     <div class="col-6 col-sm-4 col-md-3 col-lg-2">
                         <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
-                            <div class="d-flex align-items-center justify-content-center" style="height: 160px;">
+                            <!-- ============= 3D BOOK CARD ============= -->
+                            <div class="d-flex align-items-center justify-content-center" style="height: 220px; overflow: visible;">
                                 {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
-                                    <img src="{{ pdf.image_url }}" alt="Cover" class="book-cover">
+                                <div class="book-3d-wrapper" style="height: 190px;">
+                                    <div class="book-3d">
+                                        <div class="book-front">
+                                            <img src="{{ pdf.image_url }}" alt="Cover" class="book-cover-img">
+                                        </div>
+                                        <div class="book-spine"></div>
+                                        <div class="book-pages"></div>
+                                        <div class="book-shadow"></div>
+                                    </div>
+                                </div>
                                 {% else %}
                                     {% set title_safe = pdf.title | default('Book', true) | replace('_', ' ') %}
                                     {% set words = title_safe.split() %}
@@ -386,9 +388,19 @@
             {% for pdf in pdfs %}
             <div class="col-6 col-sm-4 col-md-3 col-lg-2">
                 <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
-                    <div class="d-flex align-items-center justify-content-center" style="height: 160px;">
+                    <!-- ============= 3D BOOK CARD ============= -->
+                    <div class="d-flex align-items-center justify-content-center" style="height: 220px; overflow: visible;">
                         {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
-                            <img src="{{ pdf.image_url }}" alt="Cover" class="book-cover">
+                        <div class="book-3d-wrapper" style="height: 190px;">
+                            <div class="book-3d">
+                                <div class="book-front">
+                                    <img src="{{ pdf.image_url }}" alt="Cover" class="book-cover-img">
+                                </div>
+                                <div class="book-spine"></div>
+                                <div class="book-pages"></div>
+                                <div class="book-shadow"></div>
+                            </div>
+                        </div>
                         {% else %}
                             {% set title_safe = pdf.title | default('Book', true) | replace('_', ' ') %}
                             {% set words = title_safe.split() %}

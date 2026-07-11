@@ -51,11 +51,6 @@ body {
     box-shadow: 0 20px 40px rgba(0,0,0,0.08);
 }
 
-.hover-zoom { transition: transform 0.3s; }
-.product-card:hover .hover-zoom { transform: scale(1.05); }
-
-/* Overlay removed (no longer used) */
-
 /* ---- BUTTONS ---- */
 .btn-primary {
     background-color: var(--dark-blue) !important;
@@ -146,9 +141,103 @@ body {
     transform: translateY(0);
 }
 
+/* ==============================
+   3D BOOK CARD (PREMIUM STYLE)
+   ============================== */
+.book-3d-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px 0;
+    perspective: 1200px;          /* 3D depth */
+}
+
+.book-3d {
+    position: relative;
+    width: 140px;                  /* adjust to your card size */
+    height: 190px;
+    transform-style: preserve-3d;
+    transform: rotateY(-15deg) rotateX(5deg);
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+.book-3d:hover {
+    transform: rotateY(-5deg) rotateX(0deg) scale(1.03);
+}
+
+/* Front cover (the uploaded image) */
+.book-front {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    border-radius: 4px 8px 8px 4px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.2);
+    z-index: 3;
+}
+
+.book-front img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;           /* use contain if you want the full image uncropped */
+    display: block;
+}
+
+/* Spine (thickness) */
+.book-spine {
+    position: absolute;
+    top: 0;
+    left: -12px;
+    width: 12px;
+    height: 100%;
+    background: linear-gradient(90deg, #bbb, #ddd 30%, #aaa 70%, #999);
+    border-radius: 8px 0 0 8px;
+    z-index: 1;
+    box-shadow: inset -2px 0 4px rgba(0,0,0,0.2);
+}
+
+/* Pages (visible from side and bottom) */
+.book-pages {
+    position: absolute;
+    bottom: -8px;
+    left: -12px;
+    width: calc(100% + 12px);
+    height: 8px;
+    background: repeating-linear-gradient(
+        90deg,
+        #f5f0e8 0px, #f5f0e8 3px,
+        #e8e0d0 3px, #e8e0d0 4px
+    );
+    border-radius: 0 0 4px 4px;
+    z-index: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Soft shadow on the table */
+.book-shadow {
+    position: absolute;
+    bottom: -12px;
+    left: 5%;
+    width: 90%;
+    height: 20px;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.35), transparent);
+    transform: rotateX(80deg);
+    z-index: -1;
+}
+
 /* ---- RESPONSIVE TWEAKS ---- */
 @media (max-width: 768px) {
     .display-3 { font-size: 2.5rem; }
     .floating-book { font-size: 4rem !important; }
     .glowing-bulb, .stacked-books { font-size: 3rem !important; }
+
+    /* Slightly smaller 3D book on mobile */
+    .book-3d {
+        width: 120px;
+        height: 165px;
+    }
+    .book-spine { left: -10px; width: 10px; }
+    .book-pages { bottom: -6px; height: 6px; left: -10px; width: calc(100% + 10px); }
 }

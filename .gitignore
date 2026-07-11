@@ -1,3 +1,5 @@
+static/uploads/
+static/covers/
 __pycache__/
 venv/
 .env

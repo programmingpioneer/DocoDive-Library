@@ -39,10 +39,13 @@ app.config['MYSQL_PASSWORD'] = os.getenv('DB_PASSWORD', 'Root123')
 app.config['MYSQL_DB'] = os.getenv('DB_NAME', 'docodive_db')
 
 UPLOAD_FOLDER = 'static/uploads'
+COVERS_FOLDER = 'static/covers'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(COVERS_FOLDER, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {'pdf'}
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB
 
 mysql = MySQL(app)
@@ -65,6 +68,9 @@ if HAS_GEMINI and os.getenv('GEMINI_API_KEY'):
 # -------------------- HELPERS --------------------
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def allowed_image_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
 
 def get_admin_by_username(username):
     try:
@@ -129,17 +135,146 @@ def track_download(book_id):
         mysql.connection.commit()
         cur.close()
 
-# -------------------- NEW ROUTE: USER UPLOAD --------------------
+# -------------------- INTELLIGENT NAME CLEANING --------------------
+BANNED_SUBSTRINGS = ['techbymehdi']
+
+def clean_professional_name(raw_name):
+    """
+    Turn a raw title/filename into a professional clean name.
+    Removes bracketed content, version numbers, banned words,
+    normalizes to Title Case, and appends @DocoDive.
+    """
+    name = raw_name
+    # Remove banned substrings
+    for banned in BANNED_SUBSTRINGS:
+        name = re.sub(re.escape(banned), '', name, flags=re.IGNORECASE)
+    # Remove content in parentheses, brackets, braces
+    name = re.sub(r'\(.*?\)', '', name)
+    name = re.sub(r'\[.*?\]', '', name)
+    name = re.sub(r'\{.*?\}', '', name)
+    # Remove version numbers
+    name = re.sub(r'\b(version\s?\d+(\.\d+)?|v\d+(\.\d+)?|final|draft)\b', '', name, flags=re.I)
+    # Replace hyphens, underscores, dots with spaces
+    name = re.sub(r'[_\-.]+', ' ', name)
+    name = re.sub(r'\s+', ' ', name).strip()
+    if not name:
+        name = 'Untitled'
+    # Title Case
+    name = name.title()
+    # Replace non-alphanumeric with underscores
+    name = re.sub(r'[^\w]', '_', name)
+    name = re.sub(r'_+', '_', name).strip('_')
+    # Limit length
+    if len(name) > 60:
+        name = name[:60].rstrip('_')
+    return f"{name}_@DocoDive"
+
+def get_unique_filename(directory, base_name, ext='.pdf'):
+    """Ensure filename is unique by appending _1, _2, ... if needed."""
+    candidate = base_name + ext
+    if not os.path.exists(os.path.join(directory, candidate)):
+        return candidate
+    i = 1
+    while True:
+        candidate = f"{base_name}_{i}{ext}"
+        if not os.path.exists(os.path.join(directory, candidate)):
+            return candidate
+        i += 1
+
+# -------------------- DUPLICATE DETECTION --------------------
+def normalize_for_duplicate_check(title):
+    t = re.sub(r'\s*\(\d+\)\s*$', '', title)
+    t = re.sub(r'\s*-\s*Copy(\s*\(\d+\))?\s*$', '', t, flags=re.I)
+    t = re.sub(r'\s*-\s*copy(\s*\(\d+\))?\s*$', '', t, flags=re.I)
+    return re.sub(r'\s+', ' ', t).strip().lower()
+
+def is_duplicate(title, author, conn):
+    norm_title = normalize_for_duplicate_check(title)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, title FROM documents WHERE LOWER(author) = %s", (author.lower(),))
+            rows = cur.fetchall()
+            for row in rows:
+                db_title = row[1]  # title
+                if normalize_for_duplicate_check(db_title) == norm_title:
+                    return True
+            return False
+    except Exception:
+        return False
+
+# -------------------- CATEGORY DETECTION --------------------
+KEYWORDS = {
+    'Python': ['import ', 'def ', 'class ', 'print(', 'pandas', 'numpy', 'python', 'django', 'flask', 'tkinter'],
+    'JavaScript': ['var ', 'const ', 'function', 'document.', 'console.log', 'react', 'angular', 'node', 'express'],
+    'Java': ['public class', 'system.out', 'java', 'spring', 'hibernate', 'swing'],
+    'C / C++': ['#include', 'int main', 'printf', 'cout', 'std::', 'iostream', 'malloc'],
+    'Web Development': ['html', 'css', '<div', 'react', 'angular', 'bootstrap', 'jquery', 'responsive'],
+    'Data Science': ['dataframe', 'scikit', 'matplotlib', 'pandas', 'numpy', 'seaborn', 'analytics'],
+    'Machine Learning': ['model.fit', 'train_test_split', 'tensorflow', 'keras', 'pytorch', 'deep learning'],
+    'Algorithms': ['algorithm', 'sort', 'complexity', 'big o', 'binary search', 'graph'],
+    'Databases': ['sql', 'query', 'select *', 'mysql', 'postgresql', 'oracle', 'nosql'],
+    'Cyber Security': ['encrypt', 'hack', 'firewall', 'penetration', 'malware', 'sql injection'],
+    'Mobile Apps': ['android', 'ios', 'swift', 'kotlin', 'flutter', 'react native'],
+    'DevOps': ['docker', 'kubernetes', 'ci/cd', 'terraform', 'jenkins', 'ansible']
+}
+
+def extract_text_from_pdf(reader, max_pages=5):
+    text = ''
+    for page in reader.pages[:max_pages]:
+        extracted = page.extract_text()
+        if extracted:
+            text += extracted
+    return text.lower()
+
+def guess_category(text):
+    scores = {}
+    for cat, kwds in KEYWORDS.items():
+        scores[cat] = sum(1 for kw in kwds if kw in text)
+    best = max(scores, key=scores.get)
+    return best if scores[best] > 0 else 'Other'
+
+def guess_category_intelligent(pdf_text, raw_name):
+    combined = pdf_text + ' ' + raw_name.lower()
+    for word in raw_name.lower().split():
+        combined += ' ' + word
+    return guess_category(combined)
+
+def ai_enhance_metadata(title, author, text):
+    if not genai_client:
+        return title, author, f"A comprehensive resource about '{title}'. Covers essential topics."
+    try:
+        prompt = f"""
+Improve the following book title, author, and generate a short description.
+Title: {title}
+Author: {author}
+First page text: {text[:2000]}
+Return JSON with keys: title, author, description.
+"""
+        response = genai_client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt
+        )
+        response_text = response.text
+        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+        if json_match:
+            import json
+            data = json.loads(json_match.group())
+            return data.get('title', title), data.get('author', author), data.get('description', '')
+    except Exception as e:
+        app.logger.error(f"AI metadata failed: {e}")
+    return title, author, f"A comprehensive resource about '{title}'. Covers essential topics."
+
+# -------------------- USER UPLOAD (unchanged) --------------------
 @app.route('/user/upload', methods=['GET', 'POST'])
 def user_upload():
     if 'user_id' not in session:
         return redirect(url_for('user_login'))
 
     if request.method == 'POST':
+        # ---------- PDF file check ----------
         if 'pdf_file' not in request.files:
-            flash('No file selected.', 'danger')
+            flash('No PDF file selected.', 'danger')
             return redirect(url_for('user_upload'))
-
         file = request.files['pdf_file']
         if file.filename == '' or not allowed_file(file.filename):
             flash('Invalid file. Only PDF allowed.', 'danger')
@@ -148,20 +283,74 @@ def user_upload():
         pdf_bytes = file.read()
         reader = PdfReader(io.BytesIO(pdf_bytes))
         meta = reader.metadata
-        title = meta.title if meta.title else os.path.splitext(file.filename)[0].replace('_', ' ').strip()
-        author = meta.author if meta.author else 'Unknown'
-        pdf_text = extract_text_from_pdf(reader)
 
-        category = guess_category(pdf_text)
-        description = f"A comprehensive resource about '{title}'. Covers essential topics in {category}."
+        # Raw title from metadata or filename
+        if meta is not None:
+            pdf_title = (meta.title or '').strip()
+            author_meta = (meta.author or '').strip()
+        else:
+            pdf_title = ''
+            author_meta = ''
 
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        with open(file_path, 'wb') as f:
-            f.write(pdf_bytes)
-        final_link = f"/{file_path}"
+        if pdf_title and pdf_title.lower() != 'unknown':
+            raw_name = pdf_title
+        else:
+            raw_name = os.path.splitext(file.filename)[0]
 
+        # ---------- Intelligent name cleaning ----------
+        clean_base = clean_professional_name(raw_name)
+        display_title = clean_base.replace('_', ' ').replace(' @DocoDive', '').strip()
+        author = author_meta if author_meta and author_meta.lower() != 'unknown' else 'Unknown'
+        if not author or author.lower() == 'unknown':
+            author = 'Unknown'
+
+        # ---------- Duplicate check ----------
         cur = mysql.connection.cursor()
+        if is_duplicate(display_title, author, cur):
+            cur.close()
+            flash('This book already exists in the library.', 'danger')
+            return redirect(url_for('user_upload'))
+
+        # ---------- Category: manual or auto ----------
+        manual_category = request.form.get('category', '').strip()
+        if manual_category:
+            category = manual_category
+            description = f"A comprehensive resource about '{display_title}'. Covers essential topics in {category}."
+        else:
+            pdf_text = extract_text_from_pdf(reader)
+            category = guess_category_intelligent(pdf_text, raw_name)
+            description = f"A comprehensive resource about '{display_title}'. Covers essential topics in {category}."
+
+        # ---------- Save PDF with clean name ----------
+        final_pdf_name = get_unique_filename(UPLOAD_FOLDER, clean_base, '.pdf')
+        pdf_dest = os.path.join(UPLOAD_FOLDER, final_pdf_name)
+        with open(pdf_dest, 'wb') as f:
+            f.write(pdf_bytes)
+        pdf_link = f"/{pdf_dest}"
+
+        # ---------- Cover image (MANDATORY) ----------
+        if 'cover_image' not in request.files or request.files['cover_image'].filename == '':
+            cur.close()
+            flash('Cover image is mandatory.', 'danger')
+            return redirect(url_for('user_upload'))
+        cover_file = request.files['cover_image']
+        if not allowed_image_file(cover_file.filename):
+            cur.close()
+            flash('Invalid cover image format. Allowed: JPG, PNG, GIF, WEBP.', 'danger')
+            return redirect(url_for('user_upload'))
+        cover_data = cover_file.read()
+        if len(cover_data) > 2 * 1024 * 1024:
+            cur.close()
+            flash('Cover image must be less than 2 MB.', 'danger')
+            return redirect(url_for('user_upload'))
+        img_ext = os.path.splitext(cover_file.filename)[1]
+        cover_name = get_unique_filename(COVERS_FOLDER, clean_base, img_ext)
+        cover_path = os.path.join(COVERS_FOLDER, cover_name)
+        with open(cover_path, 'wb') as f:
+            f.write(cover_data)
+        image_url = f"/{cover_path}"
+
+        # ---------- Category handling ----------
         cur.execute("SELECT id FROM categories WHERE level = %s", (category,))
         cat = cur.fetchone()
         if not cat:
@@ -170,26 +359,32 @@ def user_upload():
         else:
             cat_id = cat[0]
 
-        # Insert with uploaded_by set to the current user's id
+        # ---------- Insert into database ----------
         cur.execute("""
             INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, approved, uploaded_by)
             VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s)
-        """, (cat_id, title, final_link, author, description, None, 'English', session['user_id']))
+        """, (cat_id, display_title, pdf_link, author, description, image_url, 'English', session['user_id']))
         mysql.connection.commit()
         cur.close()
 
-        html_notification = make_upload_notification_email(title, author, category)
+        # Notify admin
+        html_notification = make_upload_notification_email(display_title, author, category)
         send_email_notification(
             "New PDF Uploaded by User - Pending Approval",
             "7t7sufyan@gmail.com",
-            f"A new book '{title}' by {author} has been uploaded by a user and is waiting for approval.",
+            f"A new book '{display_title}' by {author} has been uploaded by a user and is waiting for approval.",
             html_body=html_notification
         )
 
-        flash(f"✅ '{title}' uploaded successfully! It will appear after admin approval.", 'success')
+        flash(f"✅ '{display_title}' uploaded successfully! It will appear after admin approval.", 'success')
         return redirect(url_for('user_upload'))
 
-    return render_template('user_upload.html')
+    # GET request: fetch categories for dropdown
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT level FROM categories ORDER BY level")
+    categories = [row[0] for row in cur.fetchall()]
+    cur.close()
+    return render_template('user_upload.html', categories=categories)
 
 @app.route('/api/user/uploads')
 def user_uploads():
@@ -246,65 +441,6 @@ def check_availability():
     exists = cur.fetchone() is not None
     cur.close()
     return jsonify({'exists': exists})
-
-
-# -------------------- Keyword-based category detection --------------------
-KEYWORDS = {
-    'Python': ['import ', 'def ', 'class ', 'print(', 'pandas', 'numpy', 'python'],
-    'JavaScript': ['var ', 'const ', 'function', 'document.', 'console.log'],
-    'Java': ['public class', 'system.out', 'java'],
-    'C / C++': ['#include', 'int main', 'printf', 'cout'],
-    'Web Development': ['html', 'css', '<div', 'react', 'angular'],
-    'Data Science': ['dataframe', 'scikit', 'matplotlib', 'pandas'],
-    'Machine Learning': ['model.fit', 'train_test_split', 'tensorflow', 'keras'],
-    'Algorithms': ['algorithm', 'sort', 'complexity', 'big o'],
-    'Databases': ['sql', 'query', 'select *', 'mysql', 'postgresql'],
-    'Cyber Security': ['encrypt', 'hack', 'firewall', 'penetration'],
-    'Mobile Apps': ['android', 'ios', 'swift', 'kotlin', 'flutter'],
-    'DevOps': ['docker', 'kubernetes', 'ci/cd', 'terraform', 'jenkins']
-}
-
-def extract_text_from_pdf(reader, max_pages=5):
-    text = ''
-    for page in reader.pages[:max_pages]:
-        extracted = page.extract_text()
-        if extracted:
-            text += extracted
-    return text.lower()
-
-def guess_category(text):
-    scores = {}
-    for cat, kwds in KEYWORDS.items():
-        scores[cat] = sum(1 for kw in kwds if kw in text)
-    best = max(scores, key=scores.get)
-    if scores[best] == 0:
-        return 'Other'
-    return best
-
-def ai_enhance_metadata(title, author, text):
-    if not genai_client:
-        return title, author, f"A comprehensive resource about '{title}'. Covers essential topics."
-    try:
-        prompt = f"""
-Improve the following book title, author, and generate a short description.
-Title: {title}
-Author: {author}
-First page text: {text[:2000]}
-Return JSON with keys: title, author, description.
-"""
-        response = genai_client.models.generate_content(
-            model='gemini-1.5-flash',
-            contents=prompt
-        )
-        response_text = response.text
-        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-        if json_match:
-            import json
-            data = json.loads(json_match.group())
-            return data.get('title', title), data.get('author', author), data.get('description', '')
-    except Exception as e:
-        app.logger.error(f"AI metadata failed: {e}")
-    return title, author, f"A comprehensive resource about '{title}'. Covers essential topics."
 
 # -------------------- FORGOT PASSWORD ROUTES (AJAX version) --------------------
 @app.route('/forgot-password', methods=['GET', 'POST'])
@@ -413,7 +549,7 @@ def reset_password(token):
     cur.close()
     return render_template('reset_password.html', token=token)
 
-# -------------------- EMAIL TEMPLATES --------------------
+# -------------------- EMAIL TEMPLATES (unchanged) --------------------
 def make_verification_email(username, verify_link):
     return f"""
     <!DOCTYPE html>
@@ -995,7 +1131,7 @@ def read_online(book_id):
         abort(404)
     return render_template('read_online.html', pdf_url=book[0])
 
-# -------------------- ADMIN UPLOAD (AI optional) --------------------
+# -------------------- ADMIN UPLOAD (INTELLIGENT) --------------------
 @app.route('/admin', methods=['GET', 'POST'])
 @admin_required
 def admin():
@@ -1009,24 +1145,69 @@ def admin():
         pdf_bytes = file.read()
         reader = PdfReader(io.BytesIO(pdf_bytes))
         meta = reader.metadata
-        title = meta.title if meta.title else os.path.splitext(file.filename)[0].replace('_', ' ').strip()
-        author = meta.author if meta.author else 'Unknown'
-        pdf_text = extract_text_from_pdf(reader)
 
-        if genai_client:
-            title, author, description = ai_enhance_metadata(title, author, pdf_text)
+        # Raw title: prefer metadata, else filename
+        if meta is not None:
+            pdf_title = (meta.title or '').strip()
+            author_meta = (meta.author or '').strip()
         else:
-            category = guess_category(pdf_text)
-            description = f"A comprehensive resource about '{title}'. Covers essential topics in {category}."
-            category = guess_category(pdf_text)
+            pdf_title = ''
+            author_meta = ''
 
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        with open(file_path, 'wb') as f:
-            f.write(pdf_bytes)
-        final_link = f"/{file_path}"
+        if pdf_title and pdf_title.lower() != 'unknown':
+            raw_name = pdf_title
+        else:
+            raw_name = os.path.splitext(file.filename)[0]
 
+        # Clean the name professionally (banned words removed, @DocoDive added)
+        clean_base = clean_professional_name(raw_name)
+
+        # Display title from clean base (without signature)
+        display_title = clean_base.replace('_', ' ').replace(' @DocoDive', '').strip()
+        author = author_meta if author_meta and author_meta.lower() != 'unknown' else 'Unknown'
+
+        # Manual category or auto-detect
+        manual_category = request.form.get('category', '').strip()
+        if manual_category:
+            category = manual_category
+            description = f"A comprehensive resource about '{display_title}'. Covers essential topics in {category}."
+        else:
+            pdf_text = extract_text_from_pdf(reader)
+            if genai_client:
+                display_title, author, description = ai_enhance_metadata(display_title, author, pdf_text)
+                category = guess_category(pdf_text)  # fallback
+            else:
+                category = guess_category_intelligent(pdf_text, raw_name)
+                description = f"A comprehensive resource about '{display_title}'. Covers essential topics in {category}."
+
+        # Duplicate check (skip if duplicate)
         cur = mysql.connection.cursor()
+        if is_duplicate(display_title, author, cur):
+            cur.close()
+            return jsonify({"error": "This book already exists in the database."}), 400
+
+        # Save PDF with clean name
+        final_pdf_name = get_unique_filename(UPLOAD_FOLDER, clean_base, '.pdf')
+        pdf_dest = os.path.join(UPLOAD_FOLDER, final_pdf_name)
+        with open(pdf_dest, 'wb') as f:
+            f.write(pdf_bytes)
+        pdf_link = f"/{pdf_dest}"
+
+        # Cover image handling – rename to match PDF clean base
+        image_url = None
+        if 'cover_image' in request.files:
+            cover_file = request.files['cover_image']
+            if cover_file and cover_file.filename != '' and allowed_image_file(cover_file.filename):
+                cover_data = cover_file.read()
+                if len(cover_data) <= 2 * 1024 * 1024:   # 2 MB
+                    img_ext = os.path.splitext(cover_file.filename)[1]  # includes dot
+                    cover_name = get_unique_filename(COVERS_FOLDER, clean_base, img_ext)
+                    cover_path = os.path.join(COVERS_FOLDER, cover_name)
+                    with open(cover_path, 'wb') as f:
+                        f.write(cover_data)
+                    image_url = f"/{cover_path}"
+
+        # Category handling
         cur.execute("SELECT id FROM categories WHERE level = %s", (category,))
         cat = cur.fetchone()
         if not cat:
@@ -1035,30 +1216,44 @@ def admin():
         else:
             cat_id = cat[0]
 
-        # Admin upload: uploaded_by is NULL (default)
         cur.execute("""
-            INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, approved)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, 0)
-        """, (cat_id, title, final_link, author, description, None, 'English'))
+            INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, approved, uploaded_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 0, NULL)
+        """, (cat_id, display_title, pdf_link, author, description, image_url, 'English'))
         mysql.connection.commit()
         cur.close()
 
-        html_notification = make_upload_notification_email(title, author, category)
+        html_notification = make_upload_notification_email(display_title, author, category)
         send_email_notification(
             "New PDF Uploaded - Pending Approval",
             "7t7sufyan@gmail.com",
-            f"A new book '{title}' by {author} has been uploaded and is waiting for approval.",
+            f"A new book '{display_title}' by {author} has been uploaded and is waiting for approval.",
             html_body=html_notification
         )
 
         return jsonify({
             "success": True,
-            "title": title,
+            "title": display_title,
             "category": category,
-            "message": f"Book '{title}' uploaded in {category}! Waiting for approval."
+            "message": f"Book '{display_title}' uploaded in {category}! Waiting for approval."
         })
 
-    return render_template('admin.html')
+    # GET: fetch categories for dropdown
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT level FROM categories ORDER BY level")
+    categories = [row[0] for row in cur.fetchall()]
+    cur.close()
+    return render_template('admin.html', categories=categories)
+
+# -------------------- PENDING COUNT API --------------------
+@app.route('/admin/pending/count')
+@admin_required
+def pending_count():
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT COUNT(*) FROM documents WHERE approved = 0")
+    count = cur.fetchone()[0]
+    cur.close()
+    return jsonify({'count': count})
 
 # -------------------- APPROVAL ROUTES --------------------
 @app.route('/admin/pending')
@@ -1067,7 +1262,6 @@ def pending_books():
     if session.get('admin_role') != 'super':
         return redirect(url_for('admin_dashboard'))
     cur = mysql.connection.cursor()
-    # Added telegram_link for preview
     cur.execute("""
         SELECT d.id, d.title, c.level, d.author, d.created_at, d.telegram_link
         FROM documents d
@@ -1087,7 +1281,6 @@ def approve_book(book_id):
     if session.get('admin_role') != 'super':
         return jsonify({"error": "Only super admin can approve."}), 403
     cur = mysql.connection.cursor()
-    # Get title and uploader id
     cur.execute("SELECT title, uploaded_by FROM documents WHERE id = %s", (book_id,))
     row = cur.fetchone()
     if not row:
@@ -1095,10 +1288,10 @@ def approve_book(book_id):
         return jsonify({"error": "Book not found"}), 404
     title, uploader_id = row
 
-    cur.execute("UPDATE documents SET approved = 1 WHERE id = %s", (book_id,))
+    # ✅ Update both approved flag and status
+    cur.execute("UPDATE documents SET approved = 1, status = 'approved' WHERE id = %s", (book_id,))
     mysql.connection.commit()
 
-    # Send email to uploader if exists
     if uploader_id:
         cur.execute("SELECT email, username FROM users WHERE id = %s", (uploader_id,))
         user = cur.fetchone()
@@ -1119,7 +1312,6 @@ def reject_book(book_id):
     if session.get('admin_role') != 'super':
         return jsonify({"error": "Only super admin can reject."}), 403
     cur = mysql.connection.cursor()
-    # Get title, uploader id and file path before deleting
     cur.execute("SELECT title, uploaded_by, telegram_link FROM documents WHERE id = %s", (book_id,))
     row = cur.fetchone()
     if not row:
@@ -1127,15 +1319,15 @@ def reject_book(book_id):
         return jsonify({"error": "Book not found"}), 404
     title, uploader_id, file_link = row
 
-    # Delete the file
+    # Delete the PDF file from disk, but keep the row
     file_path = file_link.lstrip('/')
     if os.path.exists(file_path):
         os.remove(file_path)
 
-    cur.execute("DELETE FROM documents WHERE id = %s", (book_id,))
+    # ✅ Instead of deleting, set status to 'rejected'
+    cur.execute("UPDATE documents SET approved = 0, status = 'rejected' WHERE id = %s", (book_id,))
     mysql.connection.commit()
 
-    # Send rejection email to uploader if exists
     if uploader_id:
         cur.execute("SELECT email, username FROM users WHERE id = %s", (uploader_id,))
         user = cur.fetchone()
@@ -1156,7 +1348,6 @@ def approve_all_books():
     if session.get('admin_role') != 'super':
         return jsonify({"error": "Only super admin can approve."}), 403
     cur = mysql.connection.cursor()
-    # For approve-all we skip individual emails (or could loop, but not necessary)
     cur.execute("UPDATE documents SET approved = 1 WHERE approved = 0")
     count = cur.rowcount
     mysql.connection.commit()

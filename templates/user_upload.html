@@ -44,6 +44,14 @@
             padding: 4px 12px;
             border-radius: 50px;
         }
+        #coverPreview {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .text-danger {
+            color: #dc3545 !important;
+        }
     </style>
 </head>
 <body>
@@ -56,6 +64,7 @@
             <div class="disclaimer">
                 <strong><i class="bi bi-info-circle-fill me-1"></i> Disclaimer:</strong><br>
                 • Only <strong>PDF files</strong> are accepted (max 500 MB).<br>
+                • <strong>Cover image is mandatory</strong> (max 2 MB, JPG/PNG/WEBP).<br>
                 • Do not upload copyrighted material without permission.<br>
                 • Your upload will be <strong>hidden until approved</strong> by an admin.<br>
                 • You will receive an email when your book is approved or rejected.
@@ -74,10 +83,41 @@
             {% endwith %}
 
             <form method="POST" enctype="multipart/form-data">
+                <!-- PDF Upload -->
                 <div class="mb-3">
-                    <label for="pdf_file" class="form-label fw-semibold">Select PDF File</label>
+                    <label for="pdf_file" class="form-label fw-semibold">Select PDF File <span class="text-danger">*</span></label>
                     <input class="form-control" type="file" id="pdf_file" name="pdf_file" accept=".pdf" required>
                     <div class="form-text">Choose a programming book, tutorial, or research paper in PDF format.</div>
+                </div>
+
+                <!-- 🗂️ Category Dropdown (Manual or Auto) -->
+                <div class="mb-3">
+                    <label for="categorySelect" class="form-label fw-semibold">
+                        <i class="bi bi-tag me-1"></i> Category
+                    </label>
+                    <select class="form-select" id="categorySelect" name="category">
+                        <option value="">Auto‑Detect (from PDF)</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">Choose a category or leave it for auto‑detection.</div>
+                </div>
+
+                <!-- Cover Image Upload (MANDATORY) -->
+                <div class="mb-3">
+                    <label for="cover_image" class="form-label fw-semibold">
+                        Cover Image <span class="text-danger">*</span>
+                    </label>
+                    <input class="form-control" type="file" id="cover_image" name="cover_image" accept="image/*" 
+                           required onchange="previewCoverImage(this)">
+                    <div class="form-text">Square image recommended · Max 2 MB · JPG, PNG, GIF, WEBP</div>
+                    <div class="mt-2" id="coverPreview" style="display:none;">
+                        <img id="coverThumb" src="" alt="Cover preview" class="img-thumbnail" style="max-height:150px;">
+                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="removeCover()">
+                            <i class="bi bi-x-circle"></i> Remove
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100 py-2" style="background:#4338ca; border:none; border-radius:12px;">
@@ -98,49 +138,77 @@
             </div>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-document.addEventListener("DOMContentLoaded", function() {
-    fetchUserUploads();
-});
-
-function fetchUserUploads() {
-    const listContainer = document.getElementById('pending-uploads-list');
-    fetch('/api/user/uploads')
-        .then(res => res.json())
-        .then(data => {
-            if (!data || data.length === 0) {
-                listContainer.innerHTML = '<p class="text-muted">You haven\'t uploaded any books yet.</p>';
+    // Cover image preview
+    function previewCoverImage(input) {
+        const preview = document.getElementById('coverPreview');
+        const thumb = document.getElementById('coverThumb');
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Cover image must be less than 2 MB.');
+                input.value = '';
+                preview.style.display = 'none';
                 return;
             }
-            let html = '';
-            data.forEach(book => {
-                let statusBadge = '';
-                if (book.status === 'pending') {
-                    statusBadge = '<span class="status-badge bg-warning text-dark">Pending</span>';
-                } else if (book.status === 'approved') {
-                    statusBadge = '<span class="status-badge bg-success">Approved</span>';
-                } else if (book.status === 'rejected') {
-                    statusBadge = '<span class="status-badge bg-danger">Rejected</span>';
-                } else {
-                    statusBadge = '<span class="status-badge bg-secondary">' + book.status + '</span>';
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                thumb.src = e.target.result;
+                preview.style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function removeCover() {
+        document.getElementById('cover_image').value = '';
+        document.getElementById('coverPreview').style.display = 'none';
+    }
+
+    // Fetch user uploads list
+    document.addEventListener("DOMContentLoaded", function() {
+        fetchUserUploads();
+    });
+
+    function fetchUserUploads() {
+        const listContainer = document.getElementById('pending-uploads-list');
+        fetch('/api/user/uploads')
+            .then(res => res.json())
+            .then(data => {
+                if (!data || data.length === 0) {
+                    listContainer.innerHTML = '<p class="text-muted">You haven\'t uploaded any books yet.</p>';
+                    return;
                 }
-                html += `
-                <div class="pending-item">
-                    <div>
-                        <strong>${book.title}</strong><br>
-                        <small class="text-muted">by ${book.author} • ${book.created_at ? book.created_at.split(' ')[0] : ''}</small>
-                    </div>
-                    ${statusBadge}
-                </div>`;
+                let html = '';
+                data.forEach(book => {
+                    let statusBadge = '';
+                    if (book.status === 'pending') {
+                        statusBadge = '<span class="status-badge bg-warning text-dark">Pending</span>';
+                    } else if (book.status === 'approved') {
+                        statusBadge = '<span class="status-badge bg-success">Approved</span>';
+                    } else if (book.status === 'rejected') {
+                        statusBadge = '<span class="status-badge bg-danger">Rejected</span>';
+                    } else {
+                        statusBadge = '<span class="status-badge bg-secondary">' + book.status + '</span>';
+                    }
+                    html += `
+                    <div class="pending-item">
+                        <div>
+                            <strong>${book.title}</strong><br>
+                            <small class="text-muted">by ${book.author} • ${book.created_at ? book.created_at.split(' ')[0] : ''}</small>
+                        </div>
+                        ${statusBadge}
+                    </div>`;
+                });
+                listContainer.innerHTML = html;
+            })
+            .catch(err => {
+                listContainer.innerHTML = '<p class="text-muted">Could not load your uploads.</p>';
+                console.error(err);
             });
-            listContainer.innerHTML = html;
-        })
-        .catch(err => {
-            listContainer.innerHTML = '<p class="text-muted">Could not load your uploads.</p>';
-            console.error(err);
-        });
-}
-</script>
+    }
+    </script>
 </body>
 </html>
