@@ -40,7 +40,7 @@ app.config['MYSQL_USER'] = os.getenv('DB_USER', 'root')
 app.config['MYSQL_PASSWORD'] = os.getenv('DB_PASSWORD', 'Root123')
 app.config['MYSQL_DB'] = os.getenv('DB_NAME', 'docodive_db')
 
-# Local folders are no longer used for permanent storage; they are kept for reference only.
+# Local folders no longer used – everything goes to R2
 UPLOAD_FOLDER = 'static/uploads'
 COVERS_FOLDER = 'static/covers'
 
@@ -77,13 +77,13 @@ r2_client = boto3.client(
 R2_BUCKET = os.getenv('R2_BUCKET_NAME', 'docodive')
 R2_PUBLIC_BASE = os.getenv('R2_PUBLIC_DOMAIN', 'https://pub-4503ff624a1747c2978e6d559442d3e1.r2.dev')
 
-def upload_to_r2(file_bytes, key):
+def upload_to_r2(file_bytes, key, content_type='application/octet-stream'):
     """Upload file bytes to R2, return the public URL."""
     r2_client.put_object(
         Bucket=R2_BUCKET,
         Key=key,
         Body=file_bytes,
-        ContentType='application/octet-stream'
+        ContentType=content_type
     )
     return f"{R2_PUBLIC_BASE}/{key}"
 
@@ -95,8 +95,7 @@ def delete_from_r2(key):
         pass
 
 def generate_r2_key(folder, base_name, ext):
-    """Create a simple R2 key like 'uploads/Book_Name_@DocoDive.pdf'."""
-    return f"{folder}/{base_name}{ext}"
+    return f"docodive/{folder}/{base_name}{ext}"
 
 # -------------------- HELPERS --------------------
 def allowed_file(filename):
@@ -275,18 +274,24 @@ Return JSON with keys: title, author, description.
         app.logger.error(f"AI metadata failed: {e}")
     return title, author, f"A comprehensive resource about '{title}'. Covers essential topics."
 
-# -------------------- USER UPLOAD (R2) --------------------
+# -------------------- USER UPLOAD (R2) – AJAX SUPPORT ADDED --------------------
 @app.route('/user/upload', methods=['GET', 'POST'])
 def user_upload():
     if 'user_id' not in session:
         return redirect(url_for('user_login'))
 
     if request.method == 'POST':
+        # ---------- PDF file check ----------
         if 'pdf_file' not in request.files:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': 'No PDF file selected.'}), 400
             flash('No PDF file selected.', 'danger')
             return redirect(url_for('user_upload'))
+
         file = request.files['pdf_file']
         if file.filename == '' or not allowed_file(file.filename):
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': 'Invalid file. Only PDF allowed.'}), 400
             flash('Invalid file. Only PDF allowed.', 'danger')
             return redirect(url_for('user_upload'))
 
@@ -313,11 +318,16 @@ def user_upload():
             author = 'Unknown'
 
         cur = mysql.connection.cursor()
+
+        # ---------- Duplicate check ----------
         if is_duplicate(display_title, author, cur):
             cur.close()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': 'This book already exists in the library.'}), 400
             flash('This book already exists in the library.', 'danger')
             return redirect(url_for('user_upload'))
 
+        # ---------- Category: manual or auto ----------
         manual_category = request.form.get('category', '').strip()
         if manual_category:
             category = manual_category
@@ -327,29 +337,66 @@ def user_upload():
             category = guess_category_intelligent(pdf_text, raw_name)
             description = f"A comprehensive resource about '{display_title}'. Covers essential topics in {category}."
 
-        # Upload PDF to R2
-        pdf_key = generate_r2_key('uploads', clean_base, '.pdf')
-        pdf_url = upload_to_r2(pdf_bytes, pdf_key)
+        # ---------- Upload PDF to R2 ----------
+        try:
+            pdf_key = generate_r2_key('uploads', clean_base, '.pdf')
+            pdf_url = upload_to_r2(pdf_bytes, pdf_key, content_type='application/pdf')
+        except Exception as e:
+            cur.close()
+            app.logger.error(f"PDF upload failed: {e}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': 'Failed to upload PDF.'}), 500
+            flash('Failed to upload PDF.', 'danger')
+            return redirect(url_for('user_upload'))
 
-        # Cover image (MANDATORY)
+        # ---------- Cover image (MANDATORY) ----------
         if 'cover_image' not in request.files or request.files['cover_image'].filename == '':
             cur.close()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': 'Cover image is mandatory.'}), 400
             flash('Cover image is mandatory.', 'danger')
             return redirect(url_for('user_upload'))
+
         cover_file = request.files['cover_image']
         if not allowed_image_file(cover_file.filename):
             cur.close()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': 'Invalid cover image format.'}), 400
             flash('Invalid cover image format.', 'danger')
             return redirect(url_for('user_upload'))
+
         cover_data = cover_file.read()
         if len(cover_data) > 2 * 1024 * 1024:
             cur.close()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': 'Cover image must be less than 2 MB.'}), 400
             flash('Cover image must be less than 2 MB.', 'danger')
             return redirect(url_for('user_upload'))
-        img_ext = os.path.splitext(cover_file.filename)[1]
-        cover_key = generate_r2_key('covers', clean_base, img_ext)
-        image_url = upload_to_r2(cover_data, cover_key)
 
+        img_ext = os.path.splitext(cover_file.filename)[1].lower()
+        cover_key = generate_r2_key('covers', clean_base, img_ext)
+        if img_ext in ('.jpg', '.jpeg'):
+            mime = 'image/jpeg'
+        elif img_ext == '.png':
+            mime = 'image/png'
+        elif img_ext == '.gif':
+            mime = 'image/gif'
+        elif img_ext == '.webp':
+            mime = 'image/webp'
+        else:
+            mime = 'application/octet-stream'
+
+        try:
+            image_url = upload_to_r2(cover_data, cover_key, content_type=mime)
+        except Exception as e:
+            cur.close()
+            app.logger.error(f"Cover upload failed: {e}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': 'Failed to upload cover image.'}), 500
+            flash('Failed to upload cover image.', 'danger')
+            return redirect(url_for('user_upload'))
+
+        # ---------- Category handling ----------
         cur.execute("SELECT id FROM categories WHERE level = %s", (category,))
         cat = cur.fetchone()
         if not cat:
@@ -358,6 +405,7 @@ def user_upload():
         else:
             cat_id = cat[0]
 
+        # ---------- Insert into database ----------
         cur.execute("""
             INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, approved, uploaded_by)
             VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s)
@@ -365,6 +413,7 @@ def user_upload():
         mysql.connection.commit()
         cur.close()
 
+        # Notify admin
         html_notification = make_upload_notification_email(display_title, author, category)
         send_email_notification(
             "New PDF Uploaded by User - Pending Approval",
@@ -373,9 +422,14 @@ def user_upload():
             html_body=html_notification
         )
 
+        # ---------- Response ----------
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': True, 'message': f"✅ '{display_title}' uploaded successfully! It will appear after admin approval."})
+
         flash(f"✅ '{display_title}' uploaded successfully! It will appear after admin approval.", 'success')
         return redirect(url_for('user_upload'))
 
+    # GET request: fetch categories for dropdown
     cur = mysql.connection.cursor()
     cur.execute("SELECT level FROM categories ORDER BY level")
     categories = [row[0] for row in cur.fetchall()]
@@ -1127,8 +1181,7 @@ def read_online(book_id):
         abort(404)
     return render_template('read_online.html', pdf_url=book[0])
 
-# -------------------- ADMIN ROUTE --------------------
-
+# -------------------- ADMIN ROUTE (corrected cover MIME) --------------------
 @app.route('/admin', methods=['GET', 'POST'])
 @admin_required
 def admin():
@@ -1184,7 +1237,7 @@ def admin():
         # ---------- Upload PDF to R2 ----------
         try:
             pdf_key = generate_r2_key('uploads', clean_base, '.pdf')
-            pdf_url = upload_to_r2(pdf_bytes, pdf_key)
+            pdf_url = upload_to_r2(pdf_bytes, pdf_key, content_type='application/pdf')
         except Exception as e:
             cur.close()
             app.logger.error(f"PDF upload to R2 failed: {e}")
@@ -1197,19 +1250,28 @@ def admin():
         if 'cover_image' in request.files:
             cover_file = request.files['cover_image']
             if cover_file and cover_file.filename != '':
-                # Validate format
                 if not allowed_image_file(cover_file.filename):
                     warning = "Cover image format not allowed (use JPG, PNG, GIF, WEBP)."
                 else:
                     cover_data = cover_file.read()
-                    # 5 MB limit
                     if len(cover_data) > 5 * 1024 * 1024:
                         warning = "Cover image exceeds 5 MB limit."
                     else:
                         try:
-                            img_ext = os.path.splitext(cover_file.filename)[1]
+                            img_ext = os.path.splitext(cover_file.filename)[1].lower()
                             cover_key = generate_r2_key('covers', clean_base, img_ext)
-                            image_url = upload_to_r2(cover_data, cover_key)
+                            # Determine correct MIME type
+                            if img_ext in ('.jpg', '.jpeg'):
+                                mime = 'image/jpeg'
+                            elif img_ext == '.png':
+                                mime = 'image/png'
+                            elif img_ext == '.gif':
+                                mime = 'image/gif'
+                            elif img_ext == '.webp':
+                                mime = 'image/webp'
+                            else:
+                                mime = 'application/octet-stream'
+                            image_url = upload_to_r2(cover_data, cover_key, content_type=mime)
                         except Exception as e:
                             app.logger.error(f"Cover upload to R2 failed: {e}")
                             warning = "Cover image could not be uploaded."
@@ -1230,7 +1292,6 @@ def admin():
         mysql.connection.commit()
         cur.close()
 
-        # ---------- Notify admin ----------
         html_notification = make_upload_notification_email(display_title, author, category)
         send_email_notification(
             "New PDF Uploaded - Pending Approval",
@@ -1239,7 +1300,6 @@ def admin():
             html_body=html_notification
         )
 
-        # ---------- Response ----------
         resp = {
             "success": True,
             "title": display_title,
@@ -1411,7 +1471,7 @@ def edit_book(book_id):
             pdf_bytes = file.read()
             clean_title = clean_professional_name(title) if title else clean_professional_name("book")
             pdf_key = generate_r2_key('uploads', clean_title, '.pdf')
-            new_pdf_url = upload_to_r2(pdf_bytes, pdf_key)
+            new_pdf_url = upload_to_r2(pdf_bytes, pdf_key, content_type='application/pdf')
             # Delete old PDF from R2
             if old_pdf and old_pdf.startswith(R2_PUBLIC_BASE + '/'):
                 key = old_pdf.replace(R2_PUBLIC_BASE + '/', '', 1)
@@ -1436,8 +1496,20 @@ def edit_book(book_id):
                 cover_bytes = cover_file.read()
                 if len(cover_bytes) <= 2 * 1024 * 1024:
                     clean_title = clean_professional_name(title) if title else clean_professional_name("book")
-                    cover_key = generate_r2_key('covers', clean_title, os.path.splitext(cover_file.filename)[1])
-                    new_cover_url = upload_to_r2(cover_bytes, cover_key)
+                    img_ext = os.path.splitext(cover_file.filename)[1].lower()
+                    cover_key = generate_r2_key('covers', clean_title, img_ext)
+                    # MIME type for cover
+                    if img_ext in ('.jpg', '.jpeg'):
+                        mime = 'image/jpeg'
+                    elif img_ext == '.png':
+                        mime = 'image/png'
+                    elif img_ext == '.gif':
+                        mime = 'image/gif'
+                    elif img_ext == '.webp':
+                        mime = 'image/webp'
+                    else:
+                        mime = 'application/octet-stream'
+                    new_cover_url = upload_to_r2(cover_bytes, cover_key, content_type=mime)
                     # Delete old cover from R2
                     if old_cover and old_cover.startswith(R2_PUBLIC_BASE + '/'):
                         key = old_cover.replace(R2_PUBLIC_BASE + '/', '', 1)
@@ -1471,11 +1543,9 @@ def delete_book(book_id):
     cur.execute("SELECT telegram_link, image_url FROM documents WHERE id = %s", (book_id,))
     row = cur.fetchone()
     if row:
-        # Delete PDF from R2
         if row[0] and row[0].startswith(R2_PUBLIC_BASE + '/'):
             key = row[0].replace(R2_PUBLIC_BASE + '/', '', 1)
             delete_from_r2(key)
-        # Delete cover from R2
         if row[1] and row[1].startswith(R2_PUBLIC_BASE + '/'):
             key = row[1].replace(R2_PUBLIC_BASE + '/', '', 1)
             delete_from_r2(key)
