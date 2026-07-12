@@ -6,6 +6,8 @@ import secrets
 from datetime import datetime, timedelta
 from functools import wraps
 
+import boto3
+from botocore.config import Config
 from PyPDF2 import PdfReader
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, abort, flash
 from flask_mysqldb import MySQL
@@ -38,11 +40,9 @@ app.config['MYSQL_USER'] = os.getenv('DB_USER', 'root')
 app.config['MYSQL_PASSWORD'] = os.getenv('DB_PASSWORD', 'Root123')
 app.config['MYSQL_DB'] = os.getenv('DB_NAME', 'docodive_db')
 
+# Local folders are no longer used for permanent storage; they are kept for reference only.
 UPLOAD_FOLDER = 'static/uploads'
 COVERS_FOLDER = 'static/covers'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(COVERS_FOLDER, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -64,6 +64,39 @@ if HAS_MAIL:
 genai_client = None
 if HAS_GEMINI and os.getenv('GEMINI_API_KEY'):
     genai_client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
+
+# -------------------- CLOUDFLARE R2 CLIENT --------------------
+r2_client = boto3.client(
+    's3',
+    endpoint_url=os.getenv('R2_ENDPOINT_URL'),
+    aws_access_key_id=os.getenv('R2_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.getenv('R2_SECRET_ACCESS_KEY'),
+    config=Config(signature_version='s3v4'),
+    region_name='auto'
+)
+R2_BUCKET = os.getenv('R2_BUCKET_NAME', 'docodive')
+R2_PUBLIC_BASE = os.getenv('R2_PUBLIC_DOMAIN', 'https://pub-4503ff624a1747c2978e6d559442d3e1.r2.dev')
+
+def upload_to_r2(file_bytes, key):
+    """Upload file bytes to R2, return the public URL."""
+    r2_client.put_object(
+        Bucket=R2_BUCKET,
+        Key=key,
+        Body=file_bytes,
+        ContentType='application/octet-stream'
+    )
+    return f"{R2_PUBLIC_BASE}/{key}"
+
+def delete_from_r2(key):
+    """Delete a file from R2."""
+    try:
+        r2_client.delete_object(Bucket=R2_BUCKET, Key=key)
+    except Exception:
+        pass
+
+def generate_r2_key(folder, base_name, ext):
+    """Create a simple R2 key like 'uploads/Book_Name_@DocoDive.pdf'."""
+    return f"{folder}/{base_name}{ext}"
 
 # -------------------- HELPERS --------------------
 def allowed_file(filename):
@@ -145,41 +178,22 @@ def clean_professional_name(raw_name):
     normalizes to Title Case, and appends @DocoDive.
     """
     name = raw_name
-    # Remove banned substrings
     for banned in BANNED_SUBSTRINGS:
         name = re.sub(re.escape(banned), '', name, flags=re.IGNORECASE)
-    # Remove content in parentheses, brackets, braces
     name = re.sub(r'\(.*?\)', '', name)
     name = re.sub(r'\[.*?\]', '', name)
     name = re.sub(r'\{.*?\}', '', name)
-    # Remove version numbers
     name = re.sub(r'\b(version\s?\d+(\.\d+)?|v\d+(\.\d+)?|final|draft)\b', '', name, flags=re.I)
-    # Replace hyphens, underscores, dots with spaces
     name = re.sub(r'[_\-.]+', ' ', name)
     name = re.sub(r'\s+', ' ', name).strip()
     if not name:
         name = 'Untitled'
-    # Title Case
     name = name.title()
-    # Replace non-alphanumeric with underscores
     name = re.sub(r'[^\w]', '_', name)
     name = re.sub(r'_+', '_', name).strip('_')
-    # Limit length
     if len(name) > 60:
         name = name[:60].rstrip('_')
     return f"{name}_@DocoDive"
-
-def get_unique_filename(directory, base_name, ext='.pdf'):
-    """Ensure filename is unique by appending _1, _2, ... if needed."""
-    candidate = base_name + ext
-    if not os.path.exists(os.path.join(directory, candidate)):
-        return candidate
-    i = 1
-    while True:
-        candidate = f"{base_name}_{i}{ext}"
-        if not os.path.exists(os.path.join(directory, candidate)):
-            return candidate
-        i += 1
 
 # -------------------- DUPLICATE DETECTION --------------------
 def normalize_for_duplicate_check(title):
@@ -195,7 +209,7 @@ def is_duplicate(title, author, conn):
             cur.execute("SELECT id, title FROM documents WHERE LOWER(author) = %s", (author.lower(),))
             rows = cur.fetchall()
             for row in rows:
-                db_title = row[1]  # title
+                db_title = row[1]
                 if normalize_for_duplicate_check(db_title) == norm_title:
                     return True
             return False
@@ -250,10 +264,7 @@ Author: {author}
 First page text: {text[:2000]}
 Return JSON with keys: title, author, description.
 """
-        response = genai_client.models.generate_content(
-            model='gemini-1.5-flash',
-            contents=prompt
-        )
+        response = genai_client.models.generate_content(model='gemini-1.5-flash', contents=prompt)
         response_text = response.text
         json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
         if json_match:
@@ -264,14 +275,13 @@ Return JSON with keys: title, author, description.
         app.logger.error(f"AI metadata failed: {e}")
     return title, author, f"A comprehensive resource about '{title}'. Covers essential topics."
 
-# -------------------- USER UPLOAD (unchanged) --------------------
+# -------------------- USER UPLOAD (R2) --------------------
 @app.route('/user/upload', methods=['GET', 'POST'])
 def user_upload():
     if 'user_id' not in session:
         return redirect(url_for('user_login'))
 
     if request.method == 'POST':
-        # ---------- PDF file check ----------
         if 'pdf_file' not in request.files:
             flash('No PDF file selected.', 'danger')
             return redirect(url_for('user_upload'))
@@ -284,7 +294,6 @@ def user_upload():
         reader = PdfReader(io.BytesIO(pdf_bytes))
         meta = reader.metadata
 
-        # Raw title from metadata or filename
         if meta is not None:
             pdf_title = (meta.title or '').strip()
             author_meta = (meta.author or '').strip()
@@ -297,21 +306,18 @@ def user_upload():
         else:
             raw_name = os.path.splitext(file.filename)[0]
 
-        # ---------- Intelligent name cleaning ----------
         clean_base = clean_professional_name(raw_name)
         display_title = clean_base.replace('_', ' ').replace(' @DocoDive', '').strip()
         author = author_meta if author_meta and author_meta.lower() != 'unknown' else 'Unknown'
         if not author or author.lower() == 'unknown':
             author = 'Unknown'
 
-        # ---------- Duplicate check ----------
         cur = mysql.connection.cursor()
         if is_duplicate(display_title, author, cur):
             cur.close()
             flash('This book already exists in the library.', 'danger')
             return redirect(url_for('user_upload'))
 
-        # ---------- Category: manual or auto ----------
         manual_category = request.form.get('category', '').strip()
         if manual_category:
             category = manual_category
@@ -321,14 +327,11 @@ def user_upload():
             category = guess_category_intelligent(pdf_text, raw_name)
             description = f"A comprehensive resource about '{display_title}'. Covers essential topics in {category}."
 
-        # ---------- Save PDF with clean name ----------
-        final_pdf_name = get_unique_filename(UPLOAD_FOLDER, clean_base, '.pdf')
-        pdf_dest = os.path.join(UPLOAD_FOLDER, final_pdf_name)
-        with open(pdf_dest, 'wb') as f:
-            f.write(pdf_bytes)
-        pdf_link = f"/{pdf_dest}"
+        # Upload PDF to R2
+        pdf_key = generate_r2_key('uploads', clean_base, '.pdf')
+        pdf_url = upload_to_r2(pdf_bytes, pdf_key)
 
-        # ---------- Cover image (MANDATORY) ----------
+        # Cover image (MANDATORY)
         if 'cover_image' not in request.files or request.files['cover_image'].filename == '':
             cur.close()
             flash('Cover image is mandatory.', 'danger')
@@ -336,7 +339,7 @@ def user_upload():
         cover_file = request.files['cover_image']
         if not allowed_image_file(cover_file.filename):
             cur.close()
-            flash('Invalid cover image format. Allowed: JPG, PNG, GIF, WEBP.', 'danger')
+            flash('Invalid cover image format.', 'danger')
             return redirect(url_for('user_upload'))
         cover_data = cover_file.read()
         if len(cover_data) > 2 * 1024 * 1024:
@@ -344,13 +347,9 @@ def user_upload():
             flash('Cover image must be less than 2 MB.', 'danger')
             return redirect(url_for('user_upload'))
         img_ext = os.path.splitext(cover_file.filename)[1]
-        cover_name = get_unique_filename(COVERS_FOLDER, clean_base, img_ext)
-        cover_path = os.path.join(COVERS_FOLDER, cover_name)
-        with open(cover_path, 'wb') as f:
-            f.write(cover_data)
-        image_url = f"/{cover_path}"
+        cover_key = generate_r2_key('covers', clean_base, img_ext)
+        image_url = upload_to_r2(cover_data, cover_key)
 
-        # ---------- Category handling ----------
         cur.execute("SELECT id FROM categories WHERE level = %s", (category,))
         cat = cur.fetchone()
         if not cat:
@@ -359,15 +358,13 @@ def user_upload():
         else:
             cat_id = cat[0]
 
-        # ---------- Insert into database ----------
         cur.execute("""
             INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, approved, uploaded_by)
             VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s)
-        """, (cat_id, display_title, pdf_link, author, description, image_url, 'English', session['user_id']))
+        """, (cat_id, display_title, pdf_url, author, description, image_url, 'English', session['user_id']))
         mysql.connection.commit()
         cur.close()
 
-        # Notify admin
         html_notification = make_upload_notification_email(display_title, author, category)
         send_email_notification(
             "New PDF Uploaded by User - Pending Approval",
@@ -379,7 +376,6 @@ def user_upload():
         flash(f"✅ '{display_title}' uploaded successfully! It will appear after admin approval.", 'success')
         return redirect(url_for('user_upload'))
 
-    # GET request: fetch categories for dropdown
     cur = mysql.connection.cursor()
     cur.execute("SELECT level FROM categories ORDER BY level")
     categories = [row[0] for row in cur.fetchall()]
@@ -1131,11 +1127,13 @@ def read_online(book_id):
         abort(404)
     return render_template('read_online.html', pdf_url=book[0])
 
-# -------------------- ADMIN UPLOAD (INTELLIGENT) --------------------
+# -------------------- ADMIN ROUTE --------------------
+
 @app.route('/admin', methods=['GET', 'POST'])
 @admin_required
 def admin():
     if request.method == 'POST':
+        # ---------- PDF validation ----------
         if 'pdf_file' not in request.files:
             return jsonify({"error": "No file part"}), 400
         file = request.files['pdf_file']
@@ -1146,7 +1144,7 @@ def admin():
         reader = PdfReader(io.BytesIO(pdf_bytes))
         meta = reader.metadata
 
-        # Raw title: prefer metadata, else filename
+        # ---------- Metadata & naming ----------
         if meta is not None:
             pdf_title = (meta.title or '').strip()
             author_meta = (meta.author or '').strip()
@@ -1159,14 +1157,11 @@ def admin():
         else:
             raw_name = os.path.splitext(file.filename)[0]
 
-        # Clean the name professionally (banned words removed, @DocoDive added)
         clean_base = clean_professional_name(raw_name)
-
-        # Display title from clean base (without signature)
         display_title = clean_base.replace('_', ' ').replace(' @DocoDive', '').strip()
         author = author_meta if author_meta and author_meta.lower() != 'unknown' else 'Unknown'
 
-        # Manual category or auto-detect
+        # ---------- Manual / auto category ----------
         manual_category = request.form.get('category', '').strip()
         if manual_category:
             category = manual_category
@@ -1175,39 +1170,51 @@ def admin():
             pdf_text = extract_text_from_pdf(reader)
             if genai_client:
                 display_title, author, description = ai_enhance_metadata(display_title, author, pdf_text)
-                category = guess_category(pdf_text)  # fallback
+                category = guess_category(pdf_text)
             else:
                 category = guess_category_intelligent(pdf_text, raw_name)
                 description = f"A comprehensive resource about '{display_title}'. Covers essential topics in {category}."
 
-        # Duplicate check (skip if duplicate)
+        # ---------- Duplicate check ----------
         cur = mysql.connection.cursor()
         if is_duplicate(display_title, author, cur):
             cur.close()
             return jsonify({"error": "This book already exists in the database."}), 400
 
-        # Save PDF with clean name
-        final_pdf_name = get_unique_filename(UPLOAD_FOLDER, clean_base, '.pdf')
-        pdf_dest = os.path.join(UPLOAD_FOLDER, final_pdf_name)
-        with open(pdf_dest, 'wb') as f:
-            f.write(pdf_bytes)
-        pdf_link = f"/{pdf_dest}"
+        # ---------- Upload PDF to R2 ----------
+        try:
+            pdf_key = generate_r2_key('uploads', clean_base, '.pdf')
+            pdf_url = upload_to_r2(pdf_bytes, pdf_key)
+        except Exception as e:
+            cur.close()
+            app.logger.error(f"PDF upload to R2 failed: {e}")
+            return jsonify({"error": "Failed to upload PDF. Please try again."}), 500
 
-        # Cover image handling – rename to match PDF clean base
+        # ---------- Cover image (optional, with warnings) ----------
         image_url = None
+        warning = None
+
         if 'cover_image' in request.files:
             cover_file = request.files['cover_image']
-            if cover_file and cover_file.filename != '' and allowed_image_file(cover_file.filename):
-                cover_data = cover_file.read()
-                if len(cover_data) <= 2 * 1024 * 1024:   # 2 MB
-                    img_ext = os.path.splitext(cover_file.filename)[1]  # includes dot
-                    cover_name = get_unique_filename(COVERS_FOLDER, clean_base, img_ext)
-                    cover_path = os.path.join(COVERS_FOLDER, cover_name)
-                    with open(cover_path, 'wb') as f:
-                        f.write(cover_data)
-                    image_url = f"/{cover_path}"
+            if cover_file and cover_file.filename != '':
+                # Validate format
+                if not allowed_image_file(cover_file.filename):
+                    warning = "Cover image format not allowed (use JPG, PNG, GIF, WEBP)."
+                else:
+                    cover_data = cover_file.read()
+                    # 5 MB limit
+                    if len(cover_data) > 5 * 1024 * 1024:
+                        warning = "Cover image exceeds 5 MB limit."
+                    else:
+                        try:
+                            img_ext = os.path.splitext(cover_file.filename)[1]
+                            cover_key = generate_r2_key('covers', clean_base, img_ext)
+                            image_url = upload_to_r2(cover_data, cover_key)
+                        except Exception as e:
+                            app.logger.error(f"Cover upload to R2 failed: {e}")
+                            warning = "Cover image could not be uploaded."
 
-        # Category handling
+        # ---------- Insert into database ----------
         cur.execute("SELECT id FROM categories WHERE level = %s", (category,))
         cat = cur.fetchone()
         if not cat:
@@ -1219,10 +1226,11 @@ def admin():
         cur.execute("""
             INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, approved, uploaded_by)
             VALUES (%s, %s, %s, %s, %s, %s, %s, 0, NULL)
-        """, (cat_id, display_title, pdf_link, author, description, image_url, 'English'))
+        """, (cat_id, display_title, pdf_url, author, description, image_url, 'English'))
         mysql.connection.commit()
         cur.close()
 
+        # ---------- Notify admin ----------
         html_notification = make_upload_notification_email(display_title, author, category)
         send_email_notification(
             "New PDF Uploaded - Pending Approval",
@@ -1231,12 +1239,16 @@ def admin():
             html_body=html_notification
         )
 
-        return jsonify({
+        # ---------- Response ----------
+        resp = {
             "success": True,
             "title": display_title,
             "category": category,
             "message": f"Book '{display_title}' uploaded in {category}! Waiting for approval."
-        })
+        }
+        if warning:
+            resp["warning"] = warning
+        return jsonify(resp)
 
     # GET: fetch categories for dropdown
     cur = mysql.connection.cursor()
@@ -1288,7 +1300,6 @@ def approve_book(book_id):
         return jsonify({"error": "Book not found"}), 404
     title, uploader_id = row
 
-    # ✅ Update both approved flag and status
     cur.execute("UPDATE documents SET approved = 1, status = 'approved' WHERE id = %s", (book_id,))
     mysql.connection.commit()
 
@@ -1319,12 +1330,11 @@ def reject_book(book_id):
         return jsonify({"error": "Book not found"}), 404
     title, uploader_id, file_link = row
 
-    # Delete the PDF file from disk, but keep the row
-    file_path = file_link.lstrip('/')
-    if os.path.exists(file_path):
-        os.remove(file_path)
+    # Delete the PDF from R2 (keep cover)
+    if file_link and file_link.startswith(R2_PUBLIC_BASE + '/'):
+        key = file_link.replace(R2_PUBLIC_BASE + '/', '', 1)
+        delete_from_r2(key)
 
-    # ✅ Instead of deleting, set status to 'rejected'
     cur.execute("UPDATE documents SET approved = 0, status = 'rejected' WHERE id = %s", (book_id,))
     mysql.connection.commit()
 
@@ -1375,12 +1385,17 @@ def admin_books_list():
         })
     return render_template('admin_books.html', books=books_list)
 
-# -------------------- ADMIN EDIT / DELETE BOOKS --------------------
+# -------------------- ADMIN EDIT / DELETE BOOKS (R2 aware) --------------------
 @app.route('/admin/edit/<int:book_id>', methods=['GET', 'POST'])
 @admin_required
 def edit_book(book_id):
     cur = mysql.connection.cursor()
     if request.method == 'POST':
+        cur.execute("SELECT telegram_link, image_url FROM documents WHERE id = %s", (book_id,))
+        old = cur.fetchone()
+        old_pdf = old[0] if old else None
+        old_cover = old[1] if old else None
+
         title = request.form.get('title')
         category_name = request.form.get('category')
         author = request.form.get('author')
@@ -1388,38 +1403,47 @@ def edit_book(book_id):
         img_url = request.form.get('img')
         language = request.form.get('language', 'English')
 
-        final_cover_link = None
-        if 'cover_image' in request.files and request.files['cover_image'].filename != '':
-            cover_file = request.files['cover_image']
-            allowed_img = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-            if '.' in cover_file.filename and cover_file.filename.rsplit('.', 1)[1].lower() in allowed_img:
-                cover_filename = secure_filename(cover_file.filename)
-                cover_path = os.path.join('static/covers', cover_filename)
-                os.makedirs('static/covers', exist_ok=True)
-                cover_file.save(cover_path)
-                final_cover_link = f"/{cover_path}"
-        if final_cover_link is None and img_url and img_url.strip():
-            final_cover_link = img_url.strip()
-
+        # If a new PDF is uploaded, replace the old one in R2
         if 'pdf_file' in request.files and request.files['pdf_file'].filename != '':
             file = request.files['pdf_file']
             if not allowed_file(file.filename):
                 return jsonify({"error": "Only PDF files are allowed."}), 400
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
-            final_link = f"/{file_path}"
+            pdf_bytes = file.read()
+            clean_title = clean_professional_name(title) if title else clean_professional_name("book")
+            pdf_key = generate_r2_key('uploads', clean_title, '.pdf')
+            new_pdf_url = upload_to_r2(pdf_bytes, pdf_key)
+            # Delete old PDF from R2
+            if old_pdf and old_pdf.startswith(R2_PUBLIC_BASE + '/'):
+                key = old_pdf.replace(R2_PUBLIC_BASE + '/', '', 1)
+                delete_from_r2(key)
             cur.execute("""
                 UPDATE documents
                 SET category_id=(SELECT id FROM categories WHERE level=%s), title=%s, telegram_link=%s, author=%s, description=%s, image_url=%s, language=%s
                 WHERE id=%s
-            """, (category_name, title, final_link, author, desc, final_cover_link, language, book_id))
+            """, (category_name, title, new_pdf_url, author, desc, img_url if img_url else (old_cover or None), language, book_id))
         else:
+            # No new PDF, keep old link
             cur.execute("""
                 UPDATE documents
                 SET category_id=(SELECT id FROM categories WHERE level=%s), title=%s, author=%s, description=%s, image_url=%s, language=%s
                 WHERE id=%s
-            """, (category_name, title, author, desc, final_cover_link, language, book_id))
+            """, (category_name, title, author, desc, img_url if img_url else (old_cover or None), language, book_id))
+
+        # Handle cover image replacement (optional)
+        if 'cover_image' in request.files and request.files['cover_image'].filename != '':
+            cover_file = request.files['cover_image']
+            if allowed_image_file(cover_file.filename):
+                cover_bytes = cover_file.read()
+                if len(cover_bytes) <= 2 * 1024 * 1024:
+                    clean_title = clean_professional_name(title) if title else clean_professional_name("book")
+                    cover_key = generate_r2_key('covers', clean_title, os.path.splitext(cover_file.filename)[1])
+                    new_cover_url = upload_to_r2(cover_bytes, cover_key)
+                    # Delete old cover from R2
+                    if old_cover and old_cover.startswith(R2_PUBLIC_BASE + '/'):
+                        key = old_cover.replace(R2_PUBLIC_BASE + '/', '', 1)
+                        delete_from_r2(key)
+                    cur.execute("UPDATE documents SET image_url = %s WHERE id = %s", (new_cover_url, book_id))
+
         mysql.connection.commit()
         cur.close()
         return redirect(url_for('admin_books_list'))
@@ -1444,12 +1468,17 @@ def edit_book(book_id):
 @admin_required
 def delete_book(book_id):
     cur = mysql.connection.cursor()
-    cur.execute("SELECT telegram_link FROM documents WHERE id = %s", (book_id,))
-    file_record = cur.fetchone()
-    if file_record:
-        file_path = file_record[0].lstrip('/')
-        if os.path.exists(file_path):
-            os.remove(file_path)
+    cur.execute("SELECT telegram_link, image_url FROM documents WHERE id = %s", (book_id,))
+    row = cur.fetchone()
+    if row:
+        # Delete PDF from R2
+        if row[0] and row[0].startswith(R2_PUBLIC_BASE + '/'):
+            key = row[0].replace(R2_PUBLIC_BASE + '/', '', 1)
+            delete_from_r2(key)
+        # Delete cover from R2
+        if row[1] and row[1].startswith(R2_PUBLIC_BASE + '/'):
+            key = row[1].replace(R2_PUBLIC_BASE + '/', '', 1)
+            delete_from_r2(key)
     cur.execute("DELETE FROM documents WHERE id = %s", (book_id,))
     mysql.connection.commit()
     cur.close()

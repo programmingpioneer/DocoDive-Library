@@ -31,7 +31,7 @@
                             <input type="file" name="pdf_file" id="pdfFileInput" class="form-control mt-3" accept=".pdf" required>
                         </div>
 
-                        <!-- 🗂️ Manual Category Dropdown (NEW) -->
+                        <!-- 🗂️ Manual Category Dropdown -->
                         <div class="mb-3">
                             <label for="categorySelect" class="form-label fw-semibold">
                                 <i class="bi bi-tag me-1"></i> Category
@@ -45,13 +45,13 @@
                             <div class="form-text">Choose a category or leave it for auto‑detection.</div>
                         </div>
 
-                        <!-- 🖼️ Cover Image Upload -->
+                        <!-- 🖼️ Cover Image Upload (now max 5 MB) -->
                         <div class="mb-4">
                             <label for="coverImageInput" class="form-label fw-semibold">
                                 <i class="bi bi-image me-1"></i> Cover Image (optional)
                             </label>
                             <input type="file" name="cover_image" id="coverImageInput" class="form-control" accept="image/*" onchange="previewCoverImage(this)">
-                            <div class="form-text">Recommended: square image, max 2 MB · JPG, PNG, GIF, WEBP allowed</div>
+                            <div class="form-text">Recommended: square image, max 5 MB · JPG, PNG, GIF, WEBP allowed</div>
                             <div class="mt-2" id="coverPreview" style="display:none;">
                                 <img id="coverThumb" src="" alt="Cover preview" class="img-thumbnail" style="max-height:150px;">
                                 <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="removeCover()">
@@ -64,7 +64,7 @@
                         <div class="disclaimer mb-4">
                             <strong><i class="bi bi-info-circle-fill me-1"></i> Disclaimer:</strong><br>
                             • Only <strong>PDF files</strong> are accepted (max 500 MB).<br>
-                            • Cover image is optional but recommended.<br>
+                            • Cover image is optional but recommended (max 5 MB).<br>
                             • Do not upload copyrighted material without permission.<br>
                             • Your upload will be <strong>hidden until approved</strong> by a super‑admin.
                         </div>
@@ -138,14 +138,14 @@ document.getElementById('pdfFileInput').addEventListener('change', function() {
     }
 });
 
-// Cover image preview
+// Cover image preview (now with 5 MB limit)
 function previewCoverImage(input) {
     const preview = document.getElementById('coverPreview');
     const thumb = document.getElementById('coverThumb');
     if (input.files && input.files[0]) {
         const file = input.files[0];
-        if (file.size > 2 * 1024 * 1024) {
-            showToast('Cover image must be less than 2 MB.', 'danger');
+        if (file.size > 5 * 1024 * 1024) {   // 5 MB
+            showToast('Cover image must be less than 5 MB.', 'danger');
             input.value = '';
             preview.style.display = 'none';
             return;
@@ -204,6 +204,11 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
         if (xhr.status === 200) {
             let data = JSON.parse(xhr.responseText);
             showToast(data.message, 'success');
+
+            // 👇 New: show warning if cover image had an issue
+            if (data.warning) {
+                showToast(data.warning, 'danger');
+            }
 
             const channel = new BroadcastChannel('docodive_upload');
             channel.postMessage('refresh');
