@@ -1,5 +1,38 @@
 {% extends 'base.html' %}
 
+{% block extra_css %}
+<style>
+    /* Responsive adjustments for history cards */
+    @media (max-width: 576px) {
+        .history-card .card-body {
+            padding: 0.3rem 0.2rem !important;
+        }
+        .history-card .card-body h6 {
+            font-size: 0.72rem !important;
+        }
+        .history-card .badge {
+            font-size: 0.55rem !important;
+        }
+        .history-card .text-warning {
+            font-size: 0.65rem !important;
+        }
+        .history-card .btn-sm.rounded-circle {
+            width: 22px !important;
+            height: 22px !important;
+        }
+        .history-card .btn-sm.rounded-circle i {
+            font-size: 0.7rem !important;
+        }
+        .history-card .text-muted {
+            font-size: 0.6rem !important;
+        }
+        .history-card .d-flex.align-items-center.justify-content-center {
+            height: 140px !important;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
     <h2 class="fw-bold mb-4"><i class="bi bi-clock-history"></i> Download History</h2>
@@ -8,11 +41,11 @@
     <div class="row g-3">
         {% for pdf in pdfs %}
         <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-            <div class="card product-card border-0 shadow-sm h-100">
+            <div class="card product-card border-0 shadow-sm h-100 history-card">
                 <!-- Cover -->
                 <div class="d-flex align-items-center justify-content-center" style="height: 180px;">
                     {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
-                        <img src="{{ pdf.image_url }}" alt="Cover" class="book-cover" style="height:100%; width:auto;">
+                        <img src="{{ pdf.image_url }}" alt="Cover" class="img-fluid rounded" style="max-height: 100%; width: auto; object-fit: cover;">
                     {% else %}
                         {% set title_safe = pdf.title | default('Book', true) | replace('_', ' ') %}
                         {% set words = title_safe.split() %}

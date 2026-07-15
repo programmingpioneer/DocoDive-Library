@@ -237,6 +237,90 @@ body {
     .book-pages { bottom: -6px; height: 6px; left: -10px; width: calc(100% + 10px); }
 }
 
+/* ========== EXTRA SMALL DEVICES (Phones, 576px and below) ========== */
+@media (max-width: 576px) {
+    body {
+        font-size: 0.9rem;
+    }
+    .navbar-brand span {
+        font-size: 0.95rem;
+    }
+    .navbar .btn {
+        padding: 0.3rem 0.7rem;
+        font-size: 0.75rem;
+    }
+    .navbar .nav-link {
+        font-size: 0.9rem;
+    }
+
+    .category-card {
+        padding: 1rem 0.5rem !important;
+        border-radius: 12px;
+    }
+    .category-icon {
+        font-size: 1.6rem !important;
+    }
+    .category-card h6 {
+        font-size: 0.8rem !important;
+    }
+
+    .product-card .book-3d-wrapper {
+        height: 130px !important;
+    }
+    .book-3d {
+        width: 110px;
+        height: 150px;
+    }
+    .book-spine { left: -8px; width: 8px; }
+    .book-pages { bottom: -5px; height: 5px; left: -8px; width: calc(100% + 8px); }
+    .product-card .card-body h6 {
+        font-size: 0.75rem !important;
+    }
+    .product-card .card-body .badge {
+        font-size: 0.6rem !important;
+    }
+    .product-card .card-body .text-warning {
+        font-size: 0.65rem !important;
+    }
+    .product-card .card-body .small {
+        font-size: 0.6rem !important;
+    }
+
+    .btn-primary, .btn-outline-primary, .btn-outline-secondary, .btn-success, .btn-danger {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+
+    .pagination .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .progress-glass-card {
+        padding: 15px;
+    }
+    .progress-top-icons {
+        gap: 10px;
+    }
+    .circular-progress-container {
+        width: 90px;
+        height: 90px;
+    }
+    .progress-ring {
+        width: 90px;
+        height: 90px;
+    }
+    .progress-text {
+        font-size: 18px;
+    }
+    .stat-item {
+        font-size: 0.7rem;
+    }
+    .flying-files .pdf-file-icon {
+        font-size: 18px;
+    }
+}
+
 /* ====================================
    PREMIUM GLASSMORPHISM PROGRESS CARD
    ==================================== */

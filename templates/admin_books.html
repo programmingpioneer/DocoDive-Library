@@ -109,4 +109,37 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', async func
     }
 });
 </script>
+
+<style>
+    /* ========== RESPONSIVE TWEAKS (only visual adjustments) ========== */
+    @media (max-width: 768px) {
+        .table td, .table th {
+            white-space: nowrap;
+            font-size: 0.85rem;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        /* Keep the action buttons from overlapping */
+        .d-flex.gap-2 {
+            gap: 0.3rem !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .container.py-4 {
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
+        }
+        h2.fw-bold {
+            font-size: 1.3rem;
+        }
+        /* Make the table scroll horizontally – already done by .table-responsive */
+        /* Adjust the modal so it fits better */
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+    }
+</style>
 {% endblock %}

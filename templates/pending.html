@@ -9,8 +9,8 @@
   <div class="row g-3">
     {% for book in books %}
     <div class="col-12 col-sm-6 col-lg-4">
-      <div class="card shadow-sm h-100 border-0 rounded-4 p-3">
-        <div class="d-flex justify-content-between align-items-start mb-2">
+      <div class="card shadow-sm h-100 border-0 rounded-4 p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
           <div>
             <h6 class="fw-bold mb-1">{{ book.title }}</h6>
             <span class="badge bg-primary me-1">{{ book.level }}</span>
@@ -25,11 +25,11 @@
           {% endif %}
         </div>
         <p class="text-muted small mb-3">{{ book.created_at }}</p>
-        <div class="d-flex gap-2 mt-auto">
-          <button class="btn btn-success btn-sm rounded-pill w-100 approve-btn" data-id="{{ book.id }}">
+        <div class="d-flex gap-2 mt-auto flex-wrap">
+          <button class="btn btn-success btn-sm rounded-pill approve-btn" data-id="{{ book.id }}">
             <i class="bi bi-check-circle me-1"></i> Approve
           </button>
-          <button class="btn btn-danger btn-sm rounded-pill w-100 reject-btn" data-id="{{ book.id }}">
+          <button class="btn btn-danger btn-sm rounded-pill reject-btn" data-id="{{ book.id }}">
             <i class="bi bi-x-circle me-1"></i> Reject
           </button>
         </div>
@@ -53,6 +53,27 @@
   </div>
   {% endif %}
 </div>
+
+<style>
+  /* Responsive adjustments for pending cards */
+  @media (max-width: 576px) {
+    .card .btn-sm {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      width: 100%; /* full width on mobile */
+      margin-bottom: 0.25rem;
+    }
+    .card .btn-sm.rounded-pill {
+      border-radius: 20px !important;
+    }
+    .card .d-flex.gap-2.mt-auto {
+      flex-direction: column;
+    }
+    .card h6.fw-bold {
+      font-size: 0.95rem;
+    }
+  }
+</style>
 {% endblock %}
 
 {% block scripts %}

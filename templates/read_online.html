@@ -1,6 +1,41 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container-fluid p-0" style="height: calc(100vh - 56px);">
-    <iframe src="{{ pdf_url }}" width="100%" height="100%" style="border:none;"></iframe>
+<div class="container-fluid p-0 d-flex flex-column" style="min-height: calc(100vh - 70px);">
+    <!-- Mini toolbar -->
+    <div class="bg-white border-bottom px-3 py-2 d-flex align-items-center gap-2 shadow-sm">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+        <span class="fw-semibold text-truncate" style="font-size: 0.9rem;">Reading PDF</span>
+        <a href="{{ pdf_url }}" class="btn btn-sm btn-primary rounded-pill ms-auto" download>
+            <i class="bi bi-download me-1"></i> Download
+        </a>
+    </div>
+
+    <!-- PDF iframe -->
+    <div class="flex-grow-1">
+        <iframe src="{{ pdf_url }}" width="100%" height="100%" style="border:none; min-height: calc(100vh - 120px);"></iframe>
+    </div>
 </div>
+
+<style>
+    /* Ensure iframe fills on all devices */
+    @media (max-width: 768px) {
+        .container-fluid.d-flex {
+            min-height: calc(100vh - 60px) !important;
+        }
+        iframe {
+            min-height: calc(100vh - 110px) !important;
+        }
+    }
+    @media (max-width: 576px) {
+        .toolbar-text {
+            font-size: 0.8rem;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.7rem;
+            font-size: 0.75rem;
+        }
+    }
+</style>
 {% endblock %}

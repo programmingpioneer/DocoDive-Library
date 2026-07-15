@@ -11,6 +11,14 @@
                 <i class="bi bi-hourglass-split me-1"></i> Pending
                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="pendingBadge" style="display:none;">0</span>
             </a>
+            <a href="/admin/books" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="bi bi-collection me-1"></i> Manage Books
+            </a>
+            {% if session.get('admin_role') == 'super' %}
+            <a href="/admin/users" class="btn btn-outline-info rounded-pill px-4">
+                <i class="bi bi-people-fill me-1"></i> Manage Users
+            </a>
+            {% endif %}
             <a href="/" class="btn btn-outline-secondary rounded-pill px-4">
                 <i class="bi bi-house-door me-1"></i> Back to Library
             </a>
@@ -21,14 +29,7 @@
         <div class="col-md-7 col-lg-6">
             <div class="card border-0 shadow-lg p-4">
                 <div class="card-body">
-
-                    <!-- ✅ Manage Books button placed BEFORE the upload form, with high z-index -->
-                    <div class="mb-3 text-end" style="position: relative; z-index: 100;">
-                        <a href="/admin/books" class="btn btn-outline-primary rounded-pill px-4">
-                            <i class="bi bi-collection"></i> Manage Books
-                        </a>
-                    </div>
-
+                    
                     <!-- 📄 PDF Upload Zone -->
                     <form id="uploadForm" enctype="multipart/form-data">
                         <div class="mb-4 p-4 border border-2 border-primary rounded bg-light upload-zone">
@@ -244,7 +245,7 @@
         margin: 0 auto 20px;
     }
     .progress-ring .ring-fg {
-        stroke-dasharray: 327; /* 2*pi*52 ≈ 326.7 */
+        stroke-dasharray: 327;
         stroke-dashoffset: 327;
         transition: stroke-dashoffset 0.2s ease;
     }
@@ -275,7 +276,6 @@
         min-height: 20px;
     }
 
-    /* ✅ Prevent progress card from blocking clicks when hidden */
     #progressCard.d-none {
         pointer-events: none !important;
     }
@@ -355,12 +355,10 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
     const statETA = document.getElementById('statETA');
     const progressStatus = document.getElementById('progressStatus');
 
-    // Show premium card
     progressCard.classList.remove('d-none');
     uploadBtn.disabled = true;
     statusMsg.classList.add('d-none');
 
-    // Set file size
     const sizeMB = (file.size / (1024*1024)).toFixed(2);
     statSize.textContent = sizeMB + ' MB';
 
@@ -371,12 +369,10 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
     xhr.upload.onprogress = function(e) {
         if (e.lengthComputable) {
             let percent = Math.round((e.loaded / e.total) * 100);
-            // Update circular ring
             let offset = 327 - (327 * percent / 100);
             ringFg.style.strokeDashoffset = offset;
             progressPercent.textContent = percent + '%';
 
-            // Update stats
             let elapsed = (Date.now() - startTime) / 1000;
             let speed = elapsed > 0 ? e.loaded / elapsed : 0;
             statSpeed.textContent = formatSpeed(speed);
@@ -385,7 +381,6 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
             let eta = speed > 0 ? remaining / speed : 0;
             statETA.textContent = formatTime(eta);
 
-            // Status messages at milestones
             if (percent < 25) progressStatus.textContent = 'Reading PDF metadata...';
             else if (percent < 50) progressStatus.textContent = 'Uploading to cloud...';
             else if (percent < 75) progressStatus.textContent = 'Processing cover image...';
@@ -473,7 +468,7 @@ function showToast(message, type) {
     toast.show();
 }
 
-// ✅ Fallback: force navigation even if link click is blocked
+// Fallback for Manage Books navigation
 document.querySelector('a[href="/admin/books"]')?.addEventListener('click', function(e) {
     e.preventDefault();
     window.location.href = '/admin/books';

@@ -10,21 +10,24 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
 
+    <!-- ========== NAVIGATION ========== -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white py-3 sticky-top shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bolder fs-4 text-primary d-flex align-items-center gap-2" href="/">
                 <div class="bg-primary text-white rounded d-flex justify-content-center align-items-center" style="width: 35px; height: 35px;">
                     <i class="bi bi-book-half fs-5"></i>
                 </div>
-                DocoDive
+                <span class="d-none d-sm-inline">DocoDive</span>
             </a>
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
-                <ul class="navbar-nav fw-semibold gap-3">
+                <ul class="navbar-nav fw-semibold gap-3 text-center">
                     <li class="nav-item"><a class="nav-link active" href="/">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="#categories">Categories</a></li>
                     <li class="nav-item"><a class="nav-link" href="#new-arrivals">New Arrivals</a></li>
@@ -32,11 +35,13 @@
                     <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
                 </ul>
             </div>
-            <div class="d-flex align-items-center gap-2">
+
+            <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
                 {% if session.get('user_id') %}
                     <!-- Reader Profile Dropdown -->
                     <div class="dropdown">
-                        <button class="btn btn-light rounded-pill d-flex align-items-center gap-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border: 1px solid #e0e7ff; background: white;">
+                        <button class="btn btn-light rounded-pill d-flex align-items-center gap-2 dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false" style="border: 1px solid #e0e7ff; background: white;">
                             <i class="bi bi-person-circle text-primary fs-5"></i>
                             <span class="fw-semibold d-none d-md-inline">{{ session.get('user_name') }}</span>
                         </button>
@@ -50,11 +55,19 @@
                 {% elif session.get('logged_in') %}
                     <!-- Admin logged in -->
                     {% if session.get('admin_role') == 'super' %}
-                        <a href="/admin/pending" class="btn btn-outline-warning rounded-pill px-3"><i class="bi bi-hourglass-split"></i> Pending</a>
+                        <a href="/admin/pending" class="btn btn-outline-warning rounded-pill px-3 d-none d-sm-inline-block">
+                            <i class="bi bi-hourglass-split"></i> <span class="d-none d-lg-inline">Pending</span>
+                        </a>
                     {% endif %}
-                    <a href="/admin" class="btn btn-primary fw-bold px-4 py-2 rounded-pill shadow-sm"><i class="bi bi-cloud-upload me-2"></i> Upload</a>
-                    <a href="/admin/analytics" class="btn btn-outline-info rounded-pill px-3"><i class="bi bi-graph-up"></i></a>
-                    <a href="/logout" class="btn btn-outline-danger rounded-pill px-3 py-2"><i class="bi bi-box-arrow-right"></i></a>
+                    <a href="/admin" class="btn btn-primary fw-bold px-3 px-lg-4 py-2 rounded-pill shadow-sm">
+                        <i class="bi bi-cloud-upload me-1"></i> <span class="d-none d-sm-inline">Upload</span>
+                    </a>
+                    <a href="/admin/analytics" class="btn btn-outline-info rounded-pill px-3 d-none d-md-inline-block">
+                        <i class="bi bi-graph-up"></i>
+                    </a>
+                    <a href="/logout" class="btn btn-outline-danger rounded-pill px-3 py-2">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </a>
                 {% else %}
                     <!-- Public -->
                     <a href="/user/login" class="btn btn-outline-primary rounded-pill px-3">Reader</a>
@@ -64,11 +77,13 @@
         </div>
     </nav>
 
-    <main>
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="flex-grow-1">
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="text-center py-4 text-muted bg-white border-top">
+    <!-- ========== FOOTER ========== -->
+    <footer class="text-center py-4 text-muted bg-white border-top mt-auto">
         <p class="mb-0 small fw-semibold">© 2026 DocoDive – Free Knowledge, Pure Discipline.</p>
     </footer>
 

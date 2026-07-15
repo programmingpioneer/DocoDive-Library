@@ -4,28 +4,246 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verify Code – DocoDive</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        body { background: linear-gradient(135deg, #f8faff, #e0e7ff); font-family: 'Poppins', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin:0; padding:20px; }
-        .card { max-width: 440px; width:100%; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.08); }
+        :root {
+            --primary: #4338ca;
+            --primary-light: #818cf8;
+            --accent: #ffb703;
+            --dark: #1e1b4b;
+            --bg: #f8faff;
+            --text: #334155;
+            --error: #ef4444;
+            --success: #10b981;
+            --border: #e0e7ff;
+            --radius: 20px;
+            --shadow: 0 20px 50px rgba(30,27,75,0.1);
+            --transition: 0.25s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--text);
+        }
+
+        .bg-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.2;
+            z-index: 0;
+        }
+        .blob-1 { width: 280px; height: 280px; background: var(--primary); top: -80px; left: -80px; }
+        .blob-2 { width: 220px; height: 220px; background: var(--accent); bottom: -60px; right: -60px; }
+        .blob-3 { width: 160px; height: 160px; background: var(--primary-light); top: 50%; right: 5%; }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 460px;
+        }
+
+        .brand-block {
+            text-align: center;
+            margin-bottom: 24px;
+            animation: fadeInUp 0.5s ease-out;
+        }
+        .brand-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 18px;
+            margin-bottom: 10px;
+            box-shadow: 0 10px 24px rgba(67,56,202,0.2);
+            color: white;
+            font-size: 1.7rem;
+        }
+        .brand-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--dark);
+            letter-spacing: -0.5px;
+        }
+        .brand-sub {
+            color: #6b7280;
+            font-size: 0.88rem;
+            font-weight: 400;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            padding: 35px 28px 30px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .header .icon-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            background: rgba(67,56,202,0.08);
+            border-radius: 50%;
+            margin-bottom: 12px;
+        }
+        .header .icon-circle i {
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+        .header h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 4px;
+        }
+        .header p {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .form-group { margin-bottom: 20px; }
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+        .input-wrapper { position: relative; }
+        .input-wrapper input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            font-family: inherit;
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 6px;
+            outline: none;
+            transition: all var(--transition);
+            background: rgba(255,255,255,0.9);
+        }
+        .input-wrapper input:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(67,56,202,0.1);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 15px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .btn-primary-custom {
+            background: var(--dark);
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(30,27,75,0.25);
+        }
+        .btn-primary-custom:hover {
+            background: #312e81;
+            transform: translateY(-1px);
+            box-shadow: 0 12px 28px rgba(30,27,75,0.35);
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+        .back-link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        .back-link a:hover { text-decoration: underline; }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            body { padding: 16px; align-items: flex-start; padding-top: 40px; }
+            .card { padding: 24px 18px 22px; border-radius: 24px; }
+            .brand-title { font-size: 1.5rem; }
+            .header h2 { font-size: 19px; }
+            .bg-blob { display: none; }
+            .input-wrapper input { font-size: 18px; letter-spacing: 4px; padding: 12px 14px; }
+            .btn { font-size: 14px; padding: 12px 16px; }
+        }
     </style>
 </head>
 <body>
-    <div class="card p-4 p-md-5">
-        <h2 class="fw-bold mb-3 text-center">Enter Verification Code</h2>
-        <p class="text-muted text-center">A 4‑digit code was sent to <strong>{{ email }}</strong></p>
-        <form method="POST">
-            <input type="hidden" name="email" value="{{ email }}">
-            <div class="mb-3">
-                <label class="form-label fw-semibold small">Verification Code</label>
-                <input type="text" name="code" class="form-control form-control-lg text-center" placeholder="1234" maxlength="4" required>
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+    <div class="bg-blob blob-3"></div>
+
+    <div class="container">
+        <div class="brand-block">
+            <div class="brand-icon"><i class="bi bi-book-half"></i></div>
+            <h1 class="brand-title">DocoDive</h1>
+            <p class="brand-sub">Account Recovery</p>
+        </div>
+
+        <div class="card">
+            <div class="header">
+                <div class="icon-circle"><i class="bi bi-shield-lock-fill"></i></div>
+                <h2>Verification Code</h2>
+                <p>Enter the 4‑digit code sent to <strong>{{ email }}</strong></p>
             </div>
-            <button type="submit" class="btn btn-primary w-100 py-3 rounded-pill fw-bold">Verify & Send Reset Link</button>
-        </form>
-        <div class="text-center mt-3">
-            <a href="/user/login" class="text-muted small">Back to Login</a>
+
+            <form method="POST">
+                <input type="hidden" name="email" value="{{ email }}">
+                <div class="form-group">
+                    <label for="code">Verification Code</label>
+                    <div class="input-wrapper">
+                        <input type="text" name="code" id="code" class="form-control" placeholder="1234" maxlength="4" required autocomplete="off">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary-custom">
+                    <i class="bi bi-send-fill me-2"></i> Verify & Send Reset Link
+                </button>
+            </form>
+        </div>
+
+        <div class="back-link">
+            <a href="/user/login"><i class="bi bi-arrow-left me-1"></i> Back to Login</a>
         </div>
     </div>
 </body>

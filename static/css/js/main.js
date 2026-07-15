@@ -1,4 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // ==========================================
+    //  PREVIEW MODAL + DOWNLOAD WITH PROGRESS
+    //  (Responsive – works on all devices)
+    // ==========================================
+
     // 1. POPUP OPENING LOGIC (Image click)
     const previewBtns = document.querySelectorAll('.preview-btn');
     
@@ -40,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>`;
             }
 
-            // Show popup
+            // Show popup (Bootstrap modal)
             const pdfModal = new bootstrap.Modal(document.getElementById('pdfPreviewModal'));
             pdfModal.show();
         });

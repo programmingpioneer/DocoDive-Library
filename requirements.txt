@@ -7,3 +7,4 @@ flask-mail==0.9.1
 gunicorn==21.2.0
 boto3==1.34.69
 google-generativeai==0.3.2
+resend==0.8.0

@@ -37,7 +37,7 @@
             position: relative;
             z-index: 1;
             width: 100%;
-            max-width: 480px;
+            max-width: 500px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -216,20 +216,21 @@
             transform: translateY(-1px);
         }
 
-        /* Feedback messages */
         .feedback {
             font-size: 0.75rem;
             margin-top: 4px;
         }
 
-        @media (max-width: 480px) {
+        /* ========== RESPONSIVE TWEAKS ========== */
+        @media (max-width: 768px) {
             body {
-                padding: 1.5rem 0.8rem;
+                padding: 1.5rem 1rem;
                 align-items: flex-start;
-                padding-top: 3rem;
+                padding-top: 2.5rem;
             }
             .container-main {
-                gap: 1rem;
+                gap: 1.2rem;
+                max-width: 100%;
             }
             .brand-title {
                 font-size: 1.6rem;
@@ -250,8 +251,62 @@
                 display: none;
             }
         }
+
+        @media (max-width: 576px) {
+            body {
+                padding: 1.2rem 0.8rem;
+                padding-top: 2rem;
+            }
+            .container-main {
+                gap: 1rem;
+            }
+            .brand-title {
+                font-size: 1.4rem;
+            }
+            .brand-sub {
+                font-size: 0.8rem;
+            }
+            .auth-card {
+                padding: 1.2rem 1rem;
+                border-radius: 20px;
+            }
+            .auth-tab {
+                font-size: 0.9rem;
+                padding: 8px 0;
+            }
+            .form-control {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+            .btn-primary-custom {
+                padding: 10px;
+                font-size: 0.9rem;
+            }
+            .trust-pill {
+                font-size: 0.7rem;
+                padding: 4px 10px;
+            }
+            .admin-vault-link {
+                font-size: 0.7rem;
+                padding: 4px 12px;
+            }
+        }
     </style>
 </head>
+<!-- Brevo Conversations -->
+<script>
+    (function(d, w, c) {
+        w.BrevoConversationsID = '6a551981edd95b5e7d08467b';
+        w[c] = w[c] || function() {
+            (w[c].q = w[c].q || []).push(arguments);
+        };
+        var s = d.createElement('script');
+        s.async = true;
+        s.src = 'https://conversations-widget.brevo.com/brevo-conversations.js';
+        if (d.head) d.head.appendChild(s);
+    })(document, window, 'BrevoConversations');
+</script>
+<!-- /Brevo Conversations -->
 <body>
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
@@ -293,9 +348,15 @@
                         <label class="form-label fw-semibold small">Email</label>
                         <input type="email" name="email" class="form-control" placeholder="you@example.com" required>
                     </div>
-                    <div class="mb-4">
+                    <div class="mb-2">
                         <label class="form-label fw-semibold small">Password</label>
-                        <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                        <input type="password" name="password" id="login-password" class="form-control" placeholder="••••••••" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="show-password-label" style="color: #6b7280; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" onclick="toggleLoginPassword()" style="margin-right: 5px; transform: translateY(1px);">
+                            Show Password
+                        </label>
                     </div>
                     <div class="text-end mb-3">
                         <a href="/forgot-password" class="text-muted small text-decoration-none" style="font-size: 0.8rem;">Forgot Password?</a>
@@ -323,9 +384,15 @@
                         <input type="email" name="email" id="email" class="form-control" placeholder="you@example.com" required>
                         <div class="feedback small mt-1"></div>
                     </div>
-                    <div class="mb-4">
+                    <div class="mb-2">
                         <label class="form-label fw-semibold small">Password</label>
-                        <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                        <input type="password" name="password" id="signup-password" class="form-control" placeholder="••••••••" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="show-password-label" style="color: #6b7280; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" onclick="toggleSignupPassword()" style="margin-right: 5px; transform: translateY(1px);">
+                            Show Password
+                        </label>
                     </div>
                     <button type="submit" class="btn-primary-custom w-100">Create Free Account</button>
                 </form>
@@ -349,7 +416,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Tab switching
         function switchTab(tab) {
             document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -359,12 +425,19 @@
         const mode = '{{ mode }}';
         if (mode === 'signup') switchTab('signup');
 
-        // Live validation for signup fields
+        function toggleLoginPassword() {
+            const pwd = document.getElementById("login-password");
+            pwd.type = pwd.type === "password" ? "text" : "password";
+        }
+        function toggleSignupPassword() {
+            const pwd = document.getElementById("signup-password");
+            pwd.type = pwd.type === "password" ? "text" : "password";
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const usernameInput = document.getElementById('username');
             const emailInput = document.getElementById('email');
 
-            // Get or create feedback element next to input
             function getFeedback(input) {
                 let fb = input.parentElement.querySelector('.feedback');
                 if (!fb) {
@@ -375,20 +448,16 @@
                 return fb;
             }
 
-            // Validate a field via server
             function checkField(input, fieldType) {
                 const val = input.value.trim();
                 const fb = getFeedback(input);
 
                 if (val.length === 0) {
-                    // Clear styles and message
                     input.classList.remove('is-valid', 'is-invalid');
                     fb.textContent = '';
-                    fb.className = 'feedback small mt-1';
                     return;
                 }
 
-                // Client-side format checks
                 if (fieldType === 'username') {
                     if (val.length < 3 || val.length > 20 || !/^[a-zA-Z0-9]+$/.test(val)) {
                         input.classList.add('is-invalid');
@@ -407,7 +476,6 @@
                     }
                 }
 
-                // Server uniqueness check
                 fetch(`/api/check-availability?field=${fieldType}&value=${encodeURIComponent(val)}`)
                     .then(res => res.json())
                     .then(data => {
@@ -423,18 +491,14 @@
                             fb.className = 'feedback small mt-1 text-success';
                         }
                     })
-                    .catch(err => {
-                        console.error('Validation error:', err);
-                        // On network error, remove all validation
+                    .catch(() => {
                         input.classList.remove('is-valid', 'is-invalid');
                         fb.textContent = '';
                     });
             }
 
-            // Attach listeners
             usernameInput.addEventListener('input', () => checkField(usernameInput, 'username'));
             emailInput.addEventListener('input', () => checkField(emailInput, 'email'));
-            // Also check on blur (when field loses focus)
             usernameInput.addEventListener('blur', () => checkField(usernameInput, 'username'));
             emailInput.addEventListener('blur', () => checkField(emailInput, 'email'));
         });

@@ -9,7 +9,7 @@
             <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
                 <div class="d-flex align-items-center justify-content-center" style="height: 160px;">
                     {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
-                        <img src="{{ pdf.image_url }}" alt="Cover" class="book-cover">
+                        <img src="{{ pdf.image_url }}" alt="Cover" class="book-cover-img img-fluid rounded">
                     {% else %}
                         {% set title_safe = pdf.title | default('Book', true) | replace('_', ' ') %}
                         {% set words = title_safe.split() %}
@@ -54,7 +54,6 @@ document.addEventListener('click', function(e) {
     const trigger = e.target.closest('.preview-trigger');
     if (trigger) {
         e.preventDefault();
-        // Use the global modal function if defined (from index.html), else redirect to book detail
         if (typeof openBookModal === 'function') {
             openBookModal(trigger.dataset.bookId);
         } else {
@@ -63,4 +62,31 @@ document.addEventListener('click', function(e) {
     }
 });
 </script>
+<style>
+    /* Additional responsiveness for book cards */
+    @media (max-width: 576px) {
+        .book-card-inner .d-flex.align-items-center.justify-content-center {
+            height: 130px !important;
+        }
+        .book-card-inner .card-body {
+            padding: 0.3rem 0.2rem !important;
+        }
+        .book-card-inner .card-body h6 {
+            font-size: 0.72rem !important;
+        }
+        .book-card-inner .badge {
+            font-size: 0.55rem !important;
+        }
+        .book-card-inner .text-warning {
+            font-size: 0.65rem !important;
+        }
+        .book-card-inner .btn-sm.rounded-circle {
+            width: 20px !important;
+            height: 20px !important;
+        }
+        .book-card-inner .btn-sm.rounded-circle i {
+            font-size: 0.55rem !important;
+        }
+    }
+</style>
 {% endblock %}

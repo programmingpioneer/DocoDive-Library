@@ -1,59 +1,88 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container py-5">
-    <div class="row">
-        <div class="col-md-4">
+<div class="container py-4 py-md-5">
+    <div class="row g-4">
+        <!-- Book Cover -->
+        <div class="col-12 col-md-5 col-lg-4">
             {% if book.image_url and book.image_url != 'None' %}
-                <img src="{{ book.image_url }}" class="img-fluid rounded">
+                <img src="{{ book.image_url }}" class="img-fluid rounded-4 shadow-sm w-100" alt="{{ book.title }}" style="object-fit: cover; max-height: 450px;">
             {% else %}
-                <div class="book-cover-fallback text-center" style="background:linear-gradient(135deg,#a5b4fc,#818cf8); height:300px; display:flex; align-items:center; justify-content:center;">
-                    <div>
-                        <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width:80px;height:80px;font-size:2rem;">{{ (book.title[:2]).upper() }}</div>
-                        <h5 class="text-white mt-2">{{ book.title }}</h5>
+                <div class="book-cover-fallback rounded-4 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg,#a5b4fc,#818cf8); min-height: 280px; height: 100%;">
+                    <div class="text-center p-4">
+                        <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:80px;height:80px;font-size:2rem;">
+                            {{ (book.title[:2]).upper() }}
+                        </div>
+                        <h5 class="text-white fw-bold">{{ book.title }}</h5>
                     </div>
                 </div>
             {% endif %}
         </div>
-        <div class="col-md-8">
-            <h2 class="fw-bold">{{ book.title }}</h2>
-            <p class="text-muted">by {{ book.author }}</p>
-            <span class="badge bg-primary px-3 py-2 rounded-pill">{{ book.level }}</span>
-            <span class="badge bg-secondary px-3 py-2 rounded-pill ms-2">{{ book.language }}</span>
-            <p class="mt-3">{{ book.description }}</p>
-            <div class="d-flex flex-wrap gap-2 mt-3">
-                <a href="{{ book.link }}" class="btn btn-primary rounded-pill" download onclick="fetch('/api/download/{{ book.id }}');"><i class="bi bi-download"></i> Download</a>
-                <a href="/book/{{ book.id }}/read" target="_blank" class="btn btn-outline-primary rounded-pill"><i class="bi bi-book"></i> Read Online</a>
-                <button class="btn btn-outline-warning rounded-pill favorite-btn" data-id="{{ book.id }}"><i class="bi bi-heart"></i> <span>Favorite</span></button>
+        <!-- Book Details -->
+        <div class="col-12 col-md-7 col-lg-8">
+            <h2 class="fw-bold mb-1">{{ book.title }}</h2>
+            <p class="text-muted">by <strong>{{ book.author }}</strong></p>
+            <div class="mb-3">
+                <span class="badge bg-primary px-3 py-2 rounded-pill me-2">{{ book.level }}</span>
+                <span class="badge bg-secondary px-3 py-2 rounded-pill">{{ book.language }}</span>
             </div>
+            <p class="mb-4">{{ book.description or 'No description available.' }}</p>
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                <a href="{{ book.link }}" class="btn btn-primary rounded-pill px-4" download onclick="fetch('/api/download/{{ book.id }}',{method:'POST'});">
+                    <i class="bi bi-download me-2"></i> Download
+                </a>
+                <a href="/book/{{ book.id }}/read" target="_blank" class="btn btn-outline-primary rounded-pill px-4">
+                    <i class="bi bi-book me-2"></i> Read Online
+                </a>
+                <button class="btn btn-outline-warning rounded-pill px-4 favorite-btn" data-id="{{ book.id }}">
+                    <i class="bi bi-heart me-2"></i> <span>Favorite</span>
+                </button>
+            </div>
+
             <hr>
-            <h5>Reviews</h5>
+
+            <!-- Reviews Section -->
+            <h5 class="fw-bold mb-3">Reviews</h5>
             {% if session.get('user_id') %}
-            <form id="reviewForm" class="mb-3">
-                <div class="mb-2">
-                    <label>Rating</label>
-                    <select name="rating" class="form-select" required>
-                        <option value="5">5 - Excellent</option><option value="4">4 - Good</option><option value="3">3 - Average</option>
-                        <option value="2">2 - Poor</option><option value="1">1 - Terrible</option>
-                    </select>
+            <form id="reviewForm" class="mb-4 p-3 border rounded-4 bg-light">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold">Rating</label>
+                        <select name="rating" class="form-select" required>
+                            <option value="5">5 - Excellent</option>
+                            <option value="4">4 - Good</option>
+                            <option value="3">3 - Average</option>
+                            <option value="2">2 - Poor</option>
+                            <option value="1">1 - Terrible</option>
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label small fw-semibold">Comment</label>
+                        <textarea name="comment" class="form-control" rows="2" placeholder="Write your review..."></textarea>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary rounded-pill w-100">Submit</button>
+                    </div>
                 </div>
-                <div class="mb-2">
-                    <textarea name="comment" class="form-control" rows="2" placeholder="Write your review..."></textarea>
-                </div>
-                <button type="submit" class="btn btn-sm btn-primary rounded-pill">Submit</button>
             </form>
+            {% else %}
+            <div class="alert alert-light border rounded-4">Please <a href="/user/login">login</a> to write a review.</div>
             {% endif %}
+
             <div id="reviews">
                 {% for r in reviews %}
                 <div class="border-bottom pb-2 mb-2">
                     <strong>{{ r[0] }}</strong> - {{ r[1] }} ⭐
-                    <p class="text-muted small">{{ r[2] }}</p>
+                    <p class="text-muted small mb-0">{{ r[2] }}</p>
                 </div>
+                {% else %}
+                <p class="text-muted">No reviews yet. Be the first to review!</p>
                 {% endfor %}
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
 <script>
 async function submitReview(e) {
@@ -75,4 +104,20 @@ document.querySelector('.favorite-btn')?.addEventListener('click', async functio
     }
 });
 </script>
+
+<style>
+    /* Additional responsiveness for very small screens */
+    @media (max-width: 576px) {
+        .book-cover-fallback {
+            min-height: 200px !important;
+        }
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+        #reviewForm .row > div {
+            margin-bottom: 0.5rem;
+        }
+    }
+</style>
 {% endblock %}
