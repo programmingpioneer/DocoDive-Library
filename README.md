@@ -157,5 +157,5 @@ Every command below can be copied with a single click – just hover over the co
 ### 🛠️ Step‑by‑Step Installation
 
 1. **Clone the repository**
-   ```bash
-   git clone https://github.com/programmingpioneer/docodive.git && cd docodive
+git clone https://github.com/programmingpioneer/DocoDive-Library.git
+cd DocoDive-Library
