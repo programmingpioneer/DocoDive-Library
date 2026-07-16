@@ -153,9 +153,3 @@ Every command below can be copied with a single click – just hover over the co
 - (Optional) A Google Gemini API key for AI‑powered metadata
 
 ---
-
-### 🛠️ Step‑by‑Step Installation
-
-1. **Clone the repository**
-git clone https://github.com/programmingpioneer/DocoDive-Library.git
-cd DocoDive-Library
