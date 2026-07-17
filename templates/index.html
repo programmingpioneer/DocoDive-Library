@@ -49,10 +49,92 @@
         box-shadow: 0 15px 30px rgba(30, 27, 75, 0.4);
     }
 
+    /* ---- UPDATED SEARCH SUGGESTIONS ---- */
     .search-suggestions {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(12px);
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
         border-radius: 0 0 20px 20px;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        max-height: 400px;
+        overflow-y: auto;
+        z-index: 1000;
+        margin-top: 8px;
+        padding: 10px 0;
+    }
+
+    .suggestion-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 18px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .suggestion-item:hover {
+        background: #f0f0ff;
+    }
+    .suggestion-img {
+        width: 40px;
+        height: 55px;
+        object-fit: cover;
+        border-radius: 6px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .suggestion-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .suggestion-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #1e1b4b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .suggestion-meta {
+        font-size: 0.75rem;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 2px;
+    }
+    .suggestion-meta .badge {
+        font-size: 0.65rem;
+        font-weight: 500;
+    }
+    .no-cover-placeholder {
+        width: 40px;
+        height: 55px;
+        background: linear-gradient(135deg, #a5b4fc, #818cf8);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 0.8rem;
+    }
+
+    @media (max-width: 576px) {
+        .search-suggestions {
+            border-radius: 0 0 16px 16px;
+            max-height: 300px;
+        }
+        .suggestion-item {
+            padding: 8px 12px;
+        }
+        .suggestion-img, .no-cover-placeholder {
+            width: 32px;
+            height: 44px;
+        }
+        .suggestion-title {
+            font-size: 0.8rem;
+        }
     }
 
     #liveToast {
@@ -78,7 +160,7 @@
 
     .category-icon { font-size: 2.5rem; margin-bottom: 10px; }
 
-    /* ---- Book card responsive heights (replace invalid md suffices) ---- */
+    /* ---- Book card responsive heights ---- */
     .book-cover-outer {
         height: 180px;
         overflow: visible;
@@ -95,7 +177,6 @@
         font-size: 0.7rem;
     }
 
-    /* Tablet & larger */
     @media (min-width: 768px) {
         .book-cover-outer {
             height: 220px;
@@ -113,7 +194,6 @@
         }
     }
 
-    /* ========== RESPONSIVE MEDIA QUERIES ========== */
     @media (max-width: 1200px) {
         .section-title { font-size: 2.2rem; }
     }
@@ -183,6 +263,29 @@
         .modal-body .row.g-0 { flex-direction: column; }
         .modal-body .col-md-5, .modal-body .col-md-7 { width: 100%; }
     }
+
+    /* ---- Clear button adjustment ---- */
+#clearSearchBtn {
+    background: none;
+    box-shadow: none;
+    color: #9ca3af;
+    transition: color 0.2s;
+}
+#clearSearchBtn:hover {
+    color: #ef4444;
+}
+
+/* ---- Loading spinner inside suggestions ---- */
+.loading-suggestions {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+}
+.loading-suggestions .spinner-border {
+    color: #4338ca;
+    width: 2rem;
+    height: 2rem;
+}
 </style>
 {% endblock %}
 
@@ -199,16 +302,27 @@
                 </h1>
                 <p class="text-muted lead mb-4">Thousands of programming resources, curated for your growth. Instant download, zero cost.</p>
 
-                <div class="position-relative" style="max-width: 500px;">
-                    <form action="/" method="GET" class="input-group shadow-lg rounded-pill overflow-hidden bg-white p-1 flex-nowrap" id="searchForm">
-                        <input type="text" name="search_query" id="searchInput" class="form-control border-0 shadow-none ps-3 ps-md-4" 
-                               placeholder="Search by title or author..." value="{{ search_query }}" autocomplete="off" style="font-size:0.9rem; min-width:0;">
-                        <button type="submit" class="btn btn-primary rounded-pill px-3 px-md-5 fw-bold shadow-sm">
-                            <i class="bi bi-search me-1 me-md-2"></i><span class="d-none d-sm-inline">Find Book</span>
-                        </button>
-                    </form>
-                    <div id="searchSuggestions" class="search-suggestions d-none"></div>
-                </div>
+                <!-- ========== ENHANCED SEARCH BAR ========== -->
+               <!-- ========== ENHANCED SEARCH BAR ========== -->
+<div class="position-relative" style="max-width: 500px;">
+    <form action="/" method="GET" class="input-group shadow-lg rounded-pill overflow-hidden bg-white p-1 flex-nowrap" id="searchForm">
+        <div class="position-relative w-100">
+            <input type="text" name="search_query" id="searchInput"
+                   class="form-control border-0 shadow-none ps-3 ps-md-4 pe-5"
+                   placeholder="Search by title or author..." value="{{ search_query }}"
+                   autocomplete="off" style="font-size:0.9rem; min-width:0; border-radius: 50px 0 0 50px;">
+            <button type="button" id="clearSearchBtn" class="btn btn-link text-muted border-0 position-absolute"
+                    style="right: 8px; top: 50%; transform: translateY(-50%); display:none; z-index:5; padding: 0;">
+                <i class="bi bi-x-circle-fill fs-5"></i>
+            </button>
+        </div>
+        <button type="submit" class="btn btn-primary rounded-pill px-3 px-md-5 fw-bold shadow-sm" style="border-radius: 0 50px 50px 0;">
+            <i class="bi bi-search me-1 me-md-2"></i><span class="d-none d-sm-inline">Find Book</span>
+        </button>
+    </form>
+    <div id="searchSuggestions" class="search-suggestions d-none"></div>
+</div>
+                <!-- ========== END SEARCH BAR ========== -->
 
                 {% if search_query %}
                 <div class="mt-3 animate-fade-in">
@@ -547,31 +661,89 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // AUTOCOMPLETE SEARCH
+    // ========== AUTOCOMPLETE SEARCH (Enhanced) ==========
     const searchInput = document.getElementById('searchInput');
     const suggestionsBox = document.getElementById('searchSuggestions');
     const searchForm = document.getElementById('searchForm');
+    const clearBtn = document.getElementById('clearSearchBtn');
     const bookModal = new bootstrap.Modal(document.getElementById('bookDetailModal'));
+    let debounceTimer;
 
-    searchInput.addEventListener('input', async function() {
-        const q = this.value.trim();
-        if (q.length < 2) { suggestionsBox.classList.add('d-none'); return; }
-        try {
-            const resp = await fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`);
-            const books = await resp.json();
-            if (!books.length) { suggestionsBox.classList.add('d-none'); return; }
-            suggestionsBox.innerHTML = books.map(b => `<div class="search-suggestion-item" data-id="${b.id}">${b.title}</div>`).join('');
-            suggestionsBox.classList.remove('d-none');
-            suggestionsBox.querySelectorAll('.search-suggestion-item').forEach(item => {
-                item.addEventListener('click', function() { suggestionsBox.classList.add('d-none'); openBookModal(this.dataset.id); });
+    // Clear button
+    clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearBtn.style.display = 'none';
+        suggestionsBox.classList.add('d-none');
+        searchInput.focus();
+    });
+
+    searchInput.addEventListener('input', function() {
+        const val = this.value.trim();
+        clearBtn.style.display = val.length > 0 ? 'block' : 'none';
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => fetchSuggestions(val), 300);   // debounce 300ms
+    });
+
+    function fetchSuggestions(query) {
+    if (query.length < 2) {
+        suggestionsBox.classList.add('d-none');
+        return;
+    }
+    // Show loading spinner
+    suggestionsBox.innerHTML = `<div class="loading-suggestions"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
+    suggestionsBox.classList.remove('d-none');
+
+    fetch(`/api/search/suggest?q=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(books => {
+            if (!books.length) {
+                suggestionsBox.classList.add('d-none');
+                return;
+            }
+            renderSuggestions(books);
+        })
+        .catch(() => suggestionsBox.classList.add('d-none'));
+}
+    function renderSuggestions(books) {
+        suggestionsBox.innerHTML = books.map(book => {
+            let coverHTML;
+            if (book.image_url && book.image_url !== 'None') {
+                coverHTML = `<img src="${book.image_url}" alt="Cover" class="suggestion-img">`;
+            } else {
+                const initials = (book.title || 'Book').substring(0,2).toUpperCase();
+                coverHTML = `<div class="no-cover-placeholder">${initials}</div>`;
+            }
+            return `
+                <div class="suggestion-item" data-id="${book.id}">
+                    ${coverHTML}
+                    <div class="suggestion-info">
+                        <div class="suggestion-title">${book.title}</div>
+                        <div class="suggestion-meta">
+                            <span>${book.author || 'Unknown'}</span>
+                            <span class="badge bg-primary">${book.level}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Attach click events
+        suggestionsBox.querySelectorAll('.suggestion-item').forEach(item => {
+            item.addEventListener('click', function() {
+                suggestionsBox.classList.add('d-none');
+                openBookModal(this.dataset.id);
             });
-        } catch { suggestionsBox.classList.add('d-none'); }
-    });
+        });
+    }
 
+    // Hide suggestions on outside click
     document.addEventListener('click', e => {
-        if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) suggestionsBox.classList.add('d-none');
+        if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+            suggestionsBox.classList.add('d-none');
+        }
     });
 
+    // Search form submission – if exact match found, open modal (optional)
     searchForm.addEventListener('submit', async function(e) {
         const q = searchInput.value.trim();
         if (!q) return;
@@ -579,7 +751,10 @@ document.addEventListener("DOMContentLoaded", function() {
             const resp = await fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`);
             const books = await resp.json();
             const exact = books.find(b => b.title.toLowerCase() === q.toLowerCase());
-            if (exact) { e.preventDefault(); openBookModal(exact.id); }
+            if (exact) {
+                e.preventDefault();
+                openBookModal(exact.id);
+            }
         } catch {}
     });
 

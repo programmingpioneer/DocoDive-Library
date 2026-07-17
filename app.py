@@ -981,11 +981,23 @@ def search_suggest():
     if len(q) < 2:
         return jsonify([])
     cur = mysql.connection.cursor()
-    cur.execute("SELECT id, title FROM documents WHERE title LIKE %s AND approved = 1 ORDER BY title LIMIT 8", (f'%{q}%',))
+    cur.execute("""
+        SELECT d.id, d.title, d.author, c.level, d.image_url
+        FROM documents d
+        JOIN categories c ON d.category_id = c.id
+        WHERE d.title LIKE %s AND d.approved = 1
+        ORDER BY d.title
+        LIMIT 8
+    """, (f'%{q}%',))
     results = cur.fetchall()
     cur.close()
-    return jsonify([{"id": r[0], "title": r[1]} for r in results])
-
+    return jsonify([{
+        "id": r[0],
+        "title": r[1],
+        "author": r[2],
+        "level": r[3],
+        "image_url": r[4]
+    } for r in results])
 # -------------------- API: BOOK DETAIL FOR MODAL --------------------
 @app.route('/api/book/<int:book_id>')
 def api_book_detail(book_id):
