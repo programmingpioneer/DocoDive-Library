@@ -10,6 +10,22 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
+
+ <!-- Brevo Conversations -->
+<script>
+    (function(d, w, c) {
+        w.BrevoConversationsID = '6a551981edd95b5e7d08467b';
+        w[c] = w[c] || function() {
+            (w[c].q = w[c].q || []).push(arguments);
+        };
+        var s = d.createElement('script');
+        s.async = true;
+        s.src = 'https://conversations-widget.brevo.com/brevo-conversations.js';
+        if (d.head) d.head.appendChild(s);
+    })(document, window, 'BrevoConversations');
+</script>
+<!-- End Brevo Conversations -->
+
 <body class="d-flex flex-column min-vh-100">
 
     <!-- ========== NAVIGATION ========== -->
