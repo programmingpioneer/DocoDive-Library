@@ -1,41 +1,157 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container-fluid p-0 d-flex flex-column" style="min-height: calc(100vh - 70px);">
-    <!-- Mini toolbar -->
-    <div class="bg-white border-bottom px-3 py-2 d-flex align-items-center gap-2 shadow-sm">
-        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-            <i class="bi bi-arrow-left me-1"></i> Back
-        </a>
-        <span class="fw-semibold text-truncate" style="font-size: 0.9rem;">Reading PDF</span>
-        <a href="{{ pdf_url }}" class="btn btn-sm btn-primary rounded-pill ms-auto" download>
-            <i class="bi bi-download me-1"></i> Download
-        </a>
-    </div>
+<style>
+    /* Fixed toolbar at top */
+    .reader-toolbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1030;
+        height: 56px;
+        background: white;
+        border-bottom: 1px solid #e0e7ff;
+        display: flex;
+        align-items: center;
+        padding: 0 1rem;
+        gap: 0.75rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .reader-toolbar .btn {
+        white-space: nowrap;
+    }
+    .reader-toolbar .title {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #1e1b4b;
+    }
 
-    <!-- PDF iframe -->
-    <div class="flex-grow-1">
-        <iframe src="{{ pdf_url }}" width="100%" height="100%" style="border:none; min-height: calc(100vh - 120px);"></iframe>
-    </div>
+    /* Push body content below toolbar and make page scrollable */
+    body {
+        padding-top: 56px;
+        margin: 0;
+        background: #f5f7ff;
+    }
+    .reader-container {
+        width: 100%;
+        max-width: 1100px;
+        margin: 1rem auto;
+        padding: 0 1rem;
+        box-sizing: border-box;
+        /* minimum height ensures even empty page scrolls */
+        min-height: calc(100vh - 56px - 2rem);
+        display: flex;
+    }
+    .reader-container iframe {
+        width: 100%;
+        min-height: 100%;
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        background: white;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+        .reader-toolbar {
+            height: 48px;
+            padding: 0 0.5rem;
+            gap: 0.4rem;
+        }
+        .reader-toolbar .title {
+            font-size: 0.85rem;
+        }
+        body {
+            padding-top: 48px;
+        }
+        .reader-container {
+            margin: 0.5rem auto;
+            padding: 0 0.5rem;
+            min-height: calc(100vh - 48px - 1rem);
+        }
+        .reader-container iframe {
+            border-radius: 8px;
+        }
+    }
+
+    /* Dark mode */
+    [data-bs-theme="dark"] .reader-toolbar {
+        background: #2a2a3d;
+        color: #e0e0e0;
+        border-color: #3a3a4d;
+    }
+    [data-bs-theme="dark"] .reader-toolbar .title {
+        color: #e0e0e0;
+    }
+    /* ===== Custom Scrollbar (Webkit-based: Chrome, Edge, Safari) ===== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #4338ca, #818cf8);
+    border-radius: 10px;
+    border: 2px solid #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #312e81, #6d28d9);
+}
+
+/* Dark mode adjustments */
+[data-bs-theme="dark"] ::-webkit-scrollbar-track {
+    background: #2a2a3d;
+}
+
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #818cf8, #4338ca);
+    border: 2px solid #2a2a3d;
+}
+
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #a5b4fc, #6366f1);
+}
+</style>
+
+<div class="reader-toolbar">
+    <a href="/book/{{ book_id }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+        <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
+    <span class="title" title="{{ book_title }}">📖 {{ book_title }}</span>
+    <a href="{{ pdf_url }}" class="btn btn-primary btn-sm rounded-pill px-3" download onclick="fetch('/api/download/{{ book_id }}',{method:'POST'});">
+        <i class="bi bi-download me-1"></i> Download
+    </a>
+    <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" onclick="toggleFullscreen()" title="Fullscreen">
+        <i class="bi bi-arrows-fullscreen"></i>
+    </button>
 </div>
 
-<style>
-    /* Ensure iframe fills on all devices */
-    @media (max-width: 768px) {
-        .container-fluid.d-flex {
-            min-height: calc(100vh - 60px) !important;
-        }
-        iframe {
-            min-height: calc(100vh - 110px) !important;
-        }
-    }
-    @media (max-width: 576px) {
-        .toolbar-text {
-            font-size: 0.8rem;
-        }
-        .btn-sm {
-            padding: 0.25rem 0.7rem;
-            font-size: 0.75rem;
+<div class="reader-container">
+    <iframe src="{{ pdf_url }}" id="pdfIframe" allowfullscreen></iframe>
+</div>
+
+<script>
+    function toggleFullscreen() {
+        const iframe = document.getElementById('pdfIframe');
+        if (!document.fullscreenElement) {
+            iframe.requestFullscreen().catch(err => {});
+        } else {
+            document.exitFullscreen();
         }
     }
-</style>
+
+    // Track download
+    document.querySelector('a[download]').addEventListener('click', function() {
+        fetch('/api/download/{{ book_id }}', {method:'POST'});
+    });
+</script>
 {% endblock %}

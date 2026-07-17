@@ -1221,12 +1221,12 @@ def add_review(book_id):
 @app.route('/book/<int:book_id>/read')
 def read_online(book_id):
     cur = mysql.connection.cursor()
-    cur.execute("SELECT telegram_link FROM documents WHERE id = %s AND approved = 1", (book_id,))
+    cur.execute("SELECT telegram_link, title FROM documents WHERE id = %s AND approved = 1", (book_id,))
     book = cur.fetchone()
     cur.close()
     if not book:
         abort(404)
-    return render_template('read_online.html', pdf_url=book[0])
+    return render_template('read_online.html', pdf_url=book[0], book_title=book[1], book_id=book_id)
 
 # -------------------- ADMIN ROUTE (corrected cover MIME) --------------------
 @app.route('/admin', methods=['GET', 'POST'])
