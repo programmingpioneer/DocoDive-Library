@@ -302,7 +302,7 @@
                                 {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
                                 <div class="book-3d-wrapper">
                                     <div class="book-3d">
-                                        <div class="book-front"><img src="{{ pdf.image_url }}" alt="Cover" class="book-cover-img"></div>
+                                        <div class="book-front"><img src="{{ pdf.image_url }}" alt="Cover" class="book-cover-img" loading="lazy"></div>
                                         <div class="book-spine"></div>
                                         <div class="book-pages"></div>
                                         <div class="book-shadow"></div>

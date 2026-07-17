@@ -32,6 +32,7 @@
                     
                     <!-- 📄 PDF Upload Zone -->
                     <form id="uploadForm" enctype="multipart/form-data">
+                        <input type="hidden" name="_csrf_token" value="{{ session._csrf_token }}">
                         <div class="mb-4 p-4 border border-2 border-primary rounded bg-light upload-zone">
                             <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 3rem;"></i>
                             <h5 class="mt-2 fw-bold">Select PDF from your System</h5>

@@ -6,6 +6,8 @@ import secrets
 from datetime import datetime, timedelta
 from functools import wraps
 from html import escape
+from PIL import Image
+from flask_caching import Cache
 
 import boto3
 from botocore.config import Config
@@ -33,7 +35,15 @@ try:
 except ImportError:
     HAS_MAIL = False
 
+
 app = Flask(__name__)
+
+app.config['CACHE_TYPE'] = 'SimpleCache'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300
+
+cache = Cache(app)   
+
+
 
 IS_PRODUCTION = os.getenv("FLASK_ENV", "").lower() == "production" or \
                 os.getenv("ENVIRONMENT", "").lower() == "production"
@@ -55,49 +65,54 @@ app.config['MYSQL_DB'] = 'docodive_db'
 app.config['MYSQL_PORT'] = 4000
 
 # SSL configuration – IMPORTANT: yahan apna asli CA certificate path daalo
-app.config['MYSQL_SSL_CA'] = r'D:\TiDB_SSL\isrgrootx1.pem'
+ca_cert_path = os.path.join(os.path.dirname(__file__), 'ssl', 'tidb-ca.pem')
+app.config['MYSQL_SSL_CA'] = ca_cert_path
 app.config['MYSQL_SSL_VERIFY_CERT'] = True
 app.config['MYSQL_SSL_VERIFY_IDENTITY'] = True
 
 # ================== TiDB SSL Compatible Wrapper (with connector alias) ==================
+from mysql.connector.pooling import MySQLConnectionPool
+import os
+
+# Pool ko globally banao (app create hone ke baad)
+db_config = {
+    'host': app.config['MYSQL_HOST'],
+    'user': app.config['MYSQL_USER'],
+    'password': app.config['MYSQL_PASSWORD'],
+    'database': app.config['MYSQL_DB'],
+    'port': app.config['MYSQL_PORT'],
+    'ssl_ca': app.config.get('MYSQL_SSL_CA'),
+    'ssl_verify_cert': app.config.get('MYSQL_SSL_VERIFY_CERT', True),
+    'ssl_verify_identity': app.config.get('MYSQL_SSL_VERIFY_IDENTITY', True),
+    'use_pure': True,
+    'autocommit': True,
+}
+
+# Pool size 5 rakh sakte ho
+pool = MySQLConnectionPool(pool_name="mypool", pool_size=5, **db_config)
+
 class MySQLWrapper:
     def __init__(self, app_config):
         self.config = app_config
 
-    def _create_connection(self):
-        ssl_opts = {}
-        if self.config.get('MYSQL_SSL_CA'):
-            ssl_opts['ssl_ca'] = self.config['MYSQL_SSL_CA']
-        ssl_opts['ssl_verify_cert'] = self.config.get('MYSQL_SSL_VERIFY_CERT', True)
-        ssl_opts['ssl_verify_identity'] = self.config.get('MYSQL_SSL_VERIFY_IDENTITY', True)
-
-        return mysql_connector_module.connect(
-            host=self.config['MYSQL_HOST'],
-            user=self.config['MYSQL_USER'],
-            password=self.config['MYSQL_PASSWORD'],
-            database=self.config['MYSQL_DB'],
-            port=self.config['MYSQL_PORT'],
-            use_pure=True,
-            autocommit=True,
-            **ssl_opts
-        )
-
     @property
     def connection(self):
+        # Agar request ke liye connection nahi hai to pool se le lo
         if 'db_conn' not in g:
-            g.db_conn = self._create_connection()
+            g.db_conn = pool.get_connection()
         return g.db_conn
 
     @property
     def connector(self):
         return self.connection
 
+
 @app.teardown_appcontext
 def close_db_connection(exception):
     db_conn = g.pop('db_conn', None)
     if db_conn is not None:
         try:
-            db_conn.close()
+            db_conn.close()   # yeh connection pool ko wapas dega
         except Exception:
             pass
 
@@ -360,6 +375,7 @@ Return JSON with keys: title, author, description.
 
 # -------------------- USER UPLOAD (R2) – AJAX SUPPORT ADDED --------------------
 @app.route('/user/upload', methods=['GET', 'POST'])
+@cache.cached(timeout=600, unless=lambda: request.method == 'POST')
 def user_upload():
     if 'user_id' not in session:
         return redirect(url_for('user_login'))
@@ -440,6 +456,7 @@ def user_upload():
             return redirect(url_for('user_upload'))
 
         cover_data = cover_file.read()
+        cover_data = compress_image(cover_data, max_size=(800, 800), quality=80)
         if len(cover_data) > 2 * 1024 * 1024:
             cur.close()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -861,6 +878,7 @@ def logout():
 
 # -------------------- PUBLIC ROUTES (locked) --------------------
 @app.route('/')
+@cache.cached(timeout=120, query_string=True)
 def home():
     if not session.get('user_id') and not session.get('logged_in'):
         return redirect(url_for('user_login'))
@@ -869,8 +887,12 @@ def home():
     category = request.args.get('category', '').strip()
     author_filter = request.args.get('author', '').strip()
     lang_filter = request.args.get('language', '').strip()
-    page = request.args.get('page', 1, type=int)
-    per_page = 12
+    
+    # ---------- Pagination safety ----------
+    page = max(1, request.args.get('page', 1, type=int))          # minimum 1
+    per_page = min(50, request.args.get('per_page', 12, type=int)) # max 50, default 12
+    if per_page < 1:
+        per_page = 12
     offset = (page - 1) * per_page
 
     cur = mysql.connection.cursor()
@@ -894,6 +916,11 @@ def home():
     cur.execute(count_query, params)
     total_books = cur.fetchone()[0]
     total_pages = max(1, (total_books + per_page - 1) // per_page)
+
+    # page overflow protection
+    if page > total_pages:
+        page = total_pages
+        offset = (page - 1) * per_page
 
     books_query = f"""
         SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language
@@ -1192,6 +1219,7 @@ def read_online(book_id):
 # -------------------- ADMIN ROUTE (corrected cover MIME) --------------------
 @app.route('/admin', methods=['GET', 'POST'])
 @admin_required
+@cache.cached(timeout=600, unless=lambda: request.method == 'POST') 
 def admin():
     if request.method == 'POST':
         if 'pdf_file' not in request.files:
@@ -1248,6 +1276,7 @@ def admin():
                     warning = "Cover image format not allowed."
                 else:
                     cover_data = cover_file.read()
+                    cover_data = compress_image(cover_data, max_size=(800, 800), quality=80)
                     if len(cover_data) > 5 * 1024 * 1024:
                         warning = "Cover image exceeds 5 MB."
                     else:
@@ -1292,7 +1321,21 @@ def admin():
             resp["warning"] = warning
         return jsonify(resp)
 
+    # GET request – auto-insert default categories if table is empty
+      # GET request – ensure all default categories exist
     cur = mysql.connection.cursor()
+    DEFAULT_CATEGORIES = [
+        'Python', 'JavaScript', 'Java', 'C / C++',
+        'Web Development', 'Data Science', 'Machine Learning',
+        'Algorithms', 'Databases', 'Cyber Security',
+        'Mobile Apps', 'DevOps', 'Other'
+    ]
+    for cat in DEFAULT_CATEGORIES:
+        cur.execute("SELECT id FROM categories WHERE level = %s", (cat,))
+        if not cur.fetchone():
+            cur.execute("INSERT INTO categories (level) VALUES (%s)", (cat,))
+    mysql.connection.commit()
+
     cur.execute("SELECT level FROM categories ORDER BY level")
     categories = [row[0] for row in cur.fetchall()]
     cur.close()
@@ -1406,6 +1449,7 @@ def admin_books_list():
     return render_template('admin_books.html', books=books_list)
 
 # -------------------- ADMIN EDIT / DELETE BOOKS (R2 aware) --------------------
+# -------------------- ADMIN EDIT / DELETE BOOKS (R2 aware) --------------------
 @app.route('/admin/edit/<int:book_id>', methods=['GET', 'POST'])
 @admin_required
 def edit_book(book_id):
@@ -1463,6 +1507,32 @@ def edit_book(book_id):
         cur.close()
         return redirect(url_for('admin_books_list'))
 
+    # GET request – ensure default categories exist and convert to dicts for template
+    cur = mysql.connection.cursor()
+    DEFAULT_CATEGORIES = [
+        'Python', 'JavaScript', 'Java', 'C / C++',
+        'Web Development', 'Data Science', 'Machine Learning',
+        'Algorithms', 'Databases', 'Cyber Security',
+        'Mobile Apps', 'DevOps', 'Other'
+    ]
+    for cat in DEFAULT_CATEGORIES:
+        cur.execute("SELECT id FROM categories WHERE level = %s", (cat,))
+        if not cur.fetchone():
+            cur.execute("INSERT INTO categories (level) VALUES (%s)", (cat,))
+    mysql.connection.commit()
+
+    cur.execute("SELECT id, title, category_id, telegram_link, author, description, image_url, language FROM documents WHERE id = %s", (book_id,))
+    book_row = cur.fetchone()
+    cur.execute("SELECT id, level FROM categories ORDER BY id")
+    categories_raw = cur.fetchall()
+    categories = [{"id": row[0], "level": row[1]} for row in categories_raw]
+    cur.close()
+    if not book_row:
+        abort(404)
+    book = {"id": book_row[0], "title": book_row[1], "category_id": book_row[2], "link": book_row[3],
+            "author": book_row[4], "description": book_row[5], "image_url": book_row[6], "language": book_row[7]}
+    return render_template('edit_book.html', book=book, categories=categories)
+
     cur.execute("SELECT id, title, category_id, telegram_link, author, description, image_url, language FROM documents WHERE id = %s", (book_id,))
     book_row = cur.fetchone()
     cur.execute("SELECT id, level FROM categories ORDER BY id")
@@ -1515,6 +1585,7 @@ def admin_stats():
 
 # -------------------- LIVE CATEGORY COUNT --------------------
 @app.route('/api/categories/live-counts')
+@cache.cached(timeout=60)
 def live_category_counts():
     cur = mysql.connection.cursor()
     cur.execute("""
@@ -1595,7 +1666,6 @@ def delete_admin(admin_id):
     cur.close()
     return jsonify({"success": "Admin deleted."})
 
-
 # -------------------- MANAGE USERS (super admin) --------------------
 @app.route('/admin/users')
 @admin_required
@@ -1656,6 +1726,63 @@ def manifest():
 @app.route('/sw.js')
 def service_worker():
     return app.send_static_file('sw.js')
+
+# -------------------- ERROR HANDLERS --------------------
+@app.errorhandler(RequestEntityTooLarge)
+def too_large(e):
+    return jsonify({"error": "File size too large. Maximum 500 MB allowed."}), 413
+
+@app.errorhandler(400)
+def bad_request(e):
+    return render_template('400.html'), 400
+
+@app.errorhandler(401)
+def unauthorized(e):
+    return render_template('401.html'), 401
+
+@app.errorhandler(403)
+def forbidden(e):
+    return render_template('403.html'), 403
+
+@app.errorhandler(404)
+def not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(429)
+def too_many_requests(e):
+    return render_template('429.html'), 429
+
+@app.errorhandler(500)
+def internal_error(e):
+    return render_template('500.html'), 500
+
+@app.errorhandler(503)
+def service_unavailable(e):
+    return render_template('503.html'), 503
+
+
+#---------------Image comprees------------#
+def compress_image(image_bytes, max_size=(600, 600), quality=85):
+    """Resize & compress image, return optimized bytes."""
+    img = Image.open(io.BytesIO(image_bytes))
+    img.thumbnail(max_size, Image.LANCZOS)  # preserve aspect ratio
+    
+    output = io.BytesIO()
+    if img.mode in ('RGBA', 'P'):
+        img = img.convert('RGB')  # JPEG doesn't support alpha
+    
+    img.save(output, format='JPEG', quality=quality, optimize=True)
+    return output.getvalue()
+
+#----------------Flask Cacheing ----------------#
+
+from flask_caching import Cache
+
+# Flask app create hone ke baad (app = Flask(__name__) ke baad)
+app.config['CACHE_TYPE'] = 'SimpleCache'          # Development ke liye (production mein Redis use karna)
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300         # 5 minutes default timeout
+
+cache = Cache(app)
 
 # -------------------- RUN --------------------
 if __name__ == '__main__':

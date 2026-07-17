@@ -5,7 +5,7 @@
         <!-- Book Cover -->
         <div class="col-12 col-md-5 col-lg-4">
             {% if book.image_url and book.image_url != 'None' %}
-                <img src="{{ book.image_url }}" class="img-fluid rounded-4 shadow-sm w-100" alt="{{ book.title }}" style="object-fit: cover; max-height: 450px;">
+                <img src="{{ book.image_url }}" class="img-fluid rounded-4 shadow-sm w-100" alt="{{ book.title }}" style="object-fit: cover; max-height: 450px;" loading="lazy">
             {% else %}
                 <div class="book-cover-fallback rounded-4 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg,#a5b4fc,#818cf8); min-height: 280px; height: 100%;">
                     <div class="text-center p-4">

@@ -236,6 +236,7 @@
             {% endwith %}
 
             <form id="uploadForm" enctype="multipart/form-data">
+                <input type="hidden" name="_csrf_token" value="{{ session._csrf_token }}">
                 <!-- PDF Upload -->
                 <div class="mb-3">
                     <label for="pdf_file" class="form-label fw-semibold">Select PDF File <span class="text-danger">*</span></label>

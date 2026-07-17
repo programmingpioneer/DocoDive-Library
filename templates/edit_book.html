@@ -15,6 +15,7 @@
             <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="card-body p-4 p-lg-5">
                     <form method="POST" action="/admin/edit/{{ book.id }}" enctype="multipart/form-data">
+                        <input type="hidden" name="_csrf_token" value="{{ session._csrf_token }}">
                         <!-- Title -->
                         <div class="mb-4">
                             <label class="form-label fw-bold small text-uppercase" style="letter-spacing: 0.5px; color: #6b7280;">Title</label>

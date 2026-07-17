@@ -45,7 +45,7 @@
                 <!-- Cover -->
                 <div class="d-flex align-items-center justify-content-center" style="height: 180px;">
                     {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
-                        <img src="{{ pdf.image_url }}" alt="Cover" class="img-fluid rounded" style="max-height: 100%; width: auto; object-fit: cover;">
+                        <img src="{{ pdf.image_url }}" alt="Cover" class="img-fluid rounded" style="max-height: 100%; width: auto; object-fit: cover;" loading="lazy">
                     {% else %}
                         {% set title_safe = pdf.title | default('Book', true) | replace('_', ' ') %}
                         {% set words = title_safe.split() %}
