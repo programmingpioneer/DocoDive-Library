@@ -339,35 +339,35 @@
             </div>
 
             <!-- Login Tab -->
-            <div id="login-tab" class="tab-content {% if mode != 'signup' %}active{% endif %}">
-                {% if error and mode != 'signup' %}
-                    <div class="alert alert-danger">{{ error }}</div>
-                {% endif %}
-                <form method="POST" action="/user/signup" novalidate>
-    <input type="hidden" name="_csrf_token" value="{{ session._csrf_token }}">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Email</label>
-                        <input type="email" name="email" class="form-control" placeholder="you@example.com" required>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label fw-semibold small">Password</label>
-                        <input type="password" name="password" id="login-password" class="form-control" placeholder="••••••••" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="show-password-label" style="color: #6b7280; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none;">
-                            <input type="checkbox" onclick="toggleLoginPassword()" style="margin-right: 5px; transform: translateY(1px);">
-                            Show Password
-                        </label>
-                    </div>
-                    <div class="text-end mb-3">
-                        <a href="/forgot-password" class="text-muted small text-decoration-none" style="font-size: 0.8rem;">Forgot Password?</a>
-                    </div>
-                    <button type="submit" class="btn-primary-custom w-100">Login</button>
-                </form>
-                <p class="text-center mt-3 small text-muted">
-                    New here? <span class="text-link" onclick="switchTab('signup')">Create an account</span>
-                </p>
-            </div>
+<div id="login-tab" class="tab-content {% if mode != 'signup' %}active{% endif %}">
+    {% if error and mode != 'signup' %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    <form method="POST" action="/user/login">
+        <input type="hidden" name="_csrf_token" value="{{ session._csrf_token }}">
+        <div class="mb-3">
+            <label class="form-label fw-semibold small">Email</label>
+            <input type="email" name="email" class="form-control" placeholder="you@example.com" required>
+        </div>
+        <div class="mb-2">
+            <label class="form-label fw-semibold small">Password</label>
+            <input type="password" name="password" id="login-password" class="form-control" placeholder="••••••••" required>
+        </div>
+        <div class="mb-3">
+            <label class="show-password-label" style="color: #6b7280; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none;">
+                <input type="checkbox" onclick="toggleLoginPassword()" style="margin-right: 5px; transform: translateY(1px);">
+                Show Password
+            </label>
+        </div>
+        <div class="text-end mb-3">
+            <a href="/forgot-password" class="text-muted small text-decoration-none" style="font-size: 0.8rem;">Forgot Password?</a>
+        </div>
+        <button type="submit" class="btn-primary-custom w-100">Login</button>
+    </form>
+    <p class="text-center mt-3 small text-muted">
+        New here? <span class="text-link" onclick="switchTab('signup')">Create an account</span>
+</p>
+ </div>
 
             <!-- Signup Tab -->
             <div id="signup-tab" class="tab-content {% if mode == 'signup' %}active{% endif %}">
