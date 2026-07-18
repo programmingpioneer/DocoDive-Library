@@ -6,6 +6,7 @@ import secrets
 from datetime import datetime, timedelta
 from functools import wraps
 from html import escape
+import socket
 
 from PIL import Image
 from flask_caching import Cache
@@ -302,15 +303,20 @@ def send_email_notification(subject, recipient, body, html_body=None):
             reply_to=app.config.get('SUPPORT_EMAIL') or None,
             extra_headers={"X-Auto-Response-Suppress": "All", "X-Entity-Ref-ID": secrets.token_hex(16)},
         )
-        # 👇 Timeout set karke connection send
-        with mail.connect() as conn:
-            conn.timeout = 10
-            conn.send(msg)
+        # 👇 Global socket timeout + connection timeout (double safety)
+        old_timeout = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(10)          # har network operation 10s mein ruk jayega
+        try:
+            with mail.connect() as conn:
+                conn.timeout = 10
+                conn.send(msg)
+        finally:
+            socket.setdefaulttimeout(old_timeout)   # timeout wapis normal
         app.logger.info("Email sent to %s", recipient)
         return True
     except Exception:
         app.logger.exception("Email delivery failed for %s", recipient)
-        return False
+        return False 
 
 def is_valid_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
