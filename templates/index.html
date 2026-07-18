@@ -265,26 +265,41 @@
     }
 
     /* ---- Clear button adjustment ---- */
-#clearSearchBtn {
-    background: none;
-    box-shadow: none;
-    color: #9ca3af;
-    transition: color 0.2s;
-}
-#clearSearchBtn:hover {
-    color: #ef4444;
-}
+    #clearSearchBtn {
+        background: none;
+        box-shadow: none;
+        color: #9ca3af;
+        transition: color 0.2s;
+    }
+    #clearSearchBtn:hover {
+        color: #ef4444;
+    }
 
-/* ---- Loading spinner inside suggestions ---- */
-.loading-suggestions {
-    display: flex;
-    justify-content: center;
-    padding: 20px 0;
+    /* ---- Loading spinner inside suggestions ---- */
+    .loading-suggestions {
+        display: flex;
+        justify-content: center;
+        padding: 20px 0;
+    }
+    .loading-suggestions .spinner-border {
+        color: #4338ca;
+        width: 2rem;
+        height: 2rem;
+    }
+    /* === CARD ENTRANCE ANIMATION === */
+.anim-card {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
 }
-.loading-suggestions .spinner-border {
-    color: #4338ca;
-    width: 2rem;
-    height: 2rem;
+.anim-card.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+.anim-card.revealed {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: var(--delay, 0s); /* not needed if inline style is used */
 }
 </style>
 {% endblock %}
@@ -303,25 +318,24 @@
                 <p class="text-muted lead mb-4">Thousands of programming resources, curated for your growth. Instant download, zero cost.</p>
 
                 <!-- ========== ENHANCED SEARCH BAR ========== -->
-               <!-- ========== ENHANCED SEARCH BAR ========== -->
-<div class="position-relative" style="max-width: 500px;">
-    <form action="/" method="GET" class="input-group shadow-lg rounded-pill overflow-hidden bg-white p-1 flex-nowrap" id="searchForm">
-        <div class="position-relative w-100">
-            <input type="text" name="search_query" id="searchInput"
-                   class="form-control border-0 shadow-none ps-3 ps-md-4 pe-5"
-                   placeholder="Search by title or author..." value="{{ search_query }}"
-                   autocomplete="off" style="font-size:0.9rem; min-width:0; border-radius: 50px 0 0 50px;">
-            <button type="button" id="clearSearchBtn" class="btn btn-link text-muted border-0 position-absolute"
-                    style="right: 8px; top: 50%; transform: translateY(-50%); display:none; z-index:5; padding: 0;">
-                <i class="bi bi-x-circle-fill fs-5"></i>
-            </button>
-        </div>
-        <button type="submit" class="btn btn-primary rounded-pill px-3 px-md-5 fw-bold shadow-sm" style="border-radius: 0 50px 50px 0;">
-            <i class="bi bi-search me-1 me-md-2"></i><span class="d-none d-sm-inline">Find Book</span>
-        </button>
-    </form>
-    <div id="searchSuggestions" class="search-suggestions d-none"></div>
-</div>
+                <div class="position-relative" style="max-width: 500px;">
+                    <form action="/" method="GET" class="input-group shadow-lg rounded-pill overflow-hidden bg-white p-1 flex-nowrap" id="searchForm">
+                        <div class="position-relative w-100">
+                            <input type="text" name="search_query" id="searchInput"
+                                   class="form-control border-0 shadow-none ps-3 ps-md-4 pe-5"
+                                   placeholder="Search by title or author..." value="{{ search_query }}"
+                                   autocomplete="off" style="font-size:0.9rem; min-width:0; border-radius: 50px 0 0 50px;">
+                            <button type="button" id="clearSearchBtn" class="btn btn-link text-muted border-0 position-absolute"
+                                    style="right: 8px; top: 50%; transform: translateY(-50%); display:none; z-index:5; padding: 0;">
+                                <i class="bi bi-x-circle-fill fs-5"></i>
+                            </button>
+                        </div>
+                        <button type="submit" class="btn btn-primary rounded-pill px-3 px-md-5 fw-bold shadow-sm" style="border-radius: 0 50px 50px 0;">
+                            <i class="bi bi-search me-1 me-md-2"></i><span class="d-none d-sm-inline">Find Book</span>
+                        </button>
+                    </form>
+                    <div id="searchSuggestions" class="search-suggestions d-none"></div>
+                </div>
                 <!-- ========== END SEARCH BAR ========== -->
 
                 {% if search_query %}
@@ -361,6 +375,56 @@
     <div class="position-absolute bottom-0 start-0 w-100" style="height: 100px; background: linear-gradient(to top, white, transparent);"></div>
 </section>
 
+<!-- ==================== BOOK OF THE DAY ==================== -->
+<!-- ==================== BOOK OF THE DAY ==================== -->
+{% if featured_book %}
+<section class="container my-4 py-4">
+    <div class="card border-0 shadow-lg rounded-4 p-3 p-md-4 bg-warning bg-opacity-10">
+        <div class="row align-items-center g-3">
+            <div class="col-4 col-md-2 text-center">
+                <span class="badge bg-warning text-dark px-2 px-md-3 py-1 py-md-2 rounded-pill mb-2">📅 Book of the Day</span>
+                {% if featured_book[4] and featured_book[4] != 'None' %}
+                    <img src="{{ featured_book[4] }}" class="img-fluid rounded-3" style="max-height: 120px;" alt="Cover">
+                {% else %}
+                    <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="height: 120px;">
+                        <i class="bi bi-book fs-1"></i>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="col-8 col-md-8">
+                <h3 class="fw-bold fs-5 fs-md-4">{{ featured_book[1] }}</h3>
+                <p class="text-muted small">by {{ featured_book[2] }} &nbsp;|&nbsp; <span class="badge bg-secondary">{{ featured_book[3] }}</span></p>
+                <a href="/book/{{ featured_book[0] }}" class="btn btn-primary btn-sm rounded-pill px-3 px-md-4">View Details</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- ==================== STREAK & BADGES ==================== -->
+{% if session.get('user_id') and streak > 0 %}
+<div class="container mb-3">
+    <div class="d-flex justify-content-end align-items-center gap-3">
+        <span class="badge bg-success px-3 py-2 rounded-pill">
+            🔥 {{ streak }} day streak
+        </span>
+        {% if longest >= 7 %}
+            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill" title="Longest streak: {{ longest }} days">
+                🏅 Book Lover
+            </span>
+        {% endif %}
+        {% if longest >= 30 %}
+            <span class="badge bg-info text-dark px-3 py-2 rounded-pill">
+                📚 Avid Reader
+            </span>
+        {% endif %}
+        <a href="/user/stats" class="btn btn-sm btn-outline-primary rounded-pill">
+            <i class="bi bi-graph-up"></i> My Stats
+        </a>
+    </div>
+</div>
+{% endif %}
+
 <!-- ========== BROWSE BY BOOK TYPES ========== -->
 <section id="categories" class="container my-4 py-4">
     <h2 class="text-center fw-bolder mb-4 mb-md-5">
@@ -394,6 +458,65 @@
         {% endfor %}
     </div>
 </section>
+
+<!-- ==================== RECOMMENDED FOR YOU ==================== -->
+<!-- ==================== RECOMMENDED FOR YOU ==================== -->
+{% if recommended_books %}
+<section class="container my-5">
+    <h2 class="section-title mb-4">✨ Recommended for You</h2>
+    <div id="recommendedCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+        <div class="carousel-inner">
+            {% set chunk_size = 3 %}
+            {% for chunk in recommended_books[:6]|batch(chunk_size) %}
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                <div class="row g-2 g-sm-3 justify-content-center">
+                    {% for book in chunk %}
+                    <div class="col-4 col-sm-4 col-md-3 col-lg-2">
+                        <!-- card code same as before, but using 'book' loop variable -->
+                        <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
+                            <div class="book-cover-outer d-flex align-items-center justify-content-center" style="height:160px;">
+                                {% if book.image_url and book.image_url != 'None' and book.image_url.strip() != '' %}
+                                    <img src="{{ book.image_url }}" class="book-cover-img" loading="lazy" style="height:100%;object-fit:cover;">
+                                {% else %}
+                                    {% set title_safe = book.title | default('Book', true) | replace('_', ' ') %}
+                                    {% set words = title_safe.split() %}
+                                    {% set short_name = (words[0][:2])|upper if words|length == 1 else (words[0][0] ~ words[1][0])|upper %}
+                                    <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100" style="background: linear-gradient(135deg, #a5b4fc, #818cf8); color: white;">
+                                        <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-2" style="width:35px;height:35px;font-size:0.8rem;">{{ short_name }}</div>
+                                        <h6 class="fw-bold text-center px-2" style="font-size:0.6rem;">{{ title_safe }}</h6>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-light text-muted" style="font-size:0.55rem;">{{ book.level }}</span>
+                                    <span class="fw-bold text-warning" style="font-size:0.65rem;">FREE</span>
+                                </div>
+                                <h6 class="fw-bold text-truncate mb-1" style="font-size:0.75rem; color:#1e1b4b;">{{ book.title }}</h6>
+                                <p class="text-muted small mb-1" style="font-size:0.6rem;">By {{ book.author }}</p>
+                                <div class="d-flex justify-content-end">
+                                    <button class="btn btn-sm btn-light rounded-circle preview-trigger" data-book-id="{{ book.id }}" style="width: 22px; height: 22px; padding:0;">
+                                        <i class="bi bi-search" style="font-size:0.6rem;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <!-- Controls only on mobile (optional) -->
+        <button class="carousel-control-prev d-md-none" type="button" data-bs-target="#recommendedCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon bg-dark rounded-circle" aria-hidden="true"></span>
+        </button>
+        <button class="carousel-control-next d-md-none" type="button" data-bs-target="#recommendedCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon bg-dark rounded-circle" aria-hidden="true"></span>
+        </button>
+    </div>
+</section>
+{% endif %}
 
 <!-- ========== NEW ARRIVALS (carousel) ========== -->
 {% if not search_query %}
@@ -600,7 +723,7 @@
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // LIVE CATEGORY COUNTS
+    // ========== LIVE CATEGORY COUNTS ==========
     function updateCategoryCounts() {
         fetch('/api/categories/live-counts')
             .then(r => r.json())
@@ -661,7 +784,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // ========== AUTOCOMPLETE SEARCH (Enhanced) ==========
+    // ========== AUTOCOMPLETE SEARCH ==========
     const searchInput = document.getElementById('searchInput');
     const suggestionsBox = document.getElementById('searchSuggestions');
     const searchForm = document.getElementById('searchForm');
@@ -669,7 +792,6 @@ document.addEventListener("DOMContentLoaded", function() {
     const bookModal = new bootstrap.Modal(document.getElementById('bookDetailModal'));
     let debounceTimer;
 
-    // Clear button
     clearBtn.addEventListener('click', () => {
         searchInput.value = '';
         clearBtn.style.display = 'none';
@@ -681,29 +803,28 @@ document.addEventListener("DOMContentLoaded", function() {
         const val = this.value.trim();
         clearBtn.style.display = val.length > 0 ? 'block' : 'none';
         if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => fetchSuggestions(val), 300);   // debounce 300ms
+        debounceTimer = setTimeout(() => fetchSuggestions(val), 300);
     });
 
     function fetchSuggestions(query) {
-    if (query.length < 2) {
-        suggestionsBox.classList.add('d-none');
-        return;
+        if (query.length < 2) {
+            suggestionsBox.classList.add('d-none');
+            return;
+        }
+        suggestionsBox.innerHTML = '<div class="loading-suggestions"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+        suggestionsBox.classList.remove('d-none');
+        fetch(`/api/search/suggest?q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(books => {
+                if (!books.length) {
+                    suggestionsBox.classList.add('d-none');
+                    return;
+                }
+                renderSuggestions(books);
+            })
+            .catch(() => suggestionsBox.classList.add('d-none'));
     }
-    // Show loading spinner
-    suggestionsBox.innerHTML = `<div class="loading-suggestions"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
-    suggestionsBox.classList.remove('d-none');
 
-    fetch(`/api/search/suggest?q=${encodeURIComponent(query)}`)
-        .then(res => res.json())
-        .then(books => {
-            if (!books.length) {
-                suggestionsBox.classList.add('d-none');
-                return;
-            }
-            renderSuggestions(books);
-        })
-        .catch(() => suggestionsBox.classList.add('d-none'));
-}
     function renderSuggestions(books) {
         suggestionsBox.innerHTML = books.map(book => {
             let coverHTML;
@@ -726,8 +847,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 </div>
             `;
         }).join('');
-
-        // Attach click events
         suggestionsBox.querySelectorAll('.suggestion-item').forEach(item => {
             item.addEventListener('click', function() {
                 suggestionsBox.classList.add('d-none');
@@ -736,14 +855,12 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Hide suggestions on outside click
     document.addEventListener('click', e => {
         if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
             suggestionsBox.classList.add('d-none');
         }
     });
 
-    // Search form submission – if exact match found, open modal (optional)
     searchForm.addEventListener('submit', async function(e) {
         const q = searchInput.value.trim();
         if (!q) return;
@@ -758,13 +875,13 @@ document.addEventListener("DOMContentLoaded", function() {
         } catch {}
     });
 
-    // PREVIEW TRIGGER
+    // PREVIEW TRIGGER (card 🔍 button)
     document.addEventListener('click', function(e) {
         const trigger = e.target.closest('.preview-trigger');
         if (trigger) { e.preventDefault(); openBookModal(trigger.dataset.bookId); }
     });
 
-    // MODAL LOGIC
+    // ========== MODAL LOGIC ==========
     async function openBookModal(bookId) {
         document.getElementById('modalBookContent').innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>';
         bookModal.show();
@@ -777,6 +894,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
+    // ========== RENDER BOOK MODAL (Updated with Share Button) ==========
     function renderBookModal(book) {
         let coverHTML;
         if (book.image_url && book.image_url !== 'None') {
@@ -802,6 +920,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     <div class="d-flex flex-wrap gap-2 mb-4">
                         <a href="${book.link}" class="btn btn-primary rounded-pill" download onclick="fetch('/api/download/${book.id}',{method:'POST'});"><i class="bi bi-download"></i> Download</a>
                         <a href="/book/${book.id}/read" target="_blank" class="btn btn-outline-primary rounded-pill"><i class="bi bi-book"></i> Read Online</a>
+                        <button class="btn btn-outline-dark rounded-pill" onclick="window.showQRCode(${book.id})"><i class="bi bi-qr-code"></i> QR Code</button>
+                        <button class="btn btn-outline-info rounded-pill" onclick="window.showShareModal(${book.id})"><i class="bi bi-share-fill"></i> Share</button>
                         ${book.is_logged_in ? `<button class="btn btn-outline-warning rounded-pill favourite-btn" data-book-id="${book.id}"><i class="bi ${favIcon}"></i> <span>${favText}</span></button>` : ''}
                     </div>
                     <hr><h5>Reviews</h5>
@@ -812,6 +932,8 @@ document.addEventListener("DOMContentLoaded", function() {
                         <button type="submit" class="btn btn-sm btn-primary rounded-pill">Submit</button></form>` : ''}
                     <div id="modalReviews">${reviewsHTML}</div>
                 </div></div>`;
+
+        // Favourite button handler
         document.querySelector('.favourite-btn')?.addEventListener('click', async function() {
             const id = this.dataset.bookId;
             const res = await fetch(`/user/favorite/${id}`, {method:'POST'});
@@ -821,15 +943,145 @@ document.addEventListener("DOMContentLoaded", function() {
                 this.querySelector('span').textContent = icon.classList.contains('bi-heart-fill') ? 'Favorited' : 'Favorite';
             }
         });
+
+        // Review form handler
         document.getElementById('modalReviewForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();
             const fd = new FormData(this);
             const res = await fetch(`/book/${book.id}/review`, {method:'POST', body: fd});
-            if (res.ok) { const updated = await fetch(`/api/book/${book.id}`).then(r => r.json()); renderBookModal(updated); }
+            if (res.ok) {
+                const updated = await fetch(`/api/book/${book.id}`).then(r => r.json());
+                renderBookModal(updated);
+            }
         });
     }
+
+    // ========== QR CODE FUNCTION ==========
+    function showQRCode(bookId) {
+        window.currentBookId = bookId;
+        document.getElementById('qrImage').src = `/book/${bookId}/qr`;
+        document.getElementById('qrPopup').style.display = 'block';
+    }
+
+    // ========== SHARE MODAL FUNCTION ==========
+    function showShareModal(bookId) {
+        const shareUrl = window.location.origin + '/book/' + bookId;
+        document.getElementById('shareLinkInput').value = shareUrl;
+        document.getElementById('shareFacebook').href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl);
+        document.getElementById('shareTwitter').href = 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(shareUrl);
+        document.getElementById('shareWhatsapp').href = 'https://wa.me/?text=' + encodeURIComponent(shareUrl);
+        document.getElementById('shareTelegram').href = 'https://t.me/share/url?url=' + encodeURIComponent(shareUrl);
+        document.getElementById('shareLinkedin').href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(shareUrl);
+        document.getElementById('shareModal').style.display = 'block';
+    }
+
+    // Expose to global scope
+    window.showQRCode = showQRCode;
+    window.showShareModal = showShareModal;
+    window.renderBookModal = renderBookModal;
 });
+
+// ========== COPY LINK BUTTON ==========
+function copyShareLink() {
+    const input = document.getElementById('shareLinkInput');
+    input.select();
+    input.setSelectionRange(0, 99999); // For mobile
+    navigator.clipboard.writeText(input.value).then(() => {
+        alert('✅ Link copied to clipboard!');
+    }).catch(() => {
+        alert('❌ Failed to copy. Please copy manually.');
+    });
+}
+
+// ========== CLOSE SHARE MODAL ==========
+function closeShareModal() {
+    document.getElementById('shareModal').style.display = 'none';
+}
 </script>
+
+<!-- ================== QR CODE POPUP ================== -->
+<div id="qrPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:28px 24px 20px; border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,0.25); z-index:9999; text-align:center; max-width:320px; width:90%;">
+    <img id="qrImage" src="" style="width:200px; height:200px; border-radius:16px; display:block; margin:0 auto;">
+    <p style="margin:16px 0 8px; font-size:0.85rem; color:#4b5563; line-height:1.5;">
+        📱 <strong>Scan QR code</strong> to open this book on your phone.
+    </p>
+    <div style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
+        <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="document.getElementById('qrPopup').style.display='none'"><i class="bi bi-x-circle me-1"></i> Close</button>
+        <button class="btn btn-sm btn-primary rounded-pill" onclick="window.showShareModal(currentBookId)"><i class="bi bi-share-fill me-1"></i> Share</button>
+    </div>
+</div>
+
+<!-- ================== SHARE WITH FRIENDS MODAL ================== -->
+<div id="shareModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:24px; max-width:420px; width:90%; padding:32px 24px; position:relative; box-shadow:0 25px 50px rgba(0,0,0,0.2);">
+        <!-- Close Button -->
+        <button onclick="closeShareModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#9ca3af;">&times;</button>
+
+        <!-- Top Icon -->
+        <div style="display:flex; justify-content:center; margin-bottom:16px;">
+            <div style="width:60px; height:60px; background:#f3f4f6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem;">🔗</div>
+        </div>
+
+        <!-- Typography -->
+        <h2 style="text-align:center; font-weight:700; color:#1f2937; margin-bottom:4px;">Share with Friends</h2>
+        <p style="text-align:center; color:#6b7280; font-size:0.9rem; margin-bottom:24px;">Reading is better together! Share this book with your network.</p>
+
+        <!-- Share Link Input -->
+        <div style="margin-bottom:20px;">
+            <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:6px; display:block;">Share your link</label>
+            <div style="display:flex; background:#f9fafb; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb;">
+                <input id="shareLinkInput" type="text" readonly value="" style="flex:1; border:none; padding:12px; background:transparent; font-size:0.9rem; color:#111827;">
+                <button onclick="copyShareLink()" style="background:#4f46e5; border:none; color:white; padding:12px 16px; cursor:pointer; font-size:0.9rem; display:flex; align-items:center; gap:4px;">
+                    <i class="bi bi-clipboard"></i> Copy
+                </button>
+            </div>
+        </div>
+
+        <!-- Social Share Section -->
+<div>
+    <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:10px; display:block;">Share to</label>
+    <div style="display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:16px;">
+        <!-- Facebook -->
+        <a id="shareFacebook" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#1877f2;">
+            <div style="width:44px; height:44px; background:#1877f2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;">
+                <i class="bi bi-facebook"></i>
+            </div>
+            <span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Facebook</span>
+        </a>
+        <!-- X / Twitter -->
+        <a id="shareTwitter" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#000;">
+            <div style="width:44px; height:44px; background:#000; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.2rem;">
+                <i class="bi bi-twitter-x"></i>
+            </div>
+            <span style="font-size:0.7rem; margin-top:4px; font-weight:500;">X</span>
+        </a>
+        <!-- WhatsApp -->
+        <a id="shareWhatsapp" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#25d366;">
+            <div style="width:44px; height:44px; background:#25d366; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;">
+                <i class="bi bi-whatsapp"></i>
+            </div>
+            <span style="font-size:0.7rem; margin-top:4px; font-weight:500;">WhatsApp</span>
+        </a>
+        <!-- Telegram -->
+        <a id="shareTelegram" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0088cc;">
+            <div style="width:44px; height:44px; background:#0088cc; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;">
+                <i class="bi bi-telegram"></i>
+            </div>
+            <span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Telegram</span>
+        </a>
+        <!-- LinkedIn -->
+        <a id="shareLinkedin" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0a66c2;">
+            <div style="width:44px; height:44px; background:#0a66c2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;">
+                <i class="bi bi-linkedin"></i>
+            </div>
+            <span style="font-size:0.7rem; margin-top:4px; font-weight:500;">LinkedIn</span>
+        </a>
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Brevo Conversations -->
 <script>
@@ -844,5 +1096,4 @@ document.addEventListener("DOMContentLoaded", function() {
         if (d.head) d.head.appendChild(s);
     })(document, window, 'BrevoConversations');
 </script>
-<!-- /Brevo Conversations -->
 {% endblock %}

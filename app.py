@@ -6,8 +6,13 @@ import secrets
 from datetime import datetime, timedelta
 from functools import wraps
 from html import escape
+
 from PIL import Image
 from flask_caching import Cache
+
+import qrcode
+from io import BytesIO
+from flask import send_file
 
 import boto3
 from botocore.config import Config
@@ -19,9 +24,14 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 
+# Security & Performance
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
+
 load_dotenv()
 
-# Optional AI (new google‑genai package)
+# Optional AI
 try:
     import google.genai as genai
     HAS_GEMINI = True
@@ -35,18 +45,24 @@ try:
 except ImportError:
     HAS_MAIL = False
 
-
 app = Flask(__name__)
 
+# Security headers
+Talisman(app, content_security_policy=None)
+
+# Rate limiter
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
+
+# Caching
 app.config['CACHE_TYPE'] = 'SimpleCache'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 300
+cache = Cache(app)
 
-cache = Cache(app)   
-
-
-
-IS_PRODUCTION = os.getenv("FLASK_ENV", "").lower() == "production" or \
-                os.getenv("ENVIRONMENT", "").lower() == "production"
+IS_PRODUCTION = os.getenv("FLASK_ENV", "").lower() == "production"
 
 # Secret key
 secret_key = os.getenv("FLASK_SECRET_KEY")
@@ -54,27 +70,28 @@ if not secret_key:
     if IS_PRODUCTION:
         raise RuntimeError("FLASK_SECRET_KEY must be set in production.")
     secret_key = "local-development-only-change-me"
-    app.logger.warning("Using the local development secret key. Set FLASK_SECRET_KEY before deployment.")
+    app.logger.warning("Using local dev secret key. Set FLASK_SECRET_KEY before deployment.")
 app.config["SECRET_KEY"] = secret_key
 
-# ================== DATABASE CONFIGURATION (TiDB Cloud) ==================
-app.config['MYSQL_HOST'] = 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com'
-app.config['MYSQL_USER'] = 'n44W45mcoXFnJ8y.root'
-app.config['MYSQL_PASSWORD'] = 'Zb7irXjalxBisDOy'
-app.config['MYSQL_DB'] = 'docodive_db'
-app.config['MYSQL_PORT'] = 4000
+# Session timeout (30 minutes)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
-# SSL configuration – IMPORTANT: yahan apna asli CA certificate path daalo
+# ================== DATABASE CONFIGURATION (TiDB Cloud) ==================
+app.config['MYSQL_HOST'] = os.getenv('DB_HOST', 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com')
+app.config['MYSQL_USER'] = os.getenv('DB_USER', 'n44W45mcoXFnJ8y.root')
+app.config['MYSQL_PASSWORD'] = os.getenv('DB_PASSWORD', 'Zb7irXjalxBisDOy')
+app.config['MYSQL_DB'] = os.getenv('DB_NAME', 'docodive_db')
+app.config['MYSQL_PORT'] = int(os.getenv('DB_PORT', 4000))
+
+# SSL – relative path
 ca_cert_path = os.path.join(os.path.dirname(__file__), 'ssl', 'tidb-ca.pem')
 app.config['MYSQL_SSL_CA'] = ca_cert_path
 app.config['MYSQL_SSL_VERIFY_CERT'] = True
 app.config['MYSQL_SSL_VERIFY_IDENTITY'] = True
 
-# ================== TiDB SSL Compatible Wrapper (with connector alias) ==================
+# Connection pool
 from mysql.connector.pooling import MySQLConnectionPool
-import os
 
-# Pool ko globally banao (app create hone ke baad)
 db_config = {
     'host': app.config['MYSQL_HOST'],
     'user': app.config['MYSQL_USER'],
@@ -88,7 +105,6 @@ db_config = {
     'autocommit': True,
 }
 
-# Pool size 5 rakh sakte ho
 pool = MySQLConnectionPool(pool_name="mypool", pool_size=5, **db_config)
 
 class MySQLWrapper:
@@ -97,7 +113,6 @@ class MySQLWrapper:
 
     @property
     def connection(self):
-        # Agar request ke liye connection nahi hai to pool se le lo
         if 'db_conn' not in g:
             g.db_conn = pool.get_connection()
         return g.db_conn
@@ -106,31 +121,76 @@ class MySQLWrapper:
     def connector(self):
         return self.connection
 
-
 @app.teardown_appcontext
 def close_db_connection(exception):
     db_conn = g.pop('db_conn', None)
     if db_conn is not None:
         try:
-            db_conn.close()   # yeh connection pool ko wapas dega
+            db_conn.close()
         except Exception:
             pass
 
 mysql = MySQLWrapper(app.config)
-# ================== END DATABASE CONFIGURATION ==================
 
+# ================== CSRF PROTECTION ==================
+@app.before_request
+def csrf_protect():
+    if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return
+        token = session.get('_csrf_token')
+        if not token or token != request.form.get('_csrf_token', ''):
+            abort(403)
+    if '_csrf_token' not in session:
+        session['_csrf_token'] = secrets.token_hex(16)
+
+# ================== HELPER: PDF VALIDATION ==================
+def is_valid_pdf(file_bytes):
+    return file_bytes[:5] == b'%PDF-'
+
+# ================== IMAGE COMPRESSION ==================
+def compress_image(image_bytes, max_size=(600, 600), quality=85):
+    img = Image.open(io.BytesIO(image_bytes))
+    img.thumbnail(max_size, Image.LANCZOS)
+    output = io.BytesIO()
+    if img.mode in ('RGBA', 'P'):
+        img = img.convert('RGB')
+    img.save(output, format='JPEG', quality=quality, optimize=True)
+    return output.getvalue()
+
+# ================== BOOK OF THE DAY ==================
+def get_book_of_the_day():
+    today = datetime.utcnow().date()
+    seed = today.toordinal()
+    random.seed(seed)
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT COUNT(*) FROM documents WHERE approved = 1")
+    total = cur.fetchone()[0]
+    if total == 0:
+        cur.close()
+        return None
+    offset = random.randint(0, total - 1)
+    cur.execute("""
+        SELECT d.id, d.title, d.author, c.level, d.image_url, d.telegram_link
+        FROM documents d JOIN categories c ON d.category_id = c.id
+        WHERE d.approved = 1
+        LIMIT 1 OFFSET %s
+    """, (offset,))
+    book = cur.fetchone()
+    cur.close()
+    random.seed()
+    return book
+
+# ================== MAIL & R2 CONFIG ==================
 app.config['ADMIN_NOTIFICATION_EMAIL'] = os.getenv('ADMIN_NOTIFICATION_EMAIL')
 app.config['SUPPORT_EMAIL'] = os.getenv('SUPPORT_EMAIL', '')
 app.config['MAIL_FROM_NAME'] = os.getenv('MAIL_FROM_NAME', 'DocoDive')
-
-UPLOAD_FOLDER = 'static/uploads'
-COVERS_FOLDER = 'static/covers'
 
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB
 
-# -------------------- Mail setup (Brevo SMTP) --------------------
+# Brevo SMTP
 mail = None
 if HAS_MAIL:
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp-relay.brevo.com')
@@ -141,26 +201,17 @@ if HAS_MAIL:
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
     app.config['MAIL_TIMEOUT'] = int(os.getenv('MAIL_TIMEOUT', '15'))
 
-    # IMPORTANT: MAIL_DEFAULT_SENDER must be set BEFORE initialising Mail()
     mail_from_email = os.getenv('MAIL_FROM_EMAIL') or app.config['MAIL_USERNAME']
     if not mail_from_email:
-        # fallback – Brevo verified sender
         mail_from_email = '7t7sufyan@gmail.com'
 
-    if IS_PRODUCTION and not all([
-        app.config['MAIL_USERNAME'],
-        app.config['MAIL_PASSWORD'],
-        mail_from_email,
-        app.config['ADMIN_NOTIFICATION_EMAIL'],
-    ]):
-        raise RuntimeError("Set MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM_EMAIL, and ADMIN_NOTIFICATION_EMAIL before deploying.")
+    if IS_PRODUCTION and not all([app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'],
+                                  mail_from_email, app.config['ADMIN_NOTIFICATION_EMAIL']]):
+        raise RuntimeError("Set all email credentials in production.")
     if app.config['MAIL_USE_TLS'] and app.config['MAIL_USE_SSL']:
         raise RuntimeError("Enable only one of MAIL_USE_TLS or MAIL_USE_SSL.")
 
-    app.config['MAIL_DEFAULT_SENDER'] = (
-        app.config['MAIL_FROM_NAME'],
-        mail_from_email,
-    )
+    app.config['MAIL_DEFAULT_SENDER'] = (app.config['MAIL_FROM_NAME'], mail_from_email)
     mail = Mail(app)
 elif IS_PRODUCTION:
     raise RuntimeError("flask-mail is required in production for transactional emails.")
@@ -373,7 +424,7 @@ Return JSON with keys: title, author, description.
         app.logger.error(f"AI metadata failed: {e}")
     return title, author, f"A comprehensive resource about '{title}'. Covers essential topics."
 
-# -------------------- USER UPLOAD (R2) – AJAX SUPPORT ADDED --------------------
+# ================== USER UPLOAD (R2) ==================
 @app.route('/user/upload', methods=['GET', 'POST'])
 @cache.cached(timeout=600, unless=lambda: request.method == 'POST')
 def user_upload():
@@ -556,7 +607,7 @@ def check_availability():
     cur.close()
     return jsonify({'exists': exists})
 
-# -------------------- FORGOT PASSWORD ROUTES (AJAX version) --------------------
+# -------------------- FORGOT PASSWORD (AJAX) --------------------
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
@@ -833,17 +884,42 @@ def make_approval_email(title, status, message):
     """
     return _email_layout(f"Your DocoDive submission is {status_label.lower()}.", "Document review", heading, content)
 
-# -------------------- ERROR HANDLERS --------------------
+# ================== ERROR HANDLERS (Comprehensive) ==================
 @app.errorhandler(RequestEntityTooLarge)
 def too_large(e):
     return jsonify({"error": "File size too large. Maximum 500 MB allowed."}), 413
+
+@app.errorhandler(400)
+def bad_request(e):
+    return render_template('400.html'), 400
+
+@app.errorhandler(401)
+def unauthorized(e):
+    return render_template('401.html'), 401
+
+@app.errorhandler(403)
+def forbidden(e):
+    return render_template('403.html'), 403
 
 @app.errorhandler(404)
 def not_found(e):
     return render_template('404.html'), 404
 
-# -------------------- LOGIN / LOGOUT (ADMIN) --------------------
+@app.errorhandler(429)
+def too_many_requests(e):
+    return render_template('429.html'), 429
+
+@app.errorhandler(500)
+def internal_error(e):
+    return render_template('500.html'), 500
+
+@app.errorhandler(503)
+def service_unavailable(e):
+    return render_template('503.html'), 503
+
+# ================== ADMIN LOGIN / LOGOUT ==================
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
     if session.get('logged_in'):
         return redirect(url_for('home'))
@@ -852,33 +928,28 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-
         admin_record = get_admin_by_username(username)
 
-        if admin_record:
-            if check_password_hash(admin_record[2], password):
-                session['logged_in'] = True
-                session['admin_id'] = admin_record[0]
-                session['admin_role'] = admin_record[3]
-                log_login_attempt(admin_record[0], request.remote_addr, True)
-                return redirect(url_for('home'))
-            else:
-                error = "Invalid credentials."
-                log_login_attempt(admin_record[0], request.remote_addr, False)
+        if admin_record and check_password_hash(admin_record[2], password):
+            session['logged_in'] = True
+            session['admin_id'] = admin_record[0]
+            session['admin_role'] = admin_record[3]
+            session.permanent = True
+            log_login_attempt(admin_record[0], request.remote_addr, True)
+            return redirect(url_for('home'))
         else:
             error = "Invalid credentials."
-            log_login_attempt(0, request.remote_addr, False)
+            log_login_attempt(admin_record[0] if admin_record else 0, request.remote_addr, False)
 
     return render_template('login.html', error=error)
 
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('login'))
+    return redirect(url_for('user_login'))
 
-# -------------------- PUBLIC ROUTES (locked) --------------------
+# ================== PUBLIC ROUTES (Home with new features) ==================
 @app.route('/')
-@cache.cached(timeout=120, query_string=True)
 def home():
     if not session.get('user_id') and not session.get('logged_in'):
         return redirect(url_for('user_login'))
@@ -888,9 +959,8 @@ def home():
     author_filter = request.args.get('author', '').strip()
     lang_filter = request.args.get('language', '').strip()
     
-    # ---------- Pagination safety ----------
-    page = max(1, request.args.get('page', 1, type=int))          # minimum 1
-    per_page = min(50, request.args.get('per_page', 12, type=int)) # max 50, default 12
+    page = max(1, request.args.get('page', 1, type=int))
+    per_page = min(50, request.args.get('per_page', 12, type=int))
     if per_page < 1:
         per_page = 12
     offset = (page - 1) * per_page
@@ -917,7 +987,6 @@ def home():
     total_books = cur.fetchone()[0]
     total_pages = max(1, (total_books + per_page - 1) // per_page)
 
-    # page overflow protection
     if page > total_pages:
         page = total_pages
         offset = (page - 1) * per_page
@@ -941,11 +1010,64 @@ def home():
     real_pdfs = [{"id": r[0], "title": r[1], "level": r[2], "link": r[3],
                   "author": r[4], "description": r[5], "image_url": r[6], "language": r[7]} for r in books_data]
     categories = [{"id": r[0], "level": r[1], "count": r[2]} for r in cat_data]
-    return render_template('index.html', pdfs=real_pdfs, search_query=search_query,
-                           category=category, author_filter=author_filter, lang_filter=lang_filter,
-                           categories=categories, page=page, total_pages=total_pages)
 
-# -------------------- BOOK DETAIL (with reviews) --------------------
+    # ----- Book of the Day -----
+    featured_book = get_book_of_the_day()
+
+    # ----- User Streak & Badges (if logged in) -----
+    streak = longest = 0
+    if 'user_id' in session:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT streak_count, longest_streak FROM user_streaks WHERE user_id = %s", (session['user_id'],))
+        row = cur.fetchone()
+        if row:
+            streak, longest = row
+        cur.close()
+
+    # ----- Personalized Recommendations (if logged in) -----
+    recommended_books = []
+    if 'user_id' in session:
+        uid = session['user_id']
+        cur = mysql.connection.cursor()
+        cur.execute("""
+            SELECT DISTINCT d.category_id FROM favorites f
+            JOIN documents d ON f.book_id = d.id WHERE f.user_id = %s
+            UNION
+            SELECT DISTINCT d.category_id FROM download_history h
+            JOIN documents d ON h.book_id = d.id WHERE h.user_id = %s
+        """, (uid, uid))
+        cat_ids = [row[0] for row in cur.fetchall()]
+        if cat_ids:
+            placeholders = ','.join(['%s'] * len(cat_ids))
+            cur.execute(f"""
+                SELECT d.id, d.title, d.author, c.level, d.image_url, d.telegram_link
+                FROM documents d JOIN categories c ON d.category_id = c.id
+                WHERE d.approved = 1 AND d.category_id IN ({placeholders})
+                ORDER BY d.created_at DESC LIMIT 10
+            """, cat_ids)
+            rec_rows = cur.fetchall()
+            for r in rec_rows:
+                recommended_books.append({
+                    "id": r[0], "title": r[1], "author": r[2], "level": r[3],
+                    "image_url": r[4], "link": r[5]
+                })
+        cur.close()
+
+    return render_template('index.html',
+                           pdfs=real_pdfs,
+                           search_query=search_query,
+                           category=category,
+                           author_filter=author_filter,
+                           lang_filter=lang_filter,
+                           categories=categories,
+                           page=page,
+                           total_pages=total_pages,
+                           featured_book=featured_book,
+                           streak=streak,
+                           longest=longest,
+                           recommended_books=recommended_books)
+
+# ================== BOOK DETAIL ==================
 @app.route('/book/<int:book_id>')
 def book_detail(book_id):
     if not session.get('user_id') and not session.get('logged_in'):
@@ -974,7 +1096,7 @@ def book_detail(book_id):
                  "author": book[4], "description": book[5], "image_url": book[6], "language": book[7]}
     return render_template('book_detail.html', book=book_data, reviews=reviews)
 
-# -------------------- SEARCH AUTOCOMPLETE --------------------
+# ================== SEARCH AUTOCOMPLETE ==================
 @app.route('/api/search/suggest')
 def search_suggest():
     q = request.args.get('q', '').strip()
@@ -998,7 +1120,8 @@ def search_suggest():
         "level": r[3],
         "image_url": r[4]
     } for r in results])
-# -------------------- API: BOOK DETAIL FOR MODAL --------------------
+
+# ================== API: BOOK DETAIL FOR MODAL ==================
 @app.route('/api/book/<int:book_id>')
 def api_book_detail(book_id):
     cur = mysql.connection.cursor()
@@ -1033,7 +1156,7 @@ def api_book_detail(book_id):
     }
     return jsonify(book_data)
 
-# -------------------- USER ACCOUNTS --------------------
+# ================== USER ACCOUNTS ==================
 @app.route('/user/signup', methods=['GET', 'POST'])
 def user_signup():
     if request.method == 'POST':
@@ -1085,17 +1208,12 @@ def user_login():
         user = cur.fetchone()
         cur.close()
 
-        # 1. Email not registered
         if not user:
             return render_template('auth.html', mode='login',
                                    error='No account found with this email. Please sign up first.')
-
-        # 2. Wrong password
         if not check_password_hash(user[2], password):
             return render_template('auth.html', mode='login',
                                    error='Invalid password. Please try again.')
-
-        # 3. Correct password but not verified
         if not user[3]:
             new_token = secrets.token_urlsafe(32)
             cur = mysql.connection.cursor()
@@ -1114,9 +1232,29 @@ def user_login():
             return render_template('auth.html', mode='login',
                                    error='A new verification email has been sent. Please check your inbox.')
 
-        # 4. Fully authenticated
         session['user_id'] = user[0]
         session['user_name'] = user[1]
+
+        # Update login streak
+        today = datetime.utcnow().date()
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT last_login_date, streak_count, longest_streak FROM user_streaks WHERE user_id = %s", (user[0],))
+        streak_row = cur.fetchone()
+        if streak_row:
+            last_date, streak_cnt, long_streak = streak_row
+            if last_date == today - timedelta(days=1):
+                streak_cnt += 1
+            else:
+                streak_cnt = 1
+            long_streak = max(long_streak, streak_cnt)
+            cur.execute("UPDATE user_streaks SET last_login_date=%s, streak_count=%s, longest_streak=%s WHERE user_id=%s",
+                        (today, streak_cnt, long_streak, user[0]))
+        else:
+            cur.execute("INSERT INTO user_streaks (user_id, last_login_date, streak_count, longest_streak) VALUES (%s, %s, 1, 1)",
+                        (user[0], today))
+        mysql.connection.commit()
+        cur.close()
+
         return redirect(url_for('home'))
 
     return render_template('auth.html', mode='login')
@@ -1141,7 +1279,7 @@ def user_logout():
     session.pop('user_name', None)
     return redirect(url_for('home'))
 
-# -------------------- FAVORITES & HISTORY --------------------
+# ================== FAVORITES & HISTORY ==================
 @app.route('/user/favorites')
 def user_favorites():
     if 'user_id' not in session:
@@ -1190,7 +1328,7 @@ def user_history():
                    "downloaded_at": str(r[8])} for r in books]
     return render_template('user_history.html', pdfs=real_pdfs)
 
-# -------------------- DOWNLOAD TRACKING --------------------
+# ================== DOWNLOAD TRACKING ==================
 @app.route('/api/download/<int:book_id>', methods=['POST'])
 def track_download_route(book_id):
     if 'user_id' in session:
@@ -1200,7 +1338,7 @@ def track_download_route(book_id):
         cur.close()
     return jsonify({'success': True})
 
-# -------------------- REVIEWS --------------------
+# ================== REVIEWS ==================
 @app.route('/book/<int:book_id>/review', methods=['POST'])
 def add_review(book_id):
     if 'user_id' not in session:
@@ -1217,7 +1355,7 @@ def add_review(book_id):
     cur.close()
     return jsonify({"success": True})
 
-# -------------------- READ ONLINE --------------------
+# ================== READ ONLINE ==================
 @app.route('/book/<int:book_id>/read')
 def read_online(book_id):
     cur = mysql.connection.cursor()
@@ -1228,10 +1366,10 @@ def read_online(book_id):
         abort(404)
     return render_template('read_online.html', pdf_url=book[0], book_title=book[1], book_id=book_id)
 
-# -------------------- ADMIN ROUTE (corrected cover MIME) --------------------
+# ================== ADMIN ROUTES ==================
 @app.route('/admin', methods=['GET', 'POST'])
 @admin_required
-@cache.cached(timeout=600, unless=lambda: request.method == 'POST') 
+@cache.cached(timeout=600, unless=lambda: request.method == 'POST')
 def admin():
     if request.method == 'POST':
         if 'pdf_file' not in request.files:
@@ -1318,23 +1456,13 @@ def admin():
         mysql.connection.commit()
         cur.close()
 
-        # --- Admin upload pe email nahi bhejni – Brevo quota bachao ---
-        # html_notification = make_upload_notification_email(display_title, author, category)
-        # send_email_notification(
-        #     "New PDF Uploaded - Pending Approval",
-        #     app.config['ADMIN_NOTIFICATION_EMAIL'],
-        #     f"A new book '{display_title}' by {author} has been uploaded and is waiting for approval.",
-        #     html_body=html_notification
-        # )
-
         resp = {"success": True, "title": display_title, "category": category,
                 "message": f"Book '{display_title}' uploaded in {category}! Waiting for approval."}
         if warning:
             resp["warning"] = warning
         return jsonify(resp)
 
-    # GET request – auto-insert default categories if table is empty
-      # GET request – ensure all default categories exist
+    # GET – ensure default categories
     cur = mysql.connection.cursor()
     DEFAULT_CATEGORIES = [
         'Python', 'JavaScript', 'Java', 'C / C++',
@@ -1353,7 +1481,7 @@ def admin():
     cur.close()
     return render_template('admin.html', categories=categories)
 
-# -------------------- PENDING COUNT API --------------------
+# --------------- Pending & Approval (super admin only) ---------------
 @app.route('/admin/pending/count')
 @admin_required
 def pending_count():
@@ -1363,7 +1491,6 @@ def pending_count():
     cur.close()
     return jsonify({'count': count})
 
-# -------------------- APPROVAL ROUTES --------------------
 @app.route('/admin/pending')
 @admin_required
 def pending_books():
@@ -1445,7 +1572,7 @@ def approve_all_books():
     cur.close()
     return jsonify({"success": True, "count": count})
 
-# -------------------- ADMIN BOOKS LIST --------------------
+# --------------- Admin Books List ---------------
 @app.route('/admin/books')
 @admin_required
 def admin_books_list():
@@ -1460,8 +1587,7 @@ def admin_books_list():
                    "author": b[4], "description": b[5], "image_url": b[6], "language": b[7], "level": b[8]} for b in books]
     return render_template('admin_books.html', books=books_list)
 
-# -------------------- ADMIN EDIT / DELETE BOOKS (R2 aware) --------------------
-# -------------------- ADMIN EDIT / DELETE BOOKS (R2 aware) --------------------
+# --------------- Admin Edit / Delete (R2 aware) ---------------
 @app.route('/admin/edit/<int:book_id>', methods=['GET', 'POST'])
 @admin_required
 def edit_book(book_id):
@@ -1519,7 +1645,7 @@ def edit_book(book_id):
         cur.close()
         return redirect(url_for('admin_books_list'))
 
-    # GET request – ensure default categories exist and convert to dicts for template
+    # GET – ensure default categories and convert to dicts for template
     cur = mysql.connection.cursor()
     DEFAULT_CATEGORIES = [
         'Python', 'JavaScript', 'Java', 'C / C++',
@@ -1545,17 +1671,6 @@ def edit_book(book_id):
             "author": book_row[4], "description": book_row[5], "image_url": book_row[6], "language": book_row[7]}
     return render_template('edit_book.html', book=book, categories=categories)
 
-    cur.execute("SELECT id, title, category_id, telegram_link, author, description, image_url, language FROM documents WHERE id = %s", (book_id,))
-    book_row = cur.fetchone()
-    cur.execute("SELECT id, level FROM categories ORDER BY id")
-    categories = cur.fetchall()
-    cur.close()
-    if not book_row:
-        abort(404)
-    book = {"id": book_row[0], "title": book_row[1], "category_id": book_row[2], "link": book_row[3],
-            "author": book_row[4], "description": book_row[5], "image_url": book_row[6], "language": book_row[7]}
-    return render_template('edit_book.html', book=book, categories=categories)
-
 @app.route('/admin/delete/<int:book_id>', methods=['POST'])
 @admin_required
 def delete_book(book_id):
@@ -1572,7 +1687,7 @@ def delete_book(book_id):
     cur.close()
     return jsonify({"success": "Book deleted successfully!"})
 
-# -------------------- ADMIN DASHBOARD --------------------
+# --------------- Admin Dashboard / Stats / Live Counts ---------------
 @app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
@@ -1595,7 +1710,6 @@ def admin_stats():
     return jsonify({"total_books": total_books, "total_categories": total_categories,
                     "total_admins": total_admins, "recent_uploads": recent_uploads})
 
-# -------------------- LIVE CATEGORY COUNT --------------------
 @app.route('/api/categories/live-counts')
 @cache.cached(timeout=60)
 def live_category_counts():
@@ -1609,7 +1723,7 @@ def live_category_counts():
     cur.close()
     return jsonify([{"id": r[0], "level": r[1], "count": r[2]} for r in data])
 
-# -------------------- MANAGE ADMINS (super admin) --------------------
+# --------------- Manage Admins (super admin, password hashing) ---------------
 @app.route('/admin/admins')
 @admin_required
 def list_admins():
@@ -1629,13 +1743,14 @@ def add_admin():
     username = request.form.get('username')
     password = request.form.get('password')
     role = request.form.get('role', 'admin')
-    if not username or not password:
-        return jsonify({"error": "Username and password required."}), 400
+    if not username or not password or len(password) < 8:
+        return jsonify({"error": "Username and password (min 8 chars) required."}), 400
+    hashed = generate_password_hash(password)
     cur = mysql.connection.cursor()
-    cur.execute("INSERT INTO admins (username, password, role) VALUES (%s, %s, %s)", (username, password, role))
+    cur.execute("INSERT INTO admins (username, password, role) VALUES (%s, %s, %s)", (username, hashed, role))
     mysql.connection.commit()
     cur.close()
-    return jsonify({"success": "Admin added successfully!"})
+    return jsonify({"success": "Admin added!"})
 
 @app.route('/admin/admins/edit/<int:admin_id>', methods=['POST'])
 @admin_required
@@ -1651,8 +1766,11 @@ def edit_admin(admin_id):
         fields.append("username = %s")
         params.append(username)
     if password:
+        if len(password) < 8:
+            return jsonify({"error": "Password must be at least 8 characters."}), 400
+        hashed = generate_password_hash(password)
         fields.append("password = %s")
-        params.append(password)
+        params.append(hashed)
     if role:
         fields.append("role = %s")
         params.append(role)
@@ -1678,7 +1796,7 @@ def delete_admin(admin_id):
     cur.close()
     return jsonify({"success": "Admin deleted."})
 
-# -------------------- MANAGE USERS (super admin) --------------------
+# --------------- Manage Users (super admin) ---------------
 @app.route('/admin/users')
 @admin_required
 def list_users():
@@ -1691,7 +1809,7 @@ def list_users():
     users_list = [{"id": r[0], "username": r[1], "email": r[2], "verified": r[3], "created_at": str(r[4])} for r in users]
     return render_template('admin_users.html', users=users_list)
 
-# -------------------- LOGIN LOGS --------------------
+# --------------- Login Logs ---------------
 @app.route('/api/admin/login-logs')
 @admin_required
 def login_logs():
@@ -1708,22 +1826,21 @@ def login_logs():
     return jsonify([{"id": r[0], "username": r[1] if r[1] else "Unknown",
                      "ip": r[2], "success": bool(r[3]), "timestamp": str(r[4])} for r in logs])
 
-# -------------------- ANALYTICS --------------------
-@app.route('/admin/analytics')
-@admin_required
-def admin_analytics():
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(*) FROM documents")
-    total_books = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM download_history")
-    total_downloads = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM users")
-    total_users = cur.fetchone()[0]
-    cur.close()
-    return render_template('admin_analytics.html', total_books=total_books,
-                           total_downloads=total_downloads, total_users=total_users)
+# --------------- Analytics ---------------
+@app.route('/book/<int:book_id>/qr')
+def book_qr(book_id):
+    # QR code ko book detail page ka URL do, na ki direct PDF link
+    book_url = url_for('book_detail', book_id=book_id, _external=True)
+    qr = qrcode.QRCode(box_size=10, border=4)
+    qr.add_data(book_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buf = BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return send_file(buf, mimetype='image/png')
 
-# -------------------- PWA --------------------
+# --------------- PWA ---------------
 @app.route('/manifest.json')
 def manifest():
     return jsonify({
@@ -1739,64 +1856,45 @@ def manifest():
 def service_worker():
     return app.send_static_file('sw.js')
 
-# -------------------- ERROR HANDLERS --------------------
-@app.errorhandler(RequestEntityTooLarge)
-def too_large(e):
-    return jsonify({"error": "File size too large. Maximum 500 MB allowed."}), 413
+# ================== USER STATS ROUTE ==================
+@app.route('/user/stats')
+def user_stats():
+    if 'user_id' not in session:
+        return redirect(url_for('user_login'))
+    uid = session['user_id']
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT COUNT(*) FROM download_history WHERE user_id = %s", (uid,))
+    downloads = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM favorites WHERE user_id = %s", (uid,))
+    favorites = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM reviews WHERE user_id = %s", (uid,))
+    reviews = cur.fetchone()[0]
+    cur.execute("SELECT streak_count, longest_streak FROM user_streaks WHERE user_id = %s", (uid,))
+    streak_row = cur.fetchone()
+    streak, longest = streak_row if streak_row else (0, 0)
+    cur.close()
+    return render_template('user_stats.html', downloads=downloads, favorites=favorites,
+                           reviews=reviews, streak=streak, longest=longest)
 
-@app.errorhandler(400)
-def bad_request(e):
-    return render_template('400.html'), 400
+# ================== QR CODE ROUTE ==================
 
-@app.errorhandler(401)
-def unauthorized(e):
-    return render_template('401.html'), 401
+def book_qr(book_id):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT telegram_link FROM documents WHERE id = %s AND approved = 1", (book_id,))
+    book = cur.fetchone()
+    cur.close()
+    if not book:
+        abort(404)
+    qr = qrcode.QRCode(box_size=10, border=4)
+    qr.add_data(book[0])
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buf = BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return send_file(buf, mimetype='image/png')
 
-@app.errorhandler(403)
-def forbidden(e):
-    return render_template('403.html'), 403
-
-@app.errorhandler(404)
-def not_found(e):
-    return render_template('404.html'), 404
-
-@app.errorhandler(429)
-def too_many_requests(e):
-    return render_template('429.html'), 429
-
-@app.errorhandler(500)
-def internal_error(e):
-    return render_template('500.html'), 500
-
-@app.errorhandler(503)
-def service_unavailable(e):
-    return render_template('503.html'), 503
-
-
-#---------------Image comprees------------#
-def compress_image(image_bytes, max_size=(600, 600), quality=85):
-    """Resize & compress image, return optimized bytes."""
-    img = Image.open(io.BytesIO(image_bytes))
-    img.thumbnail(max_size, Image.LANCZOS)  # preserve aspect ratio
-    
-    output = io.BytesIO()
-    if img.mode in ('RGBA', 'P'):
-        img = img.convert('RGB')  # JPEG doesn't support alpha
-    
-    img.save(output, format='JPEG', quality=quality, optimize=True)
-    return output.getvalue()
-
-#----------------Flask Cacheing ----------------#
-
-from flask_caching import Cache
-
-# Flask app create hone ke baad (app = Flask(__name__) ke baad)
-app.config['CACHE_TYPE'] = 'SimpleCache'          # Development ke liye (production mein Redis use karna)
-app.config['CACHE_DEFAULT_TIMEOUT'] = 300         # 5 minutes default timeout
-
-cache = Cache(app)
-
-# -------------------- RUN --------------------
+# ================== RUN ==================
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"

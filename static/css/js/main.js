@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+
     // ==========================================
     //  PREVIEW MODAL + DOWNLOAD WITH PROGRESS
     //  (Responsive – works on all devices)
@@ -116,4 +117,23 @@ document.addEventListener("DOMContentLoaded", () => {
             xhr.send();
         });
     }
+
+    // ==========================================
+    //  SCROLL REVEAL ANIMATION
+    //  (for "Recommended for You" cards, etc.)
+    // ==========================================
+    const revealCards = document.querySelectorAll('.anim-card');
+    if (revealCards.length) {
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('revealed');
+                    obs.unobserve(entry.target); // animate only once
+                }
+            });
+        }, { threshold: 0.15 });
+
+        revealCards.forEach(card => observer.observe(card));
+    }
+
 });
