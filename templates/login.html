@@ -126,6 +126,9 @@
         {% endif %}
 
         <form action="/login" method="POST" class="mt-3">
+            <!-- ✅ CSRF Token – ise add kiya hai -->
+            <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
+
             <div class="mb-3">
                 <label class="form-label">Email</label>
                 <input type="text" name="username" class="form-control form-control-lg" placeholder="your@email.com" required autofocus>
