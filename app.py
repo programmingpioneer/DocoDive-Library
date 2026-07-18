@@ -302,7 +302,10 @@ def send_email_notification(subject, recipient, body, html_body=None):
             reply_to=app.config.get('SUPPORT_EMAIL') or None,
             extra_headers={"X-Auto-Response-Suppress": "All", "X-Entity-Ref-ID": secrets.token_hex(16)},
         )
-        mail.send(msg)
+        # 👇 Timeout set karke connection send
+        with mail.connect() as conn:
+            conn.timeout = 10
+            conn.send(msg)
         app.logger.info("Email sent to %s", recipient)
         return True
     except Exception:
