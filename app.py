@@ -1209,6 +1209,7 @@ def user_signup():
 
     return render_template('auth.html', mode='signup')
 
+
 @app.route('/user/login', methods=['GET', 'POST'])
 def user_login():
     if request.method == 'POST':
@@ -1234,12 +1235,18 @@ def user_login():
 
             verify_link = url_for('verify_email', token=new_token, _external=True)
             html_body = make_verification_email(user[1], verify_link)
-            send_email_notification(
-                "Verify your email - DocoDive",
-                email,
-                f"Hi {user[1]}, confirm your DocoDive email address: {verify_link}",
-                html_body=html_body
-            )
+
+            # ✅ Email bhejna safe karo – worker timeout nahi hoga
+            try:
+                send_email_notification(
+                    "Verify your email - DocoDive",
+                    email,
+                    f"Hi {user[1]}, confirm your DocoDive email address: {verify_link}",
+                    html_body=html_body
+                )
+            except Exception as e:
+                app.logger.error(f"Verification email failed: {e}")
+
             return render_template('auth.html', mode='login',
                                    error='A new verification email has been sent. Please check your inbox.')
 
@@ -1270,6 +1277,7 @@ def user_login():
 
     return render_template('auth.html', mode='login')
 
+
 @app.route('/verify/<token>')
 def verify_email(token):
     cur = mysql.connection.cursor()
@@ -1281,8 +1289,10 @@ def verify_email(token):
         cur.close()
         flash('Email verified! You can now login.', 'success')
     else:
+        cur.close()
         flash('Invalid or expired verification link.', 'danger')
     return redirect(url_for('user_login'))
+
 
 @app.route('/user/logout')
 def user_logout():
