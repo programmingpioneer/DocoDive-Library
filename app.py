@@ -1192,9 +1192,17 @@ def user_signup():
 
         verify_link = url_for('verify_email', token=token, _external=True)
         html_body = make_verification_email(username, verify_link)
-        send_email_notification("Verify your email - DocoDive", email,
-                                f"Hi {username}, confirm your DocoDive email address: {verify_link}",
-                                html_body=html_body)
+
+        # ✅ Email bhejna safe karo – agar fail hua to bhi account create ho jayega
+        try:
+            send_email_notification(
+                "Verify your email - DocoDive",
+                email,
+                f"Hi {username}, confirm your DocoDive email address: {verify_link}",
+                html_body=html_body
+            )
+        except Exception as e:
+            app.logger.error(f"Verification email failed to send: {e}")
 
         flash('Account created! Please check your email to verify.', 'success')
         return redirect(url_for('user_login'))
@@ -1878,24 +1886,6 @@ def user_stats():
     cur.close()
     return render_template('user_stats.html', downloads=downloads, favorites=favorites,
                            reviews=reviews, streak=streak, longest=longest)
-
-# ================== QR CODE ROUTE ==================
-
-def book_qr(book_id):
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT telegram_link FROM documents WHERE id = %s AND approved = 1", (book_id,))
-    book = cur.fetchone()
-    cur.close()
-    if not book:
-        abort(404)
-    qr = qrcode.QRCode(box_size=10, border=4)
-    qr.add_data(book[0])
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    buf = BytesIO()
-    img.save(buf, format='PNG')
-    buf.seek(0)
-    return send_file(buf, mimetype='image/png')
 
 # ================== RUN ==================
 if __name__ == '__main__':
