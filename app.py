@@ -1888,18 +1888,19 @@ def login_logs():
                      "ip": r[2], "success": bool(r[3]), "timestamp": str(r[4])} for r in logs])
 
 # --------------- Analytics ---------------
-@app.route('/book/<int:book_id>/qr')
-def book_qr(book_id):
-    # QR code ko book detail page ka URL do, na ki direct PDF link
-    book_url = url_for('book_detail', book_id=book_id, _external=True)
-    qr = qrcode.QRCode(box_size=10, border=4)
-    qr.add_data(book_url)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    buf = BytesIO()
-    img.save(buf, format='PNG')
-    buf.seek(0)
-    return send_file(buf, mimetype='image/png')
+@app.route('/admin/analytics')
+@admin_required
+def admin_analytics():
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT COUNT(*) FROM documents")
+    total_books = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM download_history")
+    total_downloads = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM users")
+    total_users = cur.fetchone()[0]
+    cur.close()
+    return render_template('admin_analytics.html', total_books=total_books,
+                           total_downloads=total_downloads, total_users=total_users)
 
 # --------------- PWA ---------------
 @app.route('/manifest.json')

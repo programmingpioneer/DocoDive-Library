@@ -934,26 +934,32 @@ document.addEventListener("DOMContentLoaded", function() {
                 </div></div>`;
 
         // Favourite button handler
-        document.querySelector('.favourite-btn')?.addEventListener('click', async function() {
-            const id = this.dataset.bookId;
-            const res = await fetch(`/user/favorite/${id}`, {method:'POST'});
-            if (res.ok) {
-                const icon = this.querySelector('i');
-                icon.classList.toggle('bi-heart-fill'); icon.classList.toggle('bi-heart');
-                this.querySelector('span').textContent = icon.classList.contains('bi-heart-fill') ? 'Favorited' : 'Favorite';
-            }
-        });
-
-        // Review form handler
+document.querySelector('.favourite-btn')?.addEventListener('click', async function() {
+    const id = this.dataset.bookId;
+    const res = await fetch(`/user/favorite/${id}`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    if (res.ok) {
+        const icon = this.querySelector('i');
+        icon.classList.toggle('bi-heart-fill');
+        icon.classList.toggle('bi-heart');
+        this.querySelector('span').textContent = icon.classList.contains('bi-heart-fill') ? 'Favorited' : 'Favorite';
+    }
+});
         document.getElementById('modalReviewForm')?.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const fd = new FormData(this);
-            const res = await fetch(`/book/${book.id}/review`, {method:'POST', body: fd});
-            if (res.ok) {
-                const updated = await fetch(`/api/book/${book.id}`).then(r => r.json());
-                renderBookModal(updated);
-            }
-        });
+    e.preventDefault();
+    const fd = new FormData(this);
+    const res = await fetch(`/book/${book.id}/review`, {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    if (res.ok) {
+        const updated = await fetch(`/api/book/${book.id}`).then(r => r.json());
+        renderBookModal(updated);
+    }
+});
     }
 
     // ========== QR CODE FUNCTION ==========
