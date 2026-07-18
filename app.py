@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from html import escape
 import socket
+import requests
 
 from PIL import Image
 from flask_caching import Cache
@@ -303,20 +304,21 @@ def send_email_notification(subject, recipient, body, html_body=None):
             reply_to=app.config.get('SUPPORT_EMAIL') or None,
             extra_headers={"X-Auto-Response-Suppress": "All", "X-Entity-Ref-ID": secrets.token_hex(16)},
         )
-        # 👇 Global socket timeout + connection timeout (double safety)
+        # 👇 Timeout + connection send
         old_timeout = socket.getdefaulttimeout()
-        socket.setdefaulttimeout(10)          # har network operation 10s mein ruk jayega
+        socket.setdefaulttimeout(10)
         try:
             with mail.connect() as conn:
                 conn.timeout = 10
                 conn.send(msg)
         finally:
-            socket.setdefaulttimeout(old_timeout)   # timeout wapis normal
+            socket.setdefaulttimeout(old_timeout)
         app.logger.info("Email sent to %s", recipient)
         return True
     except Exception:
-        app.logger.exception("Email delivery failed for %s", recipient)
-        return False 
+        app.logger.exception("SMTP delivery failed, trying API for %s", recipient)
+        # 🔥 Fallback to Brevo API
+        return send_email_via_api(subject, recipient, body, html_body)
 
 def is_valid_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -596,6 +598,38 @@ def user_pending_uploads():
     books = cur.fetchall()
     cur.close()
     return jsonify([{"id": b[0], "title": b[1], "author": b[2], "created_at": str(b[3])} for b in books])
+
+
+
+def send_email_via_api(subject, recipient, body, html_body=None):
+    api_key = os.getenv("BREVO_API_KEY")
+    if not api_key:
+        app.logger.error("BREVO_API_KEY not set, cannot send via API")
+        return False
+    try:
+        import requests
+        data = {
+            "sender": {"email": app.config['MAIL_DEFAULT_SENDER'][1], "name": app.config['MAIL_DEFAULT_SENDER'][0]},
+            "to": [{"email": recipient}],
+            "subject": subject,
+            "htmlContent": html_body or body,
+            "textContent": body
+        }
+        resp = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            json=data,
+            headers={"api-key": api_key, "Content-Type": "application/json"},
+            timeout=10
+        )
+        if resp.status_code == 201:
+            app.logger.info("Email sent via API to %s", recipient)
+            return True
+        else:
+            app.logger.error("Brevo API error: %s", resp.text)
+            return False
+    except Exception as e:
+        app.logger.exception("Brevo API request failed: %s", e)
+        return False
 
 # -------------------- API: CHECK USERNAME/EMAIL AVAILABILITY --------------------
 @app.route('/api/check-availability')
