@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0 text-primary">
+            <i class="bi bi-speedometer2 me-2"></i> Admin Dashboard
+        </h2>
+        <a href="/admin" class="btn btn-primary rounded-pill px-4">
+            <i class="bi bi-cloud-upload me-1"></i> Upload Book
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-4">
+                <i class="bi bi-book fs-1 text-primary"></i>
+                <h3 id="totalBooks" class="fw-bold mt-2">--</h3>
+                <small class="text-muted">Total Books</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-4">
+                <i class="bi bi-folder fs-1 text-warning"></i>
+                <h3 id="totalCategories" class="fw-bold mt-2">--</h3>
+                <small class="text-muted">Categories</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-4">
+                <i class="bi bi-people fs-1 text-success"></i>
+                <h3 id="totalUsers" class="fw-bold mt-2">--</h3>
+                <small class="text-muted">Users</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-4">
+                <i class="bi bi-shield-lock fs-1 text-danger"></i>
+                <h3 id="totalAdmins" class="fw-bold mt-2">--</h3>
+                <small class="text-muted">Admins</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Books Card (Super Admin only) -->
+    {% if session.get('admin_role') == 'super' %}
+    <div class="row g-4 mb-5">
+        <div class="col-12">
+            <a href="/admin/pending" class="text-decoration-none">
+                <div class="card border-0 shadow-sm bg-warning bg-opacity-10 p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-hourglass-split fs-1 text-warning"></i>
+                        <div>
+                            <h4 class="fw-bold mb-1" id="pendingCount">--</h4>
+                            <span class="text-muted">Pending Books – Click to review</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Charts Row -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 p-4">
+                <h5 class="mb-3">Library Overview</h5>
+                <canvas id="booksChart" height="250"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 p-4">
+                <h5 class="mb-3">Categories Distribution</h5>
+                <canvas id="categoriesChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Uploads Table -->
+    <div class="card shadow-sm border-0 mt-4 p-4">
+        <h5 class="mb-3">Recent Uploads</h5>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="recentUploadsBody">
+                    <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Fetch overall stats and populate cards
+fetch('/api/admin/stats')
+.then(r => r.json())
+.then(data => {
+    document.getElementById('totalBooks').textContent = data.total_books;
+    document.getElementById('totalCategories').textContent = data.total_categories;
+    document.getElementById('totalAdmins').textContent = data.total_admins;
+    document.getElementById('totalUsers').textContent = data.total_users;  // 👈 set user count
+    
+    // Bar chart – Ab "Admins" ki jagah "Users"
+    new Chart(document.getElementById('booksChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Books', 'Categories', 'Users'],   // 👈 changed
+            datasets: [{
+                label: 'Total',
+                data: [data.total_books, data.total_categories, data.total_users],  // 👈 changed
+                backgroundColor: ['#4F46E5', '#FFB703', '#10B981'],
+                borderRadius: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // Recent uploads table
+    let tableHtml = '';
+    data.recent_uploads.forEach(upload => {
+        tableHtml += `<tr>
+            <td>${upload.title}</td>
+            <td><span class="badge bg-light text-dark">${upload.level}</span></td>
+            <td>${upload.created_at}</td>
+        </tr>`;
+    });
+    document.getElementById('recentUploadsBody').innerHTML = tableHtml || '<tr><td colspan="3" class="text-center text-muted">No uploads yet.</td></tr>';
+})
+.catch(err => {
+    console.error(err);
+    document.getElementById('recentUploadsBody').innerHTML = '<tr><td colspan="3" class="text-center text-danger">Failed to load stats.</td></tr>';
+});
+
+// Pie chart for categories
+fetch('/api/categories/live-counts')
+.then(r => r.json())
+.then(cats => {
+    document.getElementById('totalCategories').textContent = cats.length;
+    
+    new Chart(document.getElementById('categoriesChart'), {
+        type: 'pie',
+        data: {
+            labels: cats.map(c => c.level),
+            datasets: [{
+                data: cats.map(c => c.count),
+                backgroundColor: [
+                    '#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF',
+                    '#FF9F40','#FF6384','#C9CBCF','#7B68EE','#00FA9A',
+                    '#FFD700','#ADFF2F'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12 }
+                }
+            }
+        }
+    });
+})
+.catch(console.error);
+
+// Fetch pending count and update UI
+fetch('/admin/pending/count')
+.then(r => r.json())
+.then(data => {
+    const pendingCount = document.getElementById('pendingCount');
+    if (pendingCount) {
+        pendingCount.textContent = data.count + ' book(s) pending';
+    }
+})
+.catch(() => {});
+</script>
+{% endblock %}

@@ -3,11 +3,11 @@ import io
 import re
 import random
 import secrets
+import socket
+import requests
 from datetime import datetime, timedelta
 from functools import wraps
 from html import escape
-import socket
-import requests
 
 from PIL import Image
 from flask_caching import Cache
@@ -26,7 +26,6 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 
-# Security & Performance
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
@@ -56,9 +55,8 @@ Talisman(app, content_security_policy=None)
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
+    default_limits=["5000 per day", "500 per hour"]
 )
-
 # Caching
 app.config['CACHE_TYPE'] = 'SimpleCache'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 300
@@ -304,7 +302,6 @@ def send_email_notification(subject, recipient, body, html_body=None):
             reply_to=app.config.get('SUPPORT_EMAIL') or None,
             extra_headers={"X-Auto-Response-Suppress": "All", "X-Entity-Ref-ID": secrets.token_hex(16)},
         )
-        # 👇 Timeout + connection send
         old_timeout = socket.getdefaulttimeout()
         socket.setdefaulttimeout(10)
         try:
@@ -317,8 +314,36 @@ def send_email_notification(subject, recipient, body, html_body=None):
         return True
     except Exception:
         app.logger.exception("SMTP delivery failed, trying API for %s", recipient)
-        # 🔥 Fallback to Brevo API
         return send_email_via_api(subject, recipient, body, html_body)
+
+def send_email_via_api(subject, recipient, body, html_body=None):
+    api_key = os.getenv("BREVO_API_KEY")
+    if not api_key:
+        app.logger.error("BREVO_API_KEY not set, cannot send via API")
+        return False
+    try:
+        data = {
+            "sender": {"email": app.config['MAIL_DEFAULT_SENDER'][1], "name": app.config['MAIL_DEFAULT_SENDER'][0]},
+            "to": [{"email": recipient}],
+            "subject": subject,
+            "htmlContent": html_body or body,
+            "textContent": body
+        }
+        resp = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            json=data,
+            headers={"api-key": api_key, "Content-Type": "application/json"},
+            timeout=10
+        )
+        if resp.status_code == 201:
+            app.logger.info("Email sent via API to %s", recipient)
+            return True
+        else:
+            app.logger.error("Brevo API error: %s", resp.text)
+            return False
+    except Exception as e:
+        app.logger.exception("Brevo API request failed: %s", e)
+        return False
 
 def is_valid_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -335,6 +360,21 @@ def track_download(book_id):
                     (session['user_id'], book_id))
         mysql.connection.commit()
         cur.close()
+
+# -------------------- POINTS & NOTIFICATIONS HELPERS --------------------
+def award_points(user_id, points, book_id=None, action='activity'):
+    cur = mysql.connection.cursor()
+    cur.execute("INSERT INTO user_points (user_id, points, action, book_id) VALUES (%s, %s, %s, %s)",
+                (user_id, points, action, book_id))
+    mysql.connection.commit()
+    cur.close()
+
+def create_notification(user_id, message, link=None):
+    cur = mysql.connection.cursor()
+    cur.execute("INSERT INTO notifications (user_id, message, link) VALUES (%s, %s, %s)",
+                (user_id, message, link))
+    mysql.connection.commit()
+    cur.close()
 
 # -------------------- INTELLIGENT NAME CLEANING --------------------
 BANNED_SUBSTRINGS = ['techbymehdi']
@@ -557,6 +597,9 @@ def user_upload():
         mysql.connection.commit()
         cur.close()
 
+        # 🎁 Award 10 points for upload
+        award_points(session['user_id'], 10, action='upload')
+
         html_notification = make_upload_notification_email(display_title, author, category)
         send_email_notification(
             "New PDF Uploaded by User - Pending Approval",
@@ -598,38 +641,6 @@ def user_pending_uploads():
     books = cur.fetchall()
     cur.close()
     return jsonify([{"id": b[0], "title": b[1], "author": b[2], "created_at": str(b[3])} for b in books])
-
-
-
-def send_email_via_api(subject, recipient, body, html_body=None):
-    api_key = os.getenv("BREVO_API_KEY")
-    if not api_key:
-        app.logger.error("BREVO_API_KEY not set, cannot send via API")
-        return False
-    try:
-        import requests
-        data = {
-            "sender": {"email": app.config['MAIL_DEFAULT_SENDER'][1], "name": app.config['MAIL_DEFAULT_SENDER'][0]},
-            "to": [{"email": recipient}],
-            "subject": subject,
-            "htmlContent": html_body or body,
-            "textContent": body
-        }
-        resp = requests.post(
-            "https://api.brevo.com/v3/smtp/email",
-            json=data,
-            headers={"api-key": api_key, "Content-Type": "application/json"},
-            timeout=10
-        )
-        if resp.status_code == 201:
-            app.logger.info("Email sent via API to %s", recipient)
-            return True
-        else:
-            app.logger.error("Brevo API error: %s", resp.text)
-            return False
-    except Exception as e:
-        app.logger.exception("Brevo API request failed: %s", e)
-        return False
 
 # -------------------- API: CHECK USERNAME/EMAIL AVAILABILITY --------------------
 @app.route('/api/check-availability')
@@ -1034,9 +1045,15 @@ def home():
         page = total_pages
         offset = (page - 1) * per_page
 
+    # ✅ books_query is now defined OUTSIDE the if block – always available
     books_query = f"""
-        SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language
-        FROM documents d JOIN categories c ON d.category_id = c.id
+        SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language,
+               COALESCE(avg_r.avg_rating, 0) as avg_rating
+        FROM documents d
+        JOIN categories c ON d.category_id = c.id
+        LEFT JOIN (
+            SELECT book_id, AVG(rating) as avg_rating FROM reviews GROUP BY book_id
+        ) avg_r ON d.id = avg_r.book_id
         WHERE {where_clause} ORDER BY d.id DESC LIMIT %s OFFSET %s
     """
     cur.execute(books_query, params + [per_page, offset])
@@ -1051,7 +1068,8 @@ def home():
     cur.close()
 
     real_pdfs = [{"id": r[0], "title": r[1], "level": r[2], "link": r[3],
-                  "author": r[4], "description": r[5], "image_url": r[6], "language": r[7]} for r in books_data]
+                  "author": r[4], "description": r[5], "image_url": r[6], "language": r[7],
+                  "avg_rating": round(float(r[8]), 1) if r[8] else 0} for r in books_data]
     categories = [{"id": r[0], "level": r[1], "count": r[2]} for r in cat_data]
 
     # ----- Book of the Day -----
@@ -1083,8 +1101,13 @@ def home():
         if cat_ids:
             placeholders = ','.join(['%s'] * len(cat_ids))
             cur.execute(f"""
-                SELECT d.id, d.title, d.author, c.level, d.image_url, d.telegram_link
-                FROM documents d JOIN categories c ON d.category_id = c.id
+                SELECT d.id, d.title, d.author, c.level, d.image_url, d.telegram_link,
+                       COALESCE(avg_r.avg_rating, 0) as avg_rating
+                FROM documents d
+                JOIN categories c ON d.category_id = c.id
+                LEFT JOIN (
+                    SELECT book_id, AVG(rating) as avg_rating FROM reviews GROUP BY book_id
+                ) avg_r ON d.id = avg_r.book_id
                 WHERE d.approved = 1 AND d.category_id IN ({placeholders})
                 ORDER BY d.created_at DESC LIMIT 10
             """, cat_ids)
@@ -1092,7 +1115,8 @@ def home():
             for r in rec_rows:
                 recommended_books.append({
                     "id": r[0], "title": r[1], "author": r[2], "level": r[3],
-                    "image_url": r[4], "link": r[5]
+                    "image_url": r[4], "link": r[5],
+                    "avg_rating": round(float(r[6]), 1) if r[6] else 0
                 })
         cur.close()
 
@@ -1293,6 +1317,20 @@ def user_login():
         session['user_id'] = user[0]
         session['user_name'] = user[1]
 
+                # Store full display name and avatar in session
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT first_name, last_name, avatar_url FROM users WHERE id = %s", (user[0],))
+        user_info = cur.fetchone()
+        cur.close()
+        if user_info and user_info[0]:
+            first = user_info[0] or ''
+            last = user_info[1] or ''
+            full_name = (first + ' ' + last).strip()
+            session['user_display_name'] = full_name if full_name else user[1]
+        else:
+            session['user_display_name'] = user[1]
+        session['avatar_url'] = user_info[2] if user_info else None
+
         # Update login streak
         today = datetime.utcnow().date()
         cur = mysql.connection.cursor()
@@ -1302,6 +1340,8 @@ def user_login():
             last_date, streak_cnt, long_streak = streak_row
             if last_date == today - timedelta(days=1):
                 streak_cnt += 1
+                # 🎁 Daily login streak point
+                award_points(user[0], 1, action='daily_login')
             else:
                 streak_cnt = 1
             long_streak = max(long_streak, streak_cnt)
@@ -1310,6 +1350,8 @@ def user_login():
         else:
             cur.execute("INSERT INTO user_streaks (user_id, last_login_date, streak_count, longest_streak) VALUES (%s, %s, 1, 1)",
                         (user[0], today))
+            # First login streak
+            award_points(user[0], 1, action='daily_login')
         mysql.connection.commit()
         cur.close()
 
@@ -1368,6 +1410,8 @@ def toggle_favorite(book_id):
         cur.execute("DELETE FROM favorites WHERE user_id = %s AND book_id = %s", (user_id, book_id))
     else:
         cur.execute("INSERT INTO favorites (user_id, book_id) VALUES (%s, %s)", (user_id, book_id))
+        # 🎁 Award 1 point for favoriting
+        award_points(user_id, 1, book_id, action='favorite')
     mysql.connection.commit()
     cur.close()
     return jsonify({"success": True})
@@ -1414,6 +1458,8 @@ def add_review(book_id):
                 (user_id, book_id, rating, comment))
     mysql.connection.commit()
     cur.close()
+    # 🎁 Award 5 points for review
+    award_points(user_id, 5, book_id, action='review')
     return jsonify({"success": True})
 
 # ================== READ ONLINE ==================
@@ -1591,6 +1637,10 @@ def approve_book(book_id):
             send_email_notification("Book Approved - DocoDive", user[0],
                                     f"Your DocoDive document '{title}' has been approved.",
                                     html_body=html)
+            # 🔔 Notification to uploader
+            create_notification(uploader_id,
+                                f"Your book '{title}' has been approved!",
+                                url_for('book_detail', book_id=book_id))
     cur.close()
     return jsonify({"success": True})
 
@@ -1618,6 +1668,10 @@ def reject_book(book_id):
             send_email_notification("Book Rejected - DocoDive", user[0],
                                     f"Your document '{title}' was not approved.",
                                     html_body=html)
+            # 🔔 Notification to uploader
+            create_notification(uploader_id,
+                                f"Your book '{title}' was rejected.",
+                                url_for('user_upload'))
     cur.close()
     return jsonify({"success": True})
 
@@ -1764,13 +1818,20 @@ def admin_stats():
     total_categories = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM admins")
     total_admins = cur.fetchone()[0]
+    # 👇 New: total users
+    cur.execute("SELECT COUNT(*) FROM users")
+    total_users = cur.fetchone()[0]
     cur.execute("SELECT d.title, c.level, d.created_at FROM documents d JOIN categories c ON d.category_id = c.id ORDER BY d.id DESC LIMIT 5")
     recent = cur.fetchall()
     cur.close()
     recent_uploads = [{"title": r[0], "level": r[1], "created_at": str(r[2])} for r in recent]
-    return jsonify({"total_books": total_books, "total_categories": total_categories,
-                    "total_admins": total_admins, "recent_uploads": recent_uploads})
-
+    return jsonify({
+        "total_books": total_books,
+        "total_categories": total_categories,
+        "total_admins": total_admins,
+        "total_users": total_users,          # <-- ye add karo
+        "recent_uploads": recent_uploads
+    })
 @app.route('/api/categories/live-counts')
 @cache.cached(timeout=60)
 def live_category_counts():
@@ -1902,6 +1963,19 @@ def admin_analytics():
     return render_template('admin_analytics.html', total_books=total_books,
                            total_downloads=total_downloads, total_users=total_users)
 
+# --------------- QR CODE ROUTE ---------------
+@app.route('/book/<int:book_id>/qr')
+def book_qr(book_id):
+    book_url = url_for('book_detail', book_id=book_id, _external=True)
+    qr = qrcode.QRCode(box_size=10, border=4)
+    qr.add_data(book_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buf = BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return send_file(buf, mimetype='image/png')
+
 # --------------- PWA ---------------
 @app.route('/manifest.json')
 def manifest():
@@ -1937,6 +2011,244 @@ def user_stats():
     cur.close()
     return render_template('user_stats.html', downloads=downloads, favorites=favorites,
                            reviews=reviews, streak=streak, longest=longest)
+
+
+# ================== USER PROFILE ==================
+# ================== USER PROFILE ==================
+@app.route('/user/profile/<username>')
+def user_profile(username):
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT id, username, email, verified, created_at, avatar_url, bio, social_links, first_name, last_name
+        FROM users WHERE username = %s
+    """, (username,))
+    user = cur.fetchone()
+    if not user:
+        cur.close()
+        abort(404)
+    uid = user[0]
+
+    # Parse social_links JSON (index 7)
+    social_links_dict = {}
+    if user[7]:
+        try:
+            import json
+            social_links_dict = json.loads(user[7])
+        except:
+            social_links_dict = {}
+
+    # Stats
+    cur.execute("SELECT COUNT(*) FROM documents WHERE uploaded_by = %s", (uid,))
+    total_uploads = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM reviews WHERE user_id = %s", (uid,))
+    total_reviews = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM favorites WHERE user_id = %s", (uid,))
+    total_favorites = cur.fetchone()[0]
+    cur.execute("SELECT SUM(points) FROM user_points WHERE user_id = %s", (uid,))
+    total_points = cur.fetchone()[0] or 0
+    cur.close()
+
+    return render_template('user_profile.html',
+                           user=user,
+                           total_uploads=total_uploads,
+                           total_reviews=total_reviews,
+                           total_favorites=total_favorites,
+                           total_points=total_points,
+                           social_links=social_links_dict)
+
+
+@app.route('/user/profile/edit', methods=['GET', 'POST'])
+def edit_profile():
+    if 'user_id' not in session:
+        return redirect(url_for('user_login'))
+    uid = session['user_id']
+    if request.method == 'POST':
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        new_username = request.form.get('username', '').strip()
+        bio = request.form.get('bio', '').strip()
+        social_links = request.form.get('social_links', '').strip()
+        avatar_file = request.files.get('avatar')
+        avatar_url = None
+
+        # Avatar upload
+        if avatar_file and allowed_image_file(avatar_file.filename):
+            avatar_data = avatar_file.read()
+            avatar_data = compress_image(avatar_data, max_size=(200, 200), quality=80)
+            avatar_key = generate_r2_key('avatars', f'user_{uid}', '.jpg')
+            try:
+                avatar_url = upload_to_r2(avatar_data, avatar_key, content_type='image/jpeg')
+            except Exception as e:
+                app.logger.error(f"Avatar upload failed: {e}")
+                flash('Avatar upload failed.', 'danger')
+                return redirect(url_for('edit_profile'))
+
+        cur = mysql.connection.cursor()
+
+        # Username change
+        if new_username and new_username != session.get('user_name'):
+            cur.execute("SELECT id FROM users WHERE username = %s AND id != %s", (new_username, uid))
+            if cur.fetchone():
+                cur.close()
+                flash('Username already taken. Please choose another.', 'danger')
+                return redirect(url_for('edit_profile'))
+
+            cur.execute("SELECT username_changed_at FROM users WHERE id = %s", (uid,))
+            last_changed = cur.fetchone()[0]
+            if last_changed and (datetime.utcnow() - last_changed).days < 30:
+                cur.close()
+                flash('You can change your username only once every 30 days.', 'danger')
+                return redirect(url_for('edit_profile'))
+
+            cur.execute("UPDATE users SET username = %s, username_changed_at = NOW() WHERE id = %s",
+                        (new_username, uid))
+            mysql.connection.commit()
+            session['user_name'] = new_username
+            # Update display name
+            full_name = (first_name + ' ' + last_name).strip()
+            session['user_display_name'] = full_name if full_name else new_username
+
+        # Update other fields
+        if avatar_url:
+            cur.execute("UPDATE users SET first_name=%s, last_name=%s, bio=%s, social_links=%s, avatar_url=%s WHERE id=%s",
+                        (first_name, last_name, bio, social_links, avatar_url, uid))
+            session['avatar_url'] = avatar_url
+        else:
+            cur.execute("UPDATE users SET first_name=%s, last_name=%s, bio=%s, social_links=%s WHERE id=%s",
+                        (first_name, last_name, bio, social_links, uid))
+        mysql.connection.commit()
+
+        # Update display name in session
+        full_name = (first_name + ' ' + last_name).strip()
+        session['user_display_name'] = full_name if full_name else session.get('user_name')
+
+        cur.close()
+        flash('Profile updated!', 'success')
+        return redirect(url_for('user_profile', username=session.get('user_name')))
+
+    # GET request
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT first_name, last_name, bio, social_links, avatar_url, username FROM users WHERE id=%s", (uid,))
+    profile = cur.fetchone()
+    cur.close()
+    return render_template('edit_profile.html', profile=profile)
+
+# ================== LEADERBOARD ==================
+@app.route('/leaderboard')
+def leaderboard():
+    cur = mysql.connection.cursor()
+    # Fetch first_name, last_name, avatar_url as well
+    cur.execute("""
+        SELECT u.id, u.username, u.first_name, u.last_name, u.avatar_url, SUM(up.points) AS total_points
+        FROM user_points up
+        JOIN users u ON up.user_id = u.id
+        GROUP BY u.id
+        ORDER BY total_points DESC
+        LIMIT 50
+    """)
+    rows = cur.fetchall()
+    cur.close()
+
+    # Build leaderboard list with full name as first element
+    leaderboard = []
+    for row in rows:
+        full_name = ((row[2] or '') + ' ' + (row[3] or '')).strip()
+        if not full_name:
+            full_name = row[1]  # fallback to username
+        leaderboard.append((row[0], full_name, row[4], row[5]))   # id, name, avatar, points
+
+    # Current user's rank & points
+    current_user_rank = None
+    current_user_points = 0
+    if 'user_id' in session:
+        uid = session['user_id']
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT SUM(points) FROM user_points WHERE user_id = %s", (uid,))
+        total = cur.fetchone()[0] or 0
+        current_user_points = total
+
+        cur.execute("""
+            SELECT COUNT(*) + 1 FROM (
+                SELECT user_id, SUM(points) AS total
+                FROM user_points
+                GROUP BY user_id
+                HAVING SUM(points) > %s
+            ) AS higher
+        """, (total,))
+        rank = cur.fetchone()[0]
+        current_user_rank = rank
+        cur.close()
+
+    return render_template('leaderboard.html',
+                           leaderboard=leaderboard,
+                           current_user_rank=current_user_rank,
+                           current_user_points=current_user_points)
+
+# ================== BOOK COMMENTS ==================
+@app.route('/book/<int:book_id>/comments', methods=['GET'])
+def get_comments(book_id):
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT c.id, c.comment, c.parent_id, c.created_at, u.username, u.avatar_url
+        FROM book_comments c JOIN users u ON c.user_id = u.id
+        WHERE c.book_id = %s ORDER BY c.created_at ASC
+    """, (book_id,))
+    comments = cur.fetchall()
+    cur.close()
+    # convert to dict list
+    comment_list = [{"id": r[0], "comment": r[1], "parent_id": r[2],
+                     "created_at": str(r[3]), "username": r[4], "avatar_url": r[5]} for r in comments]
+    return jsonify(comment_list)
+
+@app.route('/book/<int:book_id>/comments', methods=['POST'])
+def add_comment(book_id):
+    if 'user_id' not in session:
+        return jsonify({"error": "Login required"}), 401
+    data = request.get_json()
+    comment = data.get('comment', '').strip()
+    parent_id = data.get('parent_id')  # null or int
+    if not comment:
+        return jsonify({"error": "Comment cannot be empty"}), 400
+    cur = mysql.connection.cursor()
+    cur.execute("INSERT INTO book_comments (book_id, user_id, parent_id, comment) VALUES (%s, %s, %s, %s)",
+                (book_id, session['user_id'], parent_id, comment))
+    mysql.connection.commit()
+    cur.close()
+    # award points
+    award_points(session['user_id'], 2, book_id)
+    return jsonify({"success": True})
+
+# ================== NOTIFICATIONS API ==================
+@app.route('/api/notifications/unread-count')
+def unread_notification_count():
+    if 'user_id' not in session:
+        return jsonify({"count": 0})
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT COUNT(*) FROM notifications WHERE user_id=%s AND is_read=0", (session['user_id'],))
+    count = cur.fetchone()[0]
+    cur.close()
+    return jsonify({"count": count})
+
+@app.route('/api/notifications')
+def get_notifications():
+    if 'user_id' not in session:
+        return jsonify([])
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT id, message, link, is_read, created_at FROM notifications WHERE user_id=%s ORDER BY created_at DESC LIMIT 20", (session['user_id'],))
+    notifs = cur.fetchall()
+    cur.close()
+    return jsonify([{"id": n[0], "message": n[1], "link": n[2], "is_read": bool(n[3]), "created_at": str(n[4])} for n in notifs])
+
+@app.route('/api/notifications/<int:notif_id>/read', methods=['POST'])
+def mark_notification_read(notif_id):
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE notifications SET is_read=1 WHERE id=%s AND user_id=%s", (notif_id, session['user_id']))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"success": True})
+
 
 # ================== RUN ==================
 if __name__ == '__main__':

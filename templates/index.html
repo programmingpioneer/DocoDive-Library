@@ -287,20 +287,20 @@
         height: 2rem;
     }
     /* === CARD ENTRANCE ANIMATION === */
-.anim-card {
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
-}
-.anim-card.revealed {
-    opacity: 1;
-    transform: translateY(0);
-}
-.anim-card.revealed {
-    opacity: 1;
-    transform: translateY(0);
-    transition-delay: var(--delay, 0s); /* not needed if inline style is used */
-}
+    .anim-card {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .anim-card.revealed {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .anim-card.revealed {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: var(--delay, 0s); /* not needed if inline style is used */
+    }
 </style>
 {% endblock %}
 
@@ -375,7 +375,6 @@
     <div class="position-absolute bottom-0 start-0 w-100" style="height: 100px; background: linear-gradient(to top, white, transparent);"></div>
 </section>
 
-<!-- ==================== BOOK OF THE DAY ==================== -->
 <!-- ==================== BOOK OF THE DAY ==================== -->
 {% if featured_book %}
 <section class="container my-4 py-4">
@@ -460,7 +459,6 @@
 </section>
 
 <!-- ==================== RECOMMENDED FOR YOU ==================== -->
-<!-- ==================== RECOMMENDED FOR YOU ==================== -->
 {% if recommended_books %}
 <section class="container my-5">
     <h2 class="section-title mb-4">✨ Recommended for You</h2>
@@ -472,7 +470,6 @@
                 <div class="row g-2 g-sm-3 justify-content-center">
                     {% for book in chunk %}
                     <div class="col-4 col-sm-4 col-md-3 col-lg-2">
-                        <!-- card code same as before, but using 'book' loop variable -->
                         <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
                             <div class="book-cover-outer d-flex align-items-center justify-content-center" style="height:160px;">
                                 {% if book.image_url and book.image_url != 'None' and book.image_url.strip() != '' %}
@@ -494,9 +491,23 @@
                                 </div>
                                 <h6 class="fw-bold text-truncate mb-1" style="font-size:0.75rem; color:#1e1b4b;">{{ book.title }}</h6>
                                 <p class="text-muted small mb-1" style="font-size:0.6rem;">By {{ book.author }}</p>
-                                <div class="d-flex justify-content-end">
-                                    <button class="btn btn-sm btn-light rounded-circle preview-trigger" data-book-id="{{ book.id }}" style="width: 22px; height: 22px; padding:0;">
-                                        <i class="bi bi-search" style="font-size:0.6rem;"></i>
+                                {% if book.avg_rating and book.avg_rating > 0 %}
+                                <div class="text-warning small mb-1">
+                                    {% set full = book.avg_rating|int %}
+                                    {% set half = 1 if (book.avg_rating - full) >= 0.5 else 0 %}
+                                    {% for i in range(full) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                                    {% if half %}<i class="bi bi-star-half"></i>{% endif %}
+                                    {% for i in range(5 - full - half) %}<i class="bi bi-star"></i>{% endfor %}
+                                    <span class="text-muted ms-1">({{ book.avg_rating }})</span>
+                                </div>
+                                {% endif %}
+                                <!-- Updated buttons: responsive, same as search button -->
+                                <div class="d-flex justify-content-end gap-1">
+                                    <a href="/book/{{ book.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; padding:0; text-decoration:none;" title="View Details">
+                                        <i class="bi bi-info-circle" style="font-size:0.65rem;"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ book.id }}" style="width: 24px; height: 24px; padding:0;" title="Quick Preview">
+                                        <i class="bi bi-search" style="font-size:0.65rem;"></i>
                                     </button>
                                 </div>
                             </div>
@@ -507,7 +518,6 @@
             </div>
             {% endfor %}
         </div>
-        <!-- Controls only on mobile (optional) -->
         <button class="carousel-control-prev d-md-none" type="button" data-bs-target="#recommendedCarousel" data-bs-slide="prev">
             <span class="carousel-control-prev-icon bg-dark rounded-circle" aria-hidden="true"></span>
         </button>
@@ -562,8 +572,22 @@
                                 </div>
                                 <h6 class="fw-bold text-truncate mb-1" style="font-size:0.8rem; color:#1e1b4b;">{{ pdf.title | replace('_', ' ') }}</h6>
                                 <p class="text-muted small mb-1" style="font-size:0.65rem;">By {{ pdf.author }}</p>
-                                <div class="d-flex justify-content-end">
-                                    <button class="btn btn-sm btn-light rounded-circle preview-trigger" data-book-id="{{ pdf.id }}" style="width: 24px; height: 24px; padding:0;">
+                                {% if pdf.avg_rating and pdf.avg_rating > 0 %}
+                                <div class="text-warning small mb-1">
+                                    {% set full = pdf.avg_rating|int %}
+                                    {% set half = 1 if (pdf.avg_rating - full) >= 0.5 else 0 %}
+                                    {% for i in range(full) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                                    {% if half %}<i class="bi bi-star-half"></i>{% endif %}
+                                    {% for i in range(5 - full - half) %}<i class="bi bi-star"></i>{% endfor %}
+                                    <span class="text-muted ms-1">({{ pdf.avg_rating }})</span>
+                                </div>
+                                {% endif %}
+                                <!-- Updated buttons -->
+                                <div class="d-flex justify-content-end gap-1">
+                                    <a href="/book/{{ pdf.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; padding:0; text-decoration:none;" title="View Details">
+                                        <i class="bi bi-info-circle" style="font-size:0.65rem;"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ pdf.id }}" style="width: 24px; height: 24px; padding:0;" title="Quick Preview">
                                         <i class="bi bi-search" style="font-size:0.65rem;"></i>
                                     </button>
                                 </div>
@@ -623,8 +647,22 @@
                         </div>
                         <h6 class="fw-bold text-truncate mb-1" style="font-size:0.8rem; color:#1e1b4b;">{{ pdf.title | replace('_', ' ') }}</h6>
                         <p class="text-muted small mb-1" style="font-size:0.65rem;">By {{ pdf.author }}</p>
-                        <div class="d-flex justify-content-end">
-                            <button class="btn btn-sm btn-light rounded-circle preview-trigger" data-book-id="{{ pdf.id }}" style="width: 24px; height: 24px; padding:0;">
+                        {% if pdf.avg_rating and pdf.avg_rating > 0 %}
+                        <div class="text-warning small mb-1">
+                            {% set full = pdf.avg_rating|int %}
+                            {% set half = 1 if (pdf.avg_rating - full) >= 0.5 else 0 %}
+                            {% for i in range(full) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                            {% if half %}<i class="bi bi-star-half"></i>{% endif %}
+                            {% for i in range(5 - full - half) %}<i class="bi bi-star"></i>{% endfor %}
+                            <span class="text-muted ms-1">({{ pdf.avg_rating }})</span>
+                        </div>
+                        {% endif %}
+                        <!-- Updated buttons -->
+                        <div class="d-flex justify-content-end gap-1">
+                            <a href="/book/{{ pdf.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; padding:0; text-decoration:none;" title="View Details">
+                                <i class="bi bi-info-circle" style="font-size:0.65rem;"></i>
+                            </a>
+                            <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ pdf.id }}" style="width: 24px; height: 24px; padding:0;" title="Quick Preview">
                                 <i class="bi bi-search" style="font-size:0.65rem;"></i>
                             </button>
                         </div>
@@ -1084,8 +1122,6 @@ function closeShareModal() {
         </a>
     </div>
 </div>
-            </div>
-        </div>
     </div>
 </div>
 

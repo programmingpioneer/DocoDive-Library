@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+
 {% block content %}
 <div class="container py-4 py-md-5">
     <div class="row g-4">
@@ -33,17 +34,25 @@
                 <a href="/book/{{ book.id }}/read" target="_blank" class="btn btn-outline-primary rounded-pill px-4">
                     <i class="bi bi-book me-2"></i> Read Online
                 </a>
+                <!-- QR Code button (now with data-book-id) -->
+                <button class="btn btn-outline-dark rounded-pill px-4 qr-btn" data-book-id="{{ book.id }}">
+                    <i class="bi bi-qr-code me-2"></i> QR Code
+                </button>
+                <!-- Favorite button (only if logged in) -->
+                {% if session.get('user_id') %}
                 <button class="btn btn-outline-warning rounded-pill px-4 favorite-btn" data-id="{{ book.id }}">
                     <i class="bi bi-heart me-2"></i> <span>Favorite</span>
                 </button>
+                {% endif %}
             </div>
 
             <hr>
 
             <!-- Reviews Section -->
-            <h5 class="fw-bold mb-3">Reviews</h5>
+            <h5 class="fw-bold mb-3">⭐ Reviews</h5>
             {% if session.get('user_id') %}
             <form id="reviewForm" class="mb-4 p-3 border rounded-4 bg-light">
+                <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
                 <div class="row g-2 align-items-end">
                     <div class="col-md-3">
                         <label class="form-label small fw-semibold">Rating</label>
@@ -72,12 +81,26 @@
                 {% for r in reviews %}
                 <div class="border-bottom pb-2 mb-2">
                     <strong>{{ r[0] }}</strong> - {{ r[1] }} ⭐
-                    <p class="text-muted small mb-0">{{ r[2] }}</p>
+                    <p class="text-muted small mb-0">{{ r[2] or '' }}</p>
                 </div>
                 {% else %}
                 <p class="text-muted">No reviews yet. Be the first to review!</p>
                 {% endfor %}
             </div>
+
+            <!-- ==================== DISCUSSION COMMENTS ==================== -->
+            <section class="mt-5">
+                <h4 class="fw-bold mb-3">💬 Discussion</h4>
+                <div id="commentsContainer" class="mb-4"></div>
+                {% if session.get('user_id') %}
+                <form id="commentForm" class="mt-3">
+                    <textarea id="commentText" class="form-control" rows="3" placeholder="Join the discussion..."></textarea>
+                    <button type="submit" class="btn btn-primary rounded-pill mt-2">Post Comment</button>
+                </form>
+                {% else %}
+                <p class="text-muted">Please <a href="/user/login">login</a> to join the discussion.</p>
+                {% endif %}
+            </section>
         </div>
     </div>
 </div>
@@ -85,24 +108,115 @@
 
 {% block scripts %}
 <script>
+// ======================== REVIEW & FAVORITE ========================
 async function submitReview(e) {
     e.preventDefault();
     const form = document.getElementById('reviewForm');
     const data = new FormData(form);
-    const res = await fetch(`/book/{{ book.id }}/review`, {method:'POST', body: data});
-    if(res.ok) location.reload();
+    const res = await fetch(`/book/{{ book.id }}/review`, {
+        method: 'POST',
+        body: data,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    if (res.ok) location.reload();
 }
 document.getElementById('reviewForm')?.addEventListener('submit', submitReview);
 
 document.querySelector('.favorite-btn')?.addEventListener('click', async function(){
     const id = this.dataset.id;
-    const res = await fetch(`/user/favorite/${id}`, {method:'POST'});
-    if(res.ok) {
+    const res = await fetch(`/user/favorite/${id}`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    if (res.ok) {
         const icon = this.querySelector('i');
         icon.classList.toggle('bi-heart-fill');
         icon.classList.toggle('bi-heart');
+        this.querySelector('span').textContent = icon.classList.contains('bi-heart-fill') ? 'Favorited' : 'Favorite';
     }
 });
+
+// ======================== QR CODE BUTTON ========================
+document.querySelector('.qr-btn')?.addEventListener('click', function() {
+    const bookId = this.dataset.bookId;
+    // Global showQRCode function is defined in base.html (or we can implement it here)
+    if (typeof showQRCode === 'function') {
+        showQRCode(bookId);
+    } else {
+        // Fallback: directly show popup
+        document.getElementById('qrImage').src = `/book/${bookId}/qr`;
+        document.getElementById('qrPopup').style.display = 'block';
+    }
+});
+
+// ======================== DISCUSSION COMMENTS ========================
+function loadComments() {
+    fetch(`/book/{{ book.id }}/comments`)
+    .then(r => r.json())
+    .then(comments => {
+        let commentMap = {};
+        comments.forEach(c => { commentMap[c.id] = {...c, children:[]}; });
+        let roots = [];
+        comments.forEach(c => {
+            if (c.parent_id) {
+                if (commentMap[c.parent_id]) commentMap[c.parent_id].children.push(commentMap[c.id]);
+            } else {
+                roots.push(commentMap[c.id]);
+            }
+        });
+        function renderTree(nodes) {
+            let h = '';
+            nodes.forEach(c => {
+                h += `<div class="ms-${c.parent_id ? 4 : 0} my-2 p-2 border-start">
+                       <div class="d-flex align-items-center gap-2">
+                         <img src="${c.avatar_url || '/static/default-avatar.png'}" class="rounded-circle" width="24" height="24">
+                         <strong>${c.username}</strong>
+                         <small class="text-muted">${c.created_at}</small>
+                       </div>
+                       <p class="mt-1 mb-1">${c.comment}</p>
+                       <button class="btn btn-sm btn-link replyBtn" data-id="${c.id}">Reply</button>
+                       <div class="replyForm mt-2" style="display:none;">
+                           <textarea class="form-control form-control-sm" rows="2" id="replyText${c.id}"></textarea>
+                           <button class="btn btn-sm btn-primary mt-1 submitReply" data-parent="${c.id}">Post Reply</button>
+                       </div>
+                       ${renderTree(c.children)}
+                     </div>`;
+            });
+            return h;
+        }
+        document.getElementById('commentsContainer').innerHTML = renderTree(roots);
+        // Reply button listeners
+        document.querySelectorAll('.replyBtn').forEach(b => {
+            b.addEventListener('click', function() {
+                const form = this.nextElementSibling;
+                form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            });
+        });
+        document.querySelectorAll('.submitReply').forEach(b => {
+            b.addEventListener('click', function() {
+                const parentId = this.dataset.parent;
+                const textarea = document.getElementById(`replyText${parentId}`);
+                if (textarea.value.trim()) {
+                    fetch(`/book/{{ book.id }}/comments`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                        body: JSON.stringify({comment: textarea.value, parent_id: parentId})
+                    }).then(() => { textarea.value = ''; loadComments(); });
+                }
+            });
+        });
+    });
+}
+document.getElementById('commentForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const text = document.getElementById('commentText').value;
+    fetch(`/book/{{ book.id }}/comments`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+        body: JSON.stringify({comment: text, parent_id: null})
+    }).then(() => { document.getElementById('commentText').value = ''; loadComments(); });
+});
+loadComments();
 </script>
 
 <style>

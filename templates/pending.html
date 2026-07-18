@@ -55,12 +55,11 @@
 </div>
 
 <style>
-  /* Responsive adjustments for pending cards */
   @media (max-width: 576px) {
     .card .btn-sm {
       font-size: 0.75rem;
       padding: 0.25rem 0.5rem;
-      width: 100%; /* full width on mobile */
+      width: 100%;
       margin-bottom: 0.25rem;
     }
     .card .btn-sm.rounded-pill {
@@ -84,7 +83,10 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.addEventListener('click', async function() {
       const id = this.dataset.id;
       if (!confirm('Approve this book?')) return;
-      const res = await fetch(`/admin/approve/${id}`, { method: 'POST' });
+      const res = await fetch(`/admin/approve/${id}`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
       if (res.ok) {
         location.reload();
       } else {
@@ -98,7 +100,10 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.addEventListener('click', async function() {
       const id = this.dataset.id;
       if (!confirm('Reject this book? This will delete the file permanently.')) return;
-      const res = await fetch(`/admin/reject/${id}`, { method: 'POST' });
+      const res = await fetch(`/admin/reject/${id}`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
       if (res.ok) {
         location.reload();
       } else {
@@ -112,7 +117,10 @@ document.addEventListener('DOMContentLoaded', function() {
   if (approveAllBtn) {
     approveAllBtn.addEventListener('click', async function() {
       if (!confirm('Approve ALL pending books?')) return;
-      const res = await fetch('/admin/approve-all', { method: 'POST' });
+      const res = await fetch('/admin/approve-all', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
       if (res.ok) {
         location.reload();
       } else {

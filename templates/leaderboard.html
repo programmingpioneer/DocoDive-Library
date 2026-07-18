@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    /* Smooth, modern look */
+    .avatar-img { object-fit: cover; }
+    .podium-block { transition: transform 0.2s ease; }
+    .podium-block:hover { transform: translateY(-2px); }
+    /* Scrollbar styling */
+    .scrollable-list::-webkit-scrollbar { width: 4px; }
+    .scrollable-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8 px-4">
+  <!-- ===== Main wrapper – centered on desktop, max-w-md on mobile ===== -->
+  <div class="max-w-md mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
+
+    <!-- ===== HEADER ===== -->
+    <div class="px-6 pt-6 pb-2 flex items-center gap-3">
+      <a href="/" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+      <h1 class="text-2xl font-extrabold text-gray-800 tracking-tight">🏆 Leaderboard</h1>
+    </div>
+
+    {% if leaderboard and leaderboard|length > 0 %}
+    <!-- ===== TOP 3 PODIUM ===== -->
+    {% set first = leaderboard[0] %}
+    {% set second = leaderboard[1] if leaderboard|length > 1 else None %}
+    {% set third = leaderboard[2] if leaderboard|length > 2 else None %}
+
+    <div class="px-6 mt-4">
+      <div class="flex justify-center items-end gap-2 sm:gap-4">
+        
+        <!-- 2nd Place (left, medium) -->
+        {% if second %}
+        <div class="flex flex-col items-center podium-block">
+          <img src="{{ second[2] if second[2] else 'https://ui-avatars.com/api/?name=' + second[1] + '&background=cbd5e1&color=1e293b&size=64' }}"
+               class="w-14 h-14 rounded-full border-2 border-gray-300 -mb-2 z-10 avatar-img">
+          <div class="w-20 h-24 flex flex-col items-center justify-center bg-gray-200 rounded-t-xl rounded-b-xl shadow-inner">
+            <span class="text-3xl font-bold text-gray-700">2</span>
+          </div>
+          <p class="text-sm font-semibold text-gray-700 mt-2">{{ second[1] }}</p>
+          <span class="text-xs text-gray-500">{{ second[3] }} pts</span>
+        </div>
+        {% endif %}
+
+        <!-- 1st Place (center, tallest) -->
+        <div class="flex flex-col items-center podium-block">
+          <img src="{{ first[2] if first[2] else 'https://ui-avatars.com/api/?name=' + first[1] + '&background=FFD700&color=1e293b&size=64' }}"
+               class="w-16 h-16 rounded-full border-4 border-yellow-400 -mb-2 z-10 avatar-img">
+          <div class="w-24 h-32 flex flex-col items-center justify-center bg-yellow-400 rounded-t-xl rounded-b-xl shadow-lg">
+            <span class="text-4xl font-bold text-yellow-900">1</span>
+          </div>
+          <p class="text-sm font-semibold text-gray-700 mt-2">{{ first[1] }}</p>
+          <span class="text-xs text-gray-500">{{ first[3] }} pts</span>
+        </div>
+
+        <!-- 3rd Place (right, shortest) -->
+        {% if third %}
+        <div class="flex flex-col items-center podium-block">
+          <img src="{{ third[2] if third[2] else 'https://ui-avatars.com/api/?name=' + third[1] + '&background=e2e8f0&color=1e293b&size=64' }}"
+               class="w-14 h-14 rounded-full border-2 border-gray-300 -mb-2 z-10 avatar-img">
+          <div class="w-20 h-20 flex flex-col items-center justify-center bg-gray-200 rounded-t-xl rounded-b-xl shadow-inner">
+            <span class="text-3xl font-bold text-gray-600">3</span>
+          </div>
+          <p class="text-sm font-semibold text-gray-700 mt-2">{{ third[1] }}</p>
+          <span class="text-xs text-gray-500">{{ third[3] }} pts</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ===== ACTIVE USER HIGHLIGHT CARD ===== -->
+    {% if current_user_rank %}
+    <div class="mx-6 mt-8 bg-gradient-to-r from-orange-400 to-rose-500 rounded-2xl p-4 shadow-lg">
+      <div class="flex items-center gap-4">
+        <span class="text-4xl font-bold text-white">#{{ current_user_rank }}</span>
+        {% set current_avatar = session.get('avatar_url') %}
+        {% set current_name = session.get('user_display_name') or session.get('user_name') %}
+        <img src="{{ current_avatar if current_avatar else 'https://ui-avatars.com/api/?name=' + current_name + '&background=fff&color=1e293b&size=48' }}"
+             class="w-12 h-12 rounded-full border-2 border-white avatar-img">
+        <div class="flex-1">
+          <h3 class="font-bold text-white text-lg">{{ current_name }}</h3>
+          <p class="text-white/80 text-sm">{{ current_user_points }} points</p>
+        </div>
+        <span class="text-3xl">👑</span>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ===== RANKING LIST (Ranks 04+) ===== -->
+    <div class="mx-6 mt-6 mb-6">
+      <div class="space-y-1 max-h-96 overflow-y-auto scrollable-list">
+        {% for user in leaderboard[3:] %}
+        <div class="flex items-center gap-4 px-4 py-3 rounded-xl odd:bg-gray-50 even:bg-white hover:shadow-sm transition">
+          <!-- Rank with leading zero -->
+          <span class="text-lg font-bold text-gray-500 w-10">{{ '%02d' % (loop.index + 3) }}</span>
+          <img src="{{ user[2] if user[2] else 'https://ui-avatars.com/api/?name=' + user[1] + '&background=bfdbfe&color=1e3a8a&size=40' }}"
+               class="w-10 h-10 rounded-full avatar-img">
+          <div class="flex-1">
+            <h4 class="font-semibold text-gray-800">{{ user[1] }}</h4>
+          </div>
+          <span class="text-sm font-medium text-gray-600">{{ user[3] }} pts</span>
+          <span class="text-lg">⭐</span>
+        </div>
+        {% else %}
+        <p class="text-center text-gray-400 py-4">No more players yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="text-center py-12 px-6">
+      <span class="text-6xl">🏆</span>
+      <h2 class="text-xl font-bold text-gray-700 mt-4">Leaderboard is empty</h2>
+      <p class="text-gray-500">Start earning points by uploading books, writing reviews, or logging in daily!</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
