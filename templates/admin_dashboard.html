@@ -6,9 +6,17 @@
         <h2 class="fw-bold mb-0 text-primary">
             <i class="bi bi-speedometer2 me-2"></i> Admin Dashboard
         </h2>
-        <a href="/admin" class="btn btn-primary rounded-pill px-4">
-            <i class="bi bi-cloud-upload me-1"></i> Upload Book
-        </a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="/admin/official-profile" class="btn btn-outline-primary rounded-pill px-3">
+                <i class="bi bi-person-badge me-1"></i> Official Profile
+            </a>
+            <a href="/moderation" class="btn btn-outline-primary rounded-pill px-3">
+                <i class="bi bi-shield-check me-1"></i> Community Moderation
+            </a>
+            <a href="/admin" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-cloud-upload me-1"></i> Upload Book
+            </a>
+        </div>
     </div>
 
     <!-- Stats Cards -->
@@ -109,16 +117,16 @@ fetch('/api/admin/stats')
     document.getElementById('totalBooks').textContent = data.total_books;
     document.getElementById('totalCategories').textContent = data.total_categories;
     document.getElementById('totalAdmins').textContent = data.total_admins;
-    document.getElementById('totalUsers').textContent = data.total_users;  // 👈 set user count
-    
-    // Bar chart – Ab "Admins" ki jagah "Users"
+    document.getElementById('totalUsers').textContent = data.total_users;
+
+    // Bar chart
     new Chart(document.getElementById('booksChart'), {
         type: 'bar',
         data: {
-            labels: ['Books', 'Categories', 'Users'],   // 👈 changed
+            labels: ['Books', 'Categories', 'Users'],
             datasets: [{
                 label: 'Total',
-                data: [data.total_books, data.total_categories, data.total_users],  // 👈 changed
+                data: [data.total_books, data.total_categories, data.total_users],
                 backgroundColor: ['#4F46E5', '#FFB703', '#10B981'],
                 borderRadius: 10
             }]
@@ -151,7 +159,7 @@ fetch('/api/categories/live-counts')
 .then(r => r.json())
 .then(cats => {
     document.getElementById('totalCategories').textContent = cats.length;
-    
+
     new Chart(document.getElementById('categoriesChart'), {
         type: 'pie',
         data: {

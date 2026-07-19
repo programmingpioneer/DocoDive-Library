@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="fw-bold mb-0" style="color: var(--edox-dark);">
+            <i class="bi bi-person-badge me-2" style="color: var(--edox-purple);"></i>Official Community Profile
+        </h2>
+        <a href="/admin/dashboard" class="btn btn-outline-secondary rounded-pill">
+            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column: Current Official User Card -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="bg-gradient" style="background: linear-gradient(135deg, var(--edox-purple) 0%, var(--edox-dark) 100%); height: 100px;"></div>
+                <div class="text-center px-4" style="margin-top: -50px;">
+                    {% if official_user %}
+                        <img src="{{ official_user[2] or url_for('static', filename='default-avatar.png') }}" 
+                             class="rounded-circle border-4 border-white shadow" width="100" height="100" style="object-fit:cover;">
+                        <h3 class="fw-bold mt-3 mb-1">{{ official_user[1] }}</h3>
+                        <span class="badge bg-primary px-3 py-2 rounded-pill">Official Account</span>
+                    {% else %}
+                        <div class="bg-primary bg-gradient text-white rounded-circle d-flex align-items-center justify-content-center mx-auto shadow" style="width:100px;height:100px;font-size:2rem;">
+                            <i class="bi bi-person"></i>
+                        </div>
+                        <h3 class="fw-bold mt-3 mb-1">No Official Account</h3>
+                        <p class="text-muted">Set up an official account to interact with the community.</p>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if official_user %}
+                    <div class="d-flex justify-content-center gap-3 mt-3">
+                        <a href="/user/profile/{{ official_user[1] }}" class="btn btn-sm btn-outline-primary rounded-pill" target="_blank">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> View Public Profile
+                        </a>
+                        <a href="/user/profile/edit" class="btn btn-sm btn-outline-secondary rounded-pill" target="_blank">
+                            <i class="bi bi-pencil me-1"></i> Edit Profile
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Quick Stats & Change Official -->
+        <div class="col-lg-7">
+            {% if official_user %}
+            <!-- Stats Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-4">
+                    <div class="card border-0 shadow-sm text-center p-3">
+                        <i class="bi bi-book fs-3 text-primary"></i>
+                        <h5 class="fw-bold mt-2" id="offUploads">--</h5>
+                        <small class="text-muted">Books Uploaded</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <div class="card border-0 shadow-sm text-center p-3">
+                        <i class="bi bi-chat-left-text fs-3 text-info"></i>
+                        <h5 class="fw-bold mt-2" id="offComments">--</h5>
+                        <small class="text-muted">Comments</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <div class="card border-0 shadow-sm text-center p-3">
+                        <i class="bi bi-star fs-3 text-warning"></i>
+                        <h5 class="fw-bold mt-2" id="offPoints">--</h5>
+                        <small class="text-muted">Points</small>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Change Official Account -->
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="bi bi-arrow-repeat me-2"></i>Change Official Account
+                </h5>
+                <form method="POST" class="row g-2 align-items-end">
+                    <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
+                    <div class="col-sm-8">
+                        <label class="form-label small fw-semibold">Existing Username</label>
+                        <input type="text" name="username" class="form-control" placeholder="e.g., OfficialDocoDive" required>
+                    </div>
+                    <div class="col-sm-4">
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill">
+                            <i class="bi bi-check-circle me-1"></i> Set Official
+                        </button>
+                    </div>
+                </form>
+                <p class="text-muted small mt-2 mb-0">
+                    Make sure the user account exists. You can <a href="/user/signup" target="_blank">create one here</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 🛡️ Safe way to pass data from server to client -->
+{% if official_user %}
+<meta name="official-user-id" content="{{ official_user[0] }}">
+{% endif %}
+
+{% if official_user %}
+<script>
+// Read the official user ID from the meta tag – no Jinja inside JS!
+const metaTag = document.querySelector('meta[name="official-user-id"]');
+if (metaTag) {
+    const officialId = metaTag.content;
+    if (officialId) {
+        fetch(`/api/user-stats?user_id=${officialId}`)
+        .then(r => {
+            if (!r.ok) throw new Error('Network response was not ok');
+            return r.json();
+        })
+        .then(data => {
+            document.getElementById('offUploads').textContent = data.uploads || 0;
+            document.getElementById('offComments').textContent = data.comments || 0;
+            document.getElementById('offPoints').textContent = data.points || 0;
+        })
+        .catch(() => {
+            document.getElementById('offUploads').textContent = '0';
+            document.getElementById('offComments').textContent = '0';
+            document.getElementById('offPoints').textContent = '0';
+        });
+    }
+}
+</script>
+{% endif %}
+{% endblock %}

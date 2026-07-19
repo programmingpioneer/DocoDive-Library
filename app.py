@@ -1,6 +1,7 @@
 import os
 import io
 import re
+import json
 import random
 import secrets
 import socket
@@ -8,6 +9,7 @@ import requests
 from datetime import datetime, timedelta
 from functools import wraps
 from html import escape
+from faker import Faker
 
 from PIL import Image
 from flask_caching import Cache
@@ -369,10 +371,12 @@ def award_points(user_id, points, book_id=None, action='activity'):
     mysql.connection.commit()
     cur.close()
 
-def create_notification(user_id, message, link=None):
+def create_notification(user_id, type, message, link=None, metadata=None):
     cur = mysql.connection.cursor()
-    cur.execute("INSERT INTO notifications (user_id, message, link) VALUES (%s, %s, %s)",
-                (user_id, message, link))
+    cur.execute(
+        "INSERT INTO notifications (user_id, message, link, type, metadata) VALUES (%s, %s, %s, %s, %s)",
+        (user_id, message, link, type, json.dumps(metadata) if metadata else None)
+    )
     mysql.connection.commit()
     cur.close()
 
@@ -1045,7 +1049,6 @@ def home():
         page = total_pages
         offset = (page - 1) * per_page
 
-    # ✅ books_query is now defined OUTSIDE the if block – always available
     books_query = f"""
         SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language,
                COALESCE(avg_r.avg_rating, 0) as avg_rating
@@ -1151,13 +1154,26 @@ def book_detail(book_id):
         cur.close()
         abort(404)
 
+    # UPDATED: now also select u.id, r.id (review id) and use is_official_user
     cur.execute("""
-        SELECT u.username, r.rating, r.comment, r.created_at
+        SELECT u.username, r.rating, r.comment, r.created_at, u.id, r.id
         FROM reviews r JOIN users u ON r.user_id = u.id
         WHERE r.book_id = %s ORDER BY r.created_at DESC
     """, (book_id,))
-    reviews = cur.fetchall()
+    reviews_raw = cur.fetchall()
     cur.close()
+
+    reviews = []
+    for r in reviews_raw:
+        reviews.append({
+            'id': r[5],            # review id for delete
+            'username': r[0],
+            'rating': r[1],
+            'comment': r[2],
+            'created_at': r[3],
+            'user_id': r[4],
+            'is_official': is_official_user(r[4])
+        })
 
     book_data = {"id": book[0], "title": book[1], "level": book[2], "link": book[3],
                  "author": book[4], "description": book[5], "image_url": book[6], "language": book[7]}
@@ -1257,7 +1273,6 @@ def user_signup():
         verify_link = url_for('verify_email', token=token, _external=True)
         html_body = make_verification_email(username, verify_link)
 
-        # ✅ Email bhejna safe karo – agar fail hua to bhi account create ho jayega
         try:
             send_email_notification(
                 "Verify your email - DocoDive",
@@ -1300,7 +1315,6 @@ def user_login():
             verify_link = url_for('verify_email', token=new_token, _external=True)
             html_body = make_verification_email(user[1], verify_link)
 
-            # ✅ Email bhejna safe karo – worker timeout nahi hoga
             try:
                 send_email_notification(
                     "Verify your email - DocoDive",
@@ -1317,7 +1331,7 @@ def user_login():
         session['user_id'] = user[0]
         session['user_name'] = user[1]
 
-                # Store full display name and avatar in session
+        # Store full display name and avatar in session
         cur = mysql.connection.cursor()
         cur.execute("SELECT first_name, last_name, avatar_url FROM users WHERE id = %s", (user[0],))
         user_info = cur.fetchone()
@@ -1638,9 +1652,14 @@ def approve_book(book_id):
                                     f"Your DocoDive document '{title}' has been approved.",
                                     html_body=html)
             # 🔔 Notification to uploader
-            create_notification(uploader_id,
-                                f"Your book '{title}' has been approved!",
-                                url_for('book_detail', book_id=book_id))
+            metadata = {"book_id": book_id, "action_by": "admin", "uploader_id": uploader_id}
+            create_notification(
+                uploader_id,
+                'approval',
+                f"<strong>{title}</strong> has been approved ✅",
+                url_for('book_detail', book_id=book_id),
+                metadata
+            )
     cur.close()
     return jsonify({"success": True})
 
@@ -1669,9 +1688,14 @@ def reject_book(book_id):
                                     f"Your document '{title}' was not approved.",
                                     html_body=html)
             # 🔔 Notification to uploader
-            create_notification(uploader_id,
-                                f"Your book '{title}' was rejected.",
-                                url_for('user_upload'))
+            metadata = {"book_id": book_id, "action_by": "admin", "uploader_id": uploader_id}
+            create_notification(
+                uploader_id,
+                'rejection',
+                f"<strong>{title}</strong><br><small class='text-muted'>has been rejected ❌</small>",
+                url_for('user_upload'),
+                metadata
+            )
     cur.close()
     return jsonify({"success": True})
 
@@ -1818,7 +1842,7 @@ def admin_stats():
     total_categories = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM admins")
     total_admins = cur.fetchone()[0]
-    # 👇 New: total users
+    # New: total users
     cur.execute("SELECT COUNT(*) FROM users")
     total_users = cur.fetchone()[0]
     cur.execute("SELECT d.title, c.level, d.created_at FROM documents d JOIN categories c ON d.category_id = c.id ORDER BY d.id DESC LIMIT 5")
@@ -1829,9 +1853,10 @@ def admin_stats():
         "total_books": total_books,
         "total_categories": total_categories,
         "total_admins": total_admins,
-        "total_users": total_users,          # <-- ye add karo
+        "total_users": total_users,
         "recent_uploads": recent_uploads
     })
+
 @app.route('/api/categories/live-counts')
 @cache.cached(timeout=60)
 def live_category_counts():
@@ -2012,8 +2037,6 @@ def user_stats():
     return render_template('user_stats.html', downloads=downloads, favorites=favorites,
                            reviews=reviews, streak=streak, longest=longest)
 
-
-# ================== USER PROFILE ==================
 # ================== USER PROFILE ==================
 @app.route('/user/profile/<username>')
 def user_profile(username):
@@ -2028,11 +2051,15 @@ def user_profile(username):
         abort(404)
     uid = user[0]
 
-    # Parse social_links JSON (index 7)
+    # 🔍 Check if this user is the official community account
+    official_user_id = get_site_setting('official_user_id')
+    is_official = False
+    if official_user_id and str(uid) == official_user_id:
+        is_official = True
+
     social_links_dict = {}
     if user[7]:
         try:
-            import json
             social_links_dict = json.loads(user[7])
         except:
             social_links_dict = {}
@@ -2054,7 +2081,8 @@ def user_profile(username):
                            total_reviews=total_reviews,
                            total_favorites=total_favorites,
                            total_points=total_points,
-                           social_links=social_links_dict)
+                           social_links=social_links_dict,
+                           is_official=is_official)
 
 
 @app.route('/user/profile/edit', methods=['GET', 'POST'])
@@ -2071,7 +2099,6 @@ def edit_profile():
         avatar_file = request.files.get('avatar')
         avatar_url = None
 
-        # Avatar upload
         if avatar_file and allowed_image_file(avatar_file.filename):
             avatar_data = avatar_file.read()
             avatar_data = compress_image(avatar_data, max_size=(200, 200), quality=80)
@@ -2085,7 +2112,6 @@ def edit_profile():
 
         cur = mysql.connection.cursor()
 
-        # Username change
         if new_username and new_username != session.get('user_name'):
             cur.execute("SELECT id FROM users WHERE username = %s AND id != %s", (new_username, uid))
             if cur.fetchone():
@@ -2104,11 +2130,9 @@ def edit_profile():
                         (new_username, uid))
             mysql.connection.commit()
             session['user_name'] = new_username
-            # Update display name
             full_name = (first_name + ' ' + last_name).strip()
             session['user_display_name'] = full_name if full_name else new_username
 
-        # Update other fields
         if avatar_url:
             cur.execute("UPDATE users SET first_name=%s, last_name=%s, bio=%s, social_links=%s, avatar_url=%s WHERE id=%s",
                         (first_name, last_name, bio, social_links, avatar_url, uid))
@@ -2118,7 +2142,6 @@ def edit_profile():
                         (first_name, last_name, bio, social_links, uid))
         mysql.connection.commit()
 
-        # Update display name in session
         full_name = (first_name + ' ' + last_name).strip()
         session['user_display_name'] = full_name if full_name else session.get('user_name')
 
@@ -2126,38 +2149,134 @@ def edit_profile():
         flash('Profile updated!', 'success')
         return redirect(url_for('user_profile', username=session.get('user_name')))
 
-    # GET request
     cur = mysql.connection.cursor()
     cur.execute("SELECT first_name, last_name, bio, social_links, avatar_url, username FROM users WHERE id=%s", (uid,))
     profile = cur.fetchone()
     cur.close()
     return render_template('edit_profile.html', profile=profile)
 
-# ================== LEADERBOARD ==================
-@app.route('/leaderboard')
-def leaderboard():
+
+@app.route('/api/user-stats')
+def user_stats_api():
+    user_id = request.args.get('user_id', type=int)
+    if not user_id:
+        return jsonify({"error": "Missing user_id"}), 400
     cur = mysql.connection.cursor()
-    # Fetch first_name, last_name, avatar_url as well
+    cur.execute("SELECT COUNT(*) FROM documents WHERE uploaded_by = %s", (user_id,))
+    uploads = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM book_comments WHERE user_id = %s", (user_id,))
+    comments = cur.fetchone()[0]
+    cur.execute("SELECT SUM(points) FROM user_points WHERE user_id = %s", (user_id,))
+    points = cur.fetchone()[0] or 0
+    cur.close()
+    return jsonify({"uploads": uploads, "comments": comments, "points": points})
+
+
+# ================== NOTIFICATIONS PAGE ==================
+@app.route('/user/notifications')
+def user_notifications():
+    if 'user_id' not in session:
+        return redirect(url_for('user_login'))
+
+    cur = mysql.connection.cursor()
     cur.execute("""
-        SELECT u.id, u.username, u.first_name, u.last_name, u.avatar_url, SUM(up.points) AS total_points
-        FROM user_points up
-        JOIN users u ON up.user_id = u.id
-        GROUP BY u.id
-        ORDER BY total_points DESC
-        LIMIT 50
-    """)
+        SELECT id, message, link, is_read, created_at, type, metadata
+        FROM notifications
+        WHERE user_id = %s
+        ORDER BY created_at DESC
+    """, (session['user_id'],))
     rows = cur.fetchall()
     cur.close()
 
-    # Build leaderboard list with full name as first element
+    enriched = []
+    for row in rows:
+        notif = {
+            "id": row[0],
+            "message": row[1],
+            "link": row[2],
+            "is_read": row[3],
+            "created_at": row[4],
+            "type": row[5] or 'info',
+            "metadata": json.loads(row[6]) if row[6] else {}
+        }
+        if notif['type'] in ('approval', 'rejection'):
+            uid = notif['metadata'].get('uploader_id')
+            if uid:
+                cur = mysql.connection.cursor()
+                cur.execute("SELECT avatar_url FROM users WHERE id = %s", (uid,))
+                av = cur.fetchone()
+                cur.close()
+                notif['avatar_url'] = av[0] if av else None
+                notif['is_official_actor'] = is_official_user(uid)
+            else:
+                notif['avatar_url'] = None
+                notif['is_official_actor'] = False
+        elif notif['type'] in ('general_comment', 'reply'):
+            uid = notif['metadata'].get('actor_user_id')
+            if uid:
+                cur = mysql.connection.cursor()
+                cur.execute("SELECT username, avatar_url FROM users WHERE id = %s", (uid,))
+                user = cur.fetchone()
+                cur.close()
+                notif['actor_name'] = user[0] if user else 'Unknown'
+                notif['avatar_url'] = user[1] if user else None
+                notif['is_official_actor'] = is_official_user(uid)
+            else:
+                notif['actor_name'] = 'Someone'
+                notif['avatar_url'] = None
+                notif['is_official_actor'] = False
+        else:
+            notif['avatar_url'] = None
+            notif['is_official_actor'] = False
+
+        enriched.append(notif)
+
+    return render_template('notifications.html', notifications=enriched)
+
+
+# ================== LEADERBOARD ==================
+@app.route('/leaderboard')
+def leaderboard():
+    # Get official user ID to exclude from leaderboard
+    official_user_id = get_site_setting('official_user_id')
+
+    cur = mysql.connection.cursor()
+    if official_user_id:
+        cur.execute("""
+            SELECT u.id, u.username, u.first_name, u.last_name, u.avatar_url, SUM(up.points) AS total_points
+            FROM user_points up
+            JOIN users u ON up.user_id = u.id
+            WHERE u.id != %s
+            GROUP BY u.id
+            ORDER BY total_points DESC
+            LIMIT 50
+        """, (official_user_id,))
+    else:
+        cur.execute("""
+            SELECT u.id, u.username, u.first_name, u.last_name, u.avatar_url, SUM(up.points) AS total_points
+            FROM user_points up
+            JOIN users u ON up.user_id = u.id
+            GROUP BY u.id
+            ORDER BY total_points DESC
+            LIMIT 50
+        """)
+    rows = cur.fetchall()
+    cur.close()
+
     leaderboard = []
     for row in rows:
         full_name = ((row[2] or '') + ' ' + (row[3] or '')).strip()
         if not full_name:
-            full_name = row[1]  # fallback to username
-        leaderboard.append((row[0], full_name, row[4], row[5]))   # id, name, avatar, points
+            full_name = row[1]
+        leaderboard.append({
+            'user_id': row[0],
+            'username': row[1],
+            'name': full_name,
+            'avatar_url': row[4],
+            'points': row[5],
+            'is_official': is_official_user(row[0])
+        })
 
-    # Current user's rank & points
     current_user_rank = None
     current_user_points = 0
     if 'user_id' in session:
@@ -2167,14 +2286,26 @@ def leaderboard():
         total = cur.fetchone()[0] or 0
         current_user_points = total
 
-        cur.execute("""
-            SELECT COUNT(*) + 1 FROM (
-                SELECT user_id, SUM(points) AS total
-                FROM user_points
-                GROUP BY user_id
-                HAVING SUM(points) > %s
-            ) AS higher
-        """, (total,))
+        # For current user rank, we should also exclude official user if they are not the current user
+        if official_user_id and str(uid) != official_user_id:
+            cur.execute("""
+                SELECT COUNT(*) + 1 FROM (
+                    SELECT user_id, SUM(points) AS total
+                    FROM user_points
+                    WHERE user_id != %s
+                    GROUP BY user_id
+                    HAVING SUM(points) > %s
+                ) AS higher
+            """, (official_user_id, total))
+        else:
+            cur.execute("""
+                SELECT COUNT(*) + 1 FROM (
+                    SELECT user_id, SUM(points) AS total
+                    FROM user_points
+                    GROUP BY user_id
+                    HAVING SUM(points) > %s
+                ) AS higher
+            """, (total,))
         rank = cur.fetchone()[0]
         current_user_rank = rank
         cur.close()
@@ -2189,16 +2320,24 @@ def leaderboard():
 def get_comments(book_id):
     cur = mysql.connection.cursor()
     cur.execute("""
-        SELECT c.id, c.comment, c.parent_id, c.created_at, u.username, u.avatar_url
+        SELECT c.id, c.comment, c.parent_id, c.created_at, u.username, u.avatar_url, u.id
         FROM book_comments c JOIN users u ON c.user_id = u.id
         WHERE c.book_id = %s ORDER BY c.created_at ASC
     """, (book_id,))
     comments = cur.fetchall()
     cur.close()
-    # convert to dict list
-    comment_list = [{"id": r[0], "comment": r[1], "parent_id": r[2],
-                     "created_at": str(r[3]), "username": r[4], "avatar_url": r[5]} for r in comments]
+    comment_list = [{
+        "id": r[0],
+        "comment": r[1],
+        "parent_id": r[2],
+        "created_at": str(r[3]),
+        "username": r[4],
+        "avatar_url": r[5],
+        "user_id": r[6],
+        "is_official": is_official_user(r[6])
+    } for r in comments]
     return jsonify(comment_list)
+
 
 @app.route('/book/<int:book_id>/comments', methods=['POST'])
 def add_comment(book_id):
@@ -2206,17 +2345,56 @@ def add_comment(book_id):
         return jsonify({"error": "Login required"}), 401
     data = request.get_json()
     comment = data.get('comment', '').strip()
-    parent_id = data.get('parent_id')  # null or int
+    parent_id = data.get('parent_id')
     if not comment:
         return jsonify({"error": "Comment cannot be empty"}), 400
+
     cur = mysql.connection.cursor()
     cur.execute("INSERT INTO book_comments (book_id, user_id, parent_id, comment) VALUES (%s, %s, %s, %s)",
                 (book_id, session['user_id'], parent_id, comment))
     mysql.connection.commit()
+    new_comment_id = cur.lastrowid
     cur.close()
-    # award points
+
     award_points(session['user_id'], 2, book_id)
+
+    if not parent_id:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT uploaded_by, title FROM documents WHERE id = %s", (book_id,))
+        book_info = cur.fetchone()
+        cur.close()
+        if book_info and book_info[0] and book_info[0] != session['user_id']:
+            uploader_id = book_info[0]
+            book_title = book_info[1]
+            snippet = comment[:60] + ('...' if len(comment) > 60 else '')
+            msg = f"💬 New comment on <em>{book_title}</em><br><small class='text-muted'>“{snippet}”</small>"
+            metadata = {"book_id": book_id, "comment_id": new_comment_id, "actor_user_id": session['user_id']}
+            create_notification(uploader_id, 'general_comment', msg,
+                                url_for('book_detail', book_id=book_id, _anchor='discussion'),
+                                metadata)
+    else:
+        cur = mysql.connection.cursor()
+        cur.execute("""
+            SELECT c.user_id, d.title
+            FROM book_comments c
+            JOIN documents d ON c.book_id = d.id
+            WHERE c.id = %s
+        """, (parent_id,))
+        parent_info = cur.fetchone()
+        cur.close()
+        if parent_info and parent_info[0] != session['user_id']:
+            parent_author_id = parent_info[0]
+            book_title = parent_info[1]
+            reply_username = session.get('user_name')
+            snippet = comment[:60] + ('...' if len(comment) > 60 else '')
+            msg = f"<strong>{reply_username}</strong> replied to your comment on <em>{book_title}</em><br><small class='text-muted'>“{snippet}”</small>"
+            metadata = {"book_id": book_id, "comment_id": new_comment_id, "parent_comment_id": parent_id, "actor_user_id": session['user_id']}
+            create_notification(parent_author_id, 'reply', msg,
+                                url_for('book_detail', book_id=book_id, _anchor='discussion'),
+                                metadata)
+
     return jsonify({"success": True})
+
 
 # ================== NOTIFICATIONS API ==================
 @app.route('/api/notifications/unread-count')
@@ -2229,15 +2407,66 @@ def unread_notification_count():
     cur.close()
     return jsonify({"count": count})
 
+
 @app.route('/api/notifications')
 def get_notifications():
     if 'user_id' not in session:
         return jsonify([])
     cur = mysql.connection.cursor()
-    cur.execute("SELECT id, message, link, is_read, created_at FROM notifications WHERE user_id=%s ORDER BY created_at DESC LIMIT 20", (session['user_id'],))
-    notifs = cur.fetchall()
+    cur.execute("""
+        SELECT id, message, link, is_read, created_at, type, metadata
+        FROM notifications
+        WHERE user_id = %s
+        ORDER BY created_at DESC LIMIT 20
+    """, (session['user_id'],))
+    rows = cur.fetchall()
     cur.close()
-    return jsonify([{"id": n[0], "message": n[1], "link": n[2], "is_read": bool(n[3]), "created_at": str(n[4])} for n in notifs])
+
+    result = []
+    for row in rows:
+        notif = {
+            "id": row[0],
+            "message": row[1],
+            "link": row[2],
+            "is_read": bool(row[3]),
+            "created_at": str(row[4]),
+            "type": row[5] or 'info',
+            "metadata": json.loads(row[6]) if row[6] else {}
+        }
+
+        if notif['type'] in ('approval', 'rejection'):
+            uploader_id = notif['metadata'].get('uploader_id')
+            if uploader_id:
+                cur = mysql.connection.cursor()
+                cur.execute("SELECT avatar_url FROM users WHERE id = %s", (uploader_id,))
+                img = cur.fetchone()
+                cur.close()
+                notif['image_url'] = img[0] if img else None
+                notif['is_official_actor'] = is_official_user(uploader_id)
+            else:
+                notif['image_url'] = None
+                notif['is_official_actor'] = False
+        elif notif['type'] in ('general_comment', 'reply'):
+            actor_id = notif['metadata'].get('actor_user_id')
+            if actor_id:
+                cur = mysql.connection.cursor()
+                cur.execute("SELECT username, avatar_url FROM users WHERE id = %s", (actor_id,))
+                user = cur.fetchone()
+                cur.close()
+                notif['actor_name'] = user[0] if user else 'Unknown'
+                notif['actor_avatar'] = user[1] if user and user[1] else None
+                notif['is_official_actor'] = is_official_user(actor_id)
+            else:
+                notif['actor_name'] = 'Someone'
+                notif['actor_avatar'] = None
+                notif['is_official_actor'] = False
+        else:
+            notif['is_official_actor'] = False
+
+        result.append(notif)
+
+    return jsonify(result)
+
 
 @app.route('/api/notifications/<int:notif_id>/read', methods=['POST'])
 def mark_notification_read(notif_id):
@@ -2249,6 +2478,198 @@ def mark_notification_read(notif_id):
     cur.close()
     return jsonify({"success": True})
 
+
+@app.route('/api/notifications/<int:notif_id>/delete', methods=['POST'])
+def delete_notification(notif_id):
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM notifications WHERE id=%s AND user_id=%s", (notif_id, session['user_id']))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"success": True})
+
+
+# -------------------- SITE SETTINGS HELPERS --------------------
+def get_site_setting(key, default=None):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT `value` FROM site_settings WHERE `key` = %s", (key,))
+    row = cur.fetchone()
+    cur.close()
+    return row[0] if row else default
+
+def set_site_setting(key, value):
+    cur = mysql.connection.cursor()
+    cur.execute("REPLACE INTO site_settings (`key`, `value`) VALUES (%s, %s)", (key, value))
+    mysql.connection.commit()
+    cur.close()
+
+# -------------------- OFFICIAL USER HELPER & MODERATOR --------------------
+def is_official_user(user_id):
+    official_id = get_site_setting('official_user_id')
+    return official_id and str(user_id) == official_id
+
+def is_moderator():
+    if session.get('logged_in'):
+        return True
+    if 'user_id' in session and is_official_user(session['user_id']):
+        return True
+    return False
+
+@app.context_processor
+def inject_common():
+    return dict(
+        current_user_is_official=is_official_user(session.get('user_id', 0)),
+        is_moderator=is_moderator()
+    )
+
+# ================== MODERATION API ENDPOINTS ==================
+@app.route('/api/review/<int:review_id>/delete', methods=['POST'])
+@limiter.limit("10 per minute")
+def delete_review_api(review_id):
+    if not is_moderator():
+        return jsonify({"error": "Unauthorized"}), 403
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM reviews WHERE id = %s", (review_id,))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"success": True})
+
+@app.route('/api/comment/<int:comment_id>/delete', methods=['POST'])
+@limiter.limit("10 per minute")
+def delete_comment_api(comment_id):
+    if not is_moderator():
+        return jsonify({"error": "Unauthorized"}), 403
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM book_comments WHERE id = %s", (comment_id,))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"success": True})
+
+@app.route('/api/comment/<int:comment_id>/reply', methods=['POST'])
+@limiter.limit("10 per minute")
+def reply_as_official_api(comment_id):
+    if not is_moderator():
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json()
+    reply_text = data.get('reply_text', '').strip()
+    if not reply_text:
+        return jsonify({"error": "Reply text required"}), 400
+
+    official_user_id = get_site_setting('official_user_id')
+    if not official_user_id:
+        return jsonify({"error": "Official user not set"}), 500
+
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT book_id FROM book_comments WHERE id = %s", (comment_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        return jsonify({"error": "Comment not found"}), 404
+
+    book_id = row[0]
+    cur.execute("INSERT INTO book_comments (book_id, user_id, parent_id, comment) VALUES (%s, %s, %s, %s)",
+                (book_id, official_user_id, comment_id, reply_text))
+    mysql.connection.commit()
+    cur.close()
+
+    return jsonify({"success": True})
+
+# ================== ADMIN ROUTES ==================
+@app.route('/admin/official-profile', methods=['GET', 'POST'])
+@admin_required
+def admin_official_profile():
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        if username:
+            cur = mysql.connection.cursor()
+            cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+            user = cur.fetchone()
+            cur.close()
+            if user:
+                set_site_setting('official_user_id', str(user[0]))
+                flash(f'Official profile set to {username}', 'success')
+            else:
+                flash('User not found.', 'danger')
+        return redirect(url_for('admin_official_profile'))
+
+    official_user_id = get_site_setting('official_user_id')
+    official_user = None
+    if official_user_id:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT id, username, avatar_url FROM users WHERE id = %s", (official_user_id,))
+        official_user = cur.fetchone()
+        cur.close()
+    return render_template('admin_official_profile.html', official_user=official_user)
+
+#----------------------------- MODERATION PANEL ----------------------------#
+
+@app.route('/moderation')
+@limiter.limit("30 per minute")
+def moderation_panel():
+    if not is_moderator():
+        abort(403)
+
+    cur = mysql.connection.cursor()
+    week_ago = datetime.now() - timedelta(days=30)
+
+    # Recent reviews
+    cur.execute("""
+        SELECT r.id, u.username, u.avatar_url, d.title, d.id AS book_id,
+               r.rating, r.comment, r.created_at, u.id
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        JOIN documents d ON r.book_id = d.id
+        WHERE r.created_at >= %s
+        ORDER BY r.created_at DESC
+        LIMIT 50
+    """, (week_ago,))
+    reviews_raw = cur.fetchall()
+    reviews = []
+    for row in reviews_raw:
+        reviews.append({
+            'id': row[0],
+            'username': row[1],
+            'avatar': row[2],
+            'book_title': row[3],
+            'book_id': row[4],
+            'rating': row[5],
+            'comment': row[6],
+            'created_at': row[7].strftime('%b %d, %Y %H:%M') if row[7] else '',
+            'is_official': is_official_user(row[8])
+        })
+
+    # Recent comments
+    cur.execute("""
+        SELECT c.id, u.username, u.avatar_url, d.title, d.id AS book_id,
+               c.comment, c.created_at, u.id
+        FROM book_comments c
+        JOIN users u ON c.user_id = u.id
+        JOIN documents d ON c.book_id = d.id
+        WHERE c.created_at >= %s
+        ORDER BY c.created_at DESC
+        LIMIT 50
+    """, (week_ago,))
+    comments_raw = cur.fetchall()
+    comments = []
+    for row in comments_raw:
+        comments.append({
+            'id': row[0],
+            'username': row[1],
+            'avatar': row[2],
+            'book_title': row[3],
+            'book_id': row[4],
+            'comment': row[5],
+            'created_at': row[6].strftime('%b %d, %Y %H:%M') if row[6] else '',
+            'user_id': row[7],
+            'is_official': is_official_user(row[7])
+        })
+
+    cur.close()
+    return render_template('admin_moderation.html',
+                           reviews=reviews,
+                           comments=comments)
 
 # ================== RUN ==================
 if __name__ == '__main__':

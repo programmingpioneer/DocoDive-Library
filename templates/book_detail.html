@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+<!-- Moderator status via meta tag (safe for JS) -->
+<meta name="is-moderator" content="{{ is_moderator|tojson }}">
 
 {% block content %}
 <div class="container py-4 py-md-5">
@@ -79,9 +81,26 @@
 
             <div id="reviews">
                 {% for r in reviews %}
-                <div class="border-bottom pb-2 mb-2">
-                    <strong>{{ r[0] }}</strong> - {{ r[1] }} ⭐
-                    <p class="text-muted small mb-0">{{ r[2] or '' }}</p>
+                <div class="border-bottom pb-2 mb-2 review-item" data-review-id="{{ r.id }}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="d-flex align-items-center gap-1">
+                            {% if r.is_official %}
+                                <a href="/user/profile/{{ r.username }}" class="fw-bold text-decoration-none text-dark">
+                                    {{ r.username }}
+                                    <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
+                                </a>
+                            {% else %}
+                                <strong>{{ r.username }}</strong>
+                            {% endif %}
+                            <span>- {{ r.rating }} ⭐</span>
+                        </div>
+                        {% if is_moderator %}
+                        <button class="btn btn-sm btn-outline-danger rounded-pill delete-review-btn" data-review-id="{{ r.id }}" title="Delete review">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    <p class="text-muted small mb-0">{{ r.comment or '' }}</p>
                 </div>
                 {% else %}
                 <p class="text-muted">No reviews yet. Be the first to review!</p>
@@ -89,7 +108,7 @@
             </div>
 
             <!-- ==================== DISCUSSION COMMENTS ==================== -->
-            <section class="mt-5">
+            <section id="discussion" class="mt-5">
                 <h4 class="fw-bold mb-3">💬 Discussion</h4>
                 <div id="commentsContainer" class="mb-4"></div>
                 {% if session.get('user_id') %}
@@ -108,6 +127,9 @@
 
 {% block scripts %}
 <script>
+// Moderator status from server
+const isModerator = document.querySelector('meta[name="is-moderator"]')?.getAttribute('content') === 'true';
+
 // ======================== REVIEW & FAVORITE ========================
 async function submitReview(e) {
     e.preventDefault();
@@ -139,14 +161,9 @@ document.querySelector('.favorite-btn')?.addEventListener('click', async functio
 // ======================== QR CODE BUTTON ========================
 document.querySelector('.qr-btn')?.addEventListener('click', function() {
     const bookId = this.dataset.bookId;
-    // Global showQRCode function is defined in base.html (or we can implement it here)
-    if (typeof showQRCode === 'function') {
-        showQRCode(bookId);
-    } else {
-        // Fallback: directly show popup
-        document.getElementById('qrImage').src = `/book/${bookId}/qr`;
-        document.getElementById('qrPopup').style.display = 'block';
-    }
+    // Use global fallback popup
+    document.getElementById('qrImage').src = `/book/${bookId}/qr`;
+    document.getElementById('qrPopup').style.display = 'block';
 });
 
 // ======================== DISCUSSION COMMENTS ========================
@@ -164,17 +181,48 @@ function loadComments() {
                 roots.push(commentMap[c.id]);
             }
         });
+
         function renderTree(nodes) {
             let h = '';
             nodes.forEach(c => {
+                // User display with official tick/link
+                let userHTML = '';
+                if (c.is_official) {
+                    userHTML = `<a href="/user/profile/${c.username}" class="text-decoration-none text-dark fw-bold">
+                                    ${c.username}
+                                    <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
+                                </a>`;
+                } else {
+                    userHTML = `<strong>${c.username}</strong>`;
+                }
+
+                // Moderator actions (delete + official reply)
+                let modActions = '';
+                if (isModerator) {
+                    modActions = `
+                        <div class="mt-1 d-flex gap-2 align-items-center">
+                            <button class="btn btn-sm btn-outline-danger delete-comment-btn" data-comment-id="${c.id}">
+                                <i class="bi bi-trash3"></i> Delete
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary reply-official-btn" data-comment-id="${c.id}">
+                                <i class="bi bi-reply-fill"></i> Reply as Official
+                            </button>
+                            <div class="official-reply-form d-none" id="officialReplyForm-${c.id}" style="width:100%;">
+                                <textarea class="form-control form-control-sm mb-1" rows="2" placeholder="Official reply..."></textarea>
+                                <button class="btn btn-sm btn-primary submit-official-reply" data-comment-id="${c.id}">Submit</button>
+                            </div>
+                        </div>`;
+                }
+
                 h += `<div class="ms-${c.parent_id ? 4 : 0} my-2 p-2 border-start">
                        <div class="d-flex align-items-center gap-2">
                          <img src="${c.avatar_url || '/static/default-avatar.png'}" class="rounded-circle" width="24" height="24">
-                         <strong>${c.username}</strong>
+                         ${userHTML}
                          <small class="text-muted">${c.created_at}</small>
                        </div>
                        <p class="mt-1 mb-1">${c.comment}</p>
                        <button class="btn btn-sm btn-link replyBtn" data-id="${c.id}">Reply</button>
+                       ${modActions}
                        <div class="replyForm mt-2" style="display:none;">
                            <textarea class="form-control form-control-sm" rows="2" id="replyText${c.id}"></textarea>
                            <button class="btn btn-sm btn-primary mt-1 submitReply" data-parent="${c.id}">Post Reply</button>
@@ -185,6 +233,7 @@ function loadComments() {
             return h;
         }
         document.getElementById('commentsContainer').innerHTML = renderTree(roots);
+
         // Reply button listeners
         document.querySelectorAll('.replyBtn').forEach(b => {
             b.addEventListener('click', function() {
@@ -217,6 +266,74 @@ document.getElementById('commentForm')?.addEventListener('submit', function(e) {
     }).then(() => { document.getElementById('commentText').value = ''; loadComments(); });
 });
 loadComments();
+
+// ======================== MODERATOR ACTIONS (event delegation) ========================
+document.addEventListener('click', async function(e) {
+    // Delete review
+    if (e.target.closest('.delete-review-btn')) {
+        const btn = e.target.closest('.delete-review-btn');
+        const reviewId = btn.dataset.reviewId;
+        if (!confirm('Delete this review?')) return;
+        const res = await fetch(`/api/review/${reviewId}/delete`, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (res.ok) {
+            const item = btn.closest('.review-item');
+            if (item) item.remove();
+        } else {
+            alert('Failed to delete review.');
+        }
+    }
+
+    // Delete comment
+    if (e.target.closest('.delete-comment-btn')) {
+        const btn = e.target.closest('.delete-comment-btn');
+        const commentId = btn.dataset.commentId;
+        if (!confirm('Delete this comment?')) return;
+        const res = await fetch(`/api/comment/${commentId}/delete`, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (res.ok) {
+            const commentDiv = btn.closest('.border-start');
+            if (commentDiv) commentDiv.remove();
+        } else {
+            alert('Failed to delete comment.');
+        }
+    }
+
+    // Toggle official reply form
+    if (e.target.closest('.reply-official-btn')) {
+        const btn = e.target.closest('.reply-official-btn');
+        const commentId = btn.dataset.commentId;
+        const form = document.getElementById(`officialReplyForm-${commentId}`);
+        if (form) form.classList.toggle('d-none');
+    }
+
+    // Submit official reply
+    if (e.target.closest('.submit-official-reply')) {
+        const btn = e.target.closest('.submit-official-reply');
+        const commentId = btn.dataset.commentId;
+        const textarea = document.querySelector(`#officialReplyForm-${commentId} textarea`);
+        if (!textarea) return;
+        const replyText = textarea.value.trim();
+        if (!replyText) return;
+        const res = await fetch(`/api/comment/${commentId}/reply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ reply_text: replyText })
+        });
+        if (res.ok) {
+            alert('Reply posted!');
+            textarea.value = '';
+            document.getElementById(`officialReplyForm-${commentId}`).classList.add('d-none');
+            loadComments(); // refresh to show new reply
+        } else {
+            alert('Failed to post reply.');
+        }
+    }
+});
 </script>
 
 <style>
