@@ -24,6 +24,8 @@ Traditional digital libraries suffer from heavy server loads, costly storage bot
 * **Rigorous Data Integrity:** Enforces strict user session handling, profile verification, and community moderation workflows.
 * **Production-Grade Security:** Implements scrypt password hashing, secure environment variables, and strict form validation gates.
 
+> 🌐 **Experience It Live:** Don't just read the code—test out the fully deployed production platform right now: [🔗 Launch DocoDive Live](https://docodive-library.onrender.com/)
+
 ---
 
 ## 🛠️ Core Engineering Systems
@@ -37,7 +39,6 @@ Traditional digital libraries suffer from heavy server loads, costly storage bot
 | **Frontend UI** | Bootstrap 5, Jinja2, AJAX | Responsive cross-device layout with dynamic asynchronous page components. |
 
 ---
-
 
 ## 🚀 Evolution: From a Simple Library to a Complete Community Platform
 
@@ -80,15 +81,14 @@ Every feature below was built incrementally, turning DocoDive into a robust, sel
 - **Super‑Admin User Management** – Create, edit, or delete admin accounts directly from the dashboard.
 
 ---
----
 
 ## 🧠 System Workflow & Logic
 
-1. **Onboarding:** User registers with First Name, Last Name, and Email → System triggers an asynchronous verification dispatch via Brevo.
-2. **Access Control:** Verified users authenticate → Session tokens map directly to database states.
-3. **Discovery & Retrieval:** Real-time search filters query TiDB → Client fetches metadata asynchronously via AJAX.
+1. **Onboarding:** User registers with First Name, Last Name, and Email $\rightarrow$ System triggers an asynchronous verification dispatch via Brevo.
+2. **Access Control:** Verified users authenticate $\rightarrow$ Session tokens map directly to database states.
+3. **Discovery & Retrieval:** Real-time search filters query TiDB $\rightarrow$ Client fetches metadata asynchronously via AJAX.
 4. **Binary Delivery:** PDF downloads route directly through Cloudflare R2 object storage with progress tracking.
-5. **Community Engagement:** Users leave reviews or upload documents → Submissions enter a pending moderation queue awaiting administrator approval.
+5. **Community Engagement:** Users leave reviews or upload documents $\rightarrow$ Submissions enter a pending moderation queue awaiting administrator approval.
 
 ---
 
@@ -105,8 +105,12 @@ Every feature below was built incrementally, turning DocoDive into a robust, sel
 </p>
 
 <p align="center" style="font-size: 1.1rem;">
-  <strong>Streamlined Access.</strong><br>
-  Instant login processing, token-based password recovery, and zero-page-reload states.
+  <strong>Frictionless Access & Live Testing.</strong><br>
+  Lightning-fast sign-ins, token-based password recovery, and zero lag.<br><br>
+  💡 <strong>How to test it live:</strong><br>
+  1. Head over to the <a href="https://docodive-library.onrender.com/" target="_blank"><b>DocoDive Live Application</b></a>.<br>
+  2. Create a new account using your actual name and email.<br>
+  3. Check your inbox for the automated Brevo verification email, click to verify, and experience the full production auth loop instantly!
 </p>
 
 <br>
@@ -169,10 +173,8 @@ We welcome contributions that push the boundaries of open‑source education:
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/programmingpioneer/DocoDive-Library.git
+   git clone [https://github.com/programmingpioneer/DocoDive-Library.git](https://github.com/programmingpioneer/DocoDive-Library.git)
    cd docodive
-
-
 
 ---
 ## 👤 About the Creator
