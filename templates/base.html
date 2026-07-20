@@ -23,7 +23,6 @@
         .navbar .btn { transition: all 0.2s; }
         .navbar .btn:hover { transform: translateY(-1px); }
 
-        /* Hover dropdowns (desktop only) */
         @media (min-width: 992px) {
             .dropdown:hover .dropdown-menu {
                 display: block;
@@ -34,7 +33,6 @@
             }
         }
 
-        /* Avatar fallback style */
         .avatar-fallback {
             width: 30px;
             height: 30px;
@@ -47,7 +45,6 @@
             font-size: 1rem;
         }
 
-        /* Notification dropdown animation */
         .animate.slideIn {
             animation: slideDown 0.3s ease-out;
         }
@@ -56,14 +53,12 @@
             to { opacity: 1; transform: translateY(0) translateX(-50%); }
         }
 
-        /* Center the notification dropdown under the bell (desktop) */
         .notif-dropdown {
             left: 50% !important;
             right: auto !important;
             transform: translateX(-50%) !important;
         }
 
-        /* Pulse animation for notification badge */
         .pulse-badge {
             animation: pulse 2s infinite;
         }
@@ -73,12 +68,10 @@
             100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
         }
 
-        /* Unread notification background */
         .bg-purple-light {
             background-color: #f0eeff;
         }
 
-        /* Mobile: notification dropdown RIGHT aligned, close to bell */
         @media (max-width: 576px) {
             .dropdown-menu[aria-labelledby="notificationBell"] {
                 width: 300px !important;
@@ -92,29 +85,27 @@
             }
         }
     </style>
-</head>
 
-<!-- Brevo Conversations -->
-<script>
-    (function(d, w, c) {
-        w.BrevoConversationsID = '6a551981edd95b5e7d08467b';
-        w[c] = w[c] || function() {
-            (w[c].q = w[c].q || []).push(arguments);
-        };
-        var s = d.createElement('script');
-        s.async = true;
-        s.src = 'https://conversations-widget.brevo.com/brevo-conversations.js';
-        if (d.head) d.head.appendChild(s);
-    })(document, window, 'BrevoConversations');
-</script>
-<!-- End Brevo Conversations -->
+    <!-- Brevo Conversations widget (only setup, no identify) -->
+    <script>
+        (function(d, w, c) {
+            w.BrevoConversationsID = '6a551981edd95b5e7d08467b';
+            w[c] = w[c] || function() {
+                (w[c].q = w[c].q || []).push(arguments);
+            };
+            var s = d.createElement('script');
+            s.async = true;
+            s.src = 'https://conversations-widget.brevo.com/brevo-conversations.js';
+            if (d.head) d.head.appendChild(s);
+        })(document, window, 'BrevoConversations');
+    </script>
+</head>
 
 <body class="d-flex flex-column min-vh-100">
 
-    <!-- ========== PROFESSIONAL DROPDOWN NAVBAR ========== -->
+    <!-- ========== NAVBAR ========== -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white py-3 sticky-top shadow-sm">
         <div class="container">
-            <!-- Brand -->
             <a class="navbar-brand fw-bolder fs-4 text-primary d-flex align-items-center gap-2" href="/">
                 <div class="bg-primary text-white rounded d-flex justify-content-center align-items-center" style="width: 38px; height: 38px;">
                     <i class="bi bi-book-half fs-5"></i>
@@ -122,17 +113,15 @@
                 <span class="d-inline">DocoDive</span>
             </a>
 
-            <!-- Right-side group (Bell, Profile, Hamburger) - always visible -->
             <div class="d-flex align-items-center gap-2 order-lg-last">
                 {% if session.get('user_id') %}
-                    <!-- Notification Bell (Premium eDox Style) -->
+                    <!-- Notification Bell -->
                     <div class="dropdown">
                         <span class="nav-link position-relative" id="notificationBell" data-bs-toggle="dropdown" data-bs-trigger="hover" aria-expanded="false" role="button" style="color: var(--edox-dark); cursor: pointer;">
                             <i class="bi bi-bell fs-5"></i>
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger pulse-badge" id="notifBadge" style="display:none;">0</span>
                         </span>
                         <div class="dropdown-menu notif-dropdown p-0 shadow-lg border-0 animate slideIn" style="width: 360px; max-height: 440px; overflow-y: auto; overflow-x: hidden; border-radius: 20px; margin-top: 10px;">
-                            <!-- Header -->
                             <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-light" style="border-radius: 20px 20px 0 0; border-bottom: 1px solid #e0e7ff;">
                                 <h6 class="mb-0 fw-bold" style="color: var(--edox-dark);">
                                     <i class="bi bi-bell-fill me-2" style="color: var(--edox-purple);"></i>Notifications
@@ -141,14 +130,12 @@
                                     <i class="bi bi-check-all me-1"></i>Mark all as read
                                 </small>
                             </div>
-                            <!-- Notification List -->
                             <div id="notifList" class="px-2 py-1">
                                 <div class="text-center text-muted py-4">
                                     <i class="bi bi-bell-slash fs-2 d-block mb-2"></i>
                                     <small>No notifications yet</small>
                                 </div>
                             </div>
-                            <!-- Footer -->
                             <div class="text-center py-2 bg-light" style="border-radius: 0 0 20px 20px;">
                                 <a href="/user/notifications" class="small text-decoration-none" style="color: var(--edox-purple);">
                                     View all notifications <i class="bi bi-arrow-right ms-1"></i>
@@ -188,7 +175,6 @@
                         </ul>
                     </div>
                 {% elif session.get('logged_in') %}
-                    <!-- Admin Controls (simplified, always visible) -->
                     <a href="/admin/dashboard" class="btn btn-outline-teal rounded-pill px-3" style="border-color: #14b8a6; color: #14b8a6;">
                         <i class="bi bi-speedometer2"></i> <span class="d-none d-sm-inline">Dashboard</span>
                     </a>
@@ -200,17 +186,14 @@
                     <a href="/login" class="btn btn-outline-dark rounded-pill px-3">Admin</a>
                 {% endif %}
 
-                <!-- Hamburger Toggler (only visible on mobile) -->
                 <button class="navbar-toggler border-0 shadow-none ms-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"
                     aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
             </div>
 
-            <!-- Collapsible Menu (only Browse & Community) -->
             <div class="collapse navbar-collapse" id="navbarMain">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1">
-                    <!-- Browse Dropdown (hover) -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="browseDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-collection me-1"></i> Browse
@@ -227,7 +210,6 @@
                         </ul>
                     </li>
 
-                    <!-- Community Dropdown (hover) -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="communityDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-people me-1"></i> Community
@@ -278,7 +260,7 @@
         </div>
     </div>
 
-    <!-- Notifications Script (Mark as read, delete, truncation, no blink) -->
+    <!-- Notifications Script -->
     <script>
         function timeAgo(dateString) {
             try {

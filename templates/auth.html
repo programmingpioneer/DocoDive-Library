@@ -376,6 +376,17 @@
                 {% endif %}
                 <form method="POST" action="/user/signup" novalidate>
                     <input type="hidden" name="_csrf_token" value="{{ session._csrf_token }}">
+                    <!-- NEW: First Name & Last Name -->
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold small">First Name *</label>
+                            <input type="text" name="first_name" class="form-control" placeholder="Ali" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Last Name *</label>
+                            <input type="text" name="last_name" class="form-control" placeholder="Khan" required>
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold small">Username</label>
                         <input type="text" name="username" id="username" class="form-control" placeholder="bookworm42" required>

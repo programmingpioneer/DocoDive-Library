@@ -1246,6 +1246,8 @@ def user_signup():
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
 
         if not username or not email or not password:
             return render_template('auth.html', mode='signup', error='All fields are required.')
@@ -1265,8 +1267,8 @@ def user_signup():
             cur.close()
             return render_template('auth.html', mode='signup', error='Username or email already exists.')
 
-        cur.execute("INSERT INTO users (username, email, password, verification_token) VALUES (%s, %s, %s, %s)",
-                    (username, email, hashed, token))
+        cur.execute("INSERT INTO users (username, email, password, verification_token, first_name, last_name) VALUES (%s, %s, %s, %s, %s, %s)",
+            (username, email, hashed, token, first_name, last_name))
         mysql.connection.commit()
         cur.close()
 
@@ -1342,8 +1344,14 @@ def user_login():
             full_name = (first + ' ' + last).strip()
             session['user_display_name'] = full_name if full_name else user[1]
         else:
+            first, last, full_name = '', '', ''
             session['user_display_name'] = user[1]
         session['avatar_url'] = user_info[2] if user_info else None
+
+        # 🆕 Store email and name parts for Brevo identify
+        session['email'] = email
+        session['first_name'] = first
+        session['last_name'] = last
 
         # Update login streak
         today = datetime.utcnow().date()
