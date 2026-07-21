@@ -86,7 +86,7 @@
         }
     </style>
 
-    <!-- Brevo Conversations widget (only setup, no identify) -->
+    <!-- Brevo Conversations widget -->
     <script>
         (function(d, w, c) {
             w.BrevoConversationsID = '6a551981edd95b5e7d08467b';
@@ -162,28 +162,22 @@
                             </span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-3 mt-2" style="min-width: 180px;">
+                            {% if current_user_is_official %}
+                                <li><a class="dropdown-item py-2" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2 text-primary"></i> Admin Dashboard</a></li>
+                                <li><a class="dropdown-item py-2" href="/admin"><i class="bi bi-cloud-upload me-2 text-primary"></i> Upload Book</a></li>
+                                <li><a class="dropdown-item py-2" href="/moderation"><i class="bi bi-shield-check me-2 text-primary"></i> Moderation Panel</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                            {% endif %}
                             <li><a class="dropdown-item py-2" href="/user/profile/{{ session.get('user_name') }}"><i class="bi bi-person me-2 text-primary"></i> My Profile</a></li>
                             <li><a class="dropdown-item py-2" href="/user/favorites"><i class="bi bi-heart me-2 text-warning"></i> Favorites</a></li>
                             <li><a class="dropdown-item py-2" href="/user/history"><i class="bi bi-clock-history me-2 text-info"></i> History</a></li>
                             <li><a class="dropdown-item py-2" href="/user/stats"><i class="bi bi-graph-up me-2 text-success"></i> Stats</a></li>
-                            {% if current_user_is_official %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item py-2" href="/moderation"><i class="bi bi-shield-check me-2 text-primary"></i> Moderation Panel</a></li>
-                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item py-2 text-danger" href="/user/logout"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
                         </ul>
                     </div>
-                {% elif session.get('logged_in') %}
-                    <a href="/admin/dashboard" class="btn btn-outline-teal rounded-pill px-3" style="border-color: #14b8a6; color: #14b8a6;">
-                        <i class="bi bi-speedometer2"></i> <span class="d-none d-sm-inline">Dashboard</span>
-                    </a>
-                    <a href="/logout" class="btn btn-outline-danger rounded-pill px-3 py-2">
-                        <i class="bi bi-box-arrow-right"></i>
-                    </a>
                 {% else %}
                     <a href="/user/login" class="btn btn-outline-primary rounded-pill px-3">Reader</a>
-                    <a href="/login" class="btn btn-outline-dark rounded-pill px-3">Admin</a>
                 {% endif %}
 
                 <button class="navbar-toggler border-0 shadow-none ms-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"

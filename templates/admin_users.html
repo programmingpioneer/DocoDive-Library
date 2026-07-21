@@ -1,67 +1,94 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold text-primary">
-            <i class="bi bi-people-fill me-2"></i> Manage Users
-        </h2>
-        <a href="/" class="btn btn-outline-secondary rounded-pill px-4">
-            <i class="bi bi-house-door me-1"></i> Back to Library
+<div class="container py-5">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="fw-bold text-primary"><i class="bi bi-people-fill me-2"></i>Manage Users</h2>
+        <a href="/admin/dashboard" class="btn btn-outline-secondary rounded-pill">
+            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
         </a>
     </div>
 
-    <div class="card border-0 shadow-sm">
+    <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-0">
+            {% if users %}
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-dark">
+                    <thead class="table-light">
                         <tr>
-                            <th>#</th>
+                            <th>ID</th>
                             <th>Username</th>
                             <th>Email</th>
-                            <th>Status</th>
+                            <th>Verified</th>
                             <th>Joined</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for user in users %}
-                        <tr>
+                        <tr id="user-row-{{ user.id }}">
                             <td>{{ user.id }}</td>
-                            <td><strong>{{ user.username }}</strong></td>
+                            <td>{{ user.username }}</td>
                             <td>{{ user.email }}</td>
                             <td>
                                 {% if user.verified %}
-                                <span class="badge bg-success">
-                                    <i class="bi bi-check-circle-fill me-1"></i> Verified
-                                </span>
+                                    <i class="bi bi-check-circle-fill text-success"></i> Verified
                                 {% else %}
-                                <span class="badge bg-danger">
-                                    <i class="bi bi-exclamation-circle-fill me-1"></i> Not Verified
-                                </span>
+                                    <i class="bi bi-exclamation-circle-fill text-warning"></i> Pending
                                 {% endif %}
                             </td>
                             <td>{{ user.created_at }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
-                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                                <p class="mt-2">No users found.</p>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill delete-user-btn" data-user-id="{{ user.id }}" title="Delete user">
+                                    <i class="bi bi-trash3"></i> Delete
+                                </button>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-        </div>
-        <div class="card-footer bg-light d-flex justify-content-between align-items-center">
-            <small class="text-muted">
-                <i class="bi bi-people me-1"></i> Total users: {{ users|length }}
-            </small>
-            <a href="/" class="btn btn-sm btn-outline-secondary rounded-pill">
-                <i class="bi bi-house-door"></i> Home
-            </a>
+            {% else %}
+            <div class="text-center py-4 text-muted">No users found.</div>
+            {% endif %}
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('click', async function(e) {
+        if (e.target.closest('.delete-user-btn')) {
+            const btn = e.target.closest('.delete-user-btn');
+            const userId = btn.dataset.userId;
+            if (!confirm('Are you sure you want to permanently delete this user and all their data? This action cannot be undone.')) return;
+
+            try {
+                const res = await fetch(`/admin/users/delete/${userId}`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                // Check if response is JSON
+                const contentType = res.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await res.json();
+                    if (data.success) {
+                        document.getElementById(`user-row-${userId}`)?.remove();
+                        alert('User deleted successfully.');
+                    } else {
+                        alert('Error: ' + (data.error || 'Unknown error'));
+                    }
+                } else {
+                    // Non-JSON response (probably HTML error page)
+                    alert('Server error. Please check your permissions.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Network error. Check console for details.');
+            }
+        }
+    });
+</script>
 {% endblock %}

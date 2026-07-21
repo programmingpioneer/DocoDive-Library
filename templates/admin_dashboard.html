@@ -2,52 +2,69 @@
 
 {% block content %}
 <div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold mb-0 text-primary">
-            <i class="bi bi-speedometer2 me-2"></i> Admin Dashboard
-        </h2>
-        <div class="d-flex gap-2 flex-wrap">
-            <a href="/admin/official-profile" class="btn btn-outline-primary rounded-pill px-3">
-                <i class="bi bi-person-badge me-1"></i> Official Profile
+    <!-- Header -->
+    <h2 class="fw-bold mb-4 text-primary">
+        <i class="bi bi-speedometer2 me-2"></i> Admin Dashboard
+    </h2>
+
+    <!-- Stats Cards (clickable links) -->
+    <div class="row g-4 mb-5">
+        <!-- Total Books -->
+        <div class="col-6 col-md-3">
+            <a href="/admin/books" class="text-decoration-none">
+                <div class="card border-0 shadow-sm text-center p-4 h-100 clickable-card">
+                    <i class="bi bi-book fs-1 text-primary"></i>
+                    <h3 id="totalBooks" class="fw-bold mt-2">--</h3>
+                    <small class="text-muted">Total Books</small>
+                </div>
             </a>
-            <a href="/moderation" class="btn btn-outline-primary rounded-pill px-3">
-                <i class="bi bi-shield-check me-1"></i> Community Moderation
+        </div>
+        <!-- Total Categories -->
+        <div class="col-6 col-md-3">
+            <a href="/admin/books" class="text-decoration-none">
+                <div class="card border-0 shadow-sm text-center p-4 h-100 clickable-card">
+                    <i class="bi bi-folder fs-1 text-warning"></i>
+                    <h3 id="totalCategories" class="fw-bold mt-2">--</h3>
+                    <small class="text-muted">Categories</small>
+                </div>
             </a>
-            <a href="/admin" class="btn btn-primary rounded-pill px-4">
-                <i class="bi bi-cloud-upload me-1"></i> Upload Book
+        </div>
+        <!-- Total Users -->
+        <div class="col-6 col-md-3">
+            <a href="/admin/users" class="text-decoration-none">
+                <div class="card border-0 shadow-sm text-center p-4 h-100 clickable-card">
+                    <i class="bi bi-people fs-1 text-success"></i>
+                    <h3 id="totalUsers" class="fw-bold mt-2">--</h3>
+                    <small class="text-muted">Users</small>
+                </div>
+            </a>
+        </div>
+        <!-- Total Admins (now opens Official Profile) -->
+        <div class="col-6 col-md-3">
+            <a href="/admin/official-profile" class="text-decoration-none">
+                <div class="card border-0 shadow-sm text-center p-4 h-100 clickable-card">
+                    <i class="bi bi-shield-lock fs-1 text-danger"></i>
+                    <h3 id="totalAdmins" class="fw-bold mt-2">--</h3>
+                    <small class="text-muted">Admins</small>
+                </div>
             </a>
         </div>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- Community Moderation Card (NEW) -->
     <div class="row g-4 mb-5">
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-4">
-                <i class="bi bi-book fs-1 text-primary"></i>
-                <h3 id="totalBooks" class="fw-bold mt-2">--</h3>
-                <small class="text-muted">Total Books</small>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-4">
-                <i class="bi bi-folder fs-1 text-warning"></i>
-                <h3 id="totalCategories" class="fw-bold mt-2">--</h3>
-                <small class="text-muted">Categories</small>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-4">
-                <i class="bi bi-people fs-1 text-success"></i>
-                <h3 id="totalUsers" class="fw-bold mt-2">--</h3>
-                <small class="text-muted">Users</small>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-4">
-                <i class="bi bi-shield-lock fs-1 text-danger"></i>
-                <h3 id="totalAdmins" class="fw-bold mt-2">--</h3>
-                <small class="text-muted">Admins</small>
-            </div>
+        <div class="col-12">
+            <a href="/moderation" class="text-decoration-none">
+                <div class="card border-0 shadow-sm bg-primary bg-opacity-10 p-4 clickable-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-shield-check fs-1 text-primary"></i>
+                        <div>
+                            <h4 class="fw-bold mb-1 text-primary">Community Moderation</h4>
+                            <span class="text-muted">Manage reviews, comments & official replies</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
 
@@ -75,13 +92,17 @@
         <div class="col-lg-6">
             <div class="card shadow-sm border-0 p-4">
                 <h5 class="mb-3">Library Overview</h5>
-                <canvas id="booksChart" height="250"></canvas>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="booksChart"></canvas>
+                </div>
             </div>
         </div>
         <div class="col-lg-6">
             <div class="card shadow-sm border-0 p-4">
                 <h5 class="mb-3">Categories Distribution</h5>
-                <canvas id="categoriesChart" height="250"></canvas>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="categoriesChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -109,8 +130,20 @@
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<!-- Clickable card hover effect -->
+<style>
+    .clickable-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+    }
+    .clickable-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+</style>
+
 <script>
-// Fetch overall stats and populate cards
+// Fetch overall stats
 fetch('/api/admin/stats')
 .then(r => r.json())
 .then(data => {
@@ -133,6 +166,7 @@ fetch('/api/admin/stats')
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: { y: { beginAtZero: true } }
         }
@@ -154,12 +188,10 @@ fetch('/api/admin/stats')
     document.getElementById('recentUploadsBody').innerHTML = '<tr><td colspan="3" class="text-center text-danger">Failed to load stats.</td></tr>';
 });
 
-// Pie chart for categories
+// Pie chart
 fetch('/api/categories/live-counts')
 .then(r => r.json())
 .then(cats => {
-    document.getElementById('totalCategories').textContent = cats.length;
-
     new Chart(document.getElementById('categoriesChart'), {
         type: 'pie',
         data: {
@@ -176,6 +208,7 @@ fetch('/api/categories/live-counts')
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     position: 'bottom',
@@ -187,7 +220,7 @@ fetch('/api/categories/live-counts')
 })
 .catch(console.error);
 
-// Fetch pending count and update UI
+// Pending books count
 fetch('/admin/pending/count')
 .then(r => r.json())
 .then(data => {

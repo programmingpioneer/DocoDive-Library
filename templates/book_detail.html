@@ -36,11 +36,9 @@
                 <a href="/book/{{ book.id }}/read" target="_blank" class="btn btn-outline-primary rounded-pill px-4">
                     <i class="bi bi-book me-2"></i> Read Online
                 </a>
-                <!-- QR Code button (now with data-book-id) -->
                 <button class="btn btn-outline-dark rounded-pill px-4 qr-btn" data-book-id="{{ book.id }}">
                     <i class="bi bi-qr-code me-2"></i> QR Code
                 </button>
-                <!-- Favorite button (only if logged in) -->
                 {% if session.get('user_id') %}
                 <button class="btn btn-outline-warning rounded-pill px-4 favorite-btn" data-id="{{ book.id }}">
                     <i class="bi bi-heart me-2"></i> <span>Favorite</span>
@@ -101,6 +99,8 @@
                         {% endif %}
                     </div>
                     <p class="text-muted small mb-0">{{ r.comment or '' }}</p>
+                    <!-- 👇 Official replies to this review will be injected here -->
+                    <div class="review-replies ms-3 mt-1" id="review-replies-{{ r.id }}"></div>
                 </div>
                 {% else %}
                 <p class="text-muted">No reviews yet. Be the first to review!</p>
@@ -161,20 +161,35 @@ document.querySelector('.favorite-btn')?.addEventListener('click', async functio
 // ======================== QR CODE BUTTON ========================
 document.querySelector('.qr-btn')?.addEventListener('click', function() {
     const bookId = this.dataset.bookId;
-    // Use global fallback popup
     document.getElementById('qrImage').src = `/book/${bookId}/qr`;
     document.getElementById('qrPopup').style.display = 'block';
 });
 
-// ======================== DISCUSSION COMMENTS ========================
+// ======================== DISCUSSION COMMENTS (with review replies) ========================
 function loadComments() {
     fetch(`/book/{{ book.id }}/comments`)
     .then(r => r.json())
     .then(comments => {
-        let commentMap = {};
-        comments.forEach(c => { commentMap[c.id] = {...c, children:[]}; });
-        let roots = [];
+        // Separate review replies (parent_id < 0) and normal comments
+        const reviewRepliesMap = {};
+        const normalComments = [];
+
         comments.forEach(c => {
+            if (c.parent_id && c.parent_id < 0) {
+                // It's a review reply – store by abs(parent_id)
+                const reviewId = Math.abs(c.parent_id);
+                if (!reviewRepliesMap[reviewId]) reviewRepliesMap[reviewId] = [];
+                reviewRepliesMap[reviewId].push(c);
+            } else {
+                normalComments.push(c);
+            }
+        });
+
+        // ---- RENDER NORMAL DISCUSSION TREE ----
+        let commentMap = {};
+        normalComments.forEach(c => { commentMap[c.id] = {...c, children:[]}; });
+        let roots = [];
+        normalComments.forEach(c => {
             if (c.parent_id) {
                 if (commentMap[c.parent_id]) commentMap[c.parent_id].children.push(commentMap[c.id]);
             } else {
@@ -185,18 +200,13 @@ function loadComments() {
         function renderTree(nodes) {
             let h = '';
             nodes.forEach(c => {
-                // User display with official tick/link
-                let userHTML = '';
-                if (c.is_official) {
-                    userHTML = `<a href="/user/profile/${c.username}" class="text-decoration-none text-dark fw-bold">
-                                    ${c.username}
-                                    <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
-                                </a>`;
-                } else {
-                    userHTML = `<strong>${c.username}</strong>`;
-                }
+                let userHTML = c.is_official
+                    ? `<a href="/user/profile/${c.username}" class="text-decoration-none text-dark fw-bold">
+                            ${c.username}
+                            <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
+                        </a>`
+                    : `<strong>${c.username}</strong>`;
 
-                // Moderator actions (delete + official reply)
                 let modActions = '';
                 if (isModerator) {
                     modActions = `
@@ -234,7 +244,7 @@ function loadComments() {
         }
         document.getElementById('commentsContainer').innerHTML = renderTree(roots);
 
-        // Reply button listeners
+        // Attach reply button listeners for normal comments
         document.querySelectorAll('.replyBtn').forEach(b => {
             b.addEventListener('click', function() {
                 const form = this.nextElementSibling;
@@ -245,7 +255,7 @@ function loadComments() {
             b.addEventListener('click', function() {
                 const parentId = this.dataset.parent;
                 const textarea = document.getElementById(`replyText${parentId}`);
-                if (textarea.value.trim()) {
+                if (textarea && textarea.value.trim()) {
                     fetch(`/book/{{ book.id }}/comments`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
@@ -254,8 +264,31 @@ function loadComments() {
                 }
             });
         });
+
+        // ---- RENDER REVIEW REPLIES ----
+        document.querySelectorAll('.review-replies').forEach(div => {
+            const reviewId = parseInt(div.id.replace('review-replies-', ''));
+            const replies = reviewRepliesMap[reviewId] || [];
+            let replyHTML = '';
+            replies.forEach(c => {
+                let userHTML = `<strong>${c.username}</strong>`;
+                if (c.is_official) {
+                    userHTML = `<a href="/user/profile/${c.username}" class="fw-bold text-decoration-none text-dark">
+                                    ${c.username}
+                                    <i class="bi bi-patch-check-fill text-primary ms-1"></i>
+                                </a>`;
+                }
+                replyHTML += `<div class="ms-2 mt-1 p-1 border-start border-primary">
+                              <img src="${c.avatar_url || '/static/default-avatar.png'}" class="rounded-circle" width="20" height="20">
+                              ${userHTML} <small class="text-muted">${c.created_at}</small>
+                              <p class="mt-1 mb-0 small text-secondary">${c.comment}</p>
+                              </div>`;
+            });
+            div.innerHTML = replyHTML;
+        });
     });
 }
+
 document.getElementById('commentForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
     const text = document.getElementById('commentText').value;
@@ -279,8 +312,7 @@ document.addEventListener('click', async function(e) {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         if (res.ok) {
-            const item = btn.closest('.review-item');
-            if (item) item.remove();
+            btn.closest('.review-item')?.remove();
         } else {
             alert('Failed to delete review.');
         }
@@ -296,8 +328,7 @@ document.addEventListener('click', async function(e) {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         if (res.ok) {
-            const commentDiv = btn.closest('.border-start');
-            if (commentDiv) commentDiv.remove();
+            btn.closest('.border-start')?.remove();
         } else {
             alert('Failed to delete comment.');
         }
@@ -311,7 +342,7 @@ document.addEventListener('click', async function(e) {
         if (form) form.classList.toggle('d-none');
     }
 
-    // Submit official reply
+    // Submit official reply to a COMMENT
     if (e.target.closest('.submit-official-reply')) {
         const btn = e.target.closest('.submit-official-reply');
         const commentId = btn.dataset.commentId;
@@ -328,7 +359,7 @@ document.addEventListener('click', async function(e) {
             alert('Reply posted!');
             textarea.value = '';
             document.getElementById(`officialReplyForm-${commentId}`).classList.add('d-none');
-            loadComments(); // refresh to show new reply
+            loadComments();
         } else {
             alert('Failed to post reply.');
         }
@@ -337,18 +368,10 @@ document.addEventListener('click', async function(e) {
 </script>
 
 <style>
-    /* Additional responsiveness for very small screens */
     @media (max-width: 576px) {
-        .book-cover-fallback {
-            min-height: 200px !important;
-        }
-        .btn {
-            width: 100%;
-            justify-content: center;
-        }
-        #reviewForm .row > div {
-            margin-bottom: 0.5rem;
-        }
+        .book-cover-fallback { min-height: 200px !important; }
+        .btn { width: 100%; justify-content: center; }
+        #reviewForm .row > div { margin-bottom: 0.5rem; }
     }
 </style>
 {% endblock %}
