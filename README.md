@@ -95,48 +95,16 @@ Every feature below was built incrementally, turning DocoDive into a robust, sel
 ## 📸 System Visual Preview
 
 ### 🛠️ Administrative Control Dashboard
+
 <p align="center">
-  <img src="static/Preview/Dashboard.png" alt="DocoDive Dashboard" width="85%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+  <a href="https://docodive.programmingpioneer.com" target="_blank">
+    <img src="static/Preview/Preview.png" alt="DocoDive Dashboard" width="70%" hight="70%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+  </a>
 </p>
-
-### 🔐 Secure Authentication Portal
 <p align="center">
-  <img src="static/Preview/Login.png" alt="DocoDive Login" width="65%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(100, 113, 172, 0.7);">
+  <i>Click the image above to explore the live dashboard.</i><br>
+  Manage books, users, reviews, and official community settings from a single powerful interface.
 </p>
-
-<p align="center" style="font-size: 1.1rem;">
-  <strong>Frictionless Access & Live Testing.</strong><br>
-  Lightning-fast sign-ins, token-based password recovery, and zero lag.<br><br>
-  💡 <strong>How to test it live:</strong><br>
-  1. Head over to the <a href="https://docodive-library.onrender.com/" target="_blank"><b>DocoDive Live Application</b></a>.<br>
-  2. Create a new account using your actual name and email.<br>
-  3. Check your inbox for the automated Brevo verification email, click to verify, and experience the full production auth loop instantly!
-</p>
-
-<br>
-
-<details>
-<summary><b>🔍 Click to Expand Additional System Modules (Library Explorer, Book Details & Upload Queue)</b></summary>
-<br>
-
-### 📖 Global Library Discovery Interface
-<p align="center">
-  <img src="static/Preview/AllBooks.png" alt="DocoDive All Books" width="80%" style="border-radius: 8px;">
-</p>
-
-### 📄 Metadata Details & Official Support Threads
-<p align="center">
-  <img src="static/Preview/BookDetails.png" alt="DocoDive Book Details" width="80%" style="border-radius: 8px;">
-</p>
-
-### 📤 Document Upload Queue Pipeline
-<p align="center">
-  <img src="static/Preview/BooksUpload.png" alt="DocoDive Upload Book" width="80%" style="border-radius: 8px;">
-</p>
-
-</details>
-
----
 
 ## 🗺️ Project Roadmap
 
