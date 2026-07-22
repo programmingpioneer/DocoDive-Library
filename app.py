@@ -192,7 +192,7 @@ ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB
 
-# Brevo SMTP
+# Brevo SMTP (will be kept for configuration but not used for sending)
 mail = None
 if HAS_MAIL:
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp-relay.brevo.com')
@@ -214,7 +214,7 @@ if HAS_MAIL:
         raise RuntimeError("Enable only one of MAIL_USE_TLS or MAIL_USE_SSL.")
 
     app.config['MAIL_DEFAULT_SENDER'] = (app.config['MAIL_FROM_NAME'], mail_from_email)
-    mail = Mail(app)
+    mail = Mail(app)  # We keep the instance but won't use it for sending.
 elif IS_PRODUCTION:
     raise RuntimeError("flask-mail is required in production for transactional emails.")
 
@@ -326,31 +326,8 @@ def send_email_notification(subject, recipient, body, html_body=None):
     if not recipient or "\r" in recipient or "\n" in recipient:
         app.logger.warning("Email not sent: invalid recipient.")
         return False
-    if not mail or not app.config.get('MAIL_DEFAULT_SENDER'):
-        app.logger.error("Email not sent: mail not configured.")
-        return False
-    try:
-        msg = Message(
-            subject=subject,
-            recipients=[recipient],
-            body=body,
-            html=html_body,
-            reply_to=app.config.get('SUPPORT_EMAIL') or None,
-            extra_headers={"X-Auto-Response-Suppress": "All", "X-Entity-Ref-ID": secrets.token_hex(16)},
-        )
-        old_timeout = socket.getdefaulttimeout()
-        socket.setdefaulttimeout(10)
-        try:
-            with mail.connect() as conn:
-                conn.timeout = 10
-                conn.send(msg)
-        finally:
-            socket.setdefaulttimeout(old_timeout)
-        app.logger.info("Email sent to %s", recipient)
-        return True
-    except Exception:
-        app.logger.exception("SMTP delivery failed, trying API for %s", recipient)
-        return send_email_via_api(subject, recipient, body, html_body)
+    # Direct Brevo API call – no SMTP
+    return send_email_via_api(subject, recipient, body, html_body)
 
 
 def is_valid_email(email):
