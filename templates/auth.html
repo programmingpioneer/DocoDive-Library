@@ -15,9 +15,7 @@
             background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%);
             min-height: 100vh;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem 1rem;
+            flex-direction: column;
             position: relative;
             overflow-x: hidden;
         }
@@ -33,9 +31,17 @@
         .blob-2 { width: 250px; height: 250px; background: #ffb703; bottom: -60px; right: -60px; }
         .blob-3 { width: 180px; height: 180px; background: #818cf8; top: 40%; right: 5%; }
 
-        .container-main {
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             position: relative;
             z-index: 1;
+            padding: 2rem 1rem;
+        }
+
+        .container-main {
             width: 100%;
             max-width: 500px;
             display: flex;
@@ -200,9 +206,119 @@
             margin-top: 4px;
         }
 
+        /* ---------- SOCIAL LOGIN ---------- */
+        .social-login {
+            margin-top: 1.8rem;
+            text-align: center;
+        }
+        .social-divider {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.2rem;
+        }
+        .social-divider::before,
+        .social-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #cbd5e1, transparent);
+        }
+        .social-divider span {
+            font-size: 0.8rem;
+            color: #6b7280;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .social-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .social-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 10px 18px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            text-decoration: none;
+            min-width: 100px;
+        }
+        .social-btn i {
+            font-size: 1.1rem;
+        }
+        .social-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .social-btn.google { color: #ea4335; border-color: #fce8e6; }
+        .social-btn.google:hover { background: #fef2f2; }
+        .social-btn.github { color: #24292f; border-color: #d0d7de; }
+        .social-btn.github:hover { background: #f6f8fa; }
+        .social-btn.facebook { color: #1877f2; border-color: #d6e4ff; }
+        .social-btn.facebook:hover { background: #f0f5ff; }
+
+        /* ---------- FOOTER ---------- */
+        .site-footer {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+            padding: 1.8rem 1rem 1.5rem;
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            color: #4b5563;
+            position: relative;
+            z-index: 1;
+            margin-top: auto;
+        }
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.2rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .footer-links a {
+            color: #4338ca;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .footer-links a:hover {
+            text-decoration: underline;
+            color: #312e81;
+        }
+        .footer-contact {
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+        .footer-contact a {
+            color: #4338ca;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .footer-copy {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin: 0;
+        }
+
         /* ========== RESPONSIVE TWEAKS ========== */
         @media (max-width: 768px) {
-            body {
+            .main-content {
                 padding: 1.5rem 1rem;
                 align-items: flex-start;
                 padding-top: 2.5rem;
@@ -211,9 +327,7 @@
                 gap: 1.2rem;
                 max-width: 100%;
             }
-            .brand-title {
-                font-size: 1.6rem;
-            }
+            .brand-title { font-size: 1.6rem; }
             .auth-card {
                 padding: 1.5rem 1.2rem;
                 border-radius: 24px;
@@ -226,33 +340,34 @@
                 padding: 12px;
                 font-size: 0.95rem;
             }
-            .bg-blob {
-                display: none;
+            .bg-blob { display: none; }
+            .social-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            .social-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .footer-links {
+                flex-direction: column;
+                gap: 0.8rem;
             }
         }
 
         @media (max-width: 576px) {
-            body {
+            .main-content {
                 padding: 1.2rem 0.8rem;
                 padding-top: 2rem;
             }
-            .container-main {
-                gap: 1rem;
-            }
-            .brand-title {
-                font-size: 1.4rem;
-            }
-            .brand-sub {
-                font-size: 0.8rem;
-            }
+            .container-main { gap: 1rem; }
+            .brand-title { font-size: 1.4rem; }
+            .brand-sub { font-size: 0.8rem; }
             .auth-card {
                 padding: 1.2rem 1rem;
                 border-radius: 20px;
             }
-            .auth-tab {
-                font-size: 0.9rem;
-                padding: 8px 0;
-            }
+            .auth-tab { font-size: 0.9rem; padding: 8px 0; }
             .form-control {
                 padding: 8px 12px;
                 font-size: 0.85rem;
@@ -264,6 +379,10 @@
             .trust-pill {
                 font-size: 0.7rem;
                 padding: 4px 10px;
+            }
+            .social-btn { font-size: 0.85rem; }
+            .site-footer {
+                padding: 1.5rem 1rem 1.2rem;
             }
         }
     </style>
@@ -287,115 +406,149 @@
     <div class="bg-blob blob-2"></div>
     <div class="bg-blob blob-3"></div>
 
-    <div class="container-main">
-        <div class="brand-block">
-            <div class="brand-icon">
-                <i class="bi bi-book-half"></i>
+    <!-- Main content area: flex-grow, centered -->
+    <div class="main-content">
+        <div class="container-main">
+            <div class="brand-block">
+                <div class="brand-icon">
+                    <i class="bi bi-book-half"></i>
+                </div>
+                <h1 class="brand-title">Welcome to DocoDive</h1>
+                <p class="brand-sub">Your Gateway to 50000+ Free Programming Books</p>
             </div>
-            <h1 class="brand-title">Welcome to DocoDive</h1>
-            <p class="brand-sub">Your Gateway to 50000+ Free Programming Books</p>
-        </div>
 
-        <div class="auth-card">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="auth-card">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="auth-tabs">
+                    <button class="auth-tab {% if mode != 'signup' %}active{% endif %}" onclick="switchTab('login')">Login</button>
+                    <button class="auth-tab {% if mode == 'signup' %}active{% endif %}" onclick="switchTab('signup')">Sign Up</button>
+                </div>
+
+                <!-- Login Tab -->
+                <div id="login-tab" class="tab-content {% if mode != 'signup' %}active{% endif %}">
+                    {% if error and mode != 'signup' %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+                    <form method="POST" action="/user/login">
+                        <input type="hidden" name="_csrf_token" value="{{ session._csrf_token }}">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Email</label>
+                            <input type="email" name="email" class="form-control" placeholder="you@example.com" required>
                         </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <div class="auth-tabs">
-                <button class="auth-tab {% if mode != 'signup' %}active{% endif %}" onclick="switchTab('login')">Login</button>
-                <button class="auth-tab {% if mode == 'signup' %}active{% endif %}" onclick="switchTab('signup')">Sign Up</button>
-            </div>
-
-            <!-- Login Tab -->
-            <div id="login-tab" class="tab-content {% if mode != 'signup' %}active{% endif %}">
-                {% if error and mode != 'signup' %}
-                    <div class="alert alert-danger">{{ error }}</div>
-                {% endif %}
-                <form method="POST" action="/user/login">
-                    <input type="hidden" name="_csrf_token" value="{{ session._csrf_token }}">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Email</label>
-                        <input type="email" name="email" class="form-control" placeholder="you@example.com" required>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label fw-semibold small">Password</label>
-                        <input type="password" name="password" id="login-password" class="form-control" placeholder="••••••••" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="show-password-label" style="color: #6b7280; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none;">
-                            <input type="checkbox" onclick="toggleLoginPassword()" style="margin-right: 5px; transform: translateY(1px);">
-                            Show Password
-                        </label>
-                    </div>
-                    <div class="text-end mb-3">
-                        <a href="/forgot-password" class="text-muted small text-decoration-none" style="font-size: 0.8rem;">Forgot Password?</a>
-                    </div>
-                    <button type="submit" class="btn-primary-custom w-100">Login</button>
-                </form>
-                <p class="text-center mt-3 small text-muted">
-                    New here? <span class="text-link" onclick="switchTab('signup')">Create an account</span>
-                </p>
-            </div>
-
-            <!-- Signup Tab -->
-            <div id="signup-tab" class="tab-content {% if mode == 'signup' %}active{% endif %}">
-                {% if error and mode == 'signup' %}
-                    <div class="alert alert-danger">{{ error }}</div>
-                {% endif %}
-                <form method="POST" action="/user/signup" novalidate>
-                    <input type="hidden" name="_csrf_token" value="{{ session._csrf_token }}">
-                    <div class="row mb-3">
-                        <div class="col-md-6 mb-3 mb-md-0">
-                            <label class="form-label fw-semibold small">First Name *</label>
-                            <input type="text" name="first_name" class="form-control" placeholder="Ali" required>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold small">Password</label>
+                            <input type="password" name="password" id="login-password" class="form-control" placeholder="••••••••" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold small">Last Name *</label>
-                            <input type="text" name="last_name" class="form-control" placeholder="Khan" required>
+                        <div class="mb-3">
+                            <label class="show-password-label" style="color: #6b7280; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none;">
+                                <input type="checkbox" onclick="toggleLoginPassword()" style="margin-right: 5px; transform: translateY(1px);">
+                                Show Password
+                            </label>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Username</label>
-                        <input type="text" name="username" id="username" class="form-control" placeholder="bookworm42" required>
-                        <div class="feedback small mt-1"></div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Email</label>
-                        <input type="email" name="email" id="email" class="form-control" placeholder="you@example.com" required>
-                        <div class="feedback small mt-1"></div>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label fw-semibold small">Password</label>
-                        <input type="password" name="password" id="signup-password" class="form-control" placeholder="••••••••" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="show-password-label" style="color: #6b7280; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none;">
-                            <input type="checkbox" onclick="toggleSignupPassword()" style="margin-right: 5px; transform: translateY(1px);">
-                            Show Password
-                        </label>
-                    </div>
-                    <button type="submit" class="btn-primary-custom w-100">Create Free Account</button>
-                </form>
-                <p class="text-center mt-3 small text-muted">
-                    Already registered? <span class="text-link" onclick="switchTab('login')">Login</span>
-                </p>
-            </div>
-        </div>
+                        <div class="text-end mb-3">
+                            <a href="/forgot-password" class="text-muted small text-decoration-none" style="font-size: 0.8rem;">Forgot Password?</a>
+                        </div>
+                        <button type="submit" class="btn-primary-custom w-100">Login</button>
+                    </form>
+                    <p class="text-center mt-3 small text-muted">
+                        New here? <span class="text-link" onclick="switchTab('signup')">Create an account</span>
+                    </p>
+                </div>
 
-        <div class="trust-pills">
-            <span class="trust-pill"><i class="bi bi-shield-check"></i> Secure</span>
-            <span class="trust-pill"><i class="bi bi-cloud-download"></i> Instant Download</span>
-            <span class="trust-pill"><i class="bi bi-calendar-check"></i> Updated Weekly</span>
-            <span class="trust-pill"><i class="bi bi-heart"></i> Favorites & History</span>
+                <!-- Signup Tab -->
+                <div id="signup-tab" class="tab-content {% if mode == 'signup' %}active{% endif %}">
+                    {% if error and mode == 'signup' %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+                    <form method="POST" action="/user/signup" novalidate>
+                        <input type="hidden" name="_csrf_token" value="{{ session._csrf_token }}">
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-semibold small">First Name *</label>
+                                <input type="text" name="first_name" class="form-control" placeholder="Ali" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">Last Name *</label>
+                                <input type="text" name="last_name" class="form-control" placeholder="Khan" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Username</label>
+                            <input type="text" name="username" id="username" class="form-control" placeholder="bookworm42" required>
+                            <div class="feedback small mt-1"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Email</label>
+                            <input type="email" name="email" id="email" class="form-control" placeholder="you@example.com" required>
+                            <div class="feedback small mt-1"></div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold small">Password</label>
+                            <input type="password" name="password" id="signup-password" class="form-control" placeholder="••••••••" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="show-password-label" style="color: #6b7280; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none;">
+                                <input type="checkbox" onclick="toggleSignupPassword()" style="margin-right: 5px; transform: translateY(1px);">
+                                Show Password
+                            </label>
+                        </div>
+                        <button type="submit" class="btn-primary-custom w-100">Create Free Account</button>
+                    </form>
+                    <p class="text-center mt-3 small text-muted">
+                        Already registered? <span class="text-link" onclick="switchTab('login')">Login</span>
+                    </p>
+                </div>
+
+                <!-- Social Login Section -->
+                <div class="social-login">
+                    <div class="social-divider">
+                        <span>or continue with</span>
+                    </div>
+                    <div class="social-buttons">
+                        <a href="{{ url_for('google_login') }}" class="social-btn google">
+                            <i class="bi bi-google"></i> Google
+                        </a>
+                        <a href="{{ url_for('github_login') }}" class="social-btn github">
+                            <i class="bi bi-github"></i> GitHub
+                        </a>
+                        <a href="{{ url_for('facebook_login') }}" class="social-btn facebook">
+                            <i class="bi bi-facebook"></i> Facebook
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="trust-pills">
+                <span class="trust-pill"><i class="bi bi-shield-check"></i> Secure</span>
+                <span class="trust-pill"><i class="bi bi-cloud-download"></i> Instant Download</span>
+                <span class="trust-pill"><i class="bi bi-calendar-check"></i> Updated Weekly</span>
+                <span class="trust-pill"><i class="bi bi-heart"></i> Favorites & History</span>
+            </div>
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-links">
+            <a href="/privacy"><i class="bi bi-shield-lock"></i> Privacy Policy</a>
+            <a href="/terms"><i class="bi bi-file-earmark-text"></i> Terms of Service</a>
+            <a href="/data-deletion"><i class="bi bi-trash"></i> Data Deletion</a>
+        </div>
+        <div class="footer-contact">
+            📧 <a href="mailto:7t7sufyan@gmail.com">7t7sufyan@gmail.com</a>
+        </div>
+        <p class="footer-copy">© 2026 DocoDive · Free Knowledge, Pure Discipline.</p>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>

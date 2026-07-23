@@ -7,6 +7,8 @@ from collections import defaultdict
 import secrets
 import socket
 import requests
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
 from datetime import datetime, timedelta
 from functools import wraps
 from html import escape
@@ -32,6 +34,9 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 
+# Social login
+from authlib.integrations.flask_client import OAuth
+
 load_dotenv()
 
 # Optional AI
@@ -49,6 +54,20 @@ except ImportError:
     HAS_MAIL = False
 
 app = Flask(__name__)
+
+# -------------------- SENTRY INITIALIZATION --------------------
+sentry_dsn = os.getenv('SENTRY_DSN')
+if sentry_dsn:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        integrations=[FlaskIntegration()],
+        traces_sample_rate=1.0,
+        environment=os.getenv('FLASK_ENV', 'development'),
+        send_default_pii=False
+    )
+    app.logger.info("Sentry initialized")
+else:
+    app.logger.warning("SENTRY_DSN not set – error tracking disabled")
 
 # Security headers
 Talisman(app, content_security_policy=None)
@@ -79,13 +98,29 @@ app.config["SECRET_KEY"] = secret_key
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
 # ================== DATABASE CONFIGURATION (TiDB Cloud) ==================
-app.config['MYSQL_HOST'] = os.getenv('DB_HOST', 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com')
-app.config['MYSQL_USER'] = os.getenv('DB_USER', 'n44W45mcoXFnJ8y.root')
-app.config['MYSQL_PASSWORD'] = os.getenv('DB_PASSWORD', 'Zb7irXjalxBisDOy')
-app.config['MYSQL_DB'] = os.getenv('DB_NAME', 'docodive_db')
-app.config['MYSQL_PORT'] = int(os.getenv('DB_PORT', 4000))
+db_host = os.getenv('DB_HOST')
+db_user = os.getenv('DB_USER')
+db_password = os.getenv('DB_PASSWORD')
+db_name = os.getenv('DB_NAME')
+db_port = os.getenv('DB_PORT')
 
-# SSL – relative path
+if IS_PRODUCTION:
+    if not all([db_host, db_user, db_password, db_name, db_port]):
+        raise RuntimeError("Missing one or more database environment variables (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT).")
+else:
+    db_host = db_host or 'localhost'
+    db_user = db_user or 'root'
+    db_password = db_password or ''
+    db_name = db_name or 'docodive_dev'
+    db_port = db_port or '3306'
+
+app.config['MYSQL_HOST'] = db_host
+app.config['MYSQL_USER'] = db_user
+app.config['MYSQL_PASSWORD'] = db_password
+app.config['MYSQL_DB'] = db_name
+app.config['MYSQL_PORT'] = int(db_port)
+
+# SSL – relative path (unchanged)
 ca_cert_path = os.path.join(os.path.dirname(__file__), 'ssl', 'tidb-ca.pem')
 app.config['MYSQL_SSL_CA'] = ca_cert_path
 app.config['MYSQL_SSL_VERIFY_CERT'] = True
@@ -145,6 +180,43 @@ def csrf_protect():
             abort(403)
     if '_csrf_token' not in session:
         session['_csrf_token'] = secrets.token_hex(16)
+
+# ================== OAuth SETUP ==================
+oauth = OAuth(app)
+
+# Google
+oauth.register(
+    name='google',
+    client_id=os.getenv('GOOGLE_CLIENT_ID'),
+    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+    access_token_url='https://accounts.google.com/o/oauth2/token',
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+    api_base_url='https://www.googleapis.com/oauth2/v1/',
+    client_kwargs={'scope': 'openid email profile'},
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration'
+)
+
+# GitHub
+oauth.register(
+    name='github',
+    client_id=os.getenv('GITHUB_CLIENT_ID'),
+    client_secret=os.getenv('GITHUB_CLIENT_SECRET'),
+    access_token_url='https://github.com/login/oauth/access_token',
+    authorize_url='https://github.com/login/oauth/authorize',
+    api_base_url='https://api.github.com/',
+    client_kwargs={'scope': 'user:email'},
+)
+
+# Facebook
+oauth.register(
+    name='facebook',
+    client_id=os.getenv('FACEBOOK_CLIENT_ID'),
+    client_secret=os.getenv('FACEBOOK_CLIENT_SECRET'),
+    access_token_url='https://graph.facebook.com/oauth/access_token',
+    authorize_url='https://www.facebook.com/dialog/oauth',
+    api_base_url='https://graph.facebook.com/',
+    client_kwargs={'scope': 'email public_profile'},
+)
 
 # ================== HELPER: PDF VALIDATION ==================
 def is_valid_pdf(file_bytes):
@@ -463,6 +535,88 @@ Return JSON with keys: title, author, description.
         app.logger.error(f"AI metadata failed: {e}")
     return title, author, f"A comprehensive resource about '{title}'. Covers essential topics."
 
+# -------------------- SOCIAL LOGIN HELPERS --------------------
+def setup_session(user_id):
+    """Set session variables after successful login (email, name, avatar)."""
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT username, first_name, last_name, avatar_url, email FROM users WHERE id = %s", (user_id,))
+    user = cur.fetchone()
+    cur.close()
+    if user:
+        session['user_id'] = user_id
+        session['user_name'] = user[0]
+        full_name = (user[1] or '') + ' ' + (user[2] or '')
+        session['user_display_name'] = full_name.strip() or user[0]
+        session['avatar_url'] = user[3]
+        session['email'] = user[4]
+
+def handle_social_login(provider_name, user_info):
+    """Create or login user using social provider info."""
+    provider_id_field = f'{provider_name}_id'
+    email = user_info.get('email')
+    name = user_info.get('name') or user_info.get('login')  # GitHub uses 'login'
+    avatar = user_info.get('picture') or user_info.get('avatar_url')
+    
+    if not email:
+        # Fallback if provider doesn't return email (e.g., GitHub private)
+        email = f"{user_info['sub']}@{provider_name}.local"
+    
+    # Clean first_name, last_name
+    first_name = ''
+    last_name = ''
+    if name:
+        parts = name.split(' ', 1)
+        first_name = parts[0]
+        last_name = parts[1] if len(parts) > 1 else ''
+    
+    cur = mysql.connection.cursor()
+    
+    # Check if social ID exists
+    cur.execute(f"SELECT id FROM users WHERE {provider_id_field} = %s", (user_info['sub'],))
+    user = cur.fetchone()
+    if user:
+        cur.close()
+        return user[0]
+    
+    # Check if email exists (link accounts)
+    if email and '@' in email:
+        cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+        existing = cur.fetchone()
+        if existing:
+            # Link social account to existing user
+            cur.execute(f"UPDATE users SET {provider_id_field} = %s, avatar_url = %s WHERE id = %s",
+                        (user_info['sub'], avatar, existing[0]))
+            mysql.connection.commit()
+            cur.close()
+            return existing[0]
+    
+    # New user – create account
+    username = email.split('@')[0] if email else user_info['sub']
+    base_username = username[:20]
+    i = 1
+    while True:
+        cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+        if not cur.fetchone():
+            break
+        username = f"{base_username}{i}"[:20]
+        i += 1
+    
+    hashed = generate_password_hash(secrets.token_urlsafe(16))  # random password
+    
+    cur.execute(f"""
+        INSERT INTO users (username, email, password, verified, verification_token, 
+                          first_name, last_name, avatar_url, {provider_id_field})
+        VALUES (%s, %s, %s, 1, NULL, %s, %s, %s, %s)
+    """, (username, email, hashed, first_name, last_name, avatar, user_info['sub']))
+    mysql.connection.commit()
+    user_id = cur.lastrowid
+    cur.close()
+    
+    # Sync to Brevo
+    sync_brevo_contact(email, first_name, last_name)
+    
+    return user_id
+
 # ================== USER UPLOAD (R2) ==================
 @app.route('/user/upload', methods=['GET', 'POST'])
 @cache.cached(timeout=600, unless=lambda: request.method == 'POST')
@@ -753,6 +907,106 @@ def reset_password(token):
 
     cur.close()
     return render_template('reset_password.html', token=token)
+
+# -------------------- BREVO WEBHOOK --------------------
+@app.route('/api/brevo/webhook', methods=['POST'])
+def brevo_webhook():
+    # Optional signature verification
+    secret = os.getenv('BREVO_WEBHOOK_SECRET')
+    if secret:
+        signature = request.headers.get('X-Webhook-Secret')
+        if not signature or signature != secret:
+            app.logger.warning("Unauthorized webhook attempt")
+            return '', 403
+
+    data = request.get_json()
+    if not data:
+        app.logger.warning("Brevo webhook received empty data")
+        return '', 400
+
+    app.logger.info("Brevo webhook event: %s", json.dumps(data))
+
+    event = data.get('event', '')
+    if event == 'bounce':
+        email = data.get('email', '')
+        app.logger.warning(f"Bounce: {email}")
+        # TODO: mark user email as invalid in DB
+    elif event == 'spam':
+        app.logger.warning(f"Spam complaint: {data.get('email')}")
+    elif event == 'unsubscribe':
+        app.logger.info(f"Unsubscribe: {data.get('email')}")
+
+    return jsonify({"status": "received"}), 200
+
+# ==================== SOCIAL LOGIN ROUTES ====================
+# Google
+@app.route('/login/google')
+def google_login():
+    redirect_uri = url_for('google_callback', _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+@app.route('/auth/google/callback')
+def google_callback():
+    token = oauth.google.authorize_access_token()
+    user_info = oauth.google.get('userinfo').json()
+    # Adjust sub to be consistent
+    user_info['sub'] = user_info.get('sub') or user_info.get('id')
+    user_info['picture'] = user_info.get('picture')
+    user_info['email'] = user_info.get('email')
+    user_info['name'] = user_info.get('name')
+    uid = handle_social_login('google', user_info)
+    if uid:
+        setup_session(uid)
+        return redirect(url_for('home'))
+    flash('Google login failed.', 'danger')
+    return redirect(url_for('user_login'))
+
+# GitHub
+@app.route('/login/github')
+def github_login():
+    redirect_uri = url_for('github_callback', _external=True)
+    return oauth.github.authorize_redirect(redirect_uri)
+
+@app.route('/auth/github/callback')
+def github_callback():
+    token = oauth.github.authorize_access_token()
+    resp = oauth.github.get('user')
+    user_info = resp.json()
+    # Get primary email if not public
+    if not user_info.get('email'):
+        emails_resp = oauth.github.get('user/emails')
+        emails = emails_resp.json()
+        primary = next((e['email'] for e in emails if e['primary']), None)
+        user_info['email'] = primary
+    user_info['sub'] = str(user_info['id'])
+    user_info['name'] = user_info.get('name') or user_info['login']
+    user_info['picture'] = user_info.get('avatar_url')
+    uid = handle_social_login('github', user_info)
+    if uid:
+        setup_session(uid)
+        return redirect(url_for('home'))
+    flash('GitHub login failed.', 'danger')
+    return redirect(url_for('user_login'))
+
+# Facebook
+@app.route('/login/facebook')
+def facebook_login():
+    redirect_uri = url_for('facebook_callback', _external=True)
+    return oauth.facebook.authorize_redirect(redirect_uri)
+
+@app.route('/auth/facebook/callback')
+def facebook_callback():
+    token = oauth.facebook.authorize_access_token()
+    resp = oauth.facebook.get('me?fields=id,name,email,picture')
+    user_info = resp.json()
+    user_info['sub'] = user_info['id']
+    user_info['picture'] = user_info.get('picture', {}).get('data', {}).get('url')
+    uid = handle_social_login('facebook', user_info)
+    if uid:
+        setup_session(uid)
+        return redirect(url_for('home'))
+    flash('Facebook login failed.', 'danger')
+    return redirect(url_for('user_login'))
 
 # -------------------- EMAIL TEMPLATES --------------------
 BRAND_NAME = "DocoDive"
@@ -1280,27 +1534,9 @@ def user_login():
             return render_template('auth.html', mode='login',
                                    error='A new verification email has been sent. Please check your inbox.')
 
-        session['user_id'] = user[0]
-        session['user_name'] = user[1]
+        setup_session(user[0])
 
-        cur = mysql.connection.cursor()
-        cur.execute("SELECT first_name, last_name, avatar_url FROM users WHERE id = %s", (user[0],))
-        user_info = cur.fetchone()
-        cur.close()
-        if user_info and user_info[0]:
-            first = user_info[0] or ''
-            last = user_info[1] or ''
-            full_name = (first + ' ' + last).strip()
-            session['user_display_name'] = full_name if full_name else user[1]
-        else:
-            first, last, full_name = '', '', ''
-            session['user_display_name'] = user[1]
-        session['avatar_url'] = user_info[2] if user_info else None
-
-        session['email'] = email
-        session['first_name'] = first
-        session['last_name'] = last
-
+        # Daily login streak logic (existing code)
         today = datetime.utcnow().date()
         cur = mysql.connection.cursor()
         cur.execute("SELECT last_login_date, streak_count, longest_streak FROM user_streaks WHERE user_id = %s", (user[0],))
@@ -1868,9 +2104,25 @@ def manifest():
         ]
     })
 
+#--------------- Service Worker ---------------#
 @app.route('/sw.js')
 def service_worker():
     return app.send_static_file('sw.js')
+
+
+
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
+
+@app.route('/terms')
+def terms():
+    return render_template('terms.html')
+
+@app.route('/data-deletion')
+def data_deletion():
+    return render_template('data_deletion.html')
+
 
 # ================== USER STATS ROUTE ==================
 @app.route('/user/stats')
