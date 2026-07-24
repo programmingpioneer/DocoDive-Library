@@ -206,11 +206,22 @@
             margin-top: 4px;
         }
 
-        .form-text {
+        /* Improved username hint */
+        .username-hint {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
             font-size: 0.75rem;
             color: #6b7280;
-            margin-top: -0.25rem;
-            margin-bottom: 0.5rem;
+            background: rgba(67, 56, 202, 0.04);
+            border-radius: 10px;
+            padding: 0.5rem 0.75rem;
+            border-left: 3px solid #4338ca;
+        }
+        .username-hint i {
+            color: #4338ca;
+            font-size: 0.85rem;
         }
 
         /* ---------- SOCIAL LOGIN ---------- */
@@ -407,7 +418,7 @@
         if (d.head) d.head.appendChild(s);
     })(document, window, 'BrevoConversations');
 </script>
-<!-- /Brevo Conversations -->
+<!-- /BrevoConversations -->
 <body>
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
@@ -491,7 +502,10 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold small">Username</label>
                             <input type="text" name="username" id="username" class="form-control" placeholder="bookworm42" required>
-                            <div class="form-text">Letters & numbers only (3‑20 chars). Cannot contain reserved words.</div>
+                            <div class="username-hint">
+                                <i class="bi bi-info-circle-fill"></i>
+                                <span>Letters & numbers only (3‑20 chars). Cannot contain reserved words.</span>
+                            </div>
                             <div class="feedback small mt-1"></div>
                         </div>
                         <div class="mb-3">
