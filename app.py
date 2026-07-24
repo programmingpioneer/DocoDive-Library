@@ -982,14 +982,36 @@ def check_availability():
     value = request.args.get('value', '').strip()
     if not field or not value:
         return jsonify({'error': 'Invalid request'}), 400
-    cur = mysql.connection.cursor()
+
     if field == 'username':
+        # Check reserved words first
+        reserved = os.getenv('RESERVED_USERNAMES', '')
+        if reserved:
+            reserved_list = [r.strip().lower() for r in reserved.split(',') if r.strip()]
+            username_lower = value.lower()
+            for word in reserved_list:
+                if word in username_lower:
+                    return jsonify({'exists': True, 'reserved': True, 'message': 'This username contains a reserved word.'})
+
+        # Then check if username exists in database
+        cur = mysql.connection.cursor()
         cur.execute("SELECT id FROM users WHERE username = %s", (value,))
-    elif field == 'email':
-        cur.execute("SELECT id FROM users WHERE email = %s", (value,))
-    else:
+        exists = cur.fetchone() is not None
         cur.close()
-        return jsonify({'error': 'Invalid field'}), 400
+        if exists:
+            return jsonify({'exists': True, 'reserved': False, 'message': 'Username already taken.'})
+        return jsonify({'exists': False, 'reserved': False, 'message': 'Username is available!'})
+
+    elif field == 'email':
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT id FROM users WHERE email = %s", (value,))
+        exists = cur.fetchone() is not None
+        cur.close()
+        if exists:
+            return jsonify({'exists': True, 'message': 'Email already registered.'})
+        return jsonify({'exists': False, 'message': 'Email is available.'})
+
+    return jsonify({'error': 'Invalid field'}), 400
     exists = cur.fetchone() is not None
     cur.close()
     return jsonify({'exists': exists})

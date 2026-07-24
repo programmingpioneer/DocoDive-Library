@@ -206,6 +206,13 @@
             margin-top: 4px;
         }
 
+        .form-text {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: -0.25rem;
+            margin-bottom: 0.5rem;
+        }
+
         /* ---------- SOCIAL LOGIN ---------- */
         .social-login {
             margin-top: 1.8rem;
@@ -406,7 +413,6 @@
     <div class="bg-blob blob-2"></div>
     <div class="bg-blob blob-3"></div>
 
-    <!-- Main content area: flex-grow, centered -->
     <div class="main-content">
         <div class="container-main">
             <div class="brand-block">
@@ -475,16 +481,17 @@
                         <div class="row mb-3">
                             <div class="col-md-6 mb-3 mb-md-0">
                                 <label class="form-label fw-semibold small">First Name *</label>
-                                <input type="text" name="first_name" class="form-control" placeholder="Ali" required>
+                                <input type="text" name="first_name" class="form-control" placeholder="John" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold small">Last Name *</label>
-                                <input type="text" name="last_name" class="form-control" placeholder="Khan" required>
+                                <input type="text" name="last_name" class="form-control" placeholder="Doe" required>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold small">Username</label>
                             <input type="text" name="username" id="username" class="form-control" placeholder="bookworm42" required>
+                            <div class="form-text">Letters & numbers only (3‑20 chars). Cannot contain reserved words.</div>
                             <div class="feedback small mt-1"></div>
                         </div>
                         <div class="mb-3">
@@ -594,11 +601,12 @@
                     return;
                 }
 
+                // Client‑side basic validation
                 if (fieldType === 'username') {
                     if (val.length < 3 || val.length > 20 || !/^[a-zA-Z0-9]+$/.test(val)) {
                         input.classList.add('is-invalid');
                         input.classList.remove('is-valid');
-                        fb.textContent = 'Username must be 3-20 letters and numbers.';
+                        fb.textContent = 'Username must be 3-20 letters and numbers only.';
                         fb.className = 'feedback small mt-1 text-danger';
                         return;
                     }
@@ -612,18 +620,24 @@
                     }
                 }
 
+                // Server‑side check (availability + reserved words)
                 fetch(`/api/check-availability?field=${fieldType}&value=${encodeURIComponent(val)}`)
                     .then(res => res.json())
                     .then(data => {
-                        if (data.exists) {
+                        if (data.error) {
+                            input.classList.remove('is-valid', 'is-invalid');
+                            fb.textContent = '';
+                            return;
+                        }
+                        if (data.exists || data.reserved) {
                             input.classList.add('is-invalid');
                             input.classList.remove('is-valid');
-                            fb.textContent = `This ${fieldType} is already taken.`;
+                            fb.textContent = data.message || (fieldType + ' is not available.');
                             fb.className = 'feedback small mt-1 text-danger';
                         } else {
                             input.classList.add('is-valid');
                             input.classList.remove('is-invalid');
-                            fb.textContent = `${fieldType.charAt(0).toUpperCase() + fieldType.slice(1)} is available.`;
+                            fb.textContent = data.message || (fieldType + ' is available.');
                             fb.className = 'feedback small mt-1 text-success';
                         }
                     })
