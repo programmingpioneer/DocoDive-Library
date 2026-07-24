@@ -551,17 +551,16 @@ def setup_session(user_id):
         session['email'] = user[4]
 
 def handle_social_login(provider_name, user_info):
-    """Create or login user using social provider info."""
+    """Create or login user using social provider info.
+    Returns (user_id, is_new_created)"""
     provider_id_field = f'{provider_name}_id'
     email = user_info.get('email')
-    name = user_info.get('name') or user_info.get('login')  # GitHub uses 'login'
+    name = user_info.get('name') or user_info.get('login')
     avatar = user_info.get('picture') or user_info.get('avatar_url')
     
     if not email:
-        # Fallback if provider doesn't return email (e.g., GitHub private)
         email = f"{user_info['sub']}@{provider_name}.local"
     
-    # Clean first_name, last_name
     first_name = ''
     last_name = ''
     if name:
@@ -576,19 +575,18 @@ def handle_social_login(provider_name, user_info):
     user = cur.fetchone()
     if user:
         cur.close()
-        return user[0]
+        return user[0], False   # existing user
     
     # Check if email exists (link accounts)
     if email and '@' in email:
         cur.execute("SELECT id FROM users WHERE email = %s", (email,))
         existing = cur.fetchone()
         if existing:
-            # Link social account to existing user
             cur.execute(f"UPDATE users SET {provider_id_field} = %s, avatar_url = %s WHERE id = %s",
                         (user_info['sub'], avatar, existing[0]))
             mysql.connection.commit()
             cur.close()
-            return existing[0]
+            return existing[0], False  # existing user, linked
     
     # New user – create account
     username = email.split('@')[0] if email else user_info['sub']
@@ -601,7 +599,7 @@ def handle_social_login(provider_name, user_info):
         username = f"{base_username}{i}"[:20]
         i += 1
     
-    hashed = generate_password_hash(secrets.token_urlsafe(16))  # random password
+    hashed = generate_password_hash(secrets.token_urlsafe(16))
     
     cur.execute(f"""
         INSERT INTO users (username, email, password, verified, verification_token, 
@@ -615,7 +613,201 @@ def handle_social_login(provider_name, user_info):
     # Sync to Brevo
     sync_brevo_contact(email, first_name, last_name)
     
-    return user_id
+    return user_id, True   # newly created
+
+# ================== EMAIL TEMPLATES ==================
+BRAND_NAME = "DocoDive"
+BRAND_COLOR = "#4F46E5"
+BRAND_DARK = "#111827"
+BRAND_LIGHT = "#EEF2FF"
+
+def _safe(value):
+    return escape(str(value or ""))
+
+def _email_button(url, label, color=BRAND_COLOR):
+    return f"""
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:28px 0 8px;">
+          <tr><td bgcolor="{color}" style="border-radius:8px;">
+            <a href="{_safe(url)}" target="_blank" rel="noopener"
+               style="display:inline-block;padding:14px 24px;border-radius:8px;color:#ffffff;
+                      font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;
+                      line-height:20px;text-decoration:none;">{_safe(label)}</a>
+          </td></tr>
+        </table>
+    """
+
+def _email_link(url):
+    safe_url = _safe(url)
+    return f"""
+        <p style="margin:20px 0 0;color:#6B7280;font-size:12px;line-height:18px;">
+          Button not working? Copy this link into your browser:<br>
+          <a href="{safe_url}" style="color:{BRAND_COLOR};word-break:break-all;">{safe_url}</a>
+        </p>
+    """
+
+def _email_layout(preheader, label, title, content):
+    support_email = _safe(app.config.get("SUPPORT_EMAIL"))
+    support = (
+        f'Need help? <a href="mailto:{support_email}" style="color:{BRAND_COLOR};text-decoration:none;">Contact DocoDive Support</a>.'
+        if support_email else "This is an automated account and security email from DocoDive."
+    )
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{BRAND_NAME}</title>
+  <style>
+    @media only screen and (max-width:600px) {{
+      .card {{ width:100% !important; border-radius:0 !important; }}
+      .pad {{ padding:28px 22px !important; }}
+      .title {{ font-size:26px !important; line-height:32px !important; }}
+    }}
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#F3F4F6;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">{_safe(preheader)}&nbsp;&zwnj;&nbsp;&zwnj;</div>
+  <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#F3F4F6;">
+    <tr><td align="center" style="padding:32px 12px;">
+      <table role="presentation" class="card" width="600" border="0" cellpadding="0" cellspacing="0"
+             style="width:600px;max-width:600px;background:#FFFFFF;border-radius:16px;overflow:hidden;">
+        <tr><td style="padding:26px 40px;background:{BRAND_DARK};">
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr>
+            <td width="40" height="40" align="center" style="width:40px;height:40px;border-radius:10px;background:{BRAND_COLOR};
+                color:#FFFFFF;font:800 23px Arial,Helvetica,sans-serif;">D</td>
+            <td style="padding-left:12px;color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;">
+              <div style="font-size:19px;font-weight:800;line-height:22px;">{BRAND_NAME}</div>
+              <div style="padding-top:3px;color:#C7D2FE;font-size:12px;line-height:16px;">Free knowledge. Built for curious minds.</div>
+            </td>
+          </tr></table>
+        </td></tr>
+        <tr><td class="pad" style="padding:40px;color:#374151;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:25px;">
+          <div style="color:{BRAND_COLOR};font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">{_safe(label)}</div>
+          <h1 class="title" style="margin:10px 0 16px;color:{BRAND_DARK};font-size:30px;line-height:37px;">{_safe(title)}</h1>
+          {content}
+        </td></tr>
+        <tr><td style="padding:24px 40px;background:#F9FAFB;border-top:1px solid #E5E7EB;color:#6B7280;
+                       font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:19px;text-align:center;">
+          <p style="margin:0 0 8px;">{support}</p>
+          <p style="margin:0;">© {datetime.now().year} DocoDive · Free Knowledge, Pure Discipline.</p>
+        </td></tr>
+      </table>
+      <p style="margin:18px 0 0;color:#9CA3AF;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:16px;">
+        DocoDive will never ask for your password or verification code by email.
+      </p>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+def make_verification_email(username, verify_link):
+    content = f"""
+        <p style="margin:0;">Hi {_safe(username)},</p>
+        <p style="margin:16px 0 0;">Thanks for joining DocoDive. Confirm your email to activate your account and access the library.</p>
+        {_email_button(verify_link, "Verify email address")}
+        {_email_link(verify_link)}
+        <div style="margin-top:28px;padding:16px;border-left:4px solid {BRAND_COLOR};background:{BRAND_LIGHT};
+                    color:#3730A3;font-size:13px;line-height:20px;">
+          Didn’t create a DocoDive account? You can safely ignore this message.
+        </div>
+    """
+    return _email_layout("Confirm your email to activate your DocoDive account.", "Account security", "Confirm your email address", content)
+
+def make_welcome_email(user_name, provider):
+    social_icons = {
+        'google': '🔵 Google',
+        'github': '⚫ GitHub',
+        'facebook': '🔷 Facebook'
+    }
+    provider_display = social_icons.get(provider.lower(), provider)
+    content = f"""
+        <p style="margin:0;">Hi {_safe(user_name)},</p>
+        <p style="margin:16px 0 0;">Welcome to <strong>DocoDive</strong> – your gateway to 50,000+ free programming books!</p>
+        <p style="margin:10px 0;">Your account was created via <strong>{provider_display}</strong>. You are now verified and can start exploring the library instantly.</p>
+        <div style="margin:26px 0; background:#F0F4FF; border-radius:12px; padding:18px; text-align:center;">
+            <p style="margin:0 0 12px; color:#4338ca; font-weight:700;">Connect with us</p>
+            <a href="#" style="display:inline-block; margin:0 6px;"><img src="https://img.icons8.com/color/48/000000/facebook.png" width="30" height="30" alt="Facebook" style="vertical-align:middle;"></a>
+            <a href="#" style="display:inline-block; margin:0 6px;"><img src="https://img.icons8.com/color/48/000000/twitter--v1.png" width="30" height="30" alt="Twitter" style="vertical-align:middle;"></a>
+            <a href="#" style="display:inline-block; margin:0 6px;"><img src="https://img.icons8.com/color/48/000000/instagram-new--v1.png" width="30" height="30" alt="Instagram" style="vertical-align:middle;"></a>
+            <a href="#" style="display:inline-block; margin:0 6px;"><img src="https://img.icons8.com/color/48/000000/github--v1.png" width="30" height="30" alt="GitHub" style="vertical-align:middle;"></a>
+        </div>
+        {_email_button(url_for('home', _external=True), "Explore the Library")}
+        <p style="margin-top:24px; font-size:13px; color:#6b7280;">Happy learning!<br>— Team DocoDive</p>
+    """
+    return _email_layout("Welcome to DocoDive – you're verified!", "Welcome aboard", f"Hello {_safe(user_name)}!", content)
+
+def make_upload_notification_email(title, author, category):
+    pending_url = url_for('pending_books', _external=True)
+    content = f"""
+        <p style="margin:0;">A user submission is waiting for approval.</p>
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0"
+               style="margin:24px 0;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;">
+          <tr><td style="padding:18px;">
+            <p style="margin:0 0 10px;color:#6B7280;font-size:12px;font-weight:700;letter-spacing:.7px;">DOCUMENT DETAILS</p>
+            <p style="margin:0 0 7px;"><strong style="color:{BRAND_DARK};">Title:</strong> {_safe(title)}</p>
+            <p style="margin:0 0 7px;"><strong style="color:{BRAND_DARK};">Author:</strong> {_safe(author)}</p>
+            <p style="margin:0;"><strong style="color:{BRAND_DARK};">Category:</strong> {_safe(category)}</p>
+          </td></tr>
+        </table>
+        {_email_button(pending_url, "Review pending documents")}
+    """
+    return _email_layout("A DocoDive document needs your review.", "Admin notification", "New document ready for review", content)
+
+def make_code_email(code):
+    content = f"""
+        <p style="margin:0;">Enter this code in DocoDive to continue resetting your password:</p>
+        <div style="margin:26px 0;padding:20px 12px;border:1px solid #C7D2FE;border-radius:12px;background:{BRAND_LIGHT};
+                    color:#312E81;font:800 34px Arial,Helvetica,sans-serif;letter-spacing:10px;line-height:40px;text-align:center;">
+          {_safe(code)}
+        </div>
+        <p style="margin:0;color:#4B5563;">This code expires in <strong>10 minutes</strong>. Do not share it with anyone.</p>
+        <div style="margin-top:28px;padding:16px;border-left:4px solid #F59E0B;background:#FFFBEB;
+                    color:#92400E;font-size:13px;line-height:20px;">
+          If you did not request a password reset, ignore this email. Your password will not change.
+        </div>
+    """
+    return _email_layout("Your DocoDive password reset code is ready.", "Password reset", "Use this security code", content)
+
+def make_reset_link_email(reset_link):
+    content = f"""
+        <p style="margin:0;">Your code was confirmed. Use the secure link below to choose a new DocoDive password.</p>
+        {_email_button(reset_link, "Reset password")}
+        {_email_link(reset_link)}
+        <div style="margin-top:28px;padding:16px;border-left:4px solid #F59E0B;background:#FFFBEB;
+                    color:#92400E;font-size:13px;line-height:20px;">
+          This link expires in <strong>30 minutes</strong> and can be used only once.
+        </div>
+    """
+    return _email_layout("Use this secure link to reset your DocoDive password.", "Password reset", "Set a new password", content)
+
+def make_approval_email(title, status, message):
+    approved = status.lower() == "approved"
+    status_label = "Approved" if approved else "Not approved"
+    color = "#059669" if approved else "#DC2626"
+    icon = "✓" if approved else "!"
+    heading = "Your document is live" if approved else "Your document needs changes"
+    action = "Browse the library" if approved else "Visit DocoDive"
+    action_url = url_for('home', _external=True)
+    content = f"""
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 16px;"><tr>
+          <td width="42" height="42" align="center" style="width:42px;height:42px;border-radius:21px;background:{color};
+              color:#FFFFFF;font:800 24px Arial,Helvetica,sans-serif;">{icon}</td>
+          <td style="padding-left:12px;color:{color};font:700 14px Arial,Helvetica,sans-serif;">Submission {status_label.lower()}</td>
+        </tr></table>
+        <p style="margin:0;">{_safe(message)}</p>
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0"
+               style="margin:24px 0;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;">
+          <tr><td style="padding:18px;">
+            <p style="margin:0 0 8px;color:#6B7280;font-size:12px;font-weight:700;letter-spacing:.7px;">DOCUMENT</p>
+            <p style="margin:0;color:{BRAND_DARK};font-size:16px;font-weight:700;">{_safe(title)}</p>
+            <p style="margin:8px 0 0;color:{color};font-size:14px;font-weight:700;">Status: {status_label}</p>
+          </td></tr>
+        </table>
+        <p style="margin:0;">Thank you for helping build a useful and trustworthy DocoDive library.</p>
+        {_email_button(action_url, action, color)}
+    """
+    return _email_layout(f"Your DocoDive submission is {status_label.lower()}.", "Document review", heading, content)
 
 # ================== USER UPLOAD (R2) ==================
 @app.route('/user/upload', methods=['GET', 'POST'])
@@ -939,7 +1131,7 @@ def brevo_webhook():
     return jsonify({"status": "received"}), 200
 
 # ==================== SOCIAL LOGIN ROUTES ====================
-# Google
+# Google (manual token exchange – avoids Authlib ID token parsing issue)
 @app.route('/login/google')
 def google_login():
     redirect_uri = url_for('google_callback', _external=True)
@@ -947,17 +1139,73 @@ def google_login():
 
 @app.route('/auth/google/callback')
 def google_callback():
-    token = oauth.google.authorize_access_token()
-    user_info = oauth.google.get('userinfo').json()
-    # Adjust sub to be consistent
-    user_info['sub'] = user_info.get('sub') or user_info.get('id')
+    code = request.args.get('code')
+    if not code:
+        flash('Missing authorization code.', 'danger')
+        return redirect(url_for('user_login'))
+
+    # Exchange code for tokens manually
+    token_url = 'https://oauth2.googleapis.com/token'
+    payload = {
+        'code': code,
+        'client_id': os.getenv('GOOGLE_CLIENT_ID'),
+        'client_secret': os.getenv('GOOGLE_CLIENT_SECRET'),
+        'redirect_uri': url_for('google_callback', _external=True),
+        'grant_type': 'authorization_code'
+    }
+
+    try:
+        token_resp = requests.post(token_url, data=payload, timeout=10)
+        token_data = token_resp.json()
+    except Exception as e:
+        app.logger.exception("Failed to exchange Google code for token")
+        flash('Login failed. Please try again.', 'danger')
+        return redirect(url_for('user_login'))
+
+    if 'access_token' not in token_data:
+        app.logger.error(f"Google token exchange error: {token_data}")
+        flash('Could not authenticate with Google.', 'danger')
+        return redirect(url_for('user_login'))
+
+    access_token = token_data['access_token']
+
+    # Fetch user info from Google
+    try:
+        user_resp = requests.get(
+            'https://www.googleapis.com/oauth2/v1/userinfo?alt=json',
+            headers={'Authorization': f'Bearer {access_token}'},
+            timeout=10
+        )
+        user_info = user_resp.json()
+    except Exception as e:
+        app.logger.exception("Failed to get Google user info")
+        flash('Could not retrieve your Google profile.', 'danger')
+        return redirect(url_for('user_login'))
+
+    user_info['sub'] = user_info.get('id') or user_info.get('sub')
     user_info['picture'] = user_info.get('picture')
     user_info['email'] = user_info.get('email')
     user_info['name'] = user_info.get('name')
-    uid = handle_social_login('google', user_info)
+
+    uid, is_new = handle_social_login('google', user_info)
     if uid:
         setup_session(uid)
+        if is_new:
+            try:
+                html_body = make_welcome_email(user_info.get('name', 'User'), 'Google')
+                send_email_notification(
+                    "Welcome to DocoDive! 🚀",
+                    user_info['email'],
+                    f"Hi {user_info.get('name', 'User')}, your account has been created via Google.",
+                    html_body=html_body
+                )
+            except Exception as e:
+                app.logger.error(f"Welcome email failed: {e}")
+            flash('Account verified! Welcome to DocoDive 🤝', 'success')
+        else:
+            flash('Logged in successfully!', 'success')
         return redirect(url_for('home'))
+
     flash('Google login failed.', 'danger')
     return redirect(url_for('user_login'))
 
@@ -972,7 +1220,6 @@ def github_callback():
     token = oauth.github.authorize_access_token()
     resp = oauth.github.get('user')
     user_info = resp.json()
-    # Get primary email if not public
     if not user_info.get('email'):
         emails_resp = oauth.github.get('user/emails')
         emails = emails_resp.json()
@@ -981,9 +1228,24 @@ def github_callback():
     user_info['sub'] = str(user_info['id'])
     user_info['name'] = user_info.get('name') or user_info['login']
     user_info['picture'] = user_info.get('avatar_url')
-    uid = handle_social_login('github', user_info)
+    
+    uid, is_new = handle_social_login('github', user_info)
     if uid:
         setup_session(uid)
+        if is_new:
+            try:
+                html_body = make_welcome_email(user_info.get('name', 'User'), 'GitHub')
+                send_email_notification(
+                    "Welcome to DocoDive! 🚀",
+                    user_info['email'],
+                    f"Hi {user_info.get('name', 'User')}, your account has been created via GitHub.",
+                    html_body=html_body
+                )
+            except Exception as e:
+                app.logger.error(f"Welcome email failed: {e}")
+            flash('Account verified! Welcome to DocoDive 🤝', 'success')
+        else:
+            flash('Logged in successfully!', 'success')
         return redirect(url_for('home'))
     flash('GitHub login failed.', 'danger')
     return redirect(url_for('user_login'))
@@ -1001,183 +1263,27 @@ def facebook_callback():
     user_info = resp.json()
     user_info['sub'] = user_info['id']
     user_info['picture'] = user_info.get('picture', {}).get('data', {}).get('url')
-    uid = handle_social_login('facebook', user_info)
+    
+    uid, is_new = handle_social_login('facebook', user_info)
     if uid:
         setup_session(uid)
+        if is_new:
+            try:
+                html_body = make_welcome_email(user_info.get('name', 'User'), 'Facebook')
+                send_email_notification(
+                    "Welcome to DocoDive! 🚀",
+                    user_info['email'],
+                    f"Hi {user_info.get('name', 'User')}, your account has been created via Facebook.",
+                    html_body=html_body
+                )
+            except Exception as e:
+                app.logger.error(f"Welcome email failed: {e}")
+            flash('Account verified! Welcome to DocoDive 🤝', 'success')
+        else:
+            flash('Logged in successfully!', 'success')
         return redirect(url_for('home'))
     flash('Facebook login failed.', 'danger')
     return redirect(url_for('user_login'))
-
-# -------------------- EMAIL TEMPLATES --------------------
-BRAND_NAME = "DocoDive"
-BRAND_COLOR = "#4F46E5"
-BRAND_DARK = "#111827"
-BRAND_LIGHT = "#EEF2FF"
-
-def _safe(value):
-    return escape(str(value or ""))
-
-def _email_button(url, label, color=BRAND_COLOR):
-    return f"""
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:28px 0 8px;">
-          <tr><td bgcolor="{color}" style="border-radius:8px;">
-            <a href="{_safe(url)}" target="_blank" rel="noopener"
-               style="display:inline-block;padding:14px 24px;border-radius:8px;color:#ffffff;
-                      font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;
-                      line-height:20px;text-decoration:none;">{_safe(label)}</a>
-          </td></tr>
-        </table>
-    """
-
-def _email_link(url):
-    safe_url = _safe(url)
-    return f"""
-        <p style="margin:20px 0 0;color:#6B7280;font-size:12px;line-height:18px;">
-          Button not working? Copy this link into your browser:<br>
-          <a href="{safe_url}" style="color:{BRAND_COLOR};word-break:break-all;">{safe_url}</a>
-        </p>
-    """
-
-def _email_layout(preheader, label, title, content):
-    support_email = _safe(app.config.get("SUPPORT_EMAIL"))
-    support = (
-        f'Need help? <a href="mailto:{support_email}" style="color:{BRAND_COLOR};text-decoration:none;">Contact DocoDive Support</a>.'
-        if support_email else "This is an automated account and security email from DocoDive."
-    )
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="x-apple-disable-message-reformatting">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{BRAND_NAME}</title>
-  <style>
-    @media only screen and (max-width:600px) {{
-      .card {{ width:100% !important; border-radius:0 !important; }}
-      .pad {{ padding:28px 22px !important; }}
-      .title {{ font-size:26px !important; line-height:32px !important; }}
-    }}
-  </style>
-</head>
-<body style="margin:0;padding:0;background:#F3F4F6;">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">{_safe(preheader)}&nbsp;&zwnj;&nbsp;&zwnj;</div>
-  <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#F3F4F6;">
-    <tr><td align="center" style="padding:32px 12px;">
-      <table role="presentation" class="card" width="600" border="0" cellpadding="0" cellspacing="0"
-             style="width:600px;max-width:600px;background:#FFFFFF;border-radius:16px;overflow:hidden;">
-        <tr><td style="padding:26px 40px;background:{BRAND_DARK};">
-          <table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr>
-            <td width="40" height="40" align="center" style="width:40px;height:40px;border-radius:10px;background:{BRAND_COLOR};
-                color:#FFFFFF;font:800 23px Arial,Helvetica,sans-serif;">D</td>
-            <td style="padding-left:12px;color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;">
-              <div style="font-size:19px;font-weight:800;line-height:22px;">{BRAND_NAME}</div>
-              <div style="padding-top:3px;color:#C7D2FE;font-size:12px;line-height:16px;">Free knowledge. Built for curious minds.</div>
-            </td>
-          </tr></table>
-        </td></tr>
-        <tr><td class="pad" style="padding:40px;color:#374151;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:25px;">
-          <div style="color:{BRAND_COLOR};font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">{_safe(label)}</div>
-          <h1 class="title" style="margin:10px 0 16px;color:{BRAND_DARK};font-size:30px;line-height:37px;">{_safe(title)}</h1>
-          {content}
-        </td></tr>
-        <tr><td style="padding:24px 40px;background:#F9FAFB;border-top:1px solid #E5E7EB;color:#6B7280;
-                       font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:19px;text-align:center;">
-          <p style="margin:0 0 8px;">{support}</p>
-          <p style="margin:0;">© {datetime.now().year} DocoDive · Free Knowledge, Pure Discipline.</p>
-        </td></tr>
-      </table>
-      <p style="margin:18px 0 0;color:#9CA3AF;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:16px;">
-        DocoDive will never ask for your password or verification code by email.
-      </p>
-    </td></tr>
-  </table>
-</body>
-</html>"""
-
-def make_verification_email(username, verify_link):
-    content = f"""
-        <p style="margin:0;">Hi {_safe(username)},</p>
-        <p style="margin:16px 0 0;">Thanks for joining DocoDive. Confirm your email to activate your account and access the library.</p>
-        {_email_button(verify_link, "Verify email address")}
-        {_email_link(verify_link)}
-        <div style="margin-top:28px;padding:16px;border-left:4px solid {BRAND_COLOR};background:{BRAND_LIGHT};
-                    color:#3730A3;font-size:13px;line-height:20px;">
-          Didn’t create a DocoDive account? You can safely ignore this message.
-        </div>
-    """
-    return _email_layout("Confirm your email to activate your DocoDive account.", "Account security", "Confirm your email address", content)
-
-def make_upload_notification_email(title, author, category):
-    pending_url = url_for('pending_books', _external=True)
-    content = f"""
-        <p style="margin:0;">A user submission is waiting for approval.</p>
-        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0"
-               style="margin:24px 0;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;">
-          <tr><td style="padding:18px;">
-            <p style="margin:0 0 10px;color:#6B7280;font-size:12px;font-weight:700;letter-spacing:.7px;">DOCUMENT DETAILS</p>
-            <p style="margin:0 0 7px;"><strong style="color:{BRAND_DARK};">Title:</strong> {_safe(title)}</p>
-            <p style="margin:0 0 7px;"><strong style="color:{BRAND_DARK};">Author:</strong> {_safe(author)}</p>
-            <p style="margin:0;"><strong style="color:{BRAND_DARK};">Category:</strong> {_safe(category)}</p>
-          </td></tr>
-        </table>
-        {_email_button(pending_url, "Review pending documents")}
-    """
-    return _email_layout("A DocoDive document needs your review.", "Admin notification", "New document ready for review", content)
-
-def make_code_email(code):
-    content = f"""
-        <p style="margin:0;">Enter this code in DocoDive to continue resetting your password:</p>
-        <div style="margin:26px 0;padding:20px 12px;border:1px solid #C7D2FE;border-radius:12px;background:{BRAND_LIGHT};
-                    color:#312E81;font:800 34px Arial,Helvetica,sans-serif;letter-spacing:10px;line-height:40px;text-align:center;">
-          {_safe(code)}
-        </div>
-        <p style="margin:0;color:#4B5563;">This code expires in <strong>10 minutes</strong>. Do not share it with anyone.</p>
-        <div style="margin-top:28px;padding:16px;border-left:4px solid #F59E0B;background:#FFFBEB;
-                    color:#92400E;font-size:13px;line-height:20px;">
-          If you did not request a password reset, ignore this email. Your password will not change.
-        </div>
-    """
-    return _email_layout("Your DocoDive password reset code is ready.", "Password reset", "Use this security code", content)
-
-def make_reset_link_email(reset_link):
-    content = f"""
-        <p style="margin:0;">Your code was confirmed. Use the secure link below to choose a new DocoDive password.</p>
-        {_email_button(reset_link, "Reset password")}
-        {_email_link(reset_link)}
-        <div style="margin-top:28px;padding:16px;border-left:4px solid #F59E0B;background:#FFFBEB;
-                    color:#92400E;font-size:13px;line-height:20px;">
-          This link expires in <strong>30 minutes</strong> and can be used only once.
-        </div>
-    """
-    return _email_layout("Use this secure link to reset your DocoDive password.", "Password reset", "Set a new password", content)
-
-def make_approval_email(title, status, message):
-    approved = status.lower() == "approved"
-    status_label = "Approved" if approved else "Not approved"
-    color = "#059669" if approved else "#DC2626"
-    icon = "✓" if approved else "!"
-    heading = "Your document is live" if approved else "Your document needs changes"
-    action = "Browse the library" if approved else "Visit DocoDive"
-    action_url = url_for('home', _external=True)
-    content = f"""
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 16px;"><tr>
-          <td width="42" height="42" align="center" style="width:42px;height:42px;border-radius:21px;background:{color};
-              color:#FFFFFF;font:800 24px Arial,Helvetica,sans-serif;">{icon}</td>
-          <td style="padding-left:12px;color:{color};font:700 14px Arial,Helvetica,sans-serif;">Submission {status_label.lower()}</td>
-        </tr></table>
-        <p style="margin:0;">{_safe(message)}</p>
-        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0"
-               style="margin:24px 0;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;">
-          <tr><td style="padding:18px;">
-            <p style="margin:0 0 8px;color:#6B7280;font-size:12px;font-weight:700;letter-spacing:.7px;">DOCUMENT</p>
-            <p style="margin:0;color:{BRAND_DARK};font-size:16px;font-weight:700;">{_safe(title)}</p>
-            <p style="margin:8px 0 0;color:{color};font-size:14px;font-weight:700;">Status: {status_label}</p>
-          </td></tr>
-        </table>
-        <p style="margin:0;">Thank you for helping build a useful and trustworthy DocoDive library.</p>
-        {_email_button(action_url, action, color)}
-    """
-    return _email_layout(f"Your DocoDive submission is {status_label.lower()}.", "Document review", heading, content)
 
 # ================== ERROR HANDLERS (Comprehensive) ==================
 @app.errorhandler(RequestEntityTooLarge)
