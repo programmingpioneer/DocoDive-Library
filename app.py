@@ -1011,10 +1011,7 @@ def check_availability():
             return jsonify({'exists': True, 'message': 'Email already registered.'})
         return jsonify({'exists': False, 'message': 'Email is available.'})
 
-    return jsonify({'error': 'Invalid field'}), 400
-    exists = cur.fetchone() is not None
-    cur.close()
-    return jsonify({'exists': exists})
+    return jsonify({'error': 'Invalid field'}), 400   # ✔️ yahan function khatam
 
 # -------------------- FORGOT PASSWORD (AJAX) --------------------
 @app.route('/forgot-password', methods=['GET', 'POST'])
@@ -1343,8 +1340,8 @@ def service_unavailable(e):
 # ================== PUBLIC ROUTES (Home with new features) ==================
 @app.route('/')
 def home():
-    if not session.get('user_id'):
-        return redirect(url_for('user_login'))
+    # Public browsing – koi login check nahi
+    # ... rest unchanged
 
     search_query = request.args.get('search_query', '').strip()
     category = request.args.get('category', '').strip()
@@ -1471,9 +1468,8 @@ def home():
 # ================== BOOK DETAIL ==================
 @app.route('/book/<int:book_id>')
 def book_detail(book_id):
-    if not session.get('user_id'):
-        return redirect(url_for('user_login'))
-
+    # Public browsing – book page sab dekh sakte hain
+    # ... rest unchanged
     cur = mysql.connection.cursor()
     cur.execute("""
         SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language
@@ -1573,20 +1569,34 @@ def api_book_detail(book_id):
 @app.route('/user/signup', methods=['GET', 'POST'])
 def user_signup():
     if request.method == 'POST':
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
         first_name = request.form.get('first_name', '').strip()
         last_name = request.form.get('last_name', '').strip()
 
+        # Validation
         if not username or not email or not password:
-            return render_template('auth.html', mode='signup', error='All fields are required.')
+            msg = 'All fields are required.'
+            if is_ajax:
+                return jsonify({'error': msg}), 400
+            return render_template('auth.html', mode='signup', error=msg)
         if not is_valid_email(email):
-            return render_template('auth.html', mode='signup', error='Please enter a valid email address.')
+            msg = 'Please enter a valid email address.'
+            if is_ajax:
+                return jsonify({'error': msg}), 400
+            return render_template('auth.html', mode='signup', error=msg)
         if len(username) < 3 or len(username) > 20 or not username.isalnum():
-            return render_template('auth.html', mode='signup', error='Username must be 3-20 letters and numbers only.')
+            msg = 'Username must be 3-20 letters and numbers only.'
+            if is_ajax:
+                return jsonify({'error': msg}), 400
+            return render_template('auth.html', mode='signup', error=msg)
         if len(password) < 6:
-            return render_template('auth.html', mode='signup', error='Password must be at least 6 characters.')
+            msg = 'Password must be at least 6 characters.'
+            if is_ajax:
+                return jsonify({'error': msg}), 400
+            return render_template('auth.html', mode='signup', error=msg)
 
         hashed = generate_password_hash(password)
         token = secrets.token_urlsafe(32)
@@ -1595,14 +1605,16 @@ def user_signup():
         cur.execute("SELECT id FROM users WHERE username = %s OR email = %s", (username, email))
         if cur.fetchone():
             cur.close()
-            return render_template('auth.html', mode='signup', error='Username or email already exists.')
+            msg = 'Username or email already exists.'
+            if is_ajax:
+                return jsonify({'error': msg}), 409
+            return render_template('auth.html', mode='signup', error=msg)
 
         cur.execute("INSERT INTO users (username, email, password, verification_token, first_name, last_name) VALUES (%s, %s, %s, %s, %s, %s)",
             (username, email, hashed, token, first_name, last_name))
         mysql.connection.commit()
         cur.close()
 
-        # 🆕 Automatically sync this new user to Brevo CRM
         sync_brevo_contact(email, first_name, last_name)
 
         verify_link = url_for('verify_email', token=token, _external=True)
@@ -1618,6 +1630,9 @@ def user_signup():
         except Exception as e:
             app.logger.error(f"Verification email failed to send: {e}")
 
+        if is_ajax:
+            return jsonify({'success': True, 'redirect': url_for('home')})
+
         flash('Account created! Please check your email to verify.', 'success')
         return redirect(url_for('user_login'))
 
@@ -1626,6 +1641,7 @@ def user_signup():
 @app.route('/user/login', methods=['GET', 'POST'])
 def user_login():
     if request.method == 'POST':
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         email = request.form.get('email')
         password = request.form.get('password')
         cur = mysql.connection.cursor()
@@ -1634,11 +1650,15 @@ def user_login():
         cur.close()
 
         if not user:
-            return render_template('auth.html', mode='login',
-                                   error='No account found with this email. Please sign up first.')
+            msg = 'No account found with this email. Please sign up first.'
+            if is_ajax:
+                return jsonify({'error': msg}), 401
+            return render_template('auth.html', mode='login', error=msg)
         if not check_password_hash(user[2], password):
-            return render_template('auth.html', mode='login',
-                                   error='Invalid password. Please try again.')
+            msg = 'Invalid password. Please try again.'
+            if is_ajax:
+                return jsonify({'error': msg}), 401
+            return render_template('auth.html', mode='login', error=msg)
         if not user[3]:
             new_token = secrets.token_urlsafe(32)
             cur = mysql.connection.cursor()
@@ -1659,12 +1679,14 @@ def user_login():
             except Exception as e:
                 app.logger.error(f"Verification email failed: {e}")
 
-            return render_template('auth.html', mode='login',
-                                   error='A new verification email has been sent. Please check your inbox.')
+            msg = 'A new verification email has been sent. Please check your inbox.'
+            if is_ajax:
+                return jsonify({'error': msg}), 403
+            return render_template('auth.html', mode='login', error=msg)
 
         setup_session(user[0])
 
-        # Daily login streak logic (existing code)
+        # Daily streak logic (unchanged)
         today = datetime.utcnow().date()
         cur = mysql.connection.cursor()
         cur.execute("SELECT last_login_date, streak_count, longest_streak FROM user_streaks WHERE user_id = %s", (user[0],))
@@ -1686,10 +1708,11 @@ def user_login():
         mysql.connection.commit()
         cur.close()
 
+        if is_ajax:
+            return jsonify({'success': True, 'redirect': url_for('home')})
         return redirect(url_for('home'))
 
     return render_template('auth.html', mode='login')
-
 
 @app.route('/verify/<token>')
 def verify_email(token):
@@ -2750,6 +2773,10 @@ def inject_common():
         current_user_is_official=is_official_user(session.get('user_id', 0)),
         is_moderator=is_moderator()
     )
+
+@app.context_processor
+def inject_user_logged_in():
+    return dict(user_logged_in=bool(session.get('user_id')))
 
 # ================== MODERATION API ENDPOINTS ==================
 @app.route('/api/review/<int:review_id>/delete', methods=['POST'])

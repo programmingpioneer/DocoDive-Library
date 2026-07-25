@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
     <style>
@@ -84,6 +86,177 @@
                 border-radius: 16px !important;
             }
         }
+
+        /* ---------- AUTH MODAL SPECIFIC STYLING ---------- */
+        .auth-modal .modal-content {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 28px;
+            box-shadow: 0 20px 50px rgba(30, 27, 75, 0.15);
+        }
+        .auth-modal .modal-body {
+            padding: 2rem 1.8rem;
+        }
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e7ff;
+            margin-bottom: 1.5rem;
+        }
+        .auth-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #6b7280;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .auth-tab.active {
+            color: #4338ca;
+            border-bottom-color: #4338ca;
+        }
+        .auth-modal .form-control {
+            background: rgba(255,255,255,0.95);
+            border: 1px solid #e0e7ff;
+            border-radius: 14px;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        .auth-modal .form-control:focus {
+            border-color: #4338ca;
+            box-shadow: 0 0 0 3px rgba(67,56,202,0.15);
+        }
+        .auth-modal .form-control.is-valid {
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 3px rgba(16,185,129,0.15) !important;
+        }
+        .auth-modal .form-control.is-invalid {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.15) !important;
+        }
+        .auth-modal .btn-primary-custom {
+            background: #1e1b4b;
+            border: none;
+            border-radius: 50px;
+            padding: 14px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            letter-spacing: 0.3px;
+            box-shadow: 0 10px 25px rgba(30, 27, 75, 0.3);
+            transition: all 0.3s;
+        }
+        .auth-modal .btn-primary-custom:hover {
+            background: #312e81;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(30, 27, 75, 0.4);
+            color: white;
+        }
+        .auth-modal .social-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 10px 18px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            text-decoration: none;
+            min-width: 100px;
+        }
+        .auth-modal .social-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .auth-modal .social-btn.google { color: #ea4335; border-color: #fce8e6; }
+        .auth-modal .social-btn.google:hover { background: #fef2f2; }
+        .auth-modal .social-btn.github { color: #24292f; border-color: #d0d7de; }
+        .auth-modal .social-btn.github:hover { background: #f6f8fa; }
+        .auth-modal .social-btn.facebook { color: #1877f2; border-color: #d6e4ff; }
+        .auth-modal .social-btn.facebook:hover { background: #f0f5ff; }
+
+        .username-hint {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+            background: rgba(67, 56, 202, 0.04);
+            border-radius: 10px;
+            padding: 0.5rem 0.75rem;
+            border-left: 3px solid #4338ca;
+        }
+
+        /* Responsive modal adjustments */
+        @media (max-width: 576px) {
+            .auth-modal .modal-body {
+                padding: 1.5rem 1.2rem;
+            }
+            .auth-modal .form-control {
+                padding: 10px 14px;
+                font-size: 0.9rem;
+            }
+            .auth-modal .btn-primary-custom {
+                padding: 12px;
+                font-size: 0.95rem;
+            }
+            .auth-tab {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* ========== MODAL ANIMATION ========== */
+        /* Smooth slide-up + fade for auth modal */
+        .auth-modal.fade .modal-dialog {
+            transform: translateY(30px);
+            opacity: 0;
+            transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+        }
+        .auth-modal.fade.show .modal-dialog {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* ========== GLOBAL ANIMATIONS (AOS complement) ========== */
+        .btn, .nav-link, .product-card, .category-card {
+            transition: all 0.3s ease !important;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .product-card:hover, .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(30, 27, 75, 0.1);
+        }
+        .dropdown-menu {
+            animation: fadeDown 0.25s ease-out;
+        }
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Optional page loader – uncomment if you want a full page loader */
+        /*
+        #page-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; z-index: 9999; display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+        body.loaded #page-loader { opacity: 0; pointer-events: none; }
+        */
     </style>
 
     <!-- Brevo Conversations widget -->
@@ -101,7 +274,7 @@
     </script>
 </head>
 
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100" data-user-logged-in="{{ 'true' if session.get('user_id') else 'false' }}">
 
     <!-- ========== NAVBAR ========== -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white py-3 sticky-top shadow-sm">
@@ -177,7 +350,10 @@
                         </ul>
                     </div>
                 {% else %}
-                    <a href="/user/login" class="btn btn-outline-primary rounded-pill px-3">Reader</a>
+                    <!-- 👇 Button to open the new auth modal -->
+                    <button class="btn btn-outline-primary rounded-pill px-3" onclick="showAuthModal(window.location.href)">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Login / Sign Up
+                    </button>
                 {% endif %}
 
                 <button class="navbar-toggler border-0 shadow-none ms-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"
@@ -231,12 +407,267 @@
     </main>
 
     <!-- ========== FOOTER ========== -->
-    <footer class="text-center py-4 text-muted bg-white border-top mt-auto">
+    <footer class="text-center py-4 text-muted bg-white border-top mt-auto" data-aos="fade-up">
         <p class="mb-0 small fw-semibold">© 2026 DocoDive – Free Knowledge, Pure Discipline.</p>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AOS Animation JS -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 700,
+            once: false,
+            offset: 90,
+            easing: 'ease-out'
+        });
+    </script>
     {% block scripts %}{% endblock %}
+
+    <!-- ================== BEAUTIFUL AUTH MODAL (MATCHES OLD LOGIN PAGE) ================== -->
+    <div class="modal fade auth-modal" id="authModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+        <div class="modal-content border-0 shadow-lg">
+          <button type="button" class="btn-close position-absolute top-0 end-0 m-3 z-3" data-bs-dismiss="modal" aria-label="Close"></button>
+          <div class="modal-body">
+            <!-- Brand -->
+            <div class="text-center mb-4">
+              <div class="d-inline-flex align-items-center justify-content-center rounded-4 mb-3" style="width:56px;height:56px;background:linear-gradient(135deg, #4338ca, #818cf8);color:white;font-size:1.8rem;box-shadow:0 12px 24px rgba(67,56,202,0.2);">
+                <i class="bi bi-book-half"></i>
+              </div>
+              <h4 class="fw-bold text-dark mb-1">Welcome to DocoDive</h4>
+              <p class="text-muted small mb-0">Your Gateway to 50,000+ Free Programming Books</p>
+            </div>
+
+            <!-- Flash -->
+            <div id="modalFlash"></div>
+
+            <!-- Tabs -->
+            <div class="auth-tabs">
+              <button class="auth-tab active" data-tab="login">Login</button>
+              <button class="auth-tab" data-tab="signup">Sign Up</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="modalLoginForm" class="auth-form" data-form="login">
+              <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Email</label>
+                <input type="email" name="email" class="form-control rounded-3" placeholder="you@example.com" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Password</label>
+                <input type="password" name="password" class="form-control rounded-3" placeholder="••••••••" required>
+              </div>
+              <div class="text-end mb-3">
+                <a href="/forgot-password" class="text-muted small text-decoration-none">Forgot Password?</a>
+              </div>
+              <button type="submit" class="btn btn-primary-custom w-100">Login</button>
+              <p class="text-center mt-3 small text-muted">
+                New here? <span class="text-link" onclick="switchTab('signup')">Create an account</span>
+              </p>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="modalSignupForm" class="auth-form d-none" data-form="signup">
+              <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
+              <div class="row mb-3">
+                <div class="col-md-6 mb-3 mb-md-0">
+                  <label class="form-label small fw-semibold">First Name *</label>
+                  <input type="text" name="first_name" class="form-control rounded-3" placeholder="John" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Last Name *</label>
+                  <input type="text" name="last_name" class="form-control rounded-3" placeholder="Doe" required>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Username</label>
+                <input type="text" name="username" id="modalUsername" class="form-control rounded-3" placeholder="bookworm42" required>
+                <div class="username-hint">
+                  <i class="bi bi-info-circle-fill"></i>
+                  <span>Letters & numbers only (3‑20 chars). Cannot contain reserved words.</span>
+                </div>
+                <div class="feedback small mt-1"></div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Email</label>
+                <input type="email" name="email" id="modalEmail" class="form-control rounded-3" placeholder="you@example.com" required>
+                <div class="feedback small mt-1"></div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Password</label>
+                <input type="password" name="password" class="form-control rounded-3" placeholder="••••••••" required>
+              </div>
+              <button type="submit" class="btn btn-primary-custom w-100">Create Free Account</button>
+              <p class="text-center mt-3 small text-muted">
+                Already registered? <span class="text-link" onclick="switchTab('login')">Login</span>
+              </p>
+            </form>
+
+            <!-- Social Login -->
+            <div class="mt-4 text-center">
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="flex-fill" style="height:1px;background:#e0e7ff;"></span>
+                <small class="text-muted text-uppercase fw-medium">or continue with</small>
+                <span class="flex-fill" style="height:1px;background:#e0e7ff;"></span>
+              </div>
+              <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <a href="/login/google" class="social-btn google"><i class="bi bi-google"></i> Google</a>
+                <a href="/login/github" class="social-btn github"><i class="bi bi-github"></i> GitHub</a>
+                <a href="/login/facebook" class="social-btn facebook"><i class="bi bi-facebook"></i> Facebook</a>
+              </div>
+            </div>
+
+            <!-- Trust Pills -->
+            <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
+              <span class="badge bg-light text-dark border px-3 py-1 rounded-pill"><i class="bi bi-shield-check text-primary me-1"></i>Secure</span>
+              <span class="badge bg-light text-dark border px-3 py-1 rounded-pill"><i class="bi bi-cloud-download text-primary me-1"></i>Instant Download</span>
+              <span class="badge bg-light text-dark border px-3 py-1 rounded-pill"><i class="bi bi-calendar-check text-primary me-1"></i>Updated Weekly</span>
+              <span class="badge bg-light text-dark border px-3 py-1 rounded-pill"><i class="bi bi-heart text-primary me-1"></i>Favorites & History</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Scripts (tab switching, login/signup AJAX, validation) -->
+    <script>
+    let authModal, pendingRedirectUrl = null;
+
+    // Tab switching inside the modal
+    function switchTab(tab) {
+        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.auth-form').forEach(f => f.classList.add('d-none'));
+        document.querySelector(`.auth-tab[data-tab="${tab}"]`).classList.add('active');
+        document.getElementById(tab === 'login' ? 'modalLoginForm' : 'modalSignupForm').classList.remove('d-none');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        authModal = new bootstrap.Modal(document.getElementById('authModal'));
+
+        // Tab click handlers
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                switchTab(this.dataset.tab);
+            });
+        });
+
+        // Login form submit
+        document.getElementById('modalLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const fd = new FormData(this);
+            try {
+                const res = await fetch('/user/login', {
+                    method: 'POST',
+                    body: fd,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    authModal.hide();
+                    window.location.href = pendingRedirectUrl || data.redirect || '/';
+                } else {
+                    showModalFlash(data.error || 'Login failed', 'danger');
+                }
+            } catch {
+                showModalFlash('Something went wrong', 'danger');
+            }
+        });
+
+        // Signup form submit
+        document.getElementById('modalSignupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const fd = new FormData(this);
+            try {
+                const res = await fetch('/user/signup', {
+                    method: 'POST',
+                    body: fd,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    authModal.hide();
+                    window.location.href = pendingRedirectUrl || data.redirect || '/';
+                } else {
+                    showModalFlash(data.error || 'Signup failed', 'danger');
+                }
+            } catch {
+                showModalFlash('Something went wrong', 'danger');
+            }
+        });
+
+        // Real‑time validation for username and email (modal)
+        function checkField(input, fieldType) {
+            const val = input.value.trim();
+            const fb = input.parentElement.querySelector('.feedback');
+            if (!fb) return;
+            if (val.length === 0) {
+                input.classList.remove('is-valid', 'is-invalid');
+                fb.textContent = '';
+                return;
+            }
+            if (fieldType === 'username') {
+                if (val.length < 3 || val.length > 20 || !/^[a-zA-Z0-9]+$/.test(val)) {
+                    input.classList.add('is-invalid');
+                    input.classList.remove('is-valid');
+                    fb.textContent = 'Username must be 3-20 letters and numbers only.';
+                    fb.className = 'feedback small mt-1 text-danger';
+                    return;
+                }
+            } else if (fieldType === 'email') {
+                if (!/^\S+@\S+\.\S+$/.test(val)) {
+                    input.classList.add('is-invalid');
+                    input.classList.remove('is-valid');
+                    fb.textContent = 'Please enter a valid email.';
+                    fb.className = 'feedback small mt-1 text-danger';
+                    return;
+                }
+            }
+            fetch(`/api/check-availability?field=${fieldType}&value=${encodeURIComponent(val)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.exists || data.reserved) {
+                        input.classList.add('is-invalid');
+                        input.classList.remove('is-valid');
+                        fb.textContent = data.message || 'Not available.';
+                        fb.className = 'feedback small mt-1 text-danger';
+                    } else {
+                        input.classList.add('is-valid');
+                        input.classList.remove('is-invalid');
+                        fb.textContent = data.message || 'Available!';
+                        fb.className = 'feedback small mt-1 text-success';
+                    }
+                })
+                .catch(() => {
+                    input.classList.remove('is-valid', 'is-invalid');
+                    fb.textContent = '';
+                });
+        }
+
+        const modalUsername = document.getElementById('modalUsername');
+        const modalEmail = document.getElementById('modalEmail');
+        if (modalUsername) {
+            modalUsername.addEventListener('input', () => checkField(modalUsername, 'username'));
+            modalUsername.addEventListener('blur', () => checkField(modalUsername, 'username'));
+        }
+        if (modalEmail) {
+            modalEmail.addEventListener('input', () => checkField(modalEmail, 'email'));
+            modalEmail.addEventListener('blur', () => checkField(modalEmail, 'email'));
+        }
+
+        function showModalFlash(msg, type) {
+            const flash = document.getElementById('modalFlash');
+            flash.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show py-2 small" role="alert">${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+        }
+    });
+
+    // Global function to open the modal
+    function showAuthModal(redirectUrl) {
+        pendingRedirectUrl = redirectUrl || window.location.href;
+        if (authModal) authModal.show();
+    }
+    </script>
 
     <!-- QR Code Popup -->
     <div id="qrPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:24px; border-radius:20px; box-shadow:0 15px 50px rgba(0,0,0,0.3); z-index:9999; text-align:center;">
@@ -254,7 +685,7 @@
         </div>
     </div>
 
-    <!-- Notifications Script -->
+    <!-- Notifications Script (unchanged) -->
     <script>
         function timeAgo(dateString) {
             try {
@@ -401,5 +832,6 @@
         setInterval(updateNotifications, 30000);
         updateNotifications();
     </script>
+
 </body>
 </html>

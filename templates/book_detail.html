@@ -1,12 +1,11 @@
 {% extends 'base.html' %}
-<!-- Moderator status via meta tag (safe for JS) -->
-<meta name="is-moderator" content="{{ is_moderator|tojson }}">
+<meta name="is-moderator" content="{{ is_moderator|default(false)|tojson }}">
 
 {% block content %}
 <div class="container py-4 py-md-5">
     <div class="row g-4">
         <!-- Book Cover -->
-        <div class="col-12 col-md-5 col-lg-4">
+        <div class="col-12 col-md-5 col-lg-4" data-aos="zoom-in" data-aos-duration="600">
             {% if book.image_url and book.image_url != 'None' %}
                 <img src="{{ book.image_url }}" class="img-fluid rounded-4 shadow-sm w-100" alt="{{ book.title }}" style="object-fit: cover; max-height: 450px;" loading="lazy">
             {% else %}
@@ -21,7 +20,7 @@
             {% endif %}
         </div>
         <!-- Book Details -->
-        <div class="col-12 col-md-7 col-lg-8">
+        <div class="col-12 col-md-7 col-lg-8" data-aos="fade-left" data-aos-duration="600">
             <h2 class="fw-bold mb-1">{{ book.title }}</h2>
             <p class="text-muted">by <strong>{{ book.author }}</strong></p>
             <div class="mb-3">
@@ -30,16 +29,16 @@
             </div>
             <p class="mb-4">{{ book.description or 'No description available.' }}</p>
             <div class="d-flex flex-wrap gap-2 mb-4">
-                <a href="{{ book.link }}" class="btn btn-primary rounded-pill px-4" download onclick="fetch('/api/download/{{ book.id }}',{method:'POST'});">
+                <a href="{{ book.link }}" class="btn btn-primary rounded-pill px-4 download-btn" download>
                     <i class="bi bi-download me-2"></i> Download
                 </a>
-                <a href="/book/{{ book.id }}/read" target="_blank" class="btn btn-outline-primary rounded-pill px-4">
+                <a href="/book/{{ book.id }}/read" target="_blank" class="btn btn-outline-primary rounded-pill px-4 read-btn">
                     <i class="bi bi-book me-2"></i> Read Online
                 </a>
                 <button class="btn btn-outline-dark rounded-pill px-4 qr-btn" data-book-id="{{ book.id }}">
                     <i class="bi bi-qr-code me-2"></i> QR Code
                 </button>
-                {% if session.get('user_id') %}
+                {% if user_logged_in %}
                 <button class="btn btn-outline-warning rounded-pill px-4 favorite-btn" data-id="{{ book.id }}">
                     <i class="bi bi-heart me-2"></i> <span>Favorite</span>
                 </button>
@@ -49,37 +48,39 @@
             <hr>
 
             <!-- Reviews Section -->
-            <h5 class="fw-bold mb-3">⭐ Reviews</h5>
-            {% if session.get('user_id') %}
-            <form id="reviewForm" class="mb-4 p-3 border rounded-4 bg-light">
-                <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
-                <div class="row g-2 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label small fw-semibold">Rating</label>
-                        <select name="rating" class="form-select" required>
-                            <option value="5">5 - Excellent</option>
-                            <option value="4">4 - Good</option>
-                            <option value="3">3 - Average</option>
-                            <option value="2">2 - Poor</option>
-                            <option value="1">1 - Terrible</option>
-                        </select>
+            <div data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
+                <h5 class="fw-bold mb-3">⭐ Reviews</h5>
+                {% if user_logged_in %}
+                <form id="reviewForm" class="mb-4 p-3 border rounded-4 bg-light">
+                    <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Rating</label>
+                            <select name="rating" class="form-select" required>
+                                <option value="5">5 - Excellent</option>
+                                <option value="4">4 - Good</option>
+                                <option value="3">3 - Average</option>
+                                <option value="2">2 - Poor</option>
+                                <option value="1">1 - Terrible</option>
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold">Comment</label>
+                            <textarea name="comment" class="form-control" rows="2" placeholder="Write your review..."></textarea>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary rounded-pill w-100">Submit</button>
+                        </div>
                     </div>
-                    <div class="col-md-7">
-                        <label class="form-label small fw-semibold">Comment</label>
-                        <textarea name="comment" class="form-control" rows="2" placeholder="Write your review..."></textarea>
-                    </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-primary rounded-pill w-100">Submit</button>
-                    </div>
-                </div>
-            </form>
-            {% else %}
-            <div class="alert alert-light border rounded-4">Please <a href="/user/login">login</a> to write a review.</div>
-            {% endif %}
+                </form>
+                {% else %}
+                <div class="alert alert-light border rounded-4">Please <a href="#" onclick="showAuthModal(window.location.href);return false;">login</a> to write a review.</div>
+                {% endif %}
+            </div>
 
             <div id="reviews">
                 {% for r in reviews %}
-                <div class="border-bottom pb-2 mb-2 review-item" data-review-id="{{ r.id }}">
+                <div class="border-bottom pb-2 mb-2 review-item" data-review-id="{{ r.id }}" data-aos="fade-up" data-aos-duration="500" data-aos-delay="{{ loop.index0 * 100 }}">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="d-flex align-items-center gap-1">
                             {% if r.is_official %}
@@ -92,14 +93,26 @@
                             {% endif %}
                             <span>- {{ r.rating }} ⭐</span>
                         </div>
-                        {% if is_moderator %}
-                        <button class="btn btn-sm btn-outline-danger rounded-pill delete-review-btn" data-review-id="{{ r.id }}" title="Delete review">
-                            <i class="bi bi-trash3"></i>
-                        </button>
-                        {% endif %}
+                        <div class="d-flex align-items-center gap-2">
+                            {% if is_moderator %}
+                            <!-- Official Reply Button for Reviews -->
+                            <button class="btn btn-sm btn-outline-primary rounded-pill reply-official-review-btn" data-review-id="{{ r.id }}" title="Reply as Official">
+                                <i class="bi bi-reply-fill"></i> Reply
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger rounded-pill delete-review-btn" data-review-id="{{ r.id }}" title="Delete review">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
                     <p class="text-muted small mb-0">{{ r.comment or '' }}</p>
-                    <!-- 👇 Official replies to this review will be injected here -->
+                    <!-- Hidden official reply form for this review -->
+                    {% if is_moderator %}
+                    <div class="official-review-reply-form d-none mt-2" id="officialReviewReplyForm-{{ r.id }}">
+                        <textarea class="form-control form-control-sm mb-1" rows="2" placeholder="Official reply..."></textarea>
+                        <button class="btn btn-sm btn-primary submit-official-review-reply" data-review-id="{{ r.id }}">Submit Reply</button>
+                    </div>
+                    {% endif %}
                     <div class="review-replies ms-3 mt-1" id="review-replies-{{ r.id }}"></div>
                 </div>
                 {% else %}
@@ -108,75 +121,174 @@
             </div>
 
             <!-- ==================== DISCUSSION COMMENTS ==================== -->
-            <section id="discussion" class="mt-5">
+            <section id="discussion" class="mt-5" data-aos="fade-up" data-aos-duration="600" data-aos-delay="300">
                 <h4 class="fw-bold mb-3">💬 Discussion</h4>
                 <div id="commentsContainer" class="mb-4"></div>
-                {% if session.get('user_id') %}
+                {% if user_logged_in %}
                 <form id="commentForm" class="mt-3">
                     <textarea id="commentText" class="form-control" rows="3" placeholder="Join the discussion..."></textarea>
                     <button type="submit" class="btn btn-primary rounded-pill mt-2">Post Comment</button>
                 </form>
                 {% else %}
-                <p class="text-muted">Please <a href="/user/login">login</a> to join the discussion.</p>
+                <p class="text-muted">Please <a href="#" onclick="showAuthModal(window.location.href);return false;">login</a> to join the discussion.</p>
                 {% endif %}
             </section>
         </div>
     </div>
 </div>
+
+<!-- ================== QR & SHARE POPUPS (INSIDE CONTENT BLOCK) ================== -->
+<div id="qrPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:28px 24px 20px; border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,0.25); z-index:9999; text-align:center; max-width:320px; width:90%;">
+    <img id="qrImage" src="" style="width:200px; height:200px; border-radius:16px; display:block; margin:0 auto;">
+    <p style="margin:16px 0 8px; font-size:0.85rem; color:#4b5563; line-height:1.5;">
+        📱 <strong>Scan QR code</strong> to open this book on your phone.
+    </p>
+    <div style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
+        <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="document.getElementById('qrPopup').style.display='none'"><i class="bi bi-x-circle me-1"></i> Close</button>
+        <button class="btn btn-sm btn-primary rounded-pill share-modal-btn" data-book-id="{{ book.id }}"><i class="bi bi-share-fill me-1"></i> Share</button>
+    </div>
+</div>
+
+<div id="shareModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+    <!-- ... (share modal content unchanged, same as previous) ... -->
+    <div style="background:white; border-radius:24px; max-width:420px; width:90%; padding:32px 24px; position:relative; box-shadow:0 25px 50px rgba(0,0,0,0.2);">
+        <button onclick="closeShareModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#9ca3af;">&times;</button>
+        <div style="display:flex; justify-content:center; margin-bottom:16px;">
+            <div style="width:60px; height:60px; background:#f3f4f6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem;">🔗</div>
+        </div>
+        <h2 style="text-align:center; font-weight:700; color:#1f2937; margin-bottom:4px;">Share with Friends</h2>
+        <p style="text-align:center; color:#6b7280; font-size:0.9rem; margin-bottom:24px;">Reading is better together! Share this book with your network.</p>
+        <div style="margin-bottom:20px;">
+            <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:6px; display:block;">Share your link</label>
+            <div style="display:flex; background:#f9fafb; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb;">
+                <input id="shareLinkInput" type="text" readonly value="" style="flex:1; border:none; padding:12px; background:transparent; font-size:0.9rem; color:#111827;">
+                <button onclick="copyShareLink()" style="background:#4f46e5; border:none; color:white; padding:12px 16px; cursor:pointer; font-size:0.9rem; display:flex; align-items:center; gap:4px;"><i class="bi bi-clipboard"></i> Copy</button>
+            </div>
+        </div>
+        <div>
+            <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:10px; display:block;">Share to</label>
+            <div style="display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:16px;">
+                <a id="shareFacebook" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#1877f2;"><div style="width:44px; height:44px; background:#1877f2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-facebook"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Facebook</span></a>
+                <a id="shareTwitter" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#000;"><div style="width:44px; height:44px; background:#000; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.2rem;"><i class="bi bi-twitter-x"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">X</span></a>
+                <a id="shareWhatsapp" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#25d366;"><div style="width:44px; height:44px; background:#25d366; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-whatsapp"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">WhatsApp</span></a>
+                <a id="shareTelegram" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0088cc;"><div style="width:44px; height:44px; background:#0088cc; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-telegram"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Telegram</span></a>
+                <a id="shareLinkedin" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0a66c2;"><div style="width:44px; height:44px; background:#0a66c2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-linkedin"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">LinkedIn</span></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showShareModal(bookId) {
+    const shareUrl = window.location.origin + '/book/' + bookId;
+    document.getElementById('shareLinkInput').value = shareUrl;
+    document.getElementById('shareFacebook').href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl);
+    document.getElementById('shareTwitter').href = 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(shareUrl);
+    document.getElementById('shareWhatsapp').href = 'https://wa.me/?text=' + encodeURIComponent(shareUrl);
+    document.getElementById('shareTelegram').href = 'https://t.me/share/url?url=' + encodeURIComponent(shareUrl);
+    document.getElementById('shareLinkedin').href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(shareUrl);
+    document.getElementById('shareModal').style.display = 'block';
+}
+function closeShareModal() {
+    document.getElementById('shareModal').style.display = 'none';
+}
+function copyShareLink() {
+    const input = document.getElementById('shareLinkInput');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(() => alert('✅ Link copied!')).catch(() => alert('❌ Copy failed'));
+}
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.share-modal-btn')) {
+        const btn = e.target.closest('.share-modal-btn');
+        const bookId = btn.dataset.bookId;
+        showShareModal(bookId);
+    }
+});
+</script>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Moderator status from server
+// ==================== SAFE USER_LOGGED_IN ====================
+const USER_LOGGED_IN = document.body.dataset.userLoggedIn === 'true';
 const isModerator = document.querySelector('meta[name="is-moderator"]')?.getAttribute('content') === 'true';
 
-// ======================== REVIEW & FAVORITE ========================
-async function submitReview(e) {
-    e.preventDefault();
-    const form = document.getElementById('reviewForm');
-    const data = new FormData(form);
-    const res = await fetch(`/book/{{ book.id }}/review`, {
-        method: 'POST',
-        body: data,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+// ==================== PROTECTED ACTION HANDLER ====================
+function protectedAction(el, callback) {
+    el.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (USER_LOGGED_IN) {
+            callback(e);
+            return;
+        }
+        const originalHTML = el.innerHTML;
+        el.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Loading...';
+        el.disabled = true;
+        setTimeout(() => {
+            el.innerHTML = originalHTML;
+            el.disabled = false;
+            showAuthModal(window.location.href);
+        }, 500);
     });
-    if (res.ok) location.reload();
 }
-document.getElementById('reviewForm')?.addEventListener('submit', submitReview);
 
-document.querySelector('.favorite-btn')?.addEventListener('click', async function(){
-    const id = this.dataset.id;
+// ================== APPLY TO STATIC BUTTONS ==================
+const downloadLink = document.querySelector('a.download-btn');
+if (downloadLink) protectedAction(downloadLink, () => {
+    fetch(`/api/download/{{ book.id }}`, {method:'POST'});
+    window.location.href = downloadLink.href;
+});
+
+const readLink = document.querySelector('a.read-btn');
+if (readLink) protectedAction(readLink, () => window.open(readLink.href, '_blank'));
+
+const qrBtn = document.querySelector('.qr-btn');
+if (qrBtn) protectedAction(qrBtn, () => {
+    const bookId = qrBtn.dataset.bookId;
+    document.getElementById('qrImage').src = `/book/${bookId}/qr`;
+    document.getElementById('qrPopup').style.display = 'block';
+});
+
+const favBtn = document.querySelector('.favorite-btn');
+if (favBtn) protectedAction(favBtn, async () => {
+    const id = favBtn.dataset.id;
     const res = await fetch(`/user/favorite/${id}`, {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
     });
     if (res.ok) {
-        const icon = this.querySelector('i');
+        const icon = favBtn.querySelector('i');
         icon.classList.toggle('bi-heart-fill');
         icon.classList.toggle('bi-heart');
-        this.querySelector('span').textContent = icon.classList.contains('bi-heart-fill') ? 'Favorited' : 'Favorite';
+        favBtn.querySelector('span').textContent = icon.classList.contains('bi-heart-fill') ? 'Favorited' : 'Favorite';
     }
 });
 
-// ======================== QR CODE BUTTON ========================
-document.querySelector('.qr-btn')?.addEventListener('click', function() {
-    const bookId = this.dataset.bookId;
-    document.getElementById('qrImage').src = `/book/${bookId}/qr`;
-    document.getElementById('qrPopup').style.display = 'block';
+// Review & comment forms protection
+document.getElementById('reviewForm')?.addEventListener('submit', function(e) {
+    if (!USER_LOGGED_IN) {
+        e.preventDefault();
+        showAuthModal(window.location.href);
+    }
+});
+document.getElementById('commentForm')?.addEventListener('submit', function(e) {
+    if (!USER_LOGGED_IN) {
+        e.preventDefault();
+        showAuthModal(window.location.href);
+    }
 });
 
-// ======================== DISCUSSION COMMENTS (with review replies) ========================
+// ================== DISCUSSION COMMENTS (with review replies) ==================
 function loadComments() {
     fetch(`/book/{{ book.id }}/comments`)
     .then(r => r.json())
     .then(comments => {
-        // Separate review replies (parent_id < 0) and normal comments
         const reviewRepliesMap = {};
         const normalComments = [];
 
         comments.forEach(c => {
             if (c.parent_id && c.parent_id < 0) {
-                // It's a review reply – store by abs(parent_id)
                 const reviewId = Math.abs(c.parent_id);
                 if (!reviewRepliesMap[reviewId]) reviewRepliesMap[reviewId] = [];
                 reviewRepliesMap[reviewId].push(c);
@@ -185,7 +297,6 @@ function loadComments() {
             }
         });
 
-        // ---- RENDER NORMAL DISCUSSION TREE ----
         let commentMap = {};
         normalComments.forEach(c => { commentMap[c.id] = {...c, children:[]}; });
         let roots = [];
@@ -244,13 +355,6 @@ function loadComments() {
         }
         document.getElementById('commentsContainer').innerHTML = renderTree(roots);
 
-        // Attach reply button listeners for normal comments
-        document.querySelectorAll('.replyBtn').forEach(b => {
-            b.addEventListener('click', function() {
-                const form = this.nextElementSibling;
-                form.style.display = form.style.display === 'none' ? 'block' : 'none';
-            });
-        });
         document.querySelectorAll('.submitReply').forEach(b => {
             b.addEventListener('click', function() {
                 const parentId = this.dataset.parent;
@@ -265,7 +369,7 @@ function loadComments() {
             });
         });
 
-        // ---- RENDER REVIEW REPLIES ----
+        // Render review replies
         document.querySelectorAll('.review-replies').forEach(div => {
             const reviewId = parseInt(div.id.replace('review-replies-', ''));
             const replies = reviewRepliesMap[reviewId] || [];
@@ -300,22 +404,70 @@ document.getElementById('commentForm')?.addEventListener('submit', function(e) {
 });
 loadComments();
 
-// ======================== MODERATOR ACTIONS (event delegation) ========================
-document.addEventListener('click', async function(e) {
+// ================== PROTECTED REPLY BUTTON (for discussions) ==================
+document.addEventListener('click', function(e) {
+    // Reply to comment (discussion)
+    if (e.target.matches('.replyBtn') || e.target.closest('.replyBtn')) {
+        const btn = e.target.closest('.replyBtn');
+        if (!USER_LOGGED_IN) {
+            const origHTML = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>';
+            btn.disabled = true;
+            setTimeout(() => {
+                btn.innerHTML = origHTML;
+                btn.disabled = false;
+                showAuthModal(window.location.href);
+            }, 500);
+        } else {
+            const form = btn.nextElementSibling;
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+    }
+
+    // Toggle official reply form for reviews
+    if (e.target.closest('.reply-official-review-btn')) {
+        const btn = e.target.closest('.reply-official-review-btn');
+        const reviewId = btn.dataset.reviewId;
+        const form = document.getElementById(`officialReviewReplyForm-${reviewId}`);
+        if (form) form.classList.toggle('d-none');
+    }
+
+    // Submit official reply for reviews
+    if (e.target.closest('.submit-official-review-reply')) {
+        const btn = e.target.closest('.submit-official-review-reply');
+        const reviewId = btn.dataset.reviewId;
+        const textarea = document.querySelector(`#officialReviewReplyForm-${reviewId} textarea`);
+        if (!textarea) return;
+        const replyText = textarea.value.trim();
+        if (!replyText) return;
+        fetch(`/api/review/${reviewId}/reply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ reply_text: replyText })
+        }).then(res => {
+            if (res.ok) {
+                alert('Reply posted!');
+                textarea.value = '';
+                document.getElementById(`officialReviewReplyForm-${reviewId}`).classList.add('d-none');
+                loadComments();
+            } else {
+                alert('Failed to post reply.');
+            }
+        });
+    }
+
     // Delete review
     if (e.target.closest('.delete-review-btn')) {
         const btn = e.target.closest('.delete-review-btn');
         const reviewId = btn.dataset.reviewId;
         if (!confirm('Delete this review?')) return;
-        const res = await fetch(`/api/review/${reviewId}/delete`, {
+        fetch(`/api/review/${reviewId}/delete`, {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).then(res => {
+            if (res.ok) btn.closest('.review-item')?.remove();
+            else alert('Failed to delete review.');
         });
-        if (res.ok) {
-            btn.closest('.review-item')?.remove();
-        } else {
-            alert('Failed to delete review.');
-        }
     }
 
     // Delete comment
@@ -323,18 +475,16 @@ document.addEventListener('click', async function(e) {
         const btn = e.target.closest('.delete-comment-btn');
         const commentId = btn.dataset.commentId;
         if (!confirm('Delete this comment?')) return;
-        const res = await fetch(`/api/comment/${commentId}/delete`, {
+        fetch(`/api/comment/${commentId}/delete`, {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).then(res => {
+            if (res.ok) btn.closest('.border-start')?.remove();
+            else alert('Failed to delete comment.');
         });
-        if (res.ok) {
-            btn.closest('.border-start')?.remove();
-        } else {
-            alert('Failed to delete comment.');
-        }
     }
 
-    // Toggle official reply form
+    // Toggle official reply form for discussion comments
     if (e.target.closest('.reply-official-btn')) {
         const btn = e.target.closest('.reply-official-btn');
         const commentId = btn.dataset.commentId;
@@ -342,7 +492,7 @@ document.addEventListener('click', async function(e) {
         if (form) form.classList.toggle('d-none');
     }
 
-    // Submit official reply to a COMMENT
+    // Submit official reply for discussion comments
     if (e.target.closest('.submit-official-reply')) {
         const btn = e.target.closest('.submit-official-reply');
         const commentId = btn.dataset.commentId;
@@ -350,20 +500,33 @@ document.addEventListener('click', async function(e) {
         if (!textarea) return;
         const replyText = textarea.value.trim();
         if (!replyText) return;
-        const res = await fetch(`/api/comment/${commentId}/reply`, {
+        fetch(`/api/comment/${commentId}/reply`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ reply_text: replyText })
+        }).then(res => {
+            if (res.ok) {
+                alert('Reply posted!');
+                textarea.value = '';
+                document.getElementById(`officialReplyForm-${commentId}`).classList.add('d-none');
+                loadComments();
+            } else {
+                alert('Failed to post reply.');
+            }
         });
-        if (res.ok) {
-            alert('Reply posted!');
-            textarea.value = '';
-            document.getElementById(`officialReplyForm-${commentId}`).classList.add('d-none');
-            loadComments();
-        } else {
-            alert('Failed to post reply.');
-        }
     }
+});
+
+// ================== REVIEW FORM SUBMIT ==================
+document.getElementById('reviewForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const data = new FormData(this);
+    const res = await fetch(`/book/{{ book.id }}/review`, {
+        method: 'POST',
+        body: data,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    if (res.ok) location.reload();
 });
 </script>
 

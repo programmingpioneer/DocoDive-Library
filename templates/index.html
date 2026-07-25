@@ -49,7 +49,7 @@
         box-shadow: 0 15px 30px rgba(30, 27, 75, 0.4);
     }
 
-    /* ---- UPDATED SEARCH SUGGESTIONS ---- */
+    /* ---- SEARCH SUGGESTIONS ---- */
     .search-suggestions {
         position: absolute;
         top: 100%;
@@ -162,11 +162,13 @@
 
     /* ---- Book card responsive heights ---- */
     .book-cover-outer {
-        height: 180px;
+        height: auto;
+        max-height: 260px;
         overflow: visible;
     }
     .book-3d-wrapper {
-        height: 150px;
+        height: auto;
+        max-height: 220px;
     }
     .book-fallback-icon {
         width: 40px;
@@ -177,13 +179,33 @@
         font-size: 0.7rem;
     }
 
+    @media (max-width: 768px) {
+        .book-cover-outer { max-height: 200px; }
+        .book-3d-wrapper { max-height: 170px; }
+    }
+    @media (max-width: 576px) {
+        .book-cover-outer { max-height: 160px; }
+        .book-3d-wrapper { max-height: 130px; }
+    }
+
+    /* All Books grid compact spacing */
+    .books-grid-card .book-cover-outer {
+        max-height: 200px;
+    }
+    .books-grid-card .book-3d-wrapper {
+        max-height: 160px;
+    }
+    @media (max-width: 768px) {
+        .books-grid-card .book-cover-outer { max-height: 170px; }
+        .books-grid-card .book-3d-wrapper { max-height: 140px; }
+    }
+    @media (max-width: 576px) {
+        .books-grid-card .book-cover-outer { max-height: 140px; }
+        .books-grid-card .book-3d-wrapper { max-height: 100px; }
+    }
+
+    /* ===== RESPONSIVE FONT SIZES ETC ===== */
     @media (min-width: 768px) {
-        .book-cover-outer {
-            height: 220px;
-        }
-        .book-3d-wrapper {
-            height: 190px;
-        }
         .book-fallback-icon {
             width: 45px;
             height: 45px;
@@ -230,7 +252,6 @@
         .product-card .d-flex.align-items-center.justify-content-center { height: 160px !important; }
         .input-group .btn { font-size: 0.8rem; padding: 0.4rem 0.8rem; }
         .input-group .form-control { font-size: 0.85rem; }
-        .book-3d-wrapper { height: 150px !important; }
     }
 
     @media (max-width: 576px) {
@@ -251,7 +272,6 @@
         #about .display-4 { font-size: 1.5rem; }
         #about .lead { font-size: 0.8rem; }
         #about .social-icon { width: 32px !important; height: 32px !important; }
-        .book-3d-wrapper { height: 120px !important; }
         .product-card .d-flex.flex-column .bg-white.text-primary.rounded-circle {
             width: 32px !important; height: 32px !important; font-size: 0.8rem !important;
         }
@@ -286,6 +306,7 @@
         width: 2rem;
         height: 2rem;
     }
+
     /* === CARD ENTRANCE ANIMATION === */
     .anim-card {
         opacity: 0;
@@ -295,18 +316,70 @@
     .anim-card.revealed {
         opacity: 1;
         transform: translateY(0);
+        transition-delay: var(--delay, 0s);
     }
-    .anim-card.revealed {
+
+    /* ---- Extra backdrop blur for auth modal ---- */
+    .modal-backdrop {
+        backdrop-filter: blur(8px);
+        background: rgba(0,0,0,0.4) !important;
+    }
+
+    /* ---- Carousel Fade Animation (stable) ---- */
+    .carousel-fade .carousel-item {
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+        display: block;
+        will-change: opacity;
+        transform: translateZ(0);
+    }
+    .carousel-fade .carousel-item.active {
         opacity: 1;
-        transform: translateY(0);
-        transition-delay: var(--delay, 0s); /* not needed if inline style is used */
+    }
+    /* Keep all items block so container height never changes */
+    .carousel-fade .carousel-item-next,
+    .carousel-fade .carousel-item-prev,
+    .carousel-fade .carousel-item.active,
+    .carousel-fade .carousel-item-next.carousel-item-start,
+    .carousel-fade .carousel-item-prev.carousel-item-end {
+        opacity: 1; /* we rely on active class only, actually for carousel we don't need this */
+    }
+    /* But to avoid Bootstrap's default transform, we nullify it */
+    .carousel-fade .carousel-item {
+        transform: translateX(0);
+    }
+
+    /* ============  FIX EXTRA GAP & HORIZONTAL SCROLLBAR ============ */
+    body {
+        overflow-x: hidden;
+    }
+    .carousel,
+    .carousel-inner,
+    .carousel-item {
+        overflow: hidden;
+    }
+    .row.flex-nowrap {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* Ensure carousel inner height stable */
+    #recommendedCarousel .carousel-inner,
+    #newArrivalsCarousel .carousel-inner {
+        min-height: 300px;  /* roughly enough for card + margins */
+    }
+    @media (max-width: 576px) {
+        #recommendedCarousel .carousel-inner,
+        #newArrivalsCarousel .carousel-inner {
+            min-height: 260px;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- ========== HERO ========== -->
-<section class="hero-section py-4 py-md-5 mb-4 border-bottom position-relative overflow-hidden" style="min-height: auto;">
+<section class="hero-section py-4 py-md-5 mb-4 border-bottom position-relative overflow-hidden" style="min-height: auto;" data-aos="fade-up">
     <div class="container py-3 py-md-5">
         <div class="row align-items-center g-4 g-lg-5">
             <div class="col-lg-6">
@@ -347,7 +420,7 @@
                 </div>
                 {% endif %}
 
-                {% if session.get('user_id') %}
+                {% if user_logged_in %}
                 <div class="mt-4">
                     <a href="/user/upload" class="btn btn-outline-primary rounded-pill px-4 py-2">
                         <i class="bi bi-cloud-upload-fill me-2"></i> Upload a Book
@@ -377,7 +450,7 @@
 
 <!-- ==================== BOOK OF THE DAY ==================== -->
 {% if featured_book %}
-<section class="container my-4 py-4">
+<section class="container my-4 py-4" data-aos="fade-right">
     <div class="card border-0 shadow-lg rounded-4 p-3 p-md-4 bg-warning bg-opacity-10">
         <div class="row align-items-center g-3">
             <div class="col-4 col-md-2 text-center">
@@ -401,8 +474,8 @@
 {% endif %}
 
 <!-- ==================== STREAK & BADGES ==================== -->
-{% if session.get('user_id') and streak > 0 %}
-<div class="container mb-3">
+{% if user_logged_in and streak > 0 %}
+<div class="container mb-3" data-aos="fade-up" data-aos-delay="100">
     <div class="d-flex justify-content-end align-items-center gap-3">
         <span class="badge bg-success px-3 py-2 rounded-pill">
             🔥 {{ streak }} day streak
@@ -425,7 +498,7 @@
 {% endif %}
 
 <!-- ========== BROWSE BY BOOK TYPES ========== -->
-<section id="categories" class="container my-4 py-4">
+<section id="categories" class="container my-4 py-4" data-aos="fade-up">
     <h2 class="text-center fw-bolder mb-4 mb-md-5">
         <span class="section-title">Browse by <span style="color:#ffb703; -webkit-text-fill-color:#ffb703;">Book Types</span></span>
     </h2>
@@ -433,7 +506,7 @@
         {% for cat in categories %}
         <div class="col-4 col-sm-3 col-md-2 col-lg-2">
             <a href="/?category={{ cat.level|urlencode }}" class="text-decoration-none">
-                <div class="card category-card border-0 rounded-3 rounded-md-4 p-2 p-sm-3 p-md-4 text-center h-100">
+                <div class="card category-card border-0 rounded-3 rounded-md-4 p-2 p-sm-3 p-md-4 text-center h-100" data-aos="zoom-in" data-aos-delay="{{ loop.index0 * 100 }}">
                     <div class="category-icon">
                         {% if cat.level == 'Python' %}<i class="bi bi-filetype-py text-success"></i>
                         {% elif cat.level == 'JavaScript' %}<i class="bi bi-filetype-js text-warning"></i>
@@ -458,39 +531,47 @@
     </div>
 </section>
 
-<!-- ==================== RECOMMENDED FOR YOU ==================== -->
+<!-- ==================== RECOMMENDED FOR YOU (stable 3-per-slide) ==================== -->
 {% if recommended_books %}
-<section class="container my-5">
+<section class="container my-5" data-aos="fade-up">
     <h2 class="section-title mb-4">✨ Recommended for You</h2>
-    <div id="recommendedCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+    <div id="recommendedCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="3000">
         <div class="carousel-inner">
             {% set chunk_size = 3 %}
             {% for chunk in recommended_books[:6]|batch(chunk_size) %}
             <div class="carousel-item {% if loop.first %}active{% endif %}">
-                <div class="row g-2 g-sm-3 justify-content-center">
+                <div class="row g-2 g-sm-3 justify-content-center flex-nowrap"
+                     style="overflow: hidden; margin-left: 0; margin-right: 0;">
                     {% for book in chunk %}
-                    <div class="col-4 col-sm-4 col-md-3 col-lg-2">
+                    <div class="col-4">
                         <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
-                            <div class="book-cover-outer d-flex align-items-center justify-content-center" style="height:160px;">
+                            <div class="book-cover-outer d-flex align-items-center justify-content-center">
                                 {% if book.image_url and book.image_url != 'None' and book.image_url.strip() != '' %}
-                                    <img src="{{ book.image_url }}" class="book-cover-img" loading="lazy" style="height:100%;object-fit:cover;">
+                                <div class="book-3d-wrapper">
+                                    <div class="book-3d">
+                                        <div class="book-front"><img src="{{ book.image_url }}" alt="Cover" class="book-cover-img" loading="lazy"></div>
+                                        <div class="book-spine"></div>
+                                        <div class="book-pages"></div>
+                                        <div class="book-shadow"></div>
+                                    </div>
+                                </div>
                                 {% else %}
                                     {% set title_safe = book.title | default('Book', true) | replace('_', ' ') %}
                                     {% set words = title_safe.split() %}
                                     {% set short_name = (words[0][:2])|upper if words|length == 1 else (words[0][0] ~ words[1][0])|upper %}
                                     <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100" style="background: linear-gradient(135deg, #a5b4fc, #818cf8); color: white;">
-                                        <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-2" style="width:35px;height:35px;font-size:0.8rem;">{{ short_name }}</div>
-                                        <h6 class="fw-bold text-center px-2" style="font-size:0.6rem;">{{ title_safe }}</h6>
+                                        <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-2 book-fallback-icon">{{ short_name }}</div>
+                                        <h6 class="fw-bold text-center px-2 book-fallback-title">{{ title_safe }}</h6>
                                     </div>
                                 {% endif %}
                             </div>
                             <div class="card-body p-2">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="badge bg-light text-muted" style="font-size:0.55rem;">{{ book.level }}</span>
-                                    <span class="fw-bold text-warning" style="font-size:0.65rem;">FREE</span>
+                                    <span class="badge bg-light text-muted" style="font-size:0.6rem;">{{ book.level }}</span>
+                                    <span class="fw-bold text-warning" style="font-size:0.7rem;">FREE</span>
                                 </div>
-                                <h6 class="fw-bold text-truncate mb-1" style="font-size:0.75rem; color:#1e1b4b;">{{ book.title }}</h6>
-                                <p class="text-muted small mb-1" style="font-size:0.6rem;">By {{ book.author }}</p>
+                                <h6 class="fw-bold text-truncate mb-1" style="font-size:0.8rem; color:#1e1b4b;">{{ book.title | replace('_', ' ') }}</h6>
+                                <p class="text-muted small mb-1" style="font-size:0.65rem;">By {{ book.author }}</p>
                                 {% if book.avg_rating and book.avg_rating > 0 %}
                                 <div class="text-warning small mb-1">
                                     {% set full = book.avg_rating|int %}
@@ -501,7 +582,6 @@
                                     <span class="text-muted ms-1">({{ book.avg_rating }})</span>
                                 </div>
                                 {% endif %}
-                                <!-- Updated buttons: responsive, same as search button -->
                                 <div class="d-flex justify-content-end gap-1">
                                     <a href="/book/{{ book.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; padding:0; text-decoration:none;" title="View Details">
                                         <i class="bi bi-info-circle" style="font-size:0.65rem;"></i>
@@ -518,10 +598,10 @@
             </div>
             {% endfor %}
         </div>
-        <button class="carousel-control-prev d-md-none" type="button" data-bs-target="#recommendedCarousel" data-bs-slide="prev">
+        <button class="carousel-control-prev" type="button" data-bs-target="#recommendedCarousel" data-bs-slide="prev">
             <span class="carousel-control-prev-icon bg-dark rounded-circle" aria-hidden="true"></span>
         </button>
-        <button class="carousel-control-next d-md-none" type="button" data-bs-target="#recommendedCarousel" data-bs-slide="next">
+        <button class="carousel-control-next" type="button" data-bs-target="#recommendedCarousel" data-bs-slide="next">
             <span class="carousel-control-next-icon bg-dark rounded-circle" aria-hidden="true"></span>
         </button>
     </div>
@@ -530,20 +610,21 @@
 
 <!-- ========== NEW ARRIVALS (carousel) ========== -->
 {% if not search_query %}
-<section id="new-arrivals" class="container my-5 py-4 border-top" style="opacity:1 !important; transform:none !important;">
+<section id="new-arrivals" class="container my-5 py-4 border-top" style="opacity:1 !important; transform:none !important;" data-aos="fade-up">
     <div class="row align-items-end mb-4">
         <div class="col-12 col-md-6"><h2 class="section-title">New Arrivals</h2></div>
         <div class="col-12 col-md-6"><p class="text-muted text-md-end mb-0 mt-2 mt-md-0">Fresh off the press! Grab the latest resources.</p></div>
     </div>
     {% if pdfs %}
-    <div id="newArrivalsCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+    <div id="newArrivalsCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4000">
         <div class="carousel-inner">
             {% set chunk_size = 3 %}
             {% for chunk in pdfs|batch(chunk_size) %}
             <div class="carousel-item {% if loop.first %}active{% endif %}">
-                <div class="row g-2 g-sm-3 justify-content-center">
+                <div class="row g-2 g-sm-3 justify-content-center flex-nowrap"
+                     style="overflow: hidden; margin-left: 0; margin-right: 0;">
                     {% for pdf in chunk %}
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                    <div class="col-4">
                         <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
                             <div class="book-cover-outer d-flex align-items-center justify-content-center">
                                 {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
@@ -582,7 +663,6 @@
                                     <span class="text-muted ms-1">({{ pdf.avg_rating }})</span>
                                 </div>
                                 {% endif %}
-                                <!-- Updated buttons -->
                                 <div class="d-flex justify-content-end gap-1">
                                     <a href="/book/{{ pdf.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; padding:0; text-decoration:none;" title="View Details">
                                         <i class="bi bi-info-circle" style="font-size:0.65rem;"></i>
@@ -613,13 +693,13 @@
 {% endif %}
 
 <!-- ========== ALL BOOKS / SEARCH RESULTS ========== -->
-<section id="all-books" class="container my-5 py-4 border-top" style="opacity:1 !important; transform:none !important;">
+<section id="all-books" class="container my-5 py-4 border-top" style="opacity:1 !important; transform:none !important;" data-aos="fade-up">
     <h2 class="section-title mb-4 mb-md-5">{% if search_query %}🔍 Search Results{% else %}📚 All Books{% endif %}</h2>
     <div class="row g-2 g-sm-3">
         {% if pdfs %}
             {% for pdf in pdfs %}
-            <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 50 }}">
+                <div class="card product-card border-0 shadow-sm h-100 book-card-inner books-grid-card">
                     <div class="book-cover-outer d-flex align-items-center justify-content-center">
                         {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
                         <div class="book-3d-wrapper">
@@ -657,7 +737,6 @@
                             <span class="text-muted ms-1">({{ pdf.avg_rating }})</span>
                         </div>
                         {% endif %}
-                        <!-- Updated buttons -->
                         <div class="d-flex justify-content-end gap-1">
                             <a href="/book/{{ pdf.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; padding:0; text-decoration:none;" title="View Details">
                                 <i class="bi bi-info-circle" style="font-size:0.65rem;"></i>
@@ -703,7 +782,7 @@
 </section>
 
 <!-- ========== ABOUT SECTION ========== -->
-<section id="about" class="py-4 py-md-5 mt-4 mt-md-5" style="background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%);">
+<section id="about" class="py-4 py-md-5 mt-4 mt-md-5" style="background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%);" data-aos="fade-left">
     <div class="container py-3 py-md-4">
         <div class="row align-items-center g-4 g-lg-5">
             <div class="col-lg-7">
@@ -761,6 +840,7 @@
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+   const USER_LOGGED_IN = document.body.dataset.userLoggedIn === 'true';
     // ========== LIVE CATEGORY COUNTS ==========
     function updateCategoryCounts() {
         fetch('/api/categories/live-counts')
@@ -932,7 +1012,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    // ========== RENDER BOOK MODAL (Updated with Share Button) ==========
+    // ========== RENDER BOOK MODAL (with protected actions) ==========
     function renderBookModal(book) {
         let coverHTML;
         if (book.image_url && book.image_url !== 'None') {
@@ -956,11 +1036,11 @@ document.addEventListener("DOMContentLoaded", function() {
                     <p class="text-muted mb-2"><i class="bi bi-person-fill me-2"></i><strong>Author:</strong> ${book.author}</p>
                     <p class="text-muted mb-4">${book.description || ''}</p>
                     <div class="d-flex flex-wrap gap-2 mb-4">
-                        <a href="${book.link}" class="btn btn-primary rounded-pill" download onclick="fetch('/api/download/${book.id}',{method:'POST'});"><i class="bi bi-download"></i> Download</a>
-                        <a href="/book/${book.id}/read" target="_blank" class="btn btn-outline-primary rounded-pill"><i class="bi bi-book"></i> Read Online</a>
-                        <button class="btn btn-outline-dark rounded-pill" onclick="window.showQRCode(${book.id})"><i class="bi bi-qr-code"></i> QR Code</button>
-                        <button class="btn btn-outline-info rounded-pill" onclick="window.showShareModal(${book.id})"><i class="bi bi-share-fill"></i> Share</button>
-                        ${book.is_logged_in ? `<button class="btn btn-outline-warning rounded-pill favourite-btn" data-book-id="${book.id}"><i class="bi ${favIcon}"></i> <span>${favText}</span></button>` : ''}
+                        <a href="${book.link}" class="btn btn-primary rounded-pill modal-download" download><i class="bi bi-download"></i> Download</a>
+                        <a href="/book/${book.id}/read" target="_blank" class="btn btn-outline-primary rounded-pill modal-read"><i class="bi bi-book"></i> Read Online</a>
+                        <button class="btn btn-outline-dark rounded-pill modal-qr"><i class="bi bi-qr-code"></i> QR Code</button>
+                        <button class="btn btn-outline-info rounded-pill modal-share"><i class="bi bi-share-fill"></i> Share</button>
+                        ${book.is_logged_in ? `<button class="btn btn-outline-warning rounded-pill modal-fav"><i class="bi ${favIcon}"></i> <span>${favText}</span></button>` : ''}
                     </div>
                     <hr><h5>Reviews</h5>
                     ${book.is_logged_in ? `
@@ -971,33 +1051,74 @@ document.addEventListener("DOMContentLoaded", function() {
                     <div id="modalReviews">${reviewsHTML}</div>
                 </div></div>`;
 
-        // Favourite button handler
-document.querySelector('.favourite-btn')?.addEventListener('click', async function() {
-    const id = this.dataset.bookId;
-    const res = await fetch(`/user/favorite/${id}`, {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
-    if (res.ok) {
-        const icon = this.querySelector('i');
-        icon.classList.toggle('bi-heart-fill');
-        icon.classList.toggle('bi-heart');
-        this.querySelector('span').textContent = icon.classList.contains('bi-heart-fill') ? 'Favorited' : 'Favorite';
-    }
-});
+        // ========== PROTECTED MODAL BUTTONS ==========
+        function protectModalButton(selector, callback) {
+            const btn = document.querySelector(selector);
+            if (!btn) return;
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (USER_LOGGED_IN) {
+                    callback(e);
+                    return;
+                }
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Loading...';
+                btn.disabled = true;
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                    showAuthModal(window.location.href);
+                }, 500);
+            });
+        }
+
+        protectModalButton('.modal-download', function() {
+            fetch(`/api/download/${book.id}`, {method:'POST'});
+            window.location.href = book.link;
+        });
+        protectModalButton('.modal-read', function() {
+            window.open(`/book/${book.id}/read`, '_blank');
+        });
+        protectModalButton('.modal-qr', function() {
+            window.currentBookId = book.id;
+            document.getElementById('qrImage').src = `/book/${book.id}/qr`;
+            document.getElementById('qrPopup').style.display = 'block';
+        });
+        protectModalButton('.modal-share', function() {
+            window.showShareModal(book.id);
+        });
+        if (document.querySelector('.modal-fav')) {
+            protectModalButton('.modal-fav', async function() {
+                const res = await fetch(`/user/favorite/${book.id}`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (res.ok) {
+                    const icon = document.querySelector('.modal-fav i');
+                    icon.classList.toggle('bi-heart-fill');
+                    icon.classList.toggle('bi-heart');
+                    document.querySelector('.modal-fav span').textContent = icon.classList.contains('bi-heart-fill') ? 'Favorited' : 'Favorite';
+                }
+            });
+        }
+
         document.getElementById('modalReviewForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const fd = new FormData(this);
-    const res = await fetch(`/book/${book.id}/review`, {
-        method: 'POST',
-        body: fd,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
-    if (res.ok) {
-        const updated = await fetch(`/api/book/${book.id}`).then(r => r.json());
-        renderBookModal(updated);
-    }
-});
+            e.preventDefault();
+            if (!USER_LOGGED_IN) {
+                showAuthModal(window.location.href);
+                return;
+            }
+            const fd = new FormData(this);
+            const res = await fetch(`/book/${book.id}/review`, {
+                method: 'POST',
+                body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (res.ok) {
+                const updated = await fetch(`/api/book/${book.id}`).then(r => r.json());
+                renderBookModal(updated);
+            }
+        });
     }
 
     // ========== QR CODE FUNCTION ==========
@@ -1019,7 +1140,6 @@ document.querySelector('.favourite-btn')?.addEventListener('click', async functi
         document.getElementById('shareModal').style.display = 'block';
     }
 
-    // Expose to global scope
     window.showQRCode = showQRCode;
     window.showShareModal = showShareModal;
     window.renderBookModal = renderBookModal;
@@ -1029,7 +1149,7 @@ document.querySelector('.favourite-btn')?.addEventListener('click', async functi
 function copyShareLink() {
     const input = document.getElementById('shareLinkInput');
     input.select();
-    input.setSelectionRange(0, 99999); // For mobile
+    input.setSelectionRange(0, 99999);
     navigator.clipboard.writeText(input.value).then(() => {
         alert('✅ Link copied to clipboard!');
     }).catch(() => {
@@ -1058,70 +1178,29 @@ function closeShareModal() {
 <!-- ================== SHARE WITH FRIENDS MODAL ================== -->
 <div id="shareModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:24px; max-width:420px; width:90%; padding:32px 24px; position:relative; box-shadow:0 25px 50px rgba(0,0,0,0.2);">
-        <!-- Close Button -->
         <button onclick="closeShareModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#9ca3af;">&times;</button>
-
-        <!-- Top Icon -->
         <div style="display:flex; justify-content:center; margin-bottom:16px;">
             <div style="width:60px; height:60px; background:#f3f4f6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem;">🔗</div>
         </div>
-
-        <!-- Typography -->
         <h2 style="text-align:center; font-weight:700; color:#1f2937; margin-bottom:4px;">Share with Friends</h2>
         <p style="text-align:center; color:#6b7280; font-size:0.9rem; margin-bottom:24px;">Reading is better together! Share this book with your network.</p>
-
-        <!-- Share Link Input -->
         <div style="margin-bottom:20px;">
             <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:6px; display:block;">Share your link</label>
             <div style="display:flex; background:#f9fafb; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb;">
                 <input id="shareLinkInput" type="text" readonly value="" style="flex:1; border:none; padding:12px; background:transparent; font-size:0.9rem; color:#111827;">
-                <button onclick="copyShareLink()" style="background:#4f46e5; border:none; color:white; padding:12px 16px; cursor:pointer; font-size:0.9rem; display:flex; align-items:center; gap:4px;">
-                    <i class="bi bi-clipboard"></i> Copy
-                </button>
+                <button onclick="copyShareLink()" style="background:#4f46e5; border:none; color:white; padding:12px 16px; cursor:pointer; font-size:0.9rem; display:flex; align-items:center; gap:4px;"><i class="bi bi-clipboard"></i> Copy</button>
             </div>
         </div>
-
-        <!-- Social Share Section -->
-<div>
-    <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:10px; display:block;">Share to</label>
-    <div style="display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:16px;">
-        <!-- Facebook -->
-        <a id="shareFacebook" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#1877f2;">
-            <div style="width:44px; height:44px; background:#1877f2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;">
-                <i class="bi bi-facebook"></i>
+        <div>
+            <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:10px; display:block;">Share to</label>
+            <div style="display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:16px;">
+                <a id="shareFacebook" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#1877f2;"><div style="width:44px; height:44px; background:#1877f2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-facebook"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Facebook</span></a>
+                <a id="shareTwitter" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#000;"><div style="width:44px; height:44px; background:#000; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.2rem;"><i class="bi bi-twitter-x"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">X</span></a>
+                <a id="shareWhatsapp" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#25d366;"><div style="width:44px; height:44px; background:#25d366; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-whatsapp"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">WhatsApp</span></a>
+                <a id="shareTelegram" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0088cc;"><div style="width:44px; height:44px; background:#0088cc; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-telegram"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Telegram</span></a>
+                <a id="shareLinkedin" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0a66c2;"><div style="width:44px; height:44px; background:#0a66c2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-linkedin"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">LinkedIn</span></a>
             </div>
-            <span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Facebook</span>
-        </a>
-        <!-- X / Twitter -->
-        <a id="shareTwitter" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#000;">
-            <div style="width:44px; height:44px; background:#000; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.2rem;">
-                <i class="bi bi-twitter-x"></i>
-            </div>
-            <span style="font-size:0.7rem; margin-top:4px; font-weight:500;">X</span>
-        </a>
-        <!-- WhatsApp -->
-        <a id="shareWhatsapp" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#25d366;">
-            <div style="width:44px; height:44px; background:#25d366; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;">
-                <i class="bi bi-whatsapp"></i>
-            </div>
-            <span style="font-size:0.7rem; margin-top:4px; font-weight:500;">WhatsApp</span>
-        </a>
-        <!-- Telegram -->
-        <a id="shareTelegram" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0088cc;">
-            <div style="width:44px; height:44px; background:#0088cc; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;">
-                <i class="bi bi-telegram"></i>
-            </div>
-            <span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Telegram</span>
-        </a>
-        <!-- LinkedIn -->
-        <a id="shareLinkedin" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0a66c2;">
-            <div style="width:44px; height:44px; background:#0a66c2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;">
-                <i class="bi bi-linkedin"></i>
-            </div>
-            <span style="font-size:0.7rem; margin-top:4px; font-weight:500;">LinkedIn</span>
-        </a>
-    </div>
-</div>
+        </div>
     </div>
 </div>
 
