@@ -218,7 +218,6 @@
         }
 
         /* ========== MODAL ANIMATION ========== */
-        /* Smooth slide-up + fade for auth modal */
         .auth-modal.fade .modal-dialog {
             transform: translateY(30px);
             opacity: 0;
@@ -248,15 +247,28 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Optional page loader – uncomment if you want a full page loader */
-        /*
-        #page-loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; z-index: 9999; display: flex; align-items: center; justify-content: center;
-            transition: opacity 0.3s ease;
+        /* ---------- GLOBAL OVERFLOW FIX (MOBILE WHITE GAP) ---------- */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
         }
-        body.loaded #page-loader { opacity: 0; pointer-events: none; }
-        */
+
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        img, video, iframe, canvas, svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Prevent any Bootstrap element from escaping the viewport */
+        .container, .container-fluid, .row, .col, [class*="col-"] {
+            max-width: 100%;
+        }
     </style>
 
     <!-- Brevo Conversations widget -->
@@ -350,7 +362,6 @@
                         </ul>
                     </div>
                 {% else %}
-                    <!-- 👇 Button to open the new auth modal -->
                     <button class="btn btn-outline-primary rounded-pill px-3" onclick="showAuthModal(window.location.href)">
                         <i class="bi bi-box-arrow-in-right me-1"></i> Login / Sign Up
                     </button>
@@ -416,15 +427,15 @@
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
         AOS.init({
-            duration: 700,
-            once: false,
-            offset: 90,
+            duration: 800,
+            once: true,
+            offset: 100,
             easing: 'ease-out'
         });
     </script>
     {% block scripts %}{% endblock %}
 
-    <!-- ================== BEAUTIFUL AUTH MODAL (MATCHES OLD LOGIN PAGE) ================== -->
+    <!-- ================== BEAUTIFUL AUTH MODAL ================== -->
     <div class="modal fade auth-modal" id="authModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
       <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
         <div class="modal-content border-0 shadow-lg">

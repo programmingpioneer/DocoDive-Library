@@ -374,6 +374,35 @@
             min-height: 260px;
         }
     }
+
+    /* ====== MOBILE OVERFLOW FIX (GLOBAL) ====== */
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    html, body {
+        overflow-x: hidden !important;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    img, svg, video, canvas, iframe, embed {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .row {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    .container, .container-fluid {
+        padding-left: 15px;
+        padding-right: 15px;
+        max-width: 100%;
+    }
 </style>
 {% endblock %}
 
