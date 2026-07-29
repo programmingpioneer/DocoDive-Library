@@ -99,6 +99,9 @@ app.config["SECRET_KEY"] = secret_key
 # Session timeout (30 minutes)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
+ #--FAcebooK Cliant Secrect----
+app.config['FACEBOOK_APP_SECRET'] = os.getenv('FACEBOOK_CLIENT_SECRET')
+
 # ================== DATABASE CONFIGURATION (TiDB Cloud) ==================
 db_host = os.getenv('DB_HOST')
 db_user = os.getenv('DB_USER')
