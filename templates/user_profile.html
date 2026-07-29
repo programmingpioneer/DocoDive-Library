@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container py-5" data-aos="fade-up">
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <!-- Profile Card -->
@@ -12,7 +12,7 @@
                 <div class="text-center px-3 px-md-4" style="margin-top: -60px;">
                     <img src="{{ user[5] or url_for('static', filename='default-avatar.png') }}"
                          class="rounded-circle border-4 border-white shadow"
-                         width="120" height="120" style="object-fit: cover;" alt="Avatar">
+                         width="120" height="120" style="object-fit: cover; max-width: 100%; height: auto;" alt="Avatar">
 
                     <!-- Show full name if available, otherwise username -->
                     {% set first_name = user[8] or '' %}
@@ -123,6 +123,22 @@
     .social-icon-circle:hover {
         transform: translateY(-3px);
         box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    /* Responsive tweaks for mobile */
+    @media (max-width: 576px) {
+        .card .text-center img {
+            width: 90px !important;
+            height: 90px !important;
+        }
+        .bg-gradient {
+            height: 80px !important;
+        }
+        .text-center[style*="margin-top: -60px"] {
+            margin-top: -45px !important;
+        }
+        h3 {
+            font-size: 1.3rem;
+        }
     }
 </style>
 {% endblock %}

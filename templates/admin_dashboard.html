@@ -51,7 +51,7 @@
         </div>
     </div>
 
-    <!-- Community Moderation Card (NEW) -->
+    <!-- Community Moderation Card -->
     <div class="row g-4 mb-5">
         <div class="col-12">
             <a href="/moderation" class="text-decoration-none">
@@ -68,24 +68,37 @@
         </div>
     </div>
 
-    <!-- Pending Books Card (Super Admin only) -->
-    {% if session.get('admin_role') == 'super' %}
+    <!-- 🆕 Manage Books & Pending Books Cards (now below Community Moderation, responsive) -->
     <div class="row g-4 mb-5">
-        <div class="col-12">
+        <!-- Manage Books -->
+        <div class="col-12 col-md-6">
+            <a href="/admin/books" class="text-decoration-none">
+                <div class="card border-0 shadow-sm bg-light p-4 clickable-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-journal-bookmark-fill fs-1 text-success"></i>
+                        <div>
+                            <h4 class="fw-bold mb-1 text-dark">Manage Books</h4>
+                            <span class="text-muted">View and edit all books in the library</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <!-- Pending Books -->
+        <div class="col-12 col-md-6">
             <a href="/admin/pending" class="text-decoration-none">
-                <div class="card border-0 shadow-sm bg-warning bg-opacity-10 p-4">
+                <div class="card border-0 shadow-sm bg-warning bg-opacity-10 p-4 clickable-card">
                     <div class="d-flex align-items-center gap-3">
                         <i class="bi bi-hourglass-split fs-1 text-warning"></i>
                         <div>
                             <h4 class="fw-bold mb-1" id="pendingCount">--</h4>
-                            <span class="text-muted">Pending Books – Click to review</span>
+                            <span class="text-muted">Pending Books – Review now</span>
                         </div>
                     </div>
                 </div>
             </a>
         </div>
     </div>
-    {% endif %}
 
     <!-- Charts Row -->
     <div class="row g-4">
@@ -220,15 +233,18 @@ fetch('/api/categories/live-counts')
 })
 .catch(console.error);
 
-// Pending books count
+// Pending books count (dynamic)
 fetch('/admin/pending/count')
 .then(r => r.json())
 .then(data => {
-    const pendingCount = document.getElementById('pendingCount');
-    if (pendingCount) {
-        pendingCount.textContent = data.count + ' book(s) pending';
+    const pendingEl = document.getElementById('pendingCount');
+    if (pendingEl) {
+        pendingEl.textContent = data.count + ' book(s) pending';
     }
 })
-.catch(() => {});
+.catch(() => {
+    const pendingEl = document.getElementById('pendingCount');
+    if (pendingEl) pendingEl.textContent = 'Unable to load';
+});
 </script>
 {% endblock %}

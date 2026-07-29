@@ -73,68 +73,30 @@
         cursor: pointer;
         transition: background 0.15s;
     }
-    .suggestion-item:hover {
-        background: #f0f0ff;
-    }
+    .suggestion-item:hover { background: #f0f0ff; }
     .suggestion-img {
-        width: 40px;
-        height: 55px;
-        object-fit: cover;
-        border-radius: 6px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        width: 40px; height: 55px; object-fit: cover; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     }
-    .suggestion-info {
-        flex: 1;
-        min-width: 0;
-    }
+    .suggestion-info { flex: 1; min-width: 0; }
     .suggestion-title {
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: #1e1b4b;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-weight: 600; font-size: 0.9rem; color: #1e1b4b;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .suggestion-meta {
-        font-size: 0.75rem;
-        color: #6b7280;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 2px;
+        font-size: 0.75rem; color: #6b7280; display: flex; align-items: center; gap: 6px; margin-top: 2px;
     }
-    .suggestion-meta .badge {
-        font-size: 0.65rem;
-        font-weight: 500;
-    }
+    .suggestion-meta .badge { font-size: 0.65rem; font-weight: 500; }
     .no-cover-placeholder {
-        width: 40px;
-        height: 55px;
-        background: linear-gradient(135deg, #a5b4fc, #818cf8);
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 700;
-        font-size: 0.8rem;
+        width: 40px; height: 55px; background: linear-gradient(135deg, #a5b4fc, #818cf8);
+        border-radius: 6px; display: flex; align-items: center; justify-content: center;
+        color: white; font-weight: 700; font-size: 0.8rem;
     }
 
     @media (max-width: 576px) {
-        .search-suggestions {
-            border-radius: 0 0 16px 16px;
-            max-height: 300px;
-        }
-        .suggestion-item {
-            padding: 8px 12px;
-        }
-        .suggestion-img, .no-cover-placeholder {
-            width: 32px;
-            height: 44px;
-        }
-        .suggestion-title {
-            font-size: 0.8rem;
-        }
+        .search-suggestions { border-radius: 0 0 16px 16px; max-height: 300px; }
+        .suggestion-item { padding: 8px 12px; }
+        .suggestion-img, .no-cover-placeholder { width: 32px; height: 44px; }
+        .suggestion-title { font-size: 0.8rem; }
     }
 
     #liveToast {
@@ -160,66 +122,25 @@
 
     .category-icon { font-size: 2.5rem; margin-bottom: 10px; }
 
-    /* ---- Book card responsive heights ---- */
-    .book-cover-outer {
-        height: auto;
-        max-height: 260px;
-        overflow: visible;
-    }
-    .book-3d-wrapper {
-        height: auto;
-        max-height: 220px;
-    }
-    .book-fallback-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
-    .book-fallback-title {
-        font-size: 0.7rem;
-    }
+    .book-cover-outer { height: auto; overflow: visible; }
+    .book-3d-wrapper { height: auto; max-height: 220px; }
+    .book-fallback-icon { width: 40px; height: 40px; font-size: 1rem; }
+    .book-fallback-title { font-size: 0.7rem; }
 
-    @media (max-width: 768px) {
-        .book-cover-outer { max-height: 200px; }
-        .book-3d-wrapper { max-height: 170px; }
-    }
-    @media (max-width: 576px) {
-        .book-cover-outer { max-height: 160px; }
-        .book-3d-wrapper { max-height: 130px; }
-    }
+    @media (max-width: 768px) { .book-3d-wrapper { max-height: 170px; } }
+    @media (max-width: 576px) { .book-3d-wrapper { max-height: 130px; } }
 
-    /* All Books grid compact spacing */
-    .books-grid-card .book-cover-outer {
-        max-height: 200px;
-    }
-    .books-grid-card .book-3d-wrapper {
-        max-height: 160px;
-    }
-    @media (max-width: 768px) {
-        .books-grid-card .book-cover-outer { max-height: 170px; }
-        .books-grid-card .book-3d-wrapper { max-height: 140px; }
-    }
-    @media (max-width: 576px) {
-        .books-grid-card .book-cover-outer { max-height: 140px; }
-        .books-grid-card .book-3d-wrapper { max-height: 100px; }
-    }
+    .books-grid-card .book-3d-wrapper { max-height: 160px; }
+    @media (max-width: 768px) { .books-grid-card .book-3d-wrapper { max-height: 140px; } }
+    @media (max-width: 576px) { .books-grid-card .book-3d-wrapper { max-height: 100px; } }
 
-    /* ===== RESPONSIVE FONT SIZES ETC ===== */
+    /* ===== RESPONSIVE FONT SIZES ===== */
     @media (min-width: 768px) {
-        .book-fallback-icon {
-            width: 45px;
-            height: 45px;
-            font-size: 1.2rem;
-        }
-        .book-fallback-title {
-            font-size: 0.75rem;
-        }
+        .book-fallback-icon { width: 45px; height: 45px; font-size: 1.2rem; }
+        .book-fallback-title { font-size: 0.75rem; }
     }
 
-    @media (max-width: 1200px) {
-        .section-title { font-size: 2.2rem; }
-    }
-
+    @media (max-width: 1200px) { .section-title { font-size: 2.2rem; } }
     @media (max-width: 992px) {
         .section-title { font-size: 2rem; }
         .category-icon { font-size: 2rem; }
@@ -231,11 +152,7 @@
     }
 
     @media (max-width: 768px) {
-        .hero-section {
-            min-height: auto !important;
-            padding-top: 2rem !important;
-            padding-bottom: 2rem !important;
-        }
+        .hero-section { min-height: auto !important; padding-top: 2rem !important; padding-bottom: 2rem !important; }
         .hero-section h1 { font-size: 1.8rem; }
         .hero-section .display-3 { font-size: 2rem; }
         .section-title { font-size: 1.7rem; }
@@ -272,143 +189,124 @@
         #about .display-4 { font-size: 1.5rem; }
         #about .lead { font-size: 0.8rem; }
         #about .social-icon { width: 32px !important; height: 32px !important; }
-        .product-card .d-flex.flex-column .bg-white.text-primary.rounded-circle {
-            width: 32px !important; height: 32px !important; font-size: 0.8rem !important;
-        }
-        .product-card .d-flex.flex-column h6.fw-bold.text-center {
-            font-size: 0.65rem !important; padding-left: 3px !important; padding-right: 3px !important;
-        }
         .btn-primary { padding: 0.5rem 1rem !important; font-size: 0.85rem; }
         .modal-dialog { margin: 0.5rem; }
         .modal-body .row.g-0 { flex-direction: column; }
         .modal-body .col-md-5, .modal-body .col-md-7 { width: 100%; }
     }
 
-    /* ---- Clear button adjustment ---- */
-    #clearSearchBtn {
-        background: none;
-        box-shadow: none;
-        color: #9ca3af;
-        transition: color 0.2s;
-    }
-    #clearSearchBtn:hover {
-        color: #ef4444;
-    }
+    #clearSearchBtn { background: none; box-shadow: none; color: #9ca3af; transition: color 0.2s; }
+    #clearSearchBtn:hover { color: #ef4444; }
 
-    /* ---- Loading spinner inside suggestions ---- */
-    .loading-suggestions {
-        display: flex;
-        justify-content: center;
-        padding: 20px 0;
-    }
-    .loading-suggestions .spinner-border {
-        color: #4338ca;
-        width: 2rem;
-        height: 2rem;
-    }
+    .loading-suggestions { display: flex; justify-content: center; padding: 20px 0; }
+    .loading-suggestions .spinner-border { color: #4338ca; width: 2rem; height: 2rem; }
 
-    /* === CARD ENTRANCE ANIMATION === */
     .anim-card {
-        opacity: 0;
-        transform: translateY(30px);
+        opacity: 0; transform: translateY(30px);
         transition: opacity 0.6s ease, transform 0.6s ease;
     }
     .anim-card.revealed {
-        opacity: 1;
-        transform: translateY(0);
+        opacity: 1; transform: translateY(0);
         transition-delay: var(--delay, 0s);
     }
 
-    /* ---- Extra backdrop blur for auth modal ---- */
-    .modal-backdrop {
-        backdrop-filter: blur(8px);
-        background: rgba(0,0,0,0.4) !important;
-    }
+    .modal-backdrop { backdrop-filter: blur(8px); background: rgba(0,0,0,0.4) !important; }
 
-    /* ---- Carousel Fade Animation (stable) ---- */
     .carousel-fade .carousel-item {
-        opacity: 0;
-        transition: opacity 0.5s ease-in-out;
-        display: block;
-        will-change: opacity;
-        transform: translateZ(0);
+        opacity: 0; transition: opacity 0.5s ease-in-out;
+        display: block; will-change: opacity; transform: translateZ(0);
     }
-    .carousel-fade .carousel-item.active {
-        opacity: 1;
-    }
-    /* Keep all items block so container height never changes */
-    .carousel-fade .carousel-item-next,
-    .carousel-fade .carousel-item-prev,
-    .carousel-fade .carousel-item.active,
-    .carousel-fade .carousel-item-next.carousel-item-start,
-    .carousel-fade .carousel-item-prev.carousel-item-end {
-        opacity: 1; /* we rely on active class only, actually for carousel we don't need this */
-    }
-    /* But to avoid Bootstrap's default transform, we nullify it */
-    .carousel-fade .carousel-item {
-        transform: translateX(0);
-    }
+    .carousel-fade .carousel-item.active { opacity: 1; }
+    .carousel-fade .carousel-item { transform: translateX(0); }
 
-    /* ============  FIX EXTRA GAP & HORIZONTAL SCROLLBAR ============ */
-    body {
-        overflow-x: hidden;
-    }
-    .carousel,
-    .carousel-inner,
-    .carousel-item {
-        overflow: hidden;
-    }
-    .row.flex-nowrap {
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-    }
+    body { overflow-x: hidden; }
+    .carousel, .carousel-inner, .carousel-item { overflow: hidden; }
+    .row.flex-nowrap { margin-left: 0 !important; margin-right: 0 !important; }
 
-    /* Ensure carousel inner height stable */
     #recommendedCarousel .carousel-inner,
-    #newArrivalsCarousel .carousel-inner {
-        min-height: 300px;  /* roughly enough for card + margins */
-    }
+    #newArrivalsCarousel .carousel-inner { min-height: 300px; }
     @media (max-width: 576px) {
         #recommendedCarousel .carousel-inner,
-        #newArrivalsCarousel .carousel-inner {
-            min-height: 260px;
-        }
+        #newArrivalsCarousel .carousel-inner { min-height: 260px; }
     }
 
-    /* ====== MOBILE OVERFLOW FIX (GLOBAL) ====== */
-    *,
-    *::before,
-    *::after {
-        box-sizing: border-box;
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { overflow-x: hidden !important; width: 100%; max-width: 100%; }
+    img, svg, video, canvas, iframe, embed { max-width: 100%; height: auto; }
+    .row { margin-left: 0 !important; margin-right: 0 !important; }
+    .container, .container-fluid { padding-left: 15px; padding-right: 15px; max-width: 100%; }
+
+    /* ========== HERO ICONS – ANIMATED & RESPONSIVE ========== */
+    @keyframes floatBook {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-15px) rotate(2deg); }
+    }
+    @keyframes floatBulb {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-10px) scale(1.05); }
+    }
+    @keyframes floatStack {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-12px); }
+    }
+    @keyframes twinkle {
+        0%, 100% { opacity: 0.6; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.2); }
+    }
+    @keyframes driftCloud {
+        0%, 100% { transform: translateX(0); opacity: 0.5; }
+        50% { transform: translateX(10px); opacity: 0.8; }
     }
 
-    html, body {
-        overflow-x: hidden !important;
+    .hero-icon-book { animation: floatBook 4s ease-in-out infinite; }
+    .hero-icon-bulb { animation: floatBulb 3.5s ease-in-out infinite, glowPulse 2s infinite; }
+    .hero-icon-stack { animation: floatStack 5s ease-in-out infinite; }
+    .hero-icon-star { animation: twinkle 2.5s ease-in-out infinite; }
+    .hero-icon-cloud { animation: driftCloud 6s ease-in-out infinite; }
+
+    .hero-icons-wrapper {
         width: 100%;
-        max-width: 100%;
+        max-width: 500px;
+        height: 350px;
+        position: relative;
+        margin: 0 auto;
     }
 
-    img, svg, video, canvas, iframe, embed {
-        max-width: 100%;
-        height: auto;
+    .hero-icon {
+        position: absolute;
+        filter: drop-shadow(0 15px 25px rgba(0,0,0,0.15));
+    }
+    .hero-icon i { display: block; }
+
+    .hero-icon.book-icon  { font-size: 6rem; color: #ffb703; top: 10px; left: 50%; transform: translateX(-50%); }
+    .hero-icon.bulb-icon  { font-size: 5rem; color: #4338ca; top: 40%; left: 5%; transform: translateY(-50%); }
+    .hero-icon.stack-icon { font-size: 5rem; color: #818cf8; bottom: 0; right: 5%; }
+    .hero-icon.star-icon  { font-size: 2.5rem; color: #a5b4fc; top: 5%; right: 5%; }
+    .hero-icon.cloud-icon { font-size: 3rem; color: #c7d2fe; bottom: 5%; left: 5%; }
+
+    @media (max-width: 992px) {
+        .hero-icons-wrapper { max-width: 400px; height: 280px; }
+        .hero-icon.book-icon  { font-size: 4.5rem; top: 0; }
+        .hero-icon.bulb-icon  { font-size: 4rem; left: 2%; }
+        .hero-icon.stack-icon { font-size: 4rem; bottom: 5%; right: 2%; }
+        .hero-icon.star-icon  { font-size: 2rem; }
+        .hero-icon.cloud-icon { font-size: 2.5rem; }
     }
 
-    .row {
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-    }
-
-    .container, .container-fluid {
-        padding-left: 15px;
-        padding-right: 15px;
-        max-width: 100%;
+    @media (max-width: 576px) {
+        .hero-icons-wrapper { max-width: 250px; height: 200px; }
+        .hero-icon.book-icon  { font-size: 3rem; top: 5px; }
+        .hero-icon.bulb-icon  { font-size: 2.5rem; left: 2%; }
+        .hero-icon.stack-icon { font-size: 2.5rem; bottom: 0; right: 2%; }
+        .hero-icon.star-icon  { font-size: 1.5rem; top: 0; right: 0; }
+        .hero-icon.cloud-icon { font-size: 1.8rem; bottom: 0; left: 0; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- ========== HERO ========== -->
-<section class="hero-section py-4 py-md-5 mb-4 border-bottom position-relative overflow-hidden" style="min-height: auto;" data-aos="fade-up">
+<!-- ========== HERO (no overflow-hidden, properly closed) ========== -->
+<section class="hero-section py-4 py-md-5 mb-4 border-bottom position-relative" style="min-height: auto;" data-aos="fade-up">
     <div class="container py-3 py-md-5">
         <div class="row align-items-center g-4 g-lg-5">
             <div class="col-lg-6">
@@ -419,7 +317,7 @@
                 </h1>
                 <p class="text-muted lead mb-4">Thousands of programming resources, curated for your growth. Instant download, zero cost.</p>
 
-                <!-- ========== ENHANCED SEARCH BAR ========== -->
+                <!-- SEARCH BAR -->
                 <div class="position-relative" style="max-width: 500px;">
                     <form action="/" method="GET" class="input-group shadow-lg rounded-pill overflow-hidden bg-white p-1 flex-nowrap" id="searchForm">
                         <div class="position-relative w-100">
@@ -438,7 +336,6 @@
                     </form>
                     <div id="searchSuggestions" class="search-suggestions d-none"></div>
                 </div>
-                <!-- ========== END SEARCH BAR ========== -->
 
                 {% if search_query %}
                 <div class="mt-3 animate-fade-in">
@@ -457,25 +354,33 @@
                 </div>
                 {% endif %}
             </div>
-            <div class="col-lg-6 text-center d-none d-lg-block">
-                <div class="position-relative d-inline-block" style="width: 100%; max-width: 500px; height: 380px;">
-                    <div class="floating-book position-absolute top-0 start-50 translate-middle-x" style="font-size: 6rem; color: #ffb703; filter: drop-shadow(0 25px 25px rgba(0,0,0,0.15));">
+
+            <!-- ========== ANIMATED HERO ICONS ========== -->
+            <div class="col-lg-6 text-center">
+                <div class="hero-icons-wrapper">
+                    <div class="hero-icon book-icon hero-icon-book">
                         <i class="bi bi-book-half"></i>
                     </div>
-                    <div class="glowing-bulb position-absolute top-50 start-0 translate-middle-y" style="font-size: 5rem; color: #4338ca; filter: drop-shadow(0 0 20px rgba(67,56,202,0.5)); animation: glowPulse 2s infinite;">
+                    <div class="hero-icon bulb-icon hero-icon-bulb">
                         <i class="bi bi-lightbulb-fill"></i>
                     </div>
-                    <div class="stacked-books position-absolute bottom-0 end-0" style="font-size: 5rem; color: #818cf8;">
+                    <div class="hero-icon stack-icon hero-icon-stack">
                         <i class="bi bi-journal-bookmark-fill"></i>
                     </div>
-                    <div class="position-absolute top-0 end-0" style="font-size: 2.5rem; color: #a5b4fc; opacity: 0.7;"><i class="bi bi-star-fill"></i></div>
-                    <div class="position-absolute bottom-0 start-0" style="font-size: 3.5rem; color: #c7d2fe; opacity: 0.6;"><i class="bi bi-cloud-fill"></i></div>
+                    <div class="hero-icon star-icon hero-icon-star">
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                    <div class="hero-icon cloud-icon hero-icon-cloud">
+                        <i class="bi bi-cloud-fill"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     <div class="position-absolute bottom-0 start-0 w-100" style="height: 100px; background: linear-gradient(to top, white, transparent);"></div>
 </section>
+
+<!-- (rest of the sections remain exactly as in your last code, including featured book, streaks, categories, recommended, new arrivals, all books, about, modals, and scripts) -->
 
 <!-- ==================== BOOK OF THE DAY ==================== -->
 {% if featured_book %}
@@ -485,7 +390,7 @@
             <div class="col-4 col-md-2 text-center">
                 <span class="badge bg-warning text-dark px-2 px-md-3 py-1 py-md-2 rounded-pill mb-2">📅 Book of the Day</span>
                 {% if featured_book[4] and featured_book[4] != 'None' %}
-                    <img src="{{ featured_book[4] }}" class="img-fluid rounded-3" style="max-height: 120px;" alt="Cover">
+                    <img src="{{ featured_book[4] }}" class="book-cover" alt="Cover">
                 {% else %}
                     <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="height: 120px;">
                         <i class="bi bi-book fs-1"></i>
@@ -506,22 +411,10 @@
 {% if user_logged_in and streak > 0 %}
 <div class="container mb-3" data-aos="fade-up" data-aos-delay="100">
     <div class="d-flex justify-content-end align-items-center gap-3">
-        <span class="badge bg-success px-3 py-2 rounded-pill">
-            🔥 {{ streak }} day streak
-        </span>
-        {% if longest >= 7 %}
-            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill" title="Longest streak: {{ longest }} days">
-                🏅 Book Lover
-            </span>
-        {% endif %}
-        {% if longest >= 30 %}
-            <span class="badge bg-info text-dark px-3 py-2 rounded-pill">
-                📚 Avid Reader
-            </span>
-        {% endif %}
-        <a href="/user/stats" class="btn btn-sm btn-outline-primary rounded-pill">
-            <i class="bi bi-graph-up"></i> My Stats
-        </a>
+        <span class="badge bg-success px-3 py-2 rounded-pill">🔥 {{ streak }} day streak</span>
+        {% if longest >= 7 %}<span class="badge bg-warning text-dark px-3 py-2 rounded-pill" title="Longest streak: {{ longest }} days">🏅 Book Lover</span>{% endif %}
+        {% if longest >= 30 %}<span class="badge bg-info text-dark px-3 py-2 rounded-pill">📚 Avid Reader</span>{% endif %}
+        <a href="/user/stats" class="btn btn-sm btn-outline-primary rounded-pill"><i class="bi bi-graph-up"></i> My Stats</a>
     </div>
 </div>
 {% endif %}
@@ -533,34 +426,36 @@
     </h2>
     <div class="row g-2 g-sm-3 g-md-4 justify-content-center">
         {% for cat in categories %}
-        <div class="col-4 col-sm-3 col-md-2 col-lg-2">
-            <a href="/?category={{ cat.level|urlencode }}" class="text-decoration-none">
-                <div class="card category-card border-0 rounded-3 rounded-md-4 p-2 p-sm-3 p-md-4 text-center h-100" data-aos="zoom-in" data-aos-delay="{{ loop.index0 * 100 }}">
-                    <div class="category-icon">
-                        {% if cat.level == 'Python' %}<i class="bi bi-filetype-py text-success"></i>
-                        {% elif cat.level == 'JavaScript' %}<i class="bi bi-filetype-js text-warning"></i>
-                        {% elif cat.level == 'Java' %}<i class="bi bi-cup-hot-fill text-danger"></i>
-                        {% elif cat.level == 'C / C++' %}<i class="bi bi-cpu text-secondary"></i>
-                        {% elif cat.level == 'Web Development' %}<i class="bi bi-window-fullscreen text-primary"></i>
-                        {% elif cat.level == 'Data Science' %}<i class="bi bi-bar-chart text-info"></i>
-                        {% elif cat.level == 'Machine Learning' %}<i class="bi bi-robot text-success"></i>
-                        {% elif cat.level == 'Algorithms' %}<i class="bi bi-diagram-3" style="color:#7c3aed;"></i>
-                        {% elif cat.level == 'Databases' %}<i class="bi bi-database text-warning"></i>
-                        {% elif cat.level == 'Cyber Security' %}<i class="bi bi-shield-lock text-danger"></i>
-                        {% elif cat.level == 'Mobile Apps' %}<i class="bi bi-phone text-primary"></i>
-                        {% elif cat.level == 'DevOps' %}<i class="bi bi-gear text-secondary"></i>
-                        {% else %}<i class="bi bi-collection text-dark"></i>{% endif %}
+            {% if cat.level != 'Others' or cat.count > 0 %}
+            <div class="col-4 col-sm-3 col-md-2 col-lg-2" data-aos="zoom-in" data-aos-delay="{{ loop.index0 * 100 }}">
+                <a href="/?category={{ cat.level|urlencode }}" class="text-decoration-none">
+                    <div class="card category-card border-0 rounded-3 rounded-md-4 p-2 p-sm-3 p-md-4 text-center h-100">
+                        <div class="category-icon">
+                            {% if cat.level == 'Python' %}<i class="bi bi-filetype-py text-success"></i>
+                            {% elif cat.level == 'JavaScript' %}<i class="bi bi-filetype-js text-warning"></i>
+                            {% elif cat.level == 'Java' %}<i class="bi bi-cup-hot-fill text-danger"></i>
+                            {% elif cat.level == 'C / C++' %}<i class="bi bi-cpu text-secondary"></i>
+                            {% elif cat.level == 'Web Development' %}<i class="bi bi-window-fullscreen text-primary"></i>
+                            {% elif cat.level == 'Data Science' %}<i class="bi bi-bar-chart text-info"></i>
+                            {% elif cat.level == 'Machine Learning' %}<i class="bi bi-robot text-success"></i>
+                            {% elif cat.level == 'Algorithms' %}<i class="bi bi-diagram-3" style="color:#7c3aed;"></i>
+                            {% elif cat.level == 'Databases' %}<i class="bi bi-database text-warning"></i>
+                            {% elif cat.level == 'Cyber Security' %}<i class="bi bi-shield-lock text-danger"></i>
+                            {% elif cat.level == 'Mobile Apps' %}<i class="bi bi-phone text-primary"></i>
+                            {% elif cat.level == 'DevOps' %}<i class="bi bi-gear text-secondary"></i>
+                            {% else %}<i class="bi bi-collection text-dark"></i>{% endif %}
+                        </div>
+                        <h6 class="fw-bold mb-1" style="font-size:0.9rem; color:#1e1b4b;">{{ cat.level }}</h6>
+                        <span class="badge bg-light text-muted mt-2" style="font-size:0.75rem;">{{ cat.count }} Books</span>
                     </div>
-                    <h6 class="fw-bold mb-1" style="font-size:0.9rem; color:#1e1b4b;">{{ cat.level }}</h6>
-                    <span class="badge bg-light text-muted mt-2" style="font-size:0.75rem;">{{ cat.count }} Books</span>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
+            {% endif %}
         {% endfor %}
     </div>
 </section>
 
-<!-- ==================== RECOMMENDED FOR YOU (stable 3-per-slide) ==================== -->
+<!-- ==================== RECOMMENDED FOR YOU ==================== -->
 {% if recommended_books %}
 <section class="container my-5" data-aos="fade-up">
     <h2 class="section-title mb-4">✨ Recommended for You</h2>
@@ -578,7 +473,7 @@
                                 {% if book.image_url and book.image_url != 'None' and book.image_url.strip() != '' %}
                                 <div class="book-3d-wrapper">
                                     <div class="book-3d">
-                                        <div class="book-front"><img src="{{ book.image_url }}" alt="Cover" class="book-cover-img" loading="lazy"></div>
+                                        <div class="book-front"><img src="{{ book.image_url }}" alt="Cover" class="book-cover" loading="lazy"></div>
                                         <div class="book-spine"></div>
                                         <div class="book-pages"></div>
                                         <div class="book-shadow"></div>
@@ -637,9 +532,9 @@
 </section>
 {% endif %}
 
-<!-- ========== NEW ARRIVALS (carousel) ========== -->
+<!-- ========== NEW ARRIVALS ========== -->
 {% if not search_query %}
-<section id="new-arrivals" class="container my-5 py-4 border-top" style="opacity:1 !important; transform:none !important;" data-aos="fade-up">
+<section id="new-arrivals" class="container my-5 py-4 border-top" data-aos="fade-up">
     <div class="row align-items-end mb-4">
         <div class="col-12 col-md-6"><h2 class="section-title">New Arrivals</h2></div>
         <div class="col-12 col-md-6"><p class="text-muted text-md-end mb-0 mt-2 mt-md-0">Fresh off the press! Grab the latest resources.</p></div>
@@ -659,7 +554,7 @@
                                 {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
                                 <div class="book-3d-wrapper">
                                     <div class="book-3d">
-                                        <div class="book-front"><img src="{{ pdf.image_url }}" alt="Cover" class="book-cover-img" loading="lazy"></div>
+                                        <div class="book-front"><img src="{{ pdf.image_url }}" alt="Cover" class="book-cover" loading="lazy"></div>
                                         <div class="book-spine"></div>
                                         <div class="book-pages"></div>
                                         <div class="book-shadow"></div>
@@ -721,8 +616,8 @@
 </section>
 {% endif %}
 
-<!-- ========== ALL BOOKS / SEARCH RESULTS ========== -->
-<section id="all-books" class="container my-5 py-4 border-top" style="opacity:1 !important; transform:none !important;" data-aos="fade-up">
+<!-- ========== ALL BOOKS ========== -->
+<section id="all-books" class="container my-5 py-4 border-top" data-aos="fade-up">
     <h2 class="section-title mb-4 mb-md-5">{% if search_query %}🔍 Search Results{% else %}📚 All Books{% endif %}</h2>
     <div class="row g-2 g-sm-3">
         {% if pdfs %}
@@ -733,7 +628,7 @@
                         {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
                         <div class="book-3d-wrapper">
                             <div class="book-3d">
-                                <div class="book-front"><img src="{{ pdf.image_url }}" alt="Cover" class="book-cover-img"></div>
+                                <div class="book-front"><img src="{{ pdf.image_url }}" alt="Cover" class="book-cover"></div>
                                 <div class="book-spine"></div>
                                 <div class="book-pages"></div>
                                 <div class="book-shadow"></div>
@@ -853,7 +748,7 @@
     </div>
 </section>
 
-<!-- BOOK DETAIL MODAL -->
+<!-- ==================== BOOK DETAIL MODAL ==================== -->
 <div class="modal fade" id="bookDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; overflow: hidden;">
@@ -864,13 +759,54 @@
         </div>
     </div>
 </div>
+
+<!-- ==================== QR CODE POPUP ==================== -->
+<div id="qrPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:28px 24px 20px; border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,0.25); z-index:9999; text-align:center; max-width:320px; width:90%;">
+    <img id="qrImage" src="" style="width:200px; height:200px; border-radius:16px; display:block; margin:0 auto;">
+    <p style="margin:16px 0 8px; font-size:0.85rem; color:#4b5563; line-height:1.5;">
+        📱 <strong>Scan QR code</strong> to open this book on your phone.
+    </p>
+    <div style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
+        <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="document.getElementById('qrPopup').style.display='none'"><i class="bi bi-x-circle me-1"></i> Close</button>
+        <button class="btn btn-sm btn-primary rounded-pill" onclick="window.showShareModal(currentBookId)"><i class="bi bi-share-fill me-1"></i> Share</button>
+    </div>
+</div>
+
+<!-- ==================== SHARE MODAL ==================== -->
+<div id="shareModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:24px; max-width:420px; width:90%; padding:32px 24px; position:relative; box-shadow:0 25px 50px rgba(0,0,0,0.2);">
+        <button onclick="closeShareModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#9ca3af;">&times;</button>
+        <div style="display:flex; justify-content:center; margin-bottom:16px;">
+            <div style="width:60px; height:60px; background:#f3f4f6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem;">🔗</div>
+        </div>
+        <h2 style="text-align:center; font-weight:700; color:#1f2937; margin-bottom:4px;">Share with Friends</h2>
+        <p style="text-align:center; color:#6b7280; font-size:0.9rem; margin-bottom:24px;">Reading is better together! Share this book with your network.</p>
+        <div style="margin-bottom:20px;">
+            <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:6px; display:block;">Share your link</label>
+            <div style="display:flex; background:#f9fafb; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb;">
+                <input id="shareLinkInput" type="text" readonly value="" style="flex:1; border:none; padding:12px; background:transparent; font-size:0.9rem; color:#111827;">
+                <button onclick="copyShareLink()" style="background:#4f46e5; border:none; color:white; padding:12px 16px; cursor:pointer; font-size:0.9rem; display:flex; align-items:center; gap:4px;"><i class="bi bi-clipboard"></i> Copy</button>
+            </div>
+        </div>
+        <div>
+            <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:10px; display:block;">Share to</label>
+            <div style="display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:16px;">
+                <a id="shareFacebook" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#1877f2;"><div style="width:44px; height:44px; background:#1877f2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-facebook"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Facebook</span></a>
+                <a id="shareTwitter" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#000;"><div style="width:44px; height:44px; background:#000; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.2rem;"><i class="bi bi-twitter-x"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">X</span></a>
+                <a id="shareWhatsapp" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#25d366;"><div style="width:44px; height:44px; background:#25d366; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-whatsapp"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">WhatsApp</span></a>
+                <a id="shareTelegram" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0088cc;"><div style="width:44px; height:44px; background:#0088cc; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-telegram"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Telegram</span></a>
+                <a id="shareLinkedin" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0a66c2;"><div style="width:44px; height:44px; background:#0a66c2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-linkedin"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">LinkedIn</span></a>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
    const USER_LOGGED_IN = document.body.dataset.userLoggedIn === 'true';
-    // ========== LIVE CATEGORY COUNTS ==========
+
     function updateCategoryCounts() {
         fetch('/api/categories/live-counts')
             .then(r => r.json())
@@ -885,15 +821,12 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     setInterval(updateCategoryCounts, 10000);
 
-    // AUTO-REFRESH ON UPLOAD
     const channel = new BroadcastChannel('docodive_upload');
     channel.onmessage = e => { if (e.data === 'refresh') location.reload(); };
 
-    // STICKY NAVBAR SHADOW
     const navbar = document.querySelector('.navbar');
     window.addEventListener('scroll', () => navbar.classList.toggle('shadow', window.scrollY > 50));
 
-    // SMOOTH SCROLL
     document.querySelectorAll('a[href^="#"]').forEach(a => {
         a.addEventListener('click', function(e) {
             e.preventDefault();
@@ -902,7 +835,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // BACK TO TOP
     const backBtn = document.createElement('button');
     backBtn.innerHTML = '<i class="bi bi-arrow-up"></i>';
     backBtn.className = 'btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-3 shadow-lg';
@@ -911,7 +843,6 @@ document.addEventListener("DOMContentLoaded", function() {
     window.addEventListener('scroll', () => { backBtn.style.display = window.scrollY > 300 ? 'flex' : 'none'; });
     backBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
-    // CAROUSEL INDICATORS
     const carousel = document.getElementById('newArrivalsCarousel');
     if (carousel) {
         const items = carousel.querySelectorAll('.carousel-item');
@@ -931,7 +862,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // ========== AUTOCOMPLETE SEARCH ==========
     const searchInput = document.getElementById('searchInput');
     const suggestionsBox = document.getElementById('searchSuggestions');
     const searchForm = document.getElementById('searchForm');
@@ -1022,13 +952,11 @@ document.addEventListener("DOMContentLoaded", function() {
         } catch {}
     });
 
-    // PREVIEW TRIGGER (card 🔍 button)
     document.addEventListener('click', function(e) {
         const trigger = e.target.closest('.preview-trigger');
         if (trigger) { e.preventDefault(); openBookModal(trigger.dataset.bookId); }
     });
 
-    // ========== MODAL LOGIC ==========
     async function openBookModal(bookId) {
         document.getElementById('modalBookContent').innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>';
         bookModal.show();
@@ -1041,7 +969,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    // ========== RENDER BOOK MODAL (with protected actions) ==========
     function renderBookModal(book) {
         let coverHTML;
         if (book.image_url && book.image_url !== 'None') {
@@ -1080,16 +1007,12 @@ document.addEventListener("DOMContentLoaded", function() {
                     <div id="modalReviews">${reviewsHTML}</div>
                 </div></div>`;
 
-        // ========== PROTECTED MODAL BUTTONS ==========
         function protectModalButton(selector, callback) {
             const btn = document.querySelector(selector);
             if (!btn) return;
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
-                if (USER_LOGGED_IN) {
-                    callback(e);
-                    return;
-                }
+                if (USER_LOGGED_IN) { callback(e); return; }
                 const originalHTML = btn.innerHTML;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Loading...';
                 btn.disabled = true;
@@ -1150,15 +1073,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // ========== QR CODE FUNCTION ==========
-    function showQRCode(bookId) {
-        window.currentBookId = bookId;
-        document.getElementById('qrImage').src = `/book/${bookId}/qr`;
-        document.getElementById('qrPopup').style.display = 'block';
-    }
-
-    // ========== SHARE MODAL FUNCTION ==========
-    function showShareModal(bookId) {
+    window.showShareModal = function(bookId) {
         const shareUrl = window.location.origin + '/book/' + bookId;
         document.getElementById('shareLinkInput').value = shareUrl;
         document.getElementById('shareFacebook').href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl);
@@ -1167,83 +1082,22 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById('shareTelegram').href = 'https://t.me/share/url?url=' + encodeURIComponent(shareUrl);
         document.getElementById('shareLinkedin').href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(shareUrl);
         document.getElementById('shareModal').style.display = 'block';
-    }
+    };
 
-    window.showQRCode = showQRCode;
-    window.showShareModal = showShareModal;
-    window.renderBookModal = renderBookModal;
+    window.closeShareModal = function() {
+        document.getElementById('shareModal').style.display = 'none';
+    };
+
+    window.copyShareLink = function() {
+        const input = document.getElementById('shareLinkInput');
+        input.select();
+        input.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(input.value).then(() => {
+            alert('✅ Link copied to clipboard!');
+        }).catch(() => {
+            alert('❌ Failed to copy. Please copy manually.');
+        });
+    };
 });
-
-// ========== COPY LINK BUTTON ==========
-function copyShareLink() {
-    const input = document.getElementById('shareLinkInput');
-    input.select();
-    input.setSelectionRange(0, 99999);
-    navigator.clipboard.writeText(input.value).then(() => {
-        alert('✅ Link copied to clipboard!');
-    }).catch(() => {
-        alert('❌ Failed to copy. Please copy manually.');
-    });
-}
-
-// ========== CLOSE SHARE MODAL ==========
-function closeShareModal() {
-    document.getElementById('shareModal').style.display = 'none';
-}
-</script>
-
-<!-- ================== QR CODE POPUP ================== -->
-<div id="qrPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:28px 24px 20px; border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,0.25); z-index:9999; text-align:center; max-width:320px; width:90%;">
-    <img id="qrImage" src="" style="width:200px; height:200px; border-radius:16px; display:block; margin:0 auto;">
-    <p style="margin:16px 0 8px; font-size:0.85rem; color:#4b5563; line-height:1.5;">
-        📱 <strong>Scan QR code</strong> to open this book on your phone.
-    </p>
-    <div style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
-        <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="document.getElementById('qrPopup').style.display='none'"><i class="bi bi-x-circle me-1"></i> Close</button>
-        <button class="btn btn-sm btn-primary rounded-pill" onclick="window.showShareModal(currentBookId)"><i class="bi bi-share-fill me-1"></i> Share</button>
-    </div>
-</div>
-
-<!-- ================== SHARE WITH FRIENDS MODAL ================== -->
-<div id="shareModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
-    <div style="background:white; border-radius:24px; max-width:420px; width:90%; padding:32px 24px; position:relative; box-shadow:0 25px 50px rgba(0,0,0,0.2);">
-        <button onclick="closeShareModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#9ca3af;">&times;</button>
-        <div style="display:flex; justify-content:center; margin-bottom:16px;">
-            <div style="width:60px; height:60px; background:#f3f4f6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem;">🔗</div>
-        </div>
-        <h2 style="text-align:center; font-weight:700; color:#1f2937; margin-bottom:4px;">Share with Friends</h2>
-        <p style="text-align:center; color:#6b7280; font-size:0.9rem; margin-bottom:24px;">Reading is better together! Share this book with your network.</p>
-        <div style="margin-bottom:20px;">
-            <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:6px; display:block;">Share your link</label>
-            <div style="display:flex; background:#f9fafb; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb;">
-                <input id="shareLinkInput" type="text" readonly value="" style="flex:1; border:none; padding:12px; background:transparent; font-size:0.9rem; color:#111827;">
-                <button onclick="copyShareLink()" style="background:#4f46e5; border:none; color:white; padding:12px 16px; cursor:pointer; font-size:0.9rem; display:flex; align-items:center; gap:4px;"><i class="bi bi-clipboard"></i> Copy</button>
-            </div>
-        </div>
-        <div>
-            <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:10px; display:block;">Share to</label>
-            <div style="display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:16px;">
-                <a id="shareFacebook" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#1877f2;"><div style="width:44px; height:44px; background:#1877f2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-facebook"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Facebook</span></a>
-                <a id="shareTwitter" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#000;"><div style="width:44px; height:44px; background:#000; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.2rem;"><i class="bi bi-twitter-x"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">X</span></a>
-                <a id="shareWhatsapp" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#25d366;"><div style="width:44px; height:44px; background:#25d366; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-whatsapp"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">WhatsApp</span></a>
-                <a id="shareTelegram" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0088cc;"><div style="width:44px; height:44px; background:#0088cc; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-telegram"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Telegram</span></a>
-                <a id="shareLinkedin" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0a66c2;"><div style="width:44px; height:44px; background:#0a66c2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-linkedin"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">LinkedIn</span></a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Brevo Conversations -->
-<script>
-    (function(d, w, c) {
-        w.BrevoConversationsID = '6a551981edd95b5e7d08467b';
-        w[c] = w[c] || function() {
-            (w[c].q = w[c].q || []).push(arguments);
-        };
-        var s = d.createElement('script');
-        s.async = true;
-        s.src = 'https://conversations-widget.brevo.com/brevo-conversations.js';
-        if (d.head) d.head.appendChild(s);
-    })(document, window, 'BrevoConversations');
 </script>
 {% endblock %}

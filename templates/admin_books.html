@@ -88,7 +88,12 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', async func
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Deleting...';
 
     try {
-        const res = await fetch(`/admin/delete/${id}`, { method: 'POST' });
+        const res = await fetch(`/admin/delete/${id}`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'   // 👈 THIS WAS MISSING
+            }
+        });
         const data = await res.json();
         if (res.ok && data.success) {
             // Smooth fade out and remove row
@@ -96,22 +101,31 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', async func
             row.style.opacity = '0';
             setTimeout(() => row.remove(), 300);
             bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
-            alert('Book deleted successfully!');   // or use your toast function
+            showToast('Book deleted successfully!', 'success');
         } else {
-            alert(data.error || 'Delete failed.');
+            showToast(data.error || 'Delete failed.', 'danger');
         }
     } catch (err) {
-        alert('Network error.');
+        showToast('Network error. Please check console.', 'danger');
+        console.error(err);
     } finally {
         btn.disabled = false;
         btn.innerHTML = 'Delete';
         bookToDelete = null;
     }
 });
+
+// Toast notification (same as pending page)
+function showToast(message, type) {
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;';
+    container.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+    document.body.appendChild(container);
+    setTimeout(() => container.remove(), 4000);
+}
 </script>
 
 <style>
-    /* ========== RESPONSIVE TWEAKS (only visual adjustments) ========== */
     @media (max-width: 768px) {
         .table td, .table th {
             white-space: nowrap;
@@ -121,12 +135,10 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', async func
             padding: 0.25rem 0.5rem;
             font-size: 0.75rem;
         }
-        /* Keep the action buttons from overlapping */
         .d-flex.gap-2 {
             gap: 0.3rem !important;
         }
     }
-
     @media (max-width: 576px) {
         .container.py-4 {
             padding-top: 1rem !important;
@@ -135,8 +147,6 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', async func
         h2.fw-bold {
             font-size: 1.3rem;
         }
-        /* Make the table scroll horizontally – already done by .table-responsive */
-        /* Adjust the modal so it fits better */
         .modal-dialog {
             margin: 0.5rem;
         }
