@@ -301,6 +301,9 @@
         .hero-icon.star-icon  { font-size: 1.5rem; top: 0; right: 0; }
         .hero-icon.cloud-icon { font-size: 1.8rem; bottom: 0; left: 0; }
     }
+    .product-card, .category-card, .hero-icon {
+    will-change: transform;
+    }
 </style>
 {% endblock %}
 
@@ -628,7 +631,7 @@
                         {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
                         <div class="book-3d-wrapper">
                             <div class="book-3d">
-                                <div class="book-front"><img src="{{ pdf.image_url }}" alt="Cover" class="book-cover"></div>
+                               <div class="book-front"><img src="{{ pdf.image_url }}" alt="Cover" class="book-cover" loading="lazy"></div>
                                 <div class="book-spine"></div>
                                 <div class="book-pages"></div>
                                 <div class="book-shadow"></div>

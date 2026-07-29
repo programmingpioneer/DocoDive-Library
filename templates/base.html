@@ -104,6 +104,78 @@
             border-radius: 10px; padding: 0.5rem 0.75rem; border-left: 3px solid #4338ca;
         }
 
+        /* ---------- SHOW PASSWORD BOX ---------- */
+        .show-password-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            color: #4b5563;
+            cursor: pointer;
+            user-select: none;
+        }
+        .show-password-box input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #4338ca;
+            cursor: pointer;
+        }
+
+        /* ---------- BOTTOM LINKS ---------- */
+        .modal-bottom-links {
+            margin-top: 1.8rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        .modal-bottom-links .forgot-link {
+            font-size: 0.9rem;
+            color: #4338ca;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .modal-bottom-links .forgot-link:hover { text-decoration: underline; }
+        .modal-bottom-links .social-login { width: 100%; }
+        .modal-bottom-links .social-divider {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            color: #6b7280;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .modal-bottom-links .social-divider::before,
+        .modal-bottom-links .social-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #cbd5e1, transparent);
+        }
+        .modal-bottom-links .social-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .modal-bottom-links .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.2rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+        .modal-bottom-links .footer-links a {
+            color: #4338ca;
+            text-decoration: none;
+        }
+        .modal-bottom-links .footer-links a:hover { text-decoration: underline; }
+
         @media (max-width: 576px) {
             .auth-modal .modal-body { padding: 1.5rem 1.2rem; }
             .auth-modal .form-control { padding: 10px 14px; font-size: 0.9rem; }
@@ -210,6 +282,9 @@
             .btn i {
                 font-size: 1.25rem;
             }
+        }
+        .product-card, .category-card, .hero-icon {
+            will-change: transform;
         }
     </style>
 
@@ -394,10 +469,10 @@
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
         AOS.init({
-            duration: 500,
+            duration: 350,
             once: false,
             mirror: true,
-            offset: 120,
+            offset: 100,
             easing: 'ease-out',
             throttleDelay: 99,
             anchorPlacement: 'top-bottom'
@@ -405,39 +480,46 @@
     </script>
     {% block scripts %}{% endblock %}
 
-    <!-- ================== AUTH MODAL ================== -->
+    <!-- ================== AUTH MODAL (eye icon + show-password box + bottom links) ================== -->
     <div class="modal fade auth-modal" id="authModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
       <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
-        <div class="modal-content border-0 shadow-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 28px; overflow: hidden;">
           <button type="button" class="btn-close position-absolute top-0 end-0 m-3 z-3" data-bs-dismiss="modal" aria-label="Close"></button>
-          <div class="modal-body">
+          <div class="modal-body p-4 p-lg-5">
+            <!-- Brand -->
             <div class="text-center mb-4">
-              <div class="d-inline-flex align-items-center justify-content-center rounded-4 mb-3" style="width:56px;height:56px;background:linear-gradient(135deg, #4338ca, #818cf8);color:white;font-size:1.8rem;box-shadow:0 12px 24px rgba(67,56,202,0.2);">
+              <div class="d-inline-flex align-items-center justify-content-center rounded-4 mb-3" style="width:60px;height:60px;background:linear-gradient(135deg, #4338ca, #818cf8);color:white;font-size:2rem;box-shadow:0 12px 24px rgba(67,56,202,0.2);">
                 <i class="bi bi-book-half"></i>
               </div>
               <h4 class="fw-bold text-dark mb-1">Welcome to DocoDive</h4>
               <p class="text-muted small mb-0">Your Gateway to 50,000+ Free Programming Books</p>
             </div>
 
+            <!-- Flash -->
             <div id="modalFlash"></div>
 
-            <div class="auth-tabs">
+            <!-- Tabs -->
+            <div class="auth-tabs mb-4">
               <button class="auth-tab active" data-tab="login">Login</button>
               <button class="auth-tab" data-tab="signup">Sign Up</button>
             </div>
 
+            <!-- Login Form -->
             <form id="modalLoginForm" class="auth-form" data-form="login">
               <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
               <div class="mb-3">
                 <label class="form-label small fw-semibold">Email</label>
                 <input type="email" name="email" class="form-control rounded-3" placeholder="you@example.com" required>
               </div>
-              <div class="mb-3">
+              <div class="mb-3 position-relative">
                 <label class="form-label small fw-semibold">Password</label>
-                <input type="password" name="password" class="form-control rounded-3" placeholder="••••••••" required>
+                <input type="password" name="password" id="modalLoginPassword" class="form-control rounded-3 pe-5" placeholder="••••••••" required>
+                <span class="position-absolute top-50 end-0 translate-middle-y me-3" style="cursor:pointer; color:#6b7280;" onclick="togglePassword('modalLoginPassword', this)">
+                </span>
               </div>
-              <div class="text-end mb-3">
-                <a href="/forgot-password" class="text-muted small text-decoration-none">Forgot Password?</a>
+              <div class="show-password-box">
+                <input type="checkbox" id="modalLoginShowCheckbox" onchange="togglePasswordCheckbox('modalLoginPassword', 'modalLoginEye', this)">
+                <label for="modalLoginShowCheckbox" class="mb-0" style="cursor:pointer;">Show Password</label>
               </div>
               <button type="submit" class="btn btn-primary-custom w-100">Login</button>
               <p class="text-center mt-3 small text-muted">
@@ -445,6 +527,7 @@
               </p>
             </form>
 
+            <!-- Signup Form -->
             <form id="modalSignupForm" class="auth-form d-none" data-form="signup">
               <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
               <div class="row mb-3">
@@ -471,9 +554,16 @@
                 <input type="email" name="email" id="modalEmail" class="form-control rounded-3" placeholder="you@example.com" required>
                 <div class="feedback small mt-1"></div>
               </div>
-              <div class="mb-3">
+              <div class="mb-3 position-relative">
                 <label class="form-label small fw-semibold">Password</label>
-                <input type="password" name="password" class="form-control rounded-3" placeholder="••••••••" required>
+                <input type="password" name="password" id="modalSignupPassword" class="form-control rounded-3 pe-5" placeholder="••••••••" required>
+                <span class="position-absolute top-50 end-0 translate-middle-y me-3" style="cursor:pointer; color:#6b7280;" onclick="togglePassword('modalSignupPassword', this)">
+                  <i class="bi bi-eye-slash" id="modalSignupEye"></i>
+                </span>
+              </div>
+              <div class="show-password-box">
+                <input type="checkbox" id="modalSignupShowCheckbox" onchange="togglePasswordCheckbox('modalSignupPassword', 'modalSignupEye', this)">
+                <label for="modalSignupShowCheckbox" class="mb-0" style="cursor:pointer;">Show Password</label>
               </div>
               <button type="submit" class="btn btn-primary-custom w-100">Create Free Account</button>
               <p class="text-center mt-3 small text-muted">
@@ -481,31 +571,33 @@
               </p>
             </form>
 
-            <div class="mt-4 text-center">
-              <div class="d-flex align-items-center gap-2 mb-3">
-                <span class="flex-fill" style="height:1px;background:#e0e7ff;"></span>
-                <small class="text-muted text-uppercase fw-medium">or continue with</small>
-                <span class="flex-fill" style="height:1px;background:#e0e7ff;"></span>
-              </div>
-              <div class="d-flex justify-content-center gap-2 flex-wrap">
-                <a href="/login/google" class="social-btn google"><i class="bi bi-google"></i> Google</a>
-                <a href="/login/github" class="social-btn github"><i class="bi bi-github"></i> GitHub</a>
-                <a href="/login/facebook" class="social-btn facebook"><i class="bi bi-facebook"></i> Facebook</a>
-              </div>
-            </div>
+            <!-- ========== BOTTOM LINKS ========== -->
+            <div class="modal-bottom-links">
+              <a href="/forgot-password" class="forgot-link"><i class="bi bi-question-circle-fill me-1"></i> Forgot Password?</a>
 
-            <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
-              <span class="badge bg-light text-dark border px-3 py-1 rounded-pill"><i class="bi bi-shield-check text-primary me-1"></i>Secure</span>
-              <span class="badge bg-light text-dark border px-3 py-1 rounded-pill"><i class="bi bi-cloud-download text-primary me-1"></i>Instant Download</span>
-              <span class="badge bg-light text-dark border px-3 py-1 rounded-pill"><i class="bi bi-calendar-check text-primary me-1"></i>Updated Weekly</span>
-              <span class="badge bg-light text-dark border px-3 py-1 rounded-pill"><i class="bi bi-heart text-primary me-1"></i>Favorites & History</span>
+              <div class="social-login">
+                <div class="social-divider">
+                  <span>or continue with</span>
+                </div>
+                <div class="social-buttons">
+                  <a href="/login/google" class="social-btn google"><i class="bi bi-google"></i> Google</a>
+                  <a href="/login/github" class="social-btn github"><i class="bi bi-github"></i> GitHub</a>
+                  <a href="/login/facebook" class="social-btn facebook"><i class="bi bi-facebook"></i> Facebook</a>
+                </div>
+              </div>
+
+              <div class="footer-links">
+                <a href="/privacy"><i class="bi bi-shield-lock me-1"></i> Privacy Policy</a>
+                <a href="/terms"><i class="bi bi-file-earmark-text me-1"></i> Terms of Service</a>
+                <a href="/data-deletion"><i class="bi bi-trash me-1"></i> Data Deletion</a>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Modal Scripts -->
+    <!-- Modal Scripts (updated) -->
     <script>
     let authModal, pendingRedirectUrl = null;
 
@@ -514,6 +606,41 @@
         document.querySelectorAll('.auth-form').forEach(f => f.classList.add('d-none'));
         document.querySelector(`.auth-tab[data-tab="${tab}"]`).classList.add('active');
         document.getElementById(tab === 'login' ? 'modalLoginForm' : 'modalSignupForm').classList.remove('d-none');
+    }
+
+    // Toggle password via eye icon
+    function togglePassword(inputId, iconSpan) {
+        const input = document.getElementById(inputId);
+        const icon = iconSpan.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+            // Sync checkbox
+            const checkbox = document.getElementById(inputId === 'modalLoginPassword' ? 'modalLoginShowCheckbox' : 'modalSignupShowCheckbox');
+            if (checkbox) checkbox.checked = true;
+        } else {
+            input.type = 'password';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+            const checkbox = document.getElementById(inputId === 'modalLoginPassword' ? 'modalLoginShowCheckbox' : 'modalSignupShowCheckbox');
+            if (checkbox) checkbox.checked = false;
+        }
+    }
+
+    // Toggle password via checkbox
+    function togglePasswordCheckbox(inputId, eyeIconId, checkbox) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(eyeIconId);
+        if (checkbox.checked) {
+            input.type = 'text';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function() {

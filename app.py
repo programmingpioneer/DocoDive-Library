@@ -12,6 +12,8 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from datetime import datetime, timedelta
 from functools import wraps
 from html import escape
+import hashlib, hmac, base64, json
+from flask import request, jsonify
 
 from PIL import Image
 from flask_caching import Cache
@@ -1303,6 +1305,36 @@ def facebook_callback():
         return redirect(url_for('home'))
     flash('Facebook login failed.', 'danger')
     return redirect(url_for('user_login'))
+
+@app.route('/facebook/data-deletion', methods=['POST'])
+def facebook_data_deletion():
+    signed_request = request.form.get('signed_request')
+    if not signed_request:
+        return jsonify({'error': 'Missing signed request'}), 400
+
+    # Verify and decode the signed request
+    secret = app.config['FACEBOOK_APP_SECRET']  # your app secret
+    try:
+        sig, payload = signed_request.split('.', 1)
+        expected_sig = base64.urlsafe_b64encode(
+            hmac.new(secret.encode(), payload.encode(), hashlib.sha256).digest()
+        ).rstrip(b'=').decode()
+        if not hmac.compare_digest(sig, expected_sig):
+            return jsonify({'error': 'Invalid signature'}), 403
+
+        data = json.loads(base64.urlsafe_b64decode(payload + '==').decode())
+        user_id = data.get('user_id')
+        # Here you would delete the user's data from your database
+        # e.g., delete_user_data(user_id)
+        confirmation_code = 'abc123'  # generate a unique code
+        return jsonify({
+            'url': f'{request.host_url}data-deletion?code={confirmation_code}',
+            'confirmation_code': confirmation_code
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
 
 # ================== ERROR HANDLERS (Comprehensive) ==================
 @app.errorhandler(RequestEntityTooLarge)
