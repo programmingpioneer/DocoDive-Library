@@ -122,8 +122,15 @@
 
     .category-icon { font-size: 2.5rem; margin-bottom: 10px; }
 
-    .book-cover-outer { height: auto; overflow: visible; }
-    .book-3d-wrapper { height: auto; max-height: 220px; }
+    /* ====== BOOK COVER FIX ====== */
+    .book-cover-outer {
+        height: auto;               /* was 150px – now controlled by .book-cover */
+        overflow: visible;
+    }
+    .book-3d-wrapper {
+        height: auto;
+        max-height: 220px;
+    }
     .book-fallback-icon { width: 40px; height: 40px; font-size: 1rem; }
     .book-fallback-title { font-size: 0.7rem; }
 
@@ -302,13 +309,13 @@
         .hero-icon.cloud-icon { font-size: 1.8rem; bottom: 0; left: 0; }
     }
     .product-card, .category-card, .hero-icon {
-    will-change: transform;
+        will-change: transform;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- ========== HERO (no overflow-hidden, properly closed) ========== -->
+<!-- ========== HERO ========== -->
 <section class="hero-section py-4 py-md-5 mb-4 border-bottom position-relative" style="min-height: auto;" data-aos="fade-up">
     <div class="container py-3 py-md-5">
         <div class="row align-items-center g-4 g-lg-5">
@@ -383,8 +390,6 @@
     <div class="position-absolute bottom-0 start-0 w-100" style="height: 100px; background: linear-gradient(to top, white, transparent);"></div>
 </section>
 
-<!-- (rest of the sections remain exactly as in your last code, including featured book, streaks, categories, recommended, new arrivals, all books, about, modals, and scripts) -->
-
 <!-- ==================== BOOK OF THE DAY ==================== -->
 {% if featured_book %}
 <section class="container my-4 py-4" data-aos="fade-right">
@@ -393,7 +398,7 @@
             <div class="col-4 col-md-2 text-center">
                 <span class="badge bg-warning text-dark px-2 px-md-3 py-1 py-md-2 rounded-pill mb-2">📅 Book of the Day</span>
                 {% if featured_book[4] and featured_book[4] != 'None' %}
-                    <img src="{{ featured_book[4] }}" class="book-cover" alt="Cover">
+                    <img src="{{ featured_book[4] }}" class="book-cover" alt="Cover" loading="lazy">
                 {% else %}
                     <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="height: 120px;">
                         <i class="bi bi-book fs-1"></i>
@@ -631,7 +636,7 @@
                         {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
                         <div class="book-3d-wrapper">
                             <div class="book-3d">
-                               <div class="book-front"><img src="{{ pdf.image_url }}" alt="Cover" class="book-cover" loading="lazy"></div>
+                                <div class="book-front"><img src="{{ pdf.image_url }}" alt="Cover" class="book-cover" loading="lazy"></div>
                                 <div class="book-spine"></div>
                                 <div class="book-pages"></div>
                                 <div class="book-shadow"></div>
@@ -995,7 +1000,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     <p class="text-muted mb-2"><i class="bi bi-person-fill me-2"></i><strong>Author:</strong> ${book.author}</p>
                     <p class="text-muted mb-4">${book.description || ''}</p>
                     <div class="d-flex flex-wrap gap-2 mb-4">
-                        <a href="${book.link}" class="btn btn-primary rounded-pill modal-download" download><i class="bi bi-download"></i> Download</a>
+                        <a href="/book/${book.id}/download" class="btn btn-primary rounded-pill modal-download"><i class="bi bi-download"></i> Download</a>
                         <a href="/book/${book.id}/read" target="_blank" class="btn btn-outline-primary rounded-pill modal-read"><i class="bi bi-book"></i> Read Online</a>
                         <button class="btn btn-outline-dark rounded-pill modal-qr"><i class="bi bi-qr-code"></i> QR Code</button>
                         <button class="btn btn-outline-info rounded-pill modal-share"><i class="bi bi-share-fill"></i> Share</button>

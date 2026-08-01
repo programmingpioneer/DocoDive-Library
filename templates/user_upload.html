@@ -114,7 +114,7 @@
         margin: 0 auto 20px;
     }
     .progress-ring .ring-fg {
-        stroke-dasharray: 327;
+        stroke-dasharray: 327 327;
         stroke-dashoffset: 327;
         transition: stroke-dashoffset 0.2s ease;
     }
@@ -147,20 +147,50 @@
         min-height: 20px;
     }
 
-    /* ========== RESPONSIVE ========== */
+    /* ========== RESPONSIVE IMPROVEMENTS ========== */
     @media (max-width: 768px) {
         .upload-card {
             padding: 1.5rem 1.2rem;
             border-radius: 24px;
         }
         .disclaimer { font-size: 0.8rem; padding: 10px; }
-        .progress-glass-card { padding: 15px; }
-        .progress-top-icons { gap: 10px; }
-        .circular-progress-container { width: 100px; height: 100px; }
-        .progress-ring { width: 100px; height: 100px; }
-        .progress-text { font-size: 20px; }
+        .progress-glass-card {
+            padding: 15px;
+        }
+        .progress-top-icons {
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .circular-progress-container {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 15px;
+        }
+        .progress-ring {
+            width: 100px;
+            height: 100px;
+        }
+        .progress-ring .ring-bg, .progress-ring .ring-fg {
+            stroke-width: 6;
+        }
+        .progress-text {
+            font-size: 20px;
+        }
+        .progress-stats {
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .stat-item {
+            flex-direction: row;
+            gap: 4px;
+            font-size: 0.8rem;
+        }
         .pending-item { flex-direction: column; align-items: flex-start; }
+        .connection-lines { width: 30px; }
+        .flying-files .pdf-file-icon { font-size: 18px; }
     }
+
     @media (max-width: 576px) {
         .upload-card {
             padding: 1.2rem 0.8rem;
@@ -169,16 +199,36 @@
         .btn { width: 100%; }
         .form-control, .form-select { font-size: 0.85rem; padding: 8px 12px; }
         .disclaimer { font-size: 0.75rem; }
-        .progress-glass-card { padding: 10px; }
+        .progress-glass-card { padding: 12px; }
+        .progress-top-icons {
+            gap: 6px;
+            margin-bottom: 12px;
+        }
         .progress-top-icons svg { width: 40px; height: 35px; }
-        .connection-lines { width: 30px; }
-        .circular-progress-container { width: 80px; height: 80px; }
-        .progress-ring { width: 80px; height: 80px; }
-        .progress-ring .ring-bg { stroke-width: 5; }
-        .progress-ring .ring-fg { stroke-width: 5; }
-        .progress-text { font-size: 16px; }
-        .stat-item { font-size: 0.7rem; }
-        .flying-files .pdf-file-icon { font-size: 16px; }
+        .connection-lines { width: 20px; }
+        .circular-progress-container {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 12px;
+        }
+        .progress-ring {
+            width: 80px;
+            height: 80px;
+        }
+        .progress-ring .ring-bg, .progress-ring .ring-fg {
+            stroke-width: 5;
+        }
+        .progress-text {
+            font-size: 16px;
+        }
+        .stat-item {
+            font-size: 0.7rem;
+        }
+        .flying-files .pdf-file-icon { font-size: 14px; }
+        .server-pulse {
+            width: 30px;
+            height: 30px;
+        }
     }
 </style>
 {% endblock %}
@@ -193,7 +243,7 @@
         <div class="disclaimer">
             <strong><i class="bi bi-info-circle-fill me-1"></i> Disclaimer:</strong><br>
             • Only <strong>PDF files</strong> are accepted (max 500 MB).<br>
-            • <strong>Cover image is mandatory</strong> (max 2 MB, JPG/PNG/WEBP).<br>
+            • <strong>Cover image is optional</strong> – if you don't upload one, we'll automatically create it from the first page of your PDF.<br>
             • Do not upload copyrighted material without permission.<br>
             • Your upload will be <strong>hidden until approved</strong> by an admin.<br>
             • You will receive an email when your book is approved or rejected.
@@ -226,22 +276,22 @@
                     <i class="bi bi-tag me-1"></i> Category
                 </label>
                 <select class="form-select" id="categorySelect" name="category">
-                    <option value="">Auto‑Detect (from PDF)</option>
+                    <option value="">🤖 Auto‑Detect from PDF</option>
                     {% for cat in categories %}
                     <option value="{{ cat }}">{{ cat }}</option>
                     {% endfor %}
                 </select>
-                <div class="form-text">Choose a category or leave it for auto‑detection.</div>
+                <div class="form-text">We'll guess the best category from your PDF. You can override it here.</div>
             </div>
 
-            <!-- Cover Image Upload (MANDATORY) -->
+            <!-- Cover Image Upload (optional) -->
             <div class="mb-3">
                 <label for="cover_image" class="form-label fw-semibold">
-                    Cover Image <span class="text-danger">*</span>
+                    Cover Image <span class="text-muted fw-normal small">(optional)</span>
                 </label>
-                <input class="form-control" type="file" id="cover_image" name="cover_image" accept="image/*" 
-                       required onchange="previewCoverImage(this)">
-                <div class="form-text">Square image recommended · Max 2 MB · JPG, PNG, GIF, WEBP</div>
+                <input class="form-control" type="file" id="cover_image" name="cover_image" accept="image/*"
+                       onchange="previewCoverImage(this)">
+                <div class="form-text">Square image recommended · Max 2 MB · JPG, PNG, GIF, WEBP. <strong>If empty, we'll generate a cover from the PDF.</strong></div>
                 <div class="mt-2" id="coverPreview" style="display:none;">
                     <img id="coverThumb" src="" alt="Cover preview" class="img-thumbnail" style="max-height:150px;">
                     <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="removeCover()">
@@ -282,7 +332,7 @@
                     <div class="circular-progress-container">
                         <svg class="progress-ring" width="120" height="120">
                             <circle class="ring-bg" cx="60" cy="60" r="52" fill="none" stroke="#e0e7ff" stroke-width="8"/>
-                            <circle class="ring-fg" cx="60" cy="60" r="52" fill="none" stroke="#4338ca" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 327" transform="rotate(-90 60 60)"/>
+                            <circle class="ring-fg" cx="60" cy="60" r="52" fill="none" stroke="#4338ca" stroke-width="8" stroke-linecap="round" stroke-dasharray="327 327" stroke-dashoffset="327" transform="rotate(-90 60 60)"/>
                         </svg>
                         <div class="progress-text" id="progressPercent">0%</div>
                     </div>
@@ -316,7 +366,7 @@
             <a href="/" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Back to Library</a>
         </p>
 
-        <!-- 👇 Your Uploads History -->
+        <!-- Uploads History -->
         <hr class="my-4">
         <h5 class="mb-3"><i class="bi bi-hourglass-split me-2"></i> Your Uploads</h5>
         <p class="text-muted small">Track the status of all the books you've submitted. Status updates automatically when an admin reviews them.</p>
@@ -439,6 +489,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
     xhr.upload.onprogress = function(e) {
         if (e.lengthComputable) {
             let percent = Math.round((e.loaded / e.total) * 100);
+            // Update ring
             let offset = 327 - (327 * percent / 100);
             ringFg.style.strokeDashoffset = offset;
             progressPercent.textContent = percent + '%';

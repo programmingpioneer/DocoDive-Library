@@ -6,6 +6,7 @@ import random
 from collections import defaultdict
 import secrets
 import socket
+import fitz
 import requests
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -510,7 +511,7 @@ def extract_text_from_pdf(reader, max_pages=5):
 def guess_category(text):
     scores = {cat: sum(1 for kw in kwds if kw in text) for cat, kwds in KEYWORDS.items()}
     best = max(scores, key=scores.get)
-    return best if scores[best] > 0 else 'Other'
+    return best if scores[best] > 0 else 'Others'
 
 def guess_category_intelligent(pdf_text, raw_name):
     combined = pdf_text + ' ' + raw_name.lower()
@@ -823,22 +824,24 @@ def user_upload():
 
     if request.method == 'POST':
         if 'pdf_file' not in request.files:
+            msg = 'No PDF file selected.'
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': 'No PDF file selected.'}), 400
-            flash('No PDF file selected.', 'danger')
+                return jsonify({'error': msg}), 400
+            flash(msg, 'danger')
             return redirect(url_for('user_upload'))
 
         file = request.files['pdf_file']
         if file.filename == '' or not allowed_file(file.filename):
+            msg = 'Invalid file. Only PDF allowed.'
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': 'Invalid file. Only PDF allowed.'}), 400
-            flash('Invalid file. Only PDF allowed.', 'danger')
+                return jsonify({'error': msg}), 400
+            flash(msg, 'danger')
             return redirect(url_for('user_upload'))
 
         pdf_bytes = file.read()
+        # ---- Title & Author Extraction ----
         reader = PdfReader(io.BytesIO(pdf_bytes))
         meta = reader.metadata
-
         pdf_title = (meta.title or '').strip() if meta else ''
         author_meta = (meta.author or '').strip() if meta else ''
 
@@ -849,78 +852,122 @@ def user_upload():
 
         clean_base = clean_professional_name(raw_name)
         display_title = clean_base.replace('_', ' ').replace(' @DocoDive', '').strip()
+        # Extra cleaning (remove @PdfMatrix etc.)
+        display_title = clean_title_extra(display_title)
+        if not display_title:
+            display_title = 'Untitled'
+
         author = author_meta if author_meta and author_meta.lower() != 'unknown' else 'Unknown'
         author = author or 'Unknown'
 
+        # ---- Duplicate Check ----
         cur = mysql.connection.cursor()
-
         if is_duplicate(display_title, author, cur):
             cur.close()
+            msg = 'This book already exists in the library.'
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': 'This book already exists in the library.'}), 400
-            flash('This book already exists in the library.', 'danger')
+                return jsonify({'error': msg}), 400
+            flash(msg, 'danger')
             return redirect(url_for('user_upload'))
+        cur.close()
 
+        # ---- Category Detection ----
         manual_category = request.form.get('category', '').strip()
         if manual_category:
             category = manual_category
-            description = f"A comprehensive resource about '{display_title}'. Covers essential topics in {category}."
         else:
-            pdf_text = extract_text_from_pdf(reader)
-            category = guess_category_intelligent(pdf_text, raw_name)
-            description = f"A comprehensive resource about '{display_title}'. Covers essential topics in {category}."
+            # Try extracting text from the PDF (first few pages)
+            pdf_text = ''
+            try:
+                fitz_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                for i, page in enumerate(fitz_doc):
+                    if i >= 5:  # only first 5 pages
+                        break
+                    pdf_text += page.get_text()
+                fitz_doc.close()
+            except Exception:
+                # fallback to PyPDF2
+                try:
+                    reader = PdfReader(io.BytesIO(pdf_bytes))
+                    for page in reader.pages[:5]:
+                        extracted = page.extract_text()
+                        if extracted:
+                            pdf_text += extracted
+                except Exception:
+                    pass
 
+            pdf_text = pdf_text.lower()
+
+            if pdf_text:
+                category = guess_category_from_text(pdf_text)
+            else:
+                category = guess_category_from_filename(file.filename)
+
+        # ---- Professional Description ----
+        description = generate_description(display_title, category)
+
+        # ---- Upload PDF ----
         try:
             pdf_key = generate_r2_key('uploads', clean_base, '.pdf')
             pdf_url = upload_to_r2(pdf_bytes, pdf_key, content_type='application/pdf')
         except Exception as e:
-            cur.close()
             app.logger.error(f"PDF upload failed: {e}")
+            msg = 'Failed to upload PDF.'
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': 'Failed to upload PDF.'}), 500
-            flash('Failed to upload PDF.', 'danger')
+                return jsonify({'error': msg}), 500
+            flash(msg, 'danger')
             return redirect(url_for('user_upload'))
 
-        if 'cover_image' not in request.files or request.files['cover_image'].filename == '':
-            cur.close()
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': 'Cover image is mandatory.'}), 400
-            flash('Cover image is mandatory.', 'danger')
-            return redirect(url_for('user_upload'))
+        # ---- Handle Cover Image ----
+        cover_bytes = None
+        cover_extension = '.png'  # default if generated from PDF
 
-        cover_file = request.files['cover_image']
-        if not allowed_image_file(cover_file.filename):
-            cur.close()
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': 'Invalid cover image format.'}), 400
-            flash('Invalid cover image format.', 'danger')
-            return redirect(url_for('user_upload'))
+        if 'cover_image' in request.files and request.files['cover_image'].filename != '':
+            cover_file = request.files['cover_image']
+            if not allowed_image_file(cover_file.filename):
+                msg = 'Invalid cover image format.'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': msg}), 400
+                flash(msg, 'danger')
+                return redirect(url_for('user_upload'))
+            cover_bytes = cover_file.read()
+            cover_bytes = compress_image(cover_bytes, max_size=(800, 800), quality=80)
+            if len(cover_bytes) > 2 * 1024 * 1024:
+                msg = 'Cover image must be less than 2 MB.'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': msg}), 400
+                flash(msg, 'danger')
+                return redirect(url_for('user_upload'))
+            # keep the original extension
+            img_ext = os.path.splitext(cover_file.filename)[1].lower()
+            cover_extension = img_ext
+        else:
+            # Auto‑generate cover from PDF first page
+            cover_bytes = extract_cover_from_pdf(pdf_bytes)
+            if not cover_bytes:
+                msg = 'Could not generate cover from PDF. Please upload a cover image manually.'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': msg}), 400
+                flash(msg, 'danger')
+                return redirect(url_for('user_upload'))
 
-        cover_data = cover_file.read()
-        cover_data = compress_image(cover_data, max_size=(800, 800), quality=80)
-        if len(cover_data) > 2 * 1024 * 1024:
-            cur.close()
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': 'Cover image must be less than 2 MB.'}), 400
-            flash('Cover image must be less than 2 MB.', 'danger')
-            return redirect(url_for('user_upload'))
-
-        img_ext = os.path.splitext(cover_file.filename)[1].lower()
-        cover_key = generate_r2_key('covers', clean_base, img_ext)
+        # Upload cover
         mime_map = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
                     '.gif': 'image/gif', '.webp': 'image/webp'}
-        mime = mime_map.get(img_ext, 'application/octet-stream')
-
+        mime = mime_map.get(cover_extension, 'application/octet-stream')
         try:
-            image_url = upload_to_r2(cover_data, cover_key, content_type=mime)
+            cover_key = generate_r2_key('covers', clean_base, cover_extension)
+            image_url = upload_to_r2(cover_bytes, cover_key, content_type=mime)
         except Exception as e:
-            cur.close()
             app.logger.error(f"Cover upload failed: {e}")
+            msg = 'Failed to upload cover image.'
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': 'Failed to upload cover image.'}), 500
-            flash('Failed to upload cover image.', 'danger')
+                return jsonify({'error': msg}), 500
+            flash(msg, 'danger')
             return redirect(url_for('user_upload'))
 
+        # ---- Insert into DB ----
+        cur = mysql.connection.cursor()
         cur.execute("SELECT id FROM categories WHERE level = %s", (category,))
         cat = cur.fetchone()
         if not cat:
@@ -952,6 +999,7 @@ def user_upload():
         flash(f"✅ '{display_title}' uploaded successfully! It will appear after admin approval.", 'success')
         return redirect(url_for('user_upload'))
 
+    # GET: show categories
     cur = mysql.connection.cursor()
     cur.execute("SELECT level FROM categories ORDER BY level")
     categories = [row[0] for row in cur.fetchall()]
@@ -1849,18 +1897,80 @@ def add_review(book_id):
     award_points(user_id, 5, book_id, action='review')
     return jsonify({"success": True})
 
-# ================== READ ONLINE ==================
+# -------------------- PROTECTED DOWNLOAD & READ ONLINE --------------------
+@app.route('/book/<int:book_id>/download')
+def download_book(book_id):
+    if 'user_id' not in session:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': 'Login required'}), 401
+        flash('Please login to download books.', 'danger')
+        return redirect(url_for('user_login'))
+
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT telegram_link FROM documents WHERE id = %s AND approved = 1", (book_id,))
+    book = cur.fetchone()
+    cur.close()
+    if not book:
+        abort(404)
+
+    r2_key = extract_r2_key(book[0])
+    if not r2_key:
+        flash('Download not available.', 'danger')
+        return redirect(url_for('home'))
+
+    presigned = get_presigned_url(r2_key, expiration=300)  # 5 minutes
+    if not presigned:
+        flash('Could not generate download link.', 'danger')
+        return redirect(url_for('home'))
+
+    # Track download
+    if 'user_id' in session:
+        cur = mysql.connection.cursor()
+        cur.execute("INSERT INTO download_history (user_id, book_id) VALUES (%s, %s)",
+                    (session['user_id'], book_id))
+        mysql.connection.commit()
+        cur.close()
+
+    return redirect(presigned)
+
+
 @app.route('/book/<int:book_id>/read')
 def read_online(book_id):
+    if 'user_id' not in session:
+        flash('Please login to read books online.', 'danger')
+        return redirect(url_for('user_login'))
+
     cur = mysql.connection.cursor()
     cur.execute("SELECT telegram_link, title FROM documents WHERE id = %s AND approved = 1", (book_id,))
     book = cur.fetchone()
     cur.close()
     if not book:
         abort(404)
-    return render_template('read_online.html', pdf_url=book[0], book_title=book[1], book_id=book_id)
+
+    r2_key = extract_r2_key(book[0])
+    if not r2_key:
+        flash('Read online not available.', 'danger')
+        return redirect(url_for('home'))
+
+    presigned = get_presigned_url(r2_key, expiration=600)  # 10 minutes for reading
+    if not presigned:
+        flash('Could not generate reading link.', 'danger')
+        return redirect(url_for('home'))
+
+    return render_template('read_online.html', pdf_url=presigned, book_title=book[1], book_id=book_id)
 
 # ================== OFFICIAL ADMIN ROUTES ==================
+def get_site_setting(key, default=None):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT `value` FROM site_settings WHERE `key` = %s", (key,))
+    row = cur.fetchone()
+    cur.close()
+    return row[0] if row else default
+
+def is_official_user(user_id):
+    official_id = get_site_setting('official_user_id')
+    return official_id and str(user_id) == official_id
+
 def official_admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -1871,7 +1981,6 @@ def official_admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Book upload (official only)
 @app.route('/admin', methods=['GET', 'POST'])
 @official_admin_required
 @cache.cached(timeout=600, unless=lambda: request.method == 'POST')
@@ -1893,59 +2002,93 @@ def admin():
         raw_name = pdf_title if pdf_title and pdf_title.lower() != 'unknown' else os.path.splitext(file.filename)[0]
         clean_base = clean_professional_name(raw_name)
         display_title = clean_base.replace('_', ' ').replace(' @DocoDive', '').strip()
+        # Extra cleaning (remove @PdfMatrix etc.)
+        display_title = clean_title_extra(display_title)
+        if not display_title:
+            display_title = 'Untitled'
+
         author = author_meta if author_meta and author_meta.lower() != 'unknown' else 'Unknown'
         author = author or 'Unknown'
 
         manual_category = request.form.get('category', '').strip()
         if manual_category:
             category = manual_category
-            description = f"A comprehensive resource about '{display_title}'. Covers essential topics in {category}."
         else:
-            pdf_text = extract_text_from_pdf(reader)
-            if genai_client:
-                display_title, author, description = ai_enhance_metadata(display_title, author, pdf_text)
-                category = guess_category(pdf_text)
-            else:
-                category = guess_category_intelligent(pdf_text, raw_name)
-                description = f"A comprehensive resource about '{display_title}'. Covers essential topics in {category}."
+            # Extract text from PDF for guessing
+            pdf_text = ''
+            try:
+                fitz_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                for i, page in enumerate(fitz_doc):
+                    if i >= 5:
+                        break
+                    pdf_text += page.get_text()
+                fitz_doc.close()
+            except Exception:
+                try:
+                    reader = PdfReader(io.BytesIO(pdf_bytes))
+                    for page in reader.pages[:5]:
+                        extracted = page.extract_text()
+                        if extracted:
+                            pdf_text += extracted
+                except Exception:
+                    pass
 
+            pdf_text = pdf_text.lower()
+            if pdf_text:
+                category = guess_category_from_text(pdf_text)
+            else:
+                category = guess_category_from_filename(file.filename)
+
+        # Long professional description
+        description = generate_description(display_title, category)
+
+        # Duplicate check
         cur = mysql.connection.cursor()
         if is_duplicate(display_title, author, cur):
             cur.close()
             return jsonify({"error": "This book already exists in the database."}), 400
+        cur.close()
 
+        # Upload PDF
         try:
             pdf_key = generate_r2_key('uploads', clean_base, '.pdf')
             pdf_url = upload_to_r2(pdf_bytes, pdf_key, content_type='application/pdf')
         except Exception as e:
-            cur.close()
             app.logger.error(f"PDF upload failed: {e}")
             return jsonify({"error": "Failed to upload PDF."}), 500
 
-        image_url = None
-        warning = None
-        if 'cover_image' in request.files:
+        # Handle Cover Image (auto‑generate if missing)
+        cover_bytes = None
+        cover_extension = '.png'  # default for generated cover
+        if 'cover_image' in request.files and request.files['cover_image'].filename != '':
             cover_file = request.files['cover_image']
-            if cover_file and cover_file.filename != '':
-                if not allowed_image_file(cover_file.filename):
-                    warning = "Cover image format not allowed."
-                else:
-                    cover_data = cover_file.read()
-                    cover_data = compress_image(cover_data, max_size=(800, 800), quality=80)
-                    if len(cover_data) > 5 * 1024 * 1024:
-                        warning = "Cover image exceeds 5 MB."
-                    else:
-                        img_ext = os.path.splitext(cover_file.filename)[1].lower()
-                        cover_key = generate_r2_key('covers', clean_base, img_ext)
-                        mime_map = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
-                                    '.gif': 'image/gif', '.webp': 'image/webp'}
-                        mime = mime_map.get(img_ext, 'application/octet-stream')
-                        try:
-                            image_url = upload_to_r2(cover_data, cover_key, content_type=mime)
-                        except Exception as e:
-                            app.logger.error(f"Cover upload failed: {e}")
-                            warning = "Cover image could not be uploaded."
+            if not allowed_image_file(cover_file.filename):
+                return jsonify({"error": "Invalid cover image format."}), 400
+            cover_bytes = cover_file.read()
+            cover_bytes = compress_image(cover_bytes, max_size=(800, 800), quality=80)
+            if len(cover_bytes) > 5 * 1024 * 1024:
+                return jsonify({"error": "Cover image exceeds 5 MB."}), 400
+            img_ext = os.path.splitext(cover_file.filename)[1].lower()
+            cover_extension = img_ext
+        else:
+            # Auto‑generate from PDF
+            cover_bytes = extract_cover_from_pdf(pdf_bytes)
+            if not cover_bytes:
+                return jsonify({"error": "Could not generate cover from PDF. Please upload a cover image manually."}), 400
 
+        # Upload cover
+        mime_map = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+                    '.gif': 'image/gif', '.webp': 'image/webp'}
+        mime = mime_map.get(cover_extension, 'application/octet-stream')
+        try:
+            cover_key = generate_r2_key('covers', clean_base, cover_extension)
+            image_url = upload_to_r2(cover_bytes, cover_key, content_type=mime)
+        except Exception as e:
+            app.logger.error(f"Cover upload failed: {e}")
+            return jsonify({"error": "Failed to upload cover image."}), 500
+
+        # Insert into DB (pending)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT id FROM categories WHERE level = %s", (category,))
         cat = cur.fetchone()
         if not cat:
@@ -1961,18 +2104,16 @@ def admin():
         mysql.connection.commit()
         cur.close()
 
-        resp = {"success": True, "title": display_title, "category": category,
-                "message": f"Book '{display_title}' uploaded in {category}! Waiting for approval."}
-        if warning:
-            resp["warning"] = warning
-        return jsonify(resp)
+        return jsonify({"success": True, "title": display_title, "category": category,
+                        "message": f"Book '{display_title}' uploaded in {category}! Waiting for approval."})
 
+    # GET – ensure default categories exist
     cur = mysql.connection.cursor()
     DEFAULT_CATEGORIES = [
         'Python', 'JavaScript', 'Java', 'C / C++',
         'Web Development', 'Data Science', 'Machine Learning',
         'Algorithms', 'Databases', 'Cyber Security',
-        'Mobile Apps', 'DevOps', 'Other'
+        'Mobile Apps', 'DevOps', 'Others'
     ]
     for cat in DEFAULT_CATEGORIES:
         cur.execute("SELECT id FROM categories WHERE level = %s", (cat,))
@@ -1984,6 +2125,129 @@ def admin():
     categories = [row[0] for row in cur.fetchall()]
     cur.close()
     return render_template('admin.html', categories=categories)
+
+def official_admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            abort(403)
+        if not is_official_user(session['user_id']):
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
+
+#================== UTILITY FUNCTIONS ==================
+def clean_title_extra(title):
+    """Remove @Pdfmatrix, TechByMehdi etc."""
+    title = re.sub(r'@pdfmatrix', '', title, flags=re.IGNORECASE)
+    title = re.sub(r'[-_]?TechByMehdi', '', title, flags=re.IGNORECASE)
+    return re.sub(r'\s+', ' ', title).strip()
+
+def extract_cover_from_pdf(pdf_bytes):
+    """Generate cover image from the first page of a PDF. Returns compressed PNG bytes."""
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        page = doc.load_page(0)
+        pix = page.get_pixmap(dpi=150)
+        cover_bytes = pix.tobytes("png")
+        doc.close()
+        return compress_image(BytesIO(cover_bytes).getvalue(), max_size=(800, 800), quality=80)
+    except Exception as e:
+        app.logger.error(f"Cover extraction failed: {e}")
+        return None
+
+def generate_description(title, category):
+    """Return a long, professional description based on category."""
+    t = title
+    templates = {
+        'Python': (
+            f"Unlock the power of Python with '{t}'. This comprehensive guide takes you from basic syntax to advanced concepts "
+            "like object-oriented programming, data analysis with Pandas, web development with Flask/Django, and task automation. "
+            "Packed with real-world examples, hands-on exercises, and best practices, it's perfect for beginners and experienced coders."
+        ),
+        'JavaScript': (
+            f"Master JavaScript from the ground up with '{t}'. Explore core language features, DOM manipulation, asynchronous programming, "
+            "and modern frameworks like React and Node.js. With practical projects and clear explanations, this book is ideal for front‑end and full‑stack developers."
+        ),
+        'Java': (
+            f"Dive deep into Java with '{t}'. Covering object-oriented principles, collections, multithreading, and enterprise frameworks "
+            "like Spring and Hibernate. Includes design patterns, unit testing, and performance optimization tips for building robust backend systems."
+        ),
+        'C / C++': (
+            f"Explore the world of C and C++ with '{t}'. From pointers and memory management to STL and modern C++17/20 features. "
+            "Designed for system programmers, game developers, and competitive coders who want to write fast, efficient code."
+        ),
+        'Web Development': (
+            f"Build stunning, responsive websites with '{t}'. Learn HTML5, CSS3, JavaScript, and popular frameworks like Bootstrap, React, and Angular. "
+            "Covers UI/UX principles, APIs, and deployment – everything you need to become a full‑stack web developer."
+        ),
+        'Data Science': (
+            f"Discover the art of data science with '{t}'. Learn data wrangling, visualization, statistical modeling, and machine learning "
+            "using Python libraries like Pandas, NumPy, Matplotlib, and Scikit‑learn. Real‑world case studies and Jupyter notebooks included."
+        ),
+        'Machine Learning': (
+            f"Step into the future with '{t}'. From linear regression to deep neural networks, this book covers supervised/unsupervised learning, "
+            "model evaluation, and deployment. Hands‑on projects with TensorFlow and PyTorch make complex concepts easy to grasp."
+        ),
+        'Algorithms': (
+            f"Sharpen your problem‑solving skills with '{t}'. Detailed explanations of sorting, searching, graph algorithms, dynamic programming, "
+            "and complexity analysis. Includes coding challenges and interview prep – a must‑have for every programmer."
+        ),
+        'Databases': (
+            f"Master database design and SQL with '{t}'. Covers relational models, normalization, indexing, and query optimization. "
+            "Also explores NoSQL databases like MongoDB and cloud solutions. Practical exercises for managing data at scale."
+        ),
+        'Cyber Security': (
+            f"Defend the digital world with '{t}'. Learn ethical hacking, penetration testing, network security, cryptography, and incident response. "
+            "Hands‑on labs using Kali Linux, Wireshark, and Metasploit help you think like an attacker to protect systems."
+        ),
+        'Mobile Apps': (
+            f"Create engaging mobile experiences with '{t}'. Covers native Android (Kotlin), iOS (Swift), and cross‑platform frameworks like Flutter and React Native. "
+            "From UI design to app store deployment – build your first app today."
+        ),
+        'DevOps': (
+            f"Transform your workflow with '{t}'. Learn CI/CD pipelines, containerization (Docker, Kubernetes), infrastructure as code (Terraform), "
+            "monitoring, and cloud services (AWS, GCP). A practical guide to bridging development and operations."
+        ),
+        'Others': (
+            f"An in‑depth resource covering '{t}'. "
+            "Packed with theory, practical examples, and expert insights to help you advance your knowledge and skills."
+        )
+    }
+    return templates.get(category, (
+        f"An in‑depth resource covering '{t}' in the field of {category}. "
+        "Packed with theory, practical examples, and expert insights to help you advance your knowledge and skills."
+    ))
+
+def guess_category_from_text(pdf_text):
+    """Guess category using keyword matching on PDF text. Returns best category or 'Others'."""
+    best_category = 'Others'
+    best_ratio = 0.0
+    for category, keywords in KEYWORDS.items():
+        hits = sum(1 for kw in keywords if kw in pdf_text)
+        ratio = hits / len(keywords)
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best_category = category
+    if best_ratio < 0.7:
+        best_category = 'Others'
+    return best_category
+
+def guess_category_from_filename(filename):
+    """Fallback: guess category from filename keywords."""
+    name = filename.lower()
+    scores = {}
+    for category, keywords in KEYWORDS.items():
+        hits = sum(1 for kw in keywords if kw in name)
+        ratio = hits / len(keywords)
+        scores[category] = ratio
+    if not scores:
+        return 'Others'
+    best_category = max(scores, key=scores.get)
+    best_ratio = scores[best_category]
+    if best_ratio < 0.1:
+        best_category = 'Others'
+    return best_category
 
 # --------------- Pending & Approval ---------------
 @app.route('/admin/pending/count')
@@ -3103,6 +3367,25 @@ def delete_user(user_id):
         mysql.connection.rollback()
         cur.close()
         return jsonify({"error": str(e)}), 500
+    
+#-------------------- R2 OBJECT STORAGE HELPERS --------------------
+def extract_r2_key(full_url):
+    """R2 public URL se object key nikalo."""
+    if not full_url or not full_url.startswith(R2_PUBLIC_BASE + '/'):
+        return None
+    return full_url.replace(R2_PUBLIC_BASE + '/', '', 1)
+
+def get_presigned_url(r2_key, expiration=300):
+    """R2 object key ke liye temporary presigned download URL."""
+    try:
+        return r2_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': R2_BUCKET, 'Key': r2_key},
+            ExpiresIn=expiration
+        )
+    except Exception:
+        return None
+
 
 # ================== RUN ==================
 if __name__ == '__main__':
