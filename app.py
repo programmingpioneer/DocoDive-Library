@@ -2126,16 +2126,6 @@ def admin():
     cur.close()
     return render_template('admin.html', categories=categories)
 
-def official_admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            abort(403)
-        if not is_official_user(session['user_id']):
-            abort(403)
-        return f(*args, **kwargs)
-    return decorated_function
-
 #================== UTILITY FUNCTIONS ==================
 def clean_title_extra(title):
     """Remove @Pdfmatrix, TechByMehdi etc."""
@@ -3386,6 +3376,405 @@ def get_presigned_url(r2_key, expiration=300):
     except Exception:
         return None
 
+# ================== FEEDBACK COMMUNITY ==================
+@app.route('/feedback', methods=['GET', 'POST'])
+def user_feedback():
+    if request.method == 'POST':
+        if 'user_id' not in session:
+            flash('Please login to submit feedback.', 'danger')
+            return redirect(url_for('user_login'))
+
+        subject = request.form.get('subject', '').strip()
+        message = request.form.get('message', '').strip()
+        if not subject or not message:
+            flash('Please fill both subject and message.', 'danger')
+            return redirect(url_for('user_feedback'))
+
+        user_id = session['user_id']
+        try:
+            cur = mysql.connection.cursor()
+            cur.execute(
+                "INSERT INTO user_feedback (user_id, subject, message) VALUES (%s, %s, %s)",
+                (user_id, subject, message)
+            )
+            mysql.connection.commit()
+
+            # Admin ko professional notification
+            cur.execute("SELECT username FROM users WHERE id = %s", (user_id,))
+            user_row = cur.fetchone()
+            username = user_row[0] if user_row else 'User'
+            cur.close()
+
+            if app.config.get('ADMIN_NOTIFICATION_EMAIL'):
+                html_body = make_feedback_notification_email(username, subject, message)
+                send_email_notification(
+                    f"New Feedback – {subject}",
+                    app.config['ADMIN_NOTIFICATION_EMAIL'],
+                    f"New suggestion from {username}: {subject}",
+                    html_body=html_body
+                )
+
+            flash('Your suggestion has been posted!', 'success')
+        except Exception as e:
+            app.logger.error(f"Feedback insert failed: {e}")
+            flash('Something went wrong. Please try again.', 'danger')
+        return redirect(url_for('user_feedback'))
+
+    # GET: Fetch all feedback with likes and user info
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT f.id, f.subject, f.message, f.created_at, f.like_count, f.official_reply, f.official_replied_at,
+               u.username, u.avatar_url, u.id as user_id
+        FROM user_feedback f
+        LEFT JOIN users u ON f.user_id = u.id
+        ORDER BY f.created_at DESC
+    """)
+    feedbacks = cur.fetchall()
+    cur.close()
+
+    feedback_list = []
+    current_user_id = session.get('user_id')
+    for row in feedbacks:
+        fid = row[0]
+        is_liked = False
+        if current_user_id:
+            cur = mysql.connection.cursor()
+            cur.execute("SELECT 1 FROM feedback_likes WHERE user_id=%s AND feedback_id=%s", (current_user_id, fid))
+            is_liked = cur.fetchone() is not None
+            cur.close()
+        feedback_list.append({
+            'id': fid,
+            'subject': row[1],
+            'message': row[2],
+            'created_at': row[3],
+            'like_count': row[4] if row[4] else 0,
+            'official_reply': row[5],
+            'official_replied_at': row[6],
+            'username': row[7],
+            'avatar_url': row[8],
+            'user_id': row[9],
+            'is_liked': is_liked
+        })
+
+    return render_template('feedback.html', feedbacks=feedback_list)
+
+
+@app.route('/feedback/<int:feedback_id>/like', methods=['POST'])
+def toggle_feedback_like(feedback_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Login required'}), 401
+
+    user_id = session['user_id']
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT user_id, feedback_id FROM feedback_likes WHERE user_id=%s AND feedback_id=%s",
+                (user_id, feedback_id))
+    existing = cur.fetchone()
+    if existing:
+        # Unlike
+        cur.execute("DELETE FROM feedback_likes WHERE user_id=%s AND feedback_id=%s", (user_id, feedback_id))
+        cur.execute("UPDATE user_feedback SET like_count = like_count - 1 WHERE id=%s", (feedback_id,))
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'liked': False, 'count': get_like_count(feedback_id)})
+    else:
+        # Like
+        cur.execute("INSERT INTO feedback_likes (user_id, feedback_id) VALUES (%s, %s)", (user_id, feedback_id))
+        cur.execute("UPDATE user_feedback SET like_count = like_count + 1 WHERE id=%s", (feedback_id,))
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'liked': True, 'count': get_like_count(feedback_id)})
+
+
+def get_like_count(feedback_id):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT like_count FROM user_feedback WHERE id=%s", (feedback_id,))
+    row = cur.fetchone()
+    cur.close()
+    return row[0] if row else 0
+
+
+@app.route('/feedback/<int:feedback_id>/official-reply', methods=['POST'])
+@limiter.limit("10 per minute")
+def official_feedback_reply(feedback_id):
+    if not is_moderator():
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    reply_text = request.form.get('reply', '').strip()
+    if not reply_text:
+        return jsonify({'error': 'Reply cannot be empty'}), 400
+
+    cur = mysql.connection.cursor()
+    # Update reply
+    cur.execute("UPDATE user_feedback SET official_reply=%s, official_replied_at=NOW() WHERE id=%s",
+                (reply_text, feedback_id))
+    mysql.connection.commit()
+
+    # Fetch user email and details
+    cur.execute("""
+        SELECT u.email, u.username, f.subject, f.message
+        FROM user_feedback f
+        JOIN users u ON f.user_id = u.id
+        WHERE f.id = %s
+    """, (feedback_id,))
+    row = cur.fetchone()
+    cur.close()
+
+    if row:
+        email, username, subject, message = row
+        if email:
+            html_body = make_feedback_reply_email(username, subject, message, reply_text)
+            send_email_notification(
+                "DocoDive replied to your suggestion!",
+                email,
+                f"Hi {username}, the DocoDive team has replied to your suggestion '{subject}'.",
+                html_body=html_body
+            )
+
+    return jsonify({'success': True})
+
+
+@app.route('/feedback/<int:feedback_id>/official-reply/edit', methods=['POST'])
+def edit_official_reply(feedback_id):
+    if not is_moderator():
+        return jsonify({'error': 'Unauthorized'}), 403
+    new_reply = request.form.get('reply', '').strip()
+    if not new_reply:
+        return jsonify({'error': 'Reply cannot be empty'}), 400
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE user_feedback SET official_reply=%s, official_replied_at=NOW() WHERE id=%s",
+                (new_reply, feedback_id))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({'success': True})
+
+
+@app.route('/feedback/<int:feedback_id>/official-reply/delete', methods=['POST'])
+def delete_official_reply(feedback_id):
+    if not is_moderator():
+        return jsonify({'error': 'Unauthorized'}), 403
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE user_feedback SET official_reply=NULL, official_replied_at=NULL WHERE id=%s",
+                (feedback_id,))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({'success': True})
+
+
+# -------------------- FEEDBACK REPLIES --------------------
+@app.route('/feedback/<int:feedback_id>/reply', methods=['POST'])
+def add_feedback_reply(feedback_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Login required'}), 401
+    message = request.form.get('message', '').strip()
+    if not message:
+        return jsonify({'error': 'Reply cannot be empty'}), 400
+    user_id = session['user_id']
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("INSERT INTO feedback_replies (feedback_id, user_id, message) VALUES (%s, %s, %s)",
+                    (feedback_id, user_id, message))
+        mysql.connection.commit()
+        reply_id = cur.lastrowid
+        cur.close()
+        return jsonify({'success': True, 'reply_id': reply_id})
+    except Exception as e:
+        app.logger.error(f"Reply insert failed: {e}")
+        return jsonify({'error': 'Something went wrong'}), 500
+
+
+@app.route('/feedback/reply/<int:reply_id>/like', methods=['POST'])
+def toggle_reply_like(reply_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Login required'}), 401
+    user_id = session['user_id']
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT user_id, reply_id FROM reply_likes WHERE user_id=%s AND reply_id=%s",
+                (user_id, reply_id))
+    existing = cur.fetchone()
+    if existing:
+        cur.execute("DELETE FROM reply_likes WHERE user_id=%s AND reply_id=%s", (user_id, reply_id))
+        mysql.connection.commit()
+        liked = False
+    else:
+        cur.execute("INSERT INTO reply_likes (user_id, reply_id) VALUES (%s, %s)", (user_id, reply_id))
+        mysql.connection.commit()
+        liked = True
+    cur.execute("SELECT COUNT(*) FROM reply_likes WHERE reply_id=%s", (reply_id,))
+    count = cur.fetchone()[0]
+    cur.close()
+    return jsonify({'liked': liked, 'count': count})
+
+
+@app.route('/feedback/<int:feedback_id>/edit', methods=['POST'])
+def edit_feedback(feedback_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Login required'}), 401
+    new_message = request.form.get('message', '').strip()
+    if not new_message:
+        return jsonify({'error': 'Message cannot be empty'}), 400
+    user_id = session['user_id']
+    # check ownership or admin
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT user_id FROM user_feedback WHERE id=%s", (feedback_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        return jsonify({'error': 'Feedback not found'}), 404
+    if str(row[0]) != str(user_id) and not is_moderator():
+        cur.close()
+        return jsonify({'error': 'Unauthorized'}), 403
+    cur.execute("UPDATE user_feedback SET message=%s WHERE id=%s", (new_message, feedback_id))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({'success': True})
+
+
+@app.route('/feedback/<int:feedback_id>/delete', methods=['POST'])
+def delete_feedback(feedback_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Login required'}), 401
+    user_id = session['user_id']
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT user_id FROM user_feedback WHERE id=%s", (feedback_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        return jsonify({'error': 'Feedback not found'}), 404
+    if str(row[0]) != str(user_id) and not is_moderator():
+        cur.close()
+        return jsonify({'error': 'Unauthorized'}), 403
+    cur.execute("DELETE FROM user_feedback WHERE id=%s", (feedback_id,))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({'success': True})
+
+
+@app.route('/feedback/reply/<int:reply_id>/edit', methods=['POST'])
+def edit_reply(reply_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Login required'}), 401
+    new_message = request.form.get('message', '').strip()
+    if not new_message:
+        return jsonify({'error': 'Message cannot be empty'}), 400
+    user_id = session['user_id']
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT user_id FROM feedback_replies WHERE id=%s", (reply_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        return jsonify({'error': 'Reply not found'}), 404
+    if str(row[0]) != str(user_id) and not is_moderator():
+        cur.close()
+        return jsonify({'error': 'Unauthorized'}), 403
+    cur.execute("UPDATE feedback_replies SET message=%s WHERE id=%s", (new_message, reply_id))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({'success': True})
+
+
+@app.route('/feedback/reply/<int:reply_id>/delete', methods=['POST'])
+def delete_reply(reply_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Login required'}), 401
+    user_id = session['user_id']
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT user_id FROM feedback_replies WHERE id=%s", (reply_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        return jsonify({'error': 'Reply not found'}), 404
+    if str(row[0]) != str(user_id) and not is_moderator():
+        cur.close()
+        return jsonify({'error': 'Unauthorized'}), 403
+    cur.execute("DELETE FROM feedback_replies WHERE id=%s", (reply_id,))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/feedback/<int:feedback_id>/replies')
+def get_feedback_replies(feedback_id):
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT r.id, r.message, r.created_at, u.username, u.avatar_url, u.id as user_id,
+               (SELECT COUNT(*) FROM reply_likes WHERE reply_id = r.id) as like_count
+        FROM feedback_replies r
+        LEFT JOIN users u ON r.user_id = u.id
+        WHERE r.feedback_id = %s
+        ORDER BY r.created_at ASC
+    """, (feedback_id,))
+    rows = cur.fetchall()
+    cur.close()
+
+    current_user_id = session.get('user_id')
+    replies = []
+    for row in rows:
+        rid = row[0]
+        is_liked = False
+        if current_user_id:
+            cur = mysql.connection.cursor()
+            cur.execute("SELECT 1 FROM reply_likes WHERE user_id=%s AND reply_id=%s", (current_user_id, rid))
+            is_liked = cur.fetchone() is not None
+            cur.close()
+        replies.append({
+            'id': rid,
+            'message': row[1],
+            'created_at': str(row[2]),
+            'username': row[3],
+            'avatar_url': row[4],
+            'user_id': row[5],
+            'like_count': row[6] if row[6] else 0,
+            'is_liked': is_liked
+        })
+    return jsonify(replies)
+
+
+# ================== FEEDBACK EMAIL TEMPLATES ==================
+def make_feedback_notification_email(username, subject, message):
+    """Admin ko notify karo jab koi naya feedback aaye."""
+    feedback_url = url_for('user_feedback', _external=True)
+    content = f"""
+        <p style="margin:0;">Hi Admin,</p>
+        <p style="margin:16px 0 0;">A new suggestion has been submitted on DocoDive:</p>
+        <div style="margin:24px 0; background:#F0F4FF; border-left:4px solid #4338ca; border-radius:8px; padding:16px;">
+            <p style="margin:0 0 8px; font-weight:700; color:#1e1b4b;">{_safe(subject)}</p>
+            <p style="margin:0 0 4px; color:#374151;">by <strong>{_safe(username)}</strong></p>
+            <p style="margin:12px 0 0; color:#1e1b4b;">{_safe(message[:200])}</p>
+        </div>
+        {_email_button(feedback_url, "View All Suggestions")}
+        <p style="margin-top:20px; font-size:13px; color:#6b7280;">Stay ahead with the community's voice!</p>
+    """
+    return _email_layout(
+        f"New suggestion from {username}",
+        "Community feedback",
+        "New suggestion received",
+        content
+    )
+
+
+def make_feedback_reply_email(username, subject, message, official_reply):
+    """User ko official reply ki email notification."""
+    feedback_url = url_for('user_feedback', _external=True)
+    content = f"""
+        <p style="margin:0;">Hi {_safe(username)},</p>
+        <p style="margin:16px 0 0;">The DocoDive team has responded to your suggestion:</p>
+        <div style="margin:24px 0; background:#F0F4FF; border-left:4px solid #4338ca; border-radius:8px; padding:16px;">
+            <p style="margin:0 0 8px; font-weight:700; color:#1e1b4b;">{_safe(subject)}</p>
+            <p style="margin:0 0 12px; color:#374151;">{_safe(message[:200])}</p>
+            <div style="background:#ffffff; border-radius:8px; padding:12px; margin-top:12px;">
+                <p style="margin:0; color:#4338ca; font-weight:700;">📢 Official Response</p>
+                <p style="margin:8px 0 0; color:#1e1b4b;">{_safe(official_reply)}</p>
+            </div>
+        </div>
+        {_email_button(feedback_url, "View Suggestions")}
+        <p style="margin-top:20px; font-size:13px; color:#6b7280;">Thank you for helping us improve DocoDive!</p>
+    """
+    return _email_layout(
+        "DocoDive team replied to your suggestion.",
+        "Feedback response",
+        "We've replied to your idea",
+        content
+    )
 
 # ================== RUN ==================
 if __name__ == '__main__':

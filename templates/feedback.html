@@ -1,0 +1,424 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    .feedback-page { max-width: 800px; margin: 2rem auto; padding: 0 15px; }
+    .feedback-card, .reply-card {
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.5);
+        border-radius: 24px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 10px 30px rgba(30,27,75,0.08);
+    }
+    .feedback-form-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255,255,255,0.5);
+        border-radius: 28px;
+        padding: 2rem;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 25px 50px rgba(30, 27, 75, 0.1);
+    }
+    .official-reply-box {
+        background: #f0f4ff; border-left: 4px solid #4338ca; border-radius: 12px;
+        padding: 12px 16px; margin-top: 12px; position: relative;
+    }
+    .like-btn { cursor: pointer; color: #6b7280; transition: 0.2s; user-select: none; }
+    .like-btn.liked { color: #ef4444; }
+    .like-btn:hover { color: #ef4444; }
+    .user-avatar { width: 40px; height: 40px; object-fit: cover; border-radius: 50%; }
+    .reply-avatar { width: 32px; height: 32px; object-fit: cover; border-radius: 50%; }
+    .three-dot-menu { position: relative; display: inline-block; }
+    .dropdown-menu { min-width: 100px; text-align: left; }
+    .edit-textarea { width: 100%; margin-top: 5px; }
+    .replies-container { margin-top: 1rem; }
+    .reply-item { background: rgba(249,250,251,0.8); border-radius: 16px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; }
+    .inline-edit-btns { display: flex; gap: 5px; margin-top: 5px; }
+    @media (max-width: 576px) {
+        .feedback-card, .reply-card { padding: 1rem; }
+        .feedback-form-card { padding: 1.2rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="feedback-page" data-aos="fade-up">
+    <div class="text-center mb-4">
+        <div class="d-inline-flex align-items-center justify-content-center rounded-4 mb-3" style="width:60px;height:60px;background:linear-gradient(135deg, #4338ca, #818cf8);color:white;font-size:1.8rem;box-shadow:0 12px 24px rgba(67,56,202,0.2);">
+            <i class="bi bi-lightbulb-fill"></i>
+        </div>
+        <h2 class="fw-bold" style="color: #1e1b4b;">Community Suggestions</h2>
+        <p class="text-muted small">Vote for ideas you love. Our team listens.</p>
+    </div>
+
+    {% if session.get('user_id') %}
+    <div class="feedback-form-card" data-aos="fade-up">
+        <h5 class="fw-bold mb-3"><i class="bi bi-plus-circle-fill me-2 text-primary"></i>New Suggestion</h5>
+        <form method="POST">
+            <input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token', '') }}">
+            <div class="mb-3"><label class="form-label fw-semibold">Subject</label><input type="text" class="form-control rounded-3" name="subject" placeholder="e.g., Dark mode, Reading list..." required></div>
+            <div class="mb-3"><label class="form-label fw-semibold">Details</label><textarea class="form-control rounded-3" name="message" rows="3" placeholder="Describe your idea..." required></textarea></div>
+            <!-- ⚡️ Modern Submit Button -->
+            <button type="submit" class="btn-primary rounded-pill px-4">
+                <span class="btn-text"><i class="bi bi-send me-1"></i> Post Suggestion</span>
+                <span class="book-spinner"><i class="bi bi-book"></i></span>
+            </button>
+        </form>
+    </div>
+    {% else %}
+    <div class="text-center mb-4"><p class="text-muted">Please <a href="#" onclick="showAuthModal(window.location.href);return false;">login</a> to submit or vote on suggestions.</p></div>
+    {% endif %}
+
+    {% for feedback in feedbacks %}
+    <div class="feedback-card" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 50 }}">
+        <div class="d-flex align-items-start gap-3">
+            {% if feedback.avatar_url %}<img src="{{ feedback.avatar_url }}" class="user-avatar" alt="{{ feedback.username }}">
+            {% else %}<div class="user-avatar bg-primary text-white d-flex align-items-center justify-content-center fw-bold">{{ feedback.username[:1].upper() }}</div>{% endif %}
+            <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div><strong class="d-block">{{ feedback.username }}</strong><small class="text-muted">{{ feedback.created_at.strftime('%b %d, %Y') if feedback.created_at else '' }}</small></div>
+                    {% if session.get('user_id') and (session.get('user_id') == feedback.user_id or is_moderator) %}
+                    <div class="three-dot-menu">
+                        <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="#" onclick="startEditFeedback({{ feedback.id|tojson }});return false;"><i class="bi bi-pencil me-2"></i>Edit</a>
+                            <a class="dropdown-item text-danger" href="#" onclick="deleteFeedback({{ feedback.id|tojson }});return false;"><i class="bi bi-trash me-2"></i>Delete</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <h5 class="fw-bold mt-2 mb-1" id="subject-{{ feedback.id }}">{{ feedback.subject }}</h5>
+                <div class="text-muted small mb-2 feedback-message-container" id="message-container-{{ feedback.id }}">
+                    <span id="message-{{ feedback.id }}">{{ feedback.message }}</span>
+                    <!-- inline edit form (hidden initially) -->
+                    <div class="d-none" id="edit-message-{{ feedback.id }}">
+                        <textarea class="form-control form-control-sm edit-textarea" rows="3" id="edit-textarea-{{ feedback.id }}">{{ feedback.message }}</textarea>
+                        <div class="inline-edit-btns">
+                            <button class="btn btn-sm btn-primary" onclick="saveEditFeedback(event, {{ feedback.id }})"><span class="btn-text">Save</span><span class="book-spinner" style="font-size:0.8rem;"><i class="bi bi-book"></i></span></button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="cancelEditFeedback({{ feedback.id }})">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <span class="like-btn {% if feedback.is_liked %}liked{% endif %}" data-feedback-id="{{ feedback.id }}" onclick="toggleLike({{ feedback.id }}, this)"><i class="bi {% if feedback.is_liked %}bi-heart-fill{% else %}bi-heart{% endif %}"></i> <span class="like-count">{{ feedback.like_count }}</span></span>
+                    {% if session.get('user_id') %}
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill reply-toggle" data-id="{{ feedback.id }}">
+                        <span class="btn-text"><i class="bi bi-reply-fill"></i> Reply</span>
+                        <span class="book-spinner" style="font-size:0.8rem;"><i class="bi bi-book"></i></span>
+                    </button>
+                    {% endif %}
+                    {% if is_moderator %}
+                    <button class="btn btn-sm btn-outline-primary rounded-pill official-reply-toggle" data-id="{{ feedback.id }}">
+                        <span class="btn-text"><i class="bi bi-patch-check-fill"></i> Official Reply</span>
+                        <span class="book-spinner" style="font-size:0.8rem;"><i class="bi bi-book"></i></span>
+                    </button>
+                    {% endif %}
+                </div>
+
+                {% if feedback.official_reply %}
+                <div class="official-reply-box mt-3" id="official-reply-{{ feedback.id }}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi bi-patch-check-fill text-primary"></i>
+                            <strong class="text-primary">DocoDive Official</strong>
+                            <small class="text-muted">{{ feedback.official_replied_at.strftime('%b %d') if feedback.official_replied_at else '' }}</small>
+                        </div>
+                        {% if is_moderator %}
+                        <div class="three-dot-menu">
+                            <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <a class="dropdown-item" href="#" onclick="startEditOfficialReply({{ feedback.id }})"><i class="bi bi-pencil me-2"></i>Edit</a>
+                                <a class="dropdown-item text-danger" href="#" onclick="deleteOfficialReply({{ feedback.id }})"><i class="bi bi-trash me-2"></i>Delete</a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="official-reply-text" id="official-reply-text-{{ feedback.id }}">
+                        <p class="mb-0 small">{{ feedback.official_reply }}</p>
+                    </div>
+                    <div class="d-none" id="edit-official-reply-{{ feedback.id }}">
+                        <textarea class="form-control form-control-sm edit-textarea" rows="2" id="edit-official-textarea-{{ feedback.id }}">{{ feedback.official_reply }}</textarea>
+                        <div class="inline-edit-btns mt-2">
+                            <button class="btn btn-sm btn-primary" onclick="saveEditOfficialReply({{ feedback.id }})"><span class="btn-text">Save</span><span class="book-spinner" style="font-size:0.8rem;"><i class="bi bi-book"></i></span></button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="cancelEditOfficialReply({{ feedback.id }})">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if is_moderator %}
+                <div class="official-reply-form mt-2 d-none" id="officialReplyForm-{{ feedback.id }}">
+                    <textarea class="form-control form-control-sm mb-2" rows="2" placeholder="Write official reply..."></textarea>
+                    <button class="btn btn-sm btn-primary submit-official-reply" data-feedback-id="{{ feedback.id }}">
+                        <span class="btn-text">Post Reply</span>
+                        <span class="book-spinner" style="font-size:0.8rem;"><i class="bi bi-book"></i></span>
+                    </button>
+                </div>
+                {% endif %}
+
+                <!-- Replies Section -->
+                <div class="replies-container mt-3" id="replies-{{ feedback.id }}"></div>
+                {% if session.get('user_id') %}
+                <div class="reply-form mt-2 d-none" id="replyForm-{{ feedback.id }}">
+                    <textarea class="form-control form-control-sm mb-2" rows="2" placeholder="Write a reply..."></textarea>
+                    <button class="btn btn-sm btn-primary submit-reply" data-feedback-id="{{ feedback.id }}">
+                        <span class="btn-text">Post Reply</span>
+                        <span class="book-spinner" style="font-size:0.8rem;"><i class="bi bi-book"></i></span>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5"><i class="bi bi-inbox display-4 text-muted"></i><p class="text-muted mt-3">No suggestions yet. Be the first!</p></div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const userLoggedIn = {{ 'true' if session.get('user_id') else 'false' }};
+const currentUserId = {{ session.get('user_id')|tojson }};
+const isModerator = {{ is_moderator|tojson }};
+
+// ========== Like ==========
+async function toggleLike(feedbackId, element) {
+    if (!userLoggedIn) { showAuthModal(window.location.href); return; }
+    const res = await fetch(`/feedback/${feedbackId}/like`, { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} });
+    const data = await res.json();
+    if (data.error) { alert(data.error); return; }
+    const icon = element.querySelector('i');
+    const countSpan = element.querySelector('.like-count');
+    if (data.liked) { icon.classList.remove('bi-heart'); icon.classList.add('bi-heart-fill'); element.classList.add('liked'); }
+    else { icon.classList.remove('bi-heart-fill'); icon.classList.add('bi-heart'); element.classList.remove('liked'); }
+    countSpan.textContent = data.count;
+}
+
+// ========== Reply Toggle ==========
+document.querySelectorAll('.reply-toggle').forEach(btn => btn.addEventListener('click', function() {
+    document.getElementById('replyForm-' + this.dataset.id).classList.toggle('d-none');
+}));
+document.querySelectorAll('.official-reply-toggle').forEach(btn => btn.addEventListener('click', function() {
+    document.getElementById('officialReplyForm-' + this.dataset.id).classList.toggle('d-none');
+}));
+
+// ========== Submit User Reply ==========
+document.querySelectorAll('.submit-reply').forEach(btn => btn.addEventListener('click', async function() {
+    const btnEl = this;
+    setButtonLoading(btnEl);
+    const feedbackId = this.dataset.feedbackId;
+    const textarea = document.querySelector(`#replyForm-${feedbackId} textarea`);
+    const message = textarea.value.trim();
+    if (!message) { resetButton(btnEl); return; }
+    try {
+        const res = await fetch(`/feedback/${feedbackId}/reply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new URLSearchParams({ message: message })
+        });
+        if (res.ok) { textarea.value = ''; loadReplies(feedbackId); }
+        else { alert('Failed to post reply.'); }
+    } catch(e) { alert('Network error.'); }
+    resetButton(btnEl);
+}));
+
+// ========== Submit Official Reply ==========
+document.querySelectorAll('.submit-official-reply').forEach(btn => btn.addEventListener('click', async function() {
+    const btnEl = this;
+    setButtonLoading(btnEl);
+    const feedbackId = this.dataset.feedbackId;
+    const textarea = document.querySelector(`#officialReplyForm-${feedbackId} textarea`);
+    if (!textarea) { resetButton(btnEl); return; }
+    const reply = textarea.value.trim();
+    if (!reply) { resetButton(btnEl); return; }
+    try {
+        const res = await fetch(`/feedback/${feedbackId}/official-reply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new URLSearchParams({ reply: reply })
+        });
+        if (res.ok) location.reload();
+        else { alert('Failed to post reply.'); }
+    } catch(e) { alert('Network error.'); }
+    resetButton(btnEl);
+}));
+
+// ========== Load Replies ==========
+async function loadReplies(feedbackId) {
+    const container = document.getElementById('replies-' + feedbackId);
+    if (!container) return;
+    const res = await fetch(`/api/feedback/${feedbackId}/replies`);
+    if (!res.ok) return;
+    const replies = await res.json();
+    let html = '';
+    replies.forEach(r => {
+        const likedClass = r.is_liked ? 'liked' : '';
+        const avatarHtml = r.avatar_url
+            ? `<img src="${r.avatar_url}" class="reply-avatar" alt="${r.username}">`
+            : `<div class="reply-avatar bg-secondary text-white d-flex align-items-center justify-content-center fw-bold">${r.username[0].toUpperCase()}</div>`;
+        const ownReply = (userLoggedIn && currentUserId == r.user_id) || isModerator;
+        html += `
+        <div class="reply-item d-flex gap-2 align-items-start" id="reply-${r.id}">
+            ${avatarHtml}
+            <div class="flex-grow-1">
+                <div class="d-flex justify-content-between">
+                    <div><strong>${r.username}</strong> <small class="text-muted">${r.created_at}</small></div>
+                    ${ownReply ? `
+                    <div class="three-dot-menu">
+                        <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="#" onclick="startEditReply(${r.id})"><i class="bi bi-pencil me-2"></i>Edit</a>
+                            <a class="dropdown-item text-danger" href="#" onclick="deleteReply(${r.id})"><i class="bi bi-trash me-2"></i>Delete</a>
+                        </div>
+                    </div>` : ''}
+                </div>
+                <div class="reply-message-container" id="reply-message-container-${r.id}">
+                    <span id="reply-message-${r.id}">${r.message}</span>
+                    <div class="d-none" id="edit-reply-${r.id}">
+                        <textarea class="form-control form-control-sm edit-textarea" rows="2" id="edit-reply-textarea-${r.id}">${r.message}</textarea>
+                        <div class="inline-edit-btns mt-2">
+                            <button class="btn btn-sm btn-primary" onclick="saveEditReply(${r.id})"><span class="btn-text">Save</span><span class="book-spinner" style="font-size:0.8rem;"><i class="bi bi-book"></i></span></button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="cancelEditReply(${r.id})">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+                <span class="like-btn ${likedClass}" data-reply-id="${r.id}" onclick="toggleReplyLike(${r.id}, this)"><i class="bi ${r.is_liked ? 'bi-heart-fill' : 'bi-heart'}"></i> <span class="like-count">${r.like_count}</span></span>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+// ========== Reply Like ==========
+async function toggleReplyLike(replyId, element) {
+    if (!userLoggedIn) { showAuthModal(window.location.href); return; }
+    const res = await fetch(`/feedback/reply/${replyId}/like`, { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} });
+    const data = await res.json();
+    if (data.error) { alert(data.error); return; }
+    const icon = element.querySelector('i');
+    const countSpan = element.querySelector('.like-count');
+    if (data.liked) { icon.classList.remove('bi-heart'); icon.classList.add('bi-heart-fill'); element.classList.add('liked'); }
+    else { icon.classList.remove('bi-heart-fill'); icon.classList.add('bi-heart'); element.classList.remove('liked'); }
+    countSpan.textContent = data.count;
+}
+
+// ========== Inline Edit Feedback ==========
+function startEditFeedback(feedbackId) {
+    document.getElementById('message-' + feedbackId).classList.add('d-none');
+    document.getElementById('edit-message-' + feedbackId).classList.remove('d-none');
+}
+async function saveEditFeedback(feedbackId) {
+    const btn = event.target.closest('button'); // the save button
+    setButtonLoading(btn);
+    const newMsg = document.getElementById('edit-textarea-' + feedbackId).value.trim();
+    if (!newMsg) { resetButton(btn); return; }
+    try {
+        const res = await fetch(`/feedback/${feedbackId}/edit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new URLSearchParams({ message: newMsg })
+        });
+        if (res.ok) {
+            document.getElementById('message-' + feedbackId).textContent = newMsg;
+            cancelEditFeedback(feedbackId);
+        } else alert('Failed to save.');
+    } catch(e) { alert('Network error.'); }
+    resetButton(btn);
+}
+function cancelEditFeedback(feedbackId) {
+    document.getElementById('message-' + feedbackId).classList.remove('d-none');
+    document.getElementById('edit-message-' + feedbackId).classList.add('d-none');
+}
+
+// ========== Inline Edit Official Reply ==========
+function startEditOfficialReply(feedbackId) {
+    document.getElementById('official-reply-text-' + feedbackId).classList.add('d-none');
+    document.getElementById('edit-official-reply-' + feedbackId).classList.remove('d-none');
+}
+async function saveEditOfficialReply(feedbackId) {
+    const btn = event.target.closest('button');
+    setButtonLoading(btn);
+    const newReply = document.getElementById('edit-official-textarea-' + feedbackId).value.trim();
+    if (!newReply) { resetButton(btn); return; }
+    try {
+        const res = await fetch(`/feedback/${feedbackId}/official-reply/edit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new URLSearchParams({ reply: newReply })
+        });
+        if (res.ok) location.reload();
+        else alert('Failed to save.');
+    } catch(e) { alert('Network error.'); }
+    resetButton(btn);
+}
+function cancelEditOfficialReply(feedbackId) {
+    document.getElementById('official-reply-text-' + feedbackId).classList.remove('d-none');
+    document.getElementById('edit-official-reply-' + feedbackId).classList.add('d-none');
+}
+
+// ========== Inline Edit Reply ==========
+function startEditReply(replyId) {
+    document.getElementById('reply-message-' + replyId).classList.add('d-none');
+    document.getElementById('edit-reply-' + replyId).classList.remove('d-none');
+}
+async function saveEditReply(replyId) {
+    const btn = event.target.closest('button');
+    setButtonLoading(btn);
+    const newMsg = document.getElementById('edit-reply-textarea-' + replyId).value.trim();
+    if (!newMsg) { resetButton(btn); return; }
+    try {
+        const res = await fetch(`/feedback/reply/${replyId}/edit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new URLSearchParams({ message: newMsg })
+        });
+        if (res.ok) {
+            document.getElementById('reply-message-' + replyId).textContent = newMsg;
+            cancelEditReply(replyId);
+        } else alert('Failed to save.');
+    } catch(e) { alert('Network error.'); }
+    resetButton(btn);
+}
+function cancelEditReply(replyId) {
+    document.getElementById('reply-message-' + replyId).classList.remove('d-none');
+    document.getElementById('edit-reply-' + replyId).classList.add('d-none');
+}
+
+// ========== Delete Feedback ==========
+async function deleteFeedback(feedbackId) {
+    if (!confirm('Delete this suggestion?')) return;
+    const res = await fetch(`/feedback/${feedbackId}/delete`, { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} });
+    if (res.ok) location.reload();
+    else alert('Failed to delete.');
+}
+
+// ========== Delete Official Reply ==========
+async function deleteOfficialReply(feedbackId) {
+    if (!confirm('Remove official reply?')) return;
+    const res = await fetch(`/feedback/${feedbackId}/official-reply/delete`, { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} });
+    if (res.ok) location.reload();
+    else alert('Failed to delete.');
+}
+
+// ========== Delete Reply ==========
+async function deleteReply(replyId) {
+    if (!confirm('Delete this reply?')) return;
+    const res = await fetch(`/feedback/reply/${replyId}/delete`, { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} });
+    if (res.ok) location.reload();
+    else alert('Failed to delete.');
+}
+
+// Load all replies on page load
+document.addEventListener('DOMContentLoaded', () => {
+    {% for feedback in feedbacks %}
+    loadReplies({{ feedback.id }});
+    {% endfor %}
+});
+</script>
+{% endblock %}
