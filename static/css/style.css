@@ -442,3 +442,88 @@ body {
 [data-bs-theme="dark"] .connection-lines {
     background: linear-gradient(90deg, transparent, #818cf8, transparent);
 }
+
+/* =============================================
+   90FPS PERFORMANCE OPTIMIZATIONS
+   ============================================= */
+
+/* GPU acceleration for smooth animations */
+.product-card,
+.category-card,
+.book-3d,
+.book-card,
+.btn,
+.btn-primary,
+.btn-outline-primary,
+form button[type="submit"] {
+    will-change: transform, box-shadow;
+    backface-visibility: hidden;
+}
+
+/* Off-screen sections skip rendering for faster paint */
+section,
+footer,
+main > .container,
+#reviews,
+#discussion,
+.container .row > .col-12:not(:first-child) {
+    content-visibility: auto;
+    contain-intrinsic-size: 500px;
+}
+
+/* Heavy containers get containment */
+.book-3d-wrapper,
+.progress-glass-card,
+.modal-content {
+    contain: layout style paint;
+}
+
+/* Smooth scrolling with hardware acceleration */
+html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Instant touch response on mobile */
+a,
+button,
+.btn,
+[role="button"],
+.dropdown-toggle,
+input,
+select,
+textarea {
+    touch-action: manipulation;
+}
+
+/* Reduce paint areas */
+img,
+video,
+svg {
+    content-visibility: auto;
+}
+
+/* Optimize font rendering */
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeSpeed;
+}
+
+/* Prevent layout shifts from images */
+img[loading="lazy"] {
+    aspect-ratio: attr(width) / attr(height);
+    background: #f3f4f6;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

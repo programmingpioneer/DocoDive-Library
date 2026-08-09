@@ -3,8 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DocoDive | Free Digital Library</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>{% block title %}DocoDive | Free Digital Library{% endblock %}</title>
+
+    <!-- ================== RESOURCE HINTS (Performance) ================== -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+    <link rel="dns-prefetch" href="https://conversations-widget.brevo.com">
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="{% block meta_description %}Discover and download thousands of free books and documents on DocoDive. Programming, science, history, and more.{% endblock %}">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ request.url }}">
+    <meta name="google-site-verification" content="YOUR_ACTUAL_CODE" />
+    <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
+    <meta property="og:title" content="{{ self.title() }}">
+    <meta property="og:description" content="{{ self.meta_description() }}">
+    <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/docodive-og.jpg', _external=True) }}{% endblock %}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="DocoDive">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ self.title() }}">
+    <meta name="twitter:description" content="{{ self.meta_description() }}">
+    <meta name="twitter:image" content="{{ self.og_image() }}">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
@@ -209,6 +237,31 @@
     html { scroll-behavior: smooth; }
     *, *::before, *::after { transition-duration: 0.2s !important; }
 
+    /* ========== 90FPS PERFORMANCE CSS ========== */
+    .product-card, .category-card, .hero-icon {
+        will-change: auto;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .product-card:hover, .category-card:hover {
+        will-change: transform;
+    }
+    .book-card {
+        will-change: auto;
+        transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+    .book-card:hover {
+        will-change: transform;
+    }
+    
+    /* Touch-action for mobile */
+    a, button, .btn, [role="button"], .dropdown-toggle {
+        touch-action: manipulation;
+    }
+    /* GPU-composited animations only */
+    .btn, .btn-primary-custom, form button[type="submit"], .book-card, .product-card, .category-card {
+        will-change: transform, box-shadow;
+    }
+
     #page-loader {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(255, 255, 255, 0.25);
@@ -282,9 +335,6 @@
         .btn i {
             font-size: 1.25rem;
         }
-    }
-    .product-card, .category-card, .hero-icon {
-        will-change: transform;
     }
 
     /* ========== ENHANCED BUTTON ANIMATIONS (non-submit) ========== */
@@ -479,7 +529,21 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.15);
         }
     }
+
+    /* ========== SAFE LAZY RENDERING (replaces content-visibility:auto) ========== */
+    section, footer, #reviews, #discussion {
+        contain: layout style;
+    }
 </style>
+
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3GC4V3QX2W"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-3GC4V3QX2W');
+    </script>
 
     <!-- Brevo Conversations widget -->
     <script>
@@ -659,22 +723,13 @@
         <p class="mb-0 small fw-semibold">© 2026 DocoDive – Free Knowledge, Pure Discipline.</p>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script>
-        AOS.init({
-            duration: 350,
-            once: false,
-            mirror: true,
-            offset: 100,
-            easing: 'ease-out',
-            throttleDelay: 99,
-            anchorPlacement: 'top-bottom'
-        });
-    </script>
+    <!-- ================== SCRIPTS ================== -->
+    <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script defer src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 
-    <!-- ================== AUTH MODAL ================== -->
+    <!-- ================== AUTH MODAL (HTML only, scripts in main.js) ================== -->
     <div class="modal fade auth-modal" id="authModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
       <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 28px; overflow: hidden;">
@@ -790,202 +845,7 @@
       </div>
     </div>
 
-    <!-- Modal Scripts -->
-    <script>
-    let authModal, pendingRedirectUrl = null;
-
-    function switchTab(tab) {
-        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.auth-form').forEach(f => f.classList.add('d-none'));
-        document.querySelector(`.auth-tab[data-tab="${tab}"]`).classList.add('active');
-        document.getElementById(tab === 'login' ? 'modalLoginForm' : 'modalSignupForm').classList.remove('d-none');
-    }
-
-    function togglePassword(inputId, iconSpan) {
-        const input = document.getElementById(inputId);
-        const icon = iconSpan.querySelector('i');
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.classList.remove('bi-eye-slash');
-            icon.classList.add('bi-eye');
-            const checkbox = document.getElementById(inputId === 'modalLoginPassword' ? 'modalLoginShowCheckbox' : 'modalSignupShowCheckbox');
-            if (checkbox) checkbox.checked = true;
-        } else {
-            input.type = 'password';
-            icon.classList.remove('bi-eye');
-            icon.classList.add('bi-eye-slash');
-            const checkbox = document.getElementById(inputId === 'modalLoginPassword' ? 'modalLoginShowCheckbox' : 'modalSignupShowCheckbox');
-            if (checkbox) checkbox.checked = false;
-        }
-    }
-
-    function togglePasswordCheckbox(inputId, eyeIconId, checkbox) {
-        const input = document.getElementById(inputId);
-        const icon = document.getElementById(eyeIconId);
-        if (checkbox.checked) {
-            input.type = 'text';
-            icon.classList.remove('bi-eye-slash');
-            icon.classList.add('bi-eye');
-        } else {
-            input.type = 'password';
-            icon.classList.remove('bi-eye');
-            icon.classList.add('bi-eye-slash');
-        }
-    }
-
-    // Simplified loading helpers – CSS handles the visual changes via .btn-loading class
-    function setButtonLoading(btn) {
-        if (!btn) return;
-        btn.classList.add('btn-loading');
-        btn.disabled = true;
-    }
-
-    function resetButton(btn) {
-        if (!btn) return;
-        btn.classList.remove('btn-loading');
-        btn.disabled = false;
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        authModal = new bootstrap.Modal(document.getElementById('authModal'));
-
-        document.querySelectorAll('.auth-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                switchTab(this.dataset.tab);
-            });
-        });
-
-        document.getElementById('modalLoginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const btn = this.querySelector('button[type="submit"]');
-            setButtonLoading(btn);
-            const fd = new FormData(this);
-            try {
-                const res = await fetch('/user/login', {
-                    method: 'POST',
-                    body: fd,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    authModal.hide();
-                    window.location.href = pendingRedirectUrl || data.redirect || '/';
-                } else {
-                    showModalFlash(data.error || 'Login failed', 'danger');
-                    resetButton(btn);
-                }
-            } catch {
-                showModalFlash('Something went wrong', 'danger');
-                resetButton(btn);
-            }
-        });
-
-        document.getElementById('modalSignupForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const btn = this.querySelector('button[type="submit"]');
-            setButtonLoading(btn);
-            const fd = new FormData(this);
-            try {
-                const res = await fetch('/user/signup', {
-                    method: 'POST',
-                    body: fd,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    authModal.hide();
-                    window.location.href = pendingRedirectUrl || data.redirect || '/';
-                } else {
-                    showModalFlash(data.error || 'Signup failed', 'danger');
-                    resetButton(btn);
-                }
-            } catch {
-                showModalFlash('Something went wrong', 'danger');
-                resetButton(btn);
-            }
-        });
-
-        function checkField(input, fieldType) {
-            const val = input.value.trim();
-            const fb = input.parentElement.querySelector('.feedback');
-            if (!fb) return;
-            if (val.length === 0) {
-                input.classList.remove('is-valid', 'is-invalid');
-                fb.textContent = '';
-                return;
-            }
-            if (fieldType === 'username') {
-                if (val.length < 3 || val.length > 20 || !/^[a-zA-Z0-9]+$/.test(val)) {
-                    input.classList.add('is-invalid');
-                    input.classList.remove('is-valid');
-                    fb.textContent = 'Username must be 3-20 letters and numbers only.';
-                    fb.className = 'feedback small mt-1 text-danger';
-                    return;
-                }
-            } else if (fieldType === 'email') {
-                if (!/^\S+@\S+\.\S+$/.test(val)) {
-                    input.classList.add('is-invalid');
-                    input.classList.remove('is-valid');
-                    fb.textContent = 'Please enter a valid email.';
-                    fb.className = 'feedback small mt-1 text-danger';
-                    return;
-                }
-            }
-            fetch(`/api/check-availability?field=${fieldType}&value=${encodeURIComponent(val)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.exists || data.reserved) {
-                        input.classList.add('is-invalid');
-                        input.classList.remove('is-valid');
-                        fb.textContent = data.message || 'Not available.';
-                        fb.className = 'feedback small mt-1 text-danger';
-                    } else {
-                        input.classList.add('is-valid');
-                        input.classList.remove('is-invalid');
-                        fb.textContent = data.message || 'Available!';
-                        fb.className = 'feedback small mt-1 text-success';
-                    }
-                })
-                .catch(() => {
-                    input.classList.remove('is-valid', 'is-invalid');
-                    fb.textContent = '';
-                });
-        }
-
-        const modalUsername = document.getElementById('modalUsername');
-        const modalEmail = document.getElementById('modalEmail');
-        if (modalUsername) {
-            modalUsername.addEventListener('input', () => checkField(modalUsername, 'username'));
-            modalUsername.addEventListener('blur', () => checkField(modalUsername, 'username'));
-        }
-        if (modalEmail) {
-            modalEmail.addEventListener('input', () => checkField(modalEmail, 'email'));
-            modalEmail.addEventListener('blur', () => checkField(modalEmail, 'email'));
-        }
-
-        function showModalFlash(msg, type) {
-            const flash = document.getElementById('modalFlash');
-            flash.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show py-2 small" role="alert">${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
-        }
-    });
-
-    function showAuthModal(redirectUrl) {
-        pendingRedirectUrl = redirectUrl || window.location.href;
-        if (authModal) authModal.show();
-    }
-    </script>
-
-    <!-- Global loading state for non-AJAX forms -->
-    <script>
-        document.addEventListener('submit', function(e) {
-            const form = e.target;
-            if (form.hasAttribute('data-ajax')) return;
-            const btn = form.querySelector('button[type="submit"], input[type="submit"]');
-            if (btn) setButtonLoading(btn);
-        });
-    </script>
-
-    <!-- QR Code Popup -->
+    <!-- ================== QR CODE POPUP ================== -->
     <div id="qrPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:24px; border-radius:20px; box-shadow:0 15px 50px rgba(0,0,0,0.3); z-index:9999; text-align:center;">
         <img id="qrImage" src="" style="width:200px;height:200px;border-radius:12px;">
         <div style="margin-top:16px;">
@@ -1001,155 +861,12 @@
         </div>
     </div>
 
-    <!-- Notifications Script -->
+    <!-- ================== PAGE LOADER FAILSAFE (moved here from <head>) ================== -->
     <script>
-        function timeAgo(dateString) {
-            try {
-                const dbDate = dateString.replace(' ', 'T') + 'Z';
-                const now = new Date();
-                const past = new Date(dbDate);
-                if (isNaN(past.getTime())) return dateString;
-                const diffMs = now - past;
-                const diffSec = Math.floor(diffMs / 1000);
-                const diffMin = Math.floor(diffSec / 60);
-                const diffHr = Math.floor(diffMin / 60);
-                const diffDay = Math.floor(diffHr / 24);
-                if (diffDay > 0) return diffDay + 'd ago';
-                if (diffHr > 0) return diffHr + 'h ago';
-                if (diffMin > 0) return diffMin + 'm ago';
-                return 'Just now';
-            } catch (e) {
-                return dateString;
-            }
-        }
-
-        function goToNotif(url) { window.location = url; }
-
-        async function markNotifRead(id, el) {
-            await fetch(`/api/notifications/${id}/read`, {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            const card = el.closest('.notif-card-item');
-            if (card) {
-                card.classList.remove('bg-purple-light');
-                card.classList.remove('notif-unread');
-                el.style.display = 'none';
-            }
-            updateNotifications();
-        }
-
-        async function deleteNotif(id, el) {
-            if (!confirm('Delete this notification?')) return;
-            await fetch(`/api/notifications/${id}/delete`, {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            const card = el.closest('.notif-card-item');
-            if (card) card.remove();
-            updateNotifications();
-        }
-
-        function updateNotifications() {
-            fetch('/api/notifications/unread-count')
-            .then(r => r.json())
-            .then(d => {
-                let badge = document.getElementById('notifBadge');
-                if (badge) {
-                    if (d.count > 0) {
-                        badge.style.display = 'inline';
-                        badge.textContent = d.count;
-                    } else {
-                        badge.style.display = 'none';
-                    }
-                }
-            });
-
-            fetch('/api/notifications')
-            .then(r => r.json())
-            .then(list => {
-                let html = '';
-                const container = document.getElementById('notifList');
-                if (!container) return;
-                if (list.length === 0) {
-                    html = `<div class="text-center text-muted py-4">
-                                <i class="bi bi-bell-slash fs-2 d-block mb-2"></i>
-                                <small>No notifications yet</small>
-                            </div>`;
-                } else {
-                    list.forEach(n => {
-                        const ago = timeAgo(n.created_at);
-                        const avatarUrl = n.image_url || n.actor_avatar || '/static/default-avatar.png';
-                        let heading = '', snippet = '';
-                        if (n.type === 'approval') { heading = '📗 Book Approved'; snippet = n.message.replace(/<[^>]*>/g, ''); }
-                        else if (n.type === 'rejection') { heading = '📕 Book Rejected'; snippet = n.message.replace(/<[^>]*>/g, ''); }
-                        else if (n.type === 'general_comment') { heading = '💬 Comment'; snippet = n.message.replace(/<[^>]*>/g, ''); }
-                        else if (n.type === 'reply') { heading = '↩️ Reply'; snippet = n.message.replace(/<[^>]*>/g, ''); }
-                        else { heading = 'Notification'; snippet = n.message; }
-
-                        const targetUrl = n.link || '/user/notifications';
-                        html += `
-                        <div class="d-flex align-items-center p-2 border-bottom notif-card-item ${!n.is_read ? 'bg-purple-light' : ''}" style="cursor:default;">
-                            <div class="d-flex flex-grow-1 min-w-0" onclick="goToNotif('${targetUrl}')" style="cursor:pointer;">
-                                <div class="d-flex align-items-center">
-                                    <img src="${avatarUrl}" class="rounded-circle me-2" width="36" height="36"
-                                         style="object-fit:cover; background: url('/static/default-avatar.png') center/cover no-repeat;"
-                                         onerror="this.style.background='url(/static/default-avatar.png) center/cover no-repeat'; this.src='';">
-                                    <div class="flex-grow-1 min-w-0">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <strong class="text-dark small text-truncate" style="font-size:0.85rem; max-width:150px;">${heading}</strong>
-                                            <small class="text-muted ms-1" style="font-size:0.7rem;">${ago}</small>
-                                        </div>
-                                        <div class="text-muted small text-truncate" style="font-size:0.75rem; max-width:180px;" title="${snippet}">${snippet}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center gap-1 ms-2">
-                                ${!n.is_read ? `<span class="text-primary" onclick="markNotifRead(${n.id}, this)" title="Mark as read" style="cursor:pointer;"><i class="bi bi-check-circle"></i></span>` : ''}
-                                <span class="text-danger" onclick="deleteNotif(${n.id}, this)" title="Delete notification" style="cursor:pointer;"><i class="bi bi-trash"></i></span>
-                            </div>
-                        </div>`;
-                    });
-                }
-                container.innerHTML = html;
-            }).catch(err => console.error('Notifications fetch error:', err));
-        }
-
-        function markAllRead() {
-            fetch('/api/notifications')
-            .then(r => r.json())
-            .then(list => {
-                const unread = list.filter(n => !n.is_read);
-                Promise.all(unread.map(n =>
-                    fetch(`/api/notifications/${n.id}/read`, {
-                        method: 'POST',
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                    })
-                )).then(() => updateNotifications());
-            });
-        }
-
-        setInterval(updateNotifications, 30000);
-        updateNotifications();
+    setTimeout(function(){
+    var l = document.getElementById('page-loader');
+    if(l){ l.classList.add('hidden'); setTimeout(function(){ if(l.parentNode) l.parentNode.removeChild(l); }, 500); }
+    }, 4000);
     </script>
-
-    <!-- HIDE LOADER -->
-    <script>
-        (function() {
-            const loader = document.getElementById('page-loader');
-            if (!loader) return;
-            const MIN_DISPLAY_TIME = 2000;
-            let pageLoaded = false, timerDone = false;
-            function hideLoader() {
-                if (pageLoaded && timerDone) {
-                    loader.classList.add('hidden');
-                    setTimeout(() => { if (loader.parentNode) loader.parentNode.removeChild(loader); }, 500);
-                }
-            }
-            window.addEventListener('load', function() { pageLoaded = true; hideLoader(); });
-            setTimeout(function() { timerDone = true; hideLoader(); }, MIN_DISPLAY_TIME);
-        })();
-    </script>
-
 </body>
 </html>

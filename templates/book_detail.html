@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
-<meta name="is-moderator" content="{{ is_moderator|default(false)|tojson }}">
+
+{% block title %}{{ book.title }} - DocoDive{% endblock %}
+{% block meta_description %}{{ book.description[:160] if book.description else 'Read ' + book.title + ' by ' + book.author + ' on DocoDive. Free PDF download available.' }}{% endblock %}
+{% block og_image %}{{ book.image_url if book.image_url and book.image_url != 'None' else url_for('static', filename='images/docodive-og.png', _external=True) }}{% endblock %}
 
 {% block content %}
 <div class="container py-4 py-md-5">
@@ -9,19 +12,19 @@
             {% if book.image_url and book.image_url != 'None' %}
                 <img src="{{ book.image_url }}" class="img-fluid rounded-4 shadow-sm w-100" alt="{{ book.title }}" style="object-fit: cover; max-height: 450px;" loading="lazy">
             {% else %}
-                <img src="{{ book.image_url }}" class="book-cover rounded-4 shadow-sm" alt="{{ book.title }}" style="max-height: 450px; object-fit: contain;" loading="lazy">
+                <div class="book-cover rounded-4 shadow-sm d-flex align-items-center justify-content-center bg-light" style="max-height: 450px; min-height: 250px;">
                     <div class="text-center p-4">
                         <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:80px;height:80px;font-size:2rem;">
                             {{ (book.title[:2]).upper() }}
                         </div>
-                        <h5 class="text-white fw-bold">{{ book.title }}</h5>
+                        <h5 class="text-dark fw-bold">{{ book.title }}</h5>
                     </div>
                 </div>
             {% endif %}
         </div>
         <!-- Book Details -->
         <div class="col-12 col-md-7 col-lg-8" data-aos="fade-left" data-aos-duration="600">
-            <h2 class="fw-bold mb-1">{{ book.title }}</h2>
+            <h1 class="fw-bold mb-1 h2">{{ book.title }}</h1>
             <p class="text-muted">by <strong>{{ book.author }}</strong></p>
             <div class="mb-3">
                 <span class="badge bg-primary px-3 py-2 rounded-pill me-2">{{ book.level }}</span>
@@ -95,7 +98,6 @@
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             {% if is_moderator %}
-                            <!-- Official Reply Button for Reviews -->
                             <button class="btn btn-sm btn-outline-primary rounded-pill reply-official-review-btn" data-review-id="{{ r.id }}" title="Reply as Official">
                                 <i class="bi bi-reply-fill"></i> Reply
                             </button>
@@ -106,7 +108,6 @@
                         </div>
                     </div>
                     <p class="text-muted small mb-0">{{ r.comment or '' }}</p>
-                    <!-- Hidden official reply form for this review -->
                     {% if is_moderator %}
                     <div class="official-review-reply-form d-none mt-2" id="officialReviewReplyForm-{{ r.id }}">
                         <textarea class="form-control form-control-sm mb-1" rows="2" placeholder="Official reply..."></textarea>
@@ -137,7 +138,23 @@
     </div>
 </div>
 
-<!-- ================== QR & SHARE POPUPS (INSIDE CONTENT BLOCK) ================== -->
+<!-- ================== JSON-LD Structured Data (SEO) ================== -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Book",
+  "name": "{{ book.title }}",
+  "author": { "@type": "Person", "name": "{{ book.author }}" },
+  "description": "{{ book.description[:200] if book.description else '' }}",
+  "image": "{{ book.image_url if book.image_url and book.image_url != 'None' else '' }}",
+  "url": "{{ request.url }}",
+  "inLanguage": "{{ book.language }}",
+  "genre": "{{ book.level }}",
+  "publisher": { "@type": "Organization", "name": "DocoDive" }
+}
+</script>
+
+<!-- ================== QR & SHARE POPUPS ================== -->
 <div id="qrPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:28px 24px 20px; border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,0.25); z-index:9999; text-align:center; max-width:320px; width:90%;">
     <img id="qrImage" src="" style="width:200px; height:200px; border-radius:16px; display:block; margin:0 auto;">
     <p style="margin:16px 0 8px; font-size:0.85rem; color:#4b5563; line-height:1.5;">
@@ -150,7 +167,6 @@
 </div>
 
 <div id="shareModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
-    <!-- ... (share modal content unchanged, same as previous) ... -->
     <div style="background:white; border-radius:24px; max-width:420px; width:90%; padding:32px 24px; position:relative; box-shadow:0 25px 50px rgba(0,0,0,0.2);">
         <button onclick="closeShareModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#9ca3af;">&times;</button>
         <div style="display:flex; justify-content:center; margin-bottom:16px;">
@@ -209,6 +225,7 @@ document.addEventListener('click', function(e) {
 {% endblock %}
 
 {% block scripts %}
+<meta name="is-moderator" content="{{ is_moderator|default(false)|tojson }}">
 <script>
 // ==================== SAFE USER_LOGGED_IN ====================
 const USER_LOGGED_IN = document.body.dataset.userLoggedIn === 'true';

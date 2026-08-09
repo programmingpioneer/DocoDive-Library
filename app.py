@@ -15,6 +15,7 @@ from functools import wraps
 from html import escape
 import hashlib, hmac, base64, json
 from flask import request, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session, abort, flash, g, Response
 
 from PIL import Image
 from flask_caching import Cache
@@ -82,9 +83,33 @@ limiter = Limiter(
     default_limits=["5000 per day", "500 per hour"]
 )
 # Caching
+# Caching
 app.config['CACHE_TYPE'] = 'SimpleCache'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 300
 cache = Cache(app)
+
+# ================== CACHE-CONTROL HEADERS (Performance) ==================
+@app.after_request
+def add_cache_headers(response):
+    """Set aggressive cache for static assets, no-cache for HTML."""
+    content_type = response.content_type or ''
+    path = request.path
+
+    # Static assets: cache 30 days in browser
+    if any(ext in path for ext in ['.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot']):
+        response.cache_control.max_age = 2592000  # 30 days
+        response.cache_control.public = True
+        response.headers['Cache-Control'] = 'public, max-age=2592000, immutable'
+    # HTML pages: no cache (always fresh)
+    elif 'text/html' in content_type:
+        response.cache_control.no_cache = True
+        response.headers['Cache-Control'] = 'no-cache, must-revalidate'
+    # API/JSON: short cache
+    elif 'application/json' in content_type:
+        response.cache_control.max_age = 60
+        response.headers['Cache-Control'] = 'public, max-age=60'
+
+    return response
 
 IS_PRODUCTION = os.getenv("FLASK_ENV", "").lower() == "production"
 
@@ -1422,10 +1447,8 @@ def service_unavailable(e):
 
 # ================== PUBLIC ROUTES (Home with new features) ==================
 @app.route('/')
+@cache.cached(timeout=300, query_string=True)
 def home():
-    # Public browsing – koi login check nahi
-    # ... rest unchanged
-
     search_query = request.args.get('search_query', '').strip()
     category = request.args.get('category', '').strip()
     author_filter = request.args.get('author', '').strip()
@@ -1587,6 +1610,45 @@ def book_detail(book_id):
     book_data = {"id": book[0], "title": book[1], "level": book[2], "link": book[3],
                  "author": book[4], "description": book[5], "image_url": book[6], "language": book[7]}
     return render_template('book_detail.html', book=book_data, reviews=reviews)
+
+# ================== SEO ROUTES ==================
+
+@app.route('/sitemap.xml')
+def sitemap():
+    """Generate a dynamic XML sitemap for all approved books + static pages."""
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT id, title FROM documents WHERE approved = 1 ORDER BY id DESC")
+    books = cur.fetchall()
+    cur.close()
+
+    static_pages = [
+        {'loc': url_for('home', _external=True), 'changefreq': 'daily', 'priority': '1.0'},
+        {'loc': url_for('user_login', _external=True), 'changefreq': 'monthly', 'priority': '0.5'},
+        {'loc': url_for('user_signup', _external=True), 'changefreq': 'monthly', 'priority': '0.5'},
+        {'loc': url_for('forgot_password', _external=True), 'changefreq': 'monthly', 'priority': '0.3'},
+        {'loc': url_for('user_favorites', _external=True), 'changefreq': 'weekly', 'priority': '0.4'},
+        {'loc': url_for('user_history', _external=True), 'changefreq': 'weekly', 'priority': '0.4'},
+    ]
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+
+    for page in static_pages:
+        xml += f'  <url>\n    <loc>{escape(page["loc"])}</loc>\n    <changefreq>{page["changefreq"]}</changefreq>\n    <priority>{page["priority"]}</priority>\n  </url>\n'
+
+    for book in books:
+        book_url = url_for('book_detail', book_id=book[0], _external=True)
+        xml += f'  <url>\n    <loc>{escape(book_url)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n'
+
+    xml += '</urlset>'
+    return Response(xml, mimetype='application/xml')
+
+
+@app.route('/robots.txt')
+def robots():
+    """Allow all crawlers and point to the sitemap."""
+    content = f"User-agent: *\nAllow: /\nSitemap: {url_for('sitemap', _external=True)}\n"
+    return Response(content, mimetype='text/plain')
 
 # ================== SEARCH AUTOCOMPLETE ==================
 @app.route('/api/search/suggest')

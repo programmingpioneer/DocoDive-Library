@@ -98,7 +98,7 @@ Every feature below was built incrementally, turning DocoDive into a robust, sel
 
 <p align="center">
   <a href="https://docodive.programmingpioneer.com" target="_blank">
-    <img src="static/Preview/Preview.png" alt="DocoDive Dashboard" width="70%" hight="70%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+    <img src="static/images/Preview.png" alt="DocoDive Dashboard" width="70%" hight="70%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
   </a>
 </p>
 <p align="center">
