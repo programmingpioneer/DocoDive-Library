@@ -1,11 +1,11 @@
-// ================== DOCODIVE SERVICE WORKER ==================
-const CACHE_VERSION = 'v1.0.1';
+// ================== DOCODIVE SERVICE WORKER (FIXED) ==================
+const CACHE_VERSION = 'v1.0.2';  // ⬆️ Version badha di
 const STATIC_CACHE = `docodive-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `docodive-images-${CACHE_VERSION}`;
 
-// Assets to precache on install
+// Assets to precache on install — '/' REMOVED (HTML should never be cached)
 const PRECACHE_URLS = [
-  '/',
+  // '/'  ← REMOVED — dynamic HTML, session-dependent
   '/static/css/style.css',
   '/static/js/main.js',
   '/static/images/docodive-og.jpg',
@@ -84,17 +84,9 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Network-first for HTML pages
+  // ⚠️ NETWORK-ONLY for HTML pages — NEVER cache dynamic HTML
   if (request.headers.get('Accept')?.includes('text/html')) {
-    event.respondWith(
-      fetch(request).then(response => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(STATIC_CACHE).then(cache => cache.put(request, clone));
-        }
-        return response;
-      }).catch(() => caches.match(request))
-    );
+    event.respondWith(fetch(request));
     return;
   }
 

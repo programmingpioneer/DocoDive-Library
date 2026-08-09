@@ -460,7 +460,12 @@ form button[type="submit"] {
     backface-visibility: hidden;
 }
 
-/* Off-screen sections skip rendering for faster paint */
+/* 
+   ⚠️ FIX: content-visibility rules temporarily disabled — 
+   was causing page content to not render after loader disappeared.
+   Uncomment after verifying rendering is stable.
+*/
+/*
 section,
 footer,
 main > .container,
@@ -470,6 +475,7 @@ main > .container,
     content-visibility: auto;
     contain-intrinsic-size: 500px;
 }
+*/
 
 /* Heavy containers get containment */
 .book-3d-wrapper,
@@ -496,12 +502,10 @@ textarea {
     touch-action: manipulation;
 }
 
-/* Reduce paint areas */
-img,
-video,
-svg {
-    content-visibility: auto;
-}
+/*
+   ⚠️ FIX: Removed content-visibility from img, video, svg
+   to prevent rendering issues. Keep for now.
+*/
 
 /* Optimize font rendering */
 body {

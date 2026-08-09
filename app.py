@@ -1447,7 +1447,6 @@ def service_unavailable(e):
 
 # ================== PUBLIC ROUTES (Home with new features) ==================
 @app.route('/')
-@cache.cached(timeout=300, query_string=True)
 def home():
     search_query = request.args.get('search_query', '').strip()
     category = request.args.get('category', '').strip()
