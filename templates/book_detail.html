@@ -143,16 +143,16 @@
 {
   "@context": "https://schema.org",
   "@type": "Book",
-  "name": "{{ book.title }}",
+  "name": {{ book.title|tojson }},
   "author": {
     "@type": "Person",
-    "name": "{{ book.author }}"
+    "name": {{ book.author|tojson }}
   },
-  "description": "{{ book.description[:200] if book.description else '' }}",
-  "image": "{{ book.image_url if book.image_url and book.image_url != 'None' else '' }}",
-  "url": "{{ request.url }}",
-  "inLanguage": "{{ book.language }}",
-  "genre": "{{ book.level }}",
+  "description": {{ (book.description[:200] if book.description else '')|tojson }},
+  "image": {{ (book.image_url if book.image_url and book.image_url != 'None' else '')|tojson }},
+  "url": {{ request.url|tojson }},
+  "inLanguage": {{ book.language|tojson }},
+  "genre": {{ book.level|tojson }},
   "offers": {
     "@type": "Offer",
     "price": "0",
