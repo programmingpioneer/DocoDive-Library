@@ -27,21 +27,25 @@ document.addEventListener('DOMContentLoaded', function () {
     })();
   } catch (e) { console.warn('Passive listeners setup failed:', e); }
 
-  // ================== AOS INIT ==================
-  try {
-    if (typeof AOS !== 'undefined') {
-      AOS.init({
-        duration: 350,
-        once: false,
-        mirror: true,
-        offset: 100,
-        easing: 'ease-out',
-        throttleDelay: 99,
-        anchorPlacement: 'top-bottom',
-        disable: 'mobile'
-      });
-    }
-  } catch (e) { console.warn('AOS init failed:', e); }
+// ================== AOS INIT (Modern, Smooth & Responsive) ==================
+try {
+  if (typeof AOS !== 'undefined') {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    AOS.init({
+      duration: 400,                      // smooth 400ms for all devices
+      once: true,                         // animate once only
+      mirror: false,                      // no re‑animation on scroll up
+      offset: 100,                        // trigger 100px before element enters viewport
+      easing: 'ease-out-cubic',           // more natural deceleration
+      throttleDelay: 50,                  // low delay = responsive scroll feel
+      anchorPlacement: 'top-bottom',
+      disable: prefersReducedMotion,      // respect accessibility
+      startEvent: 'DOMContentLoaded',
+      disableMutationObserver: true
+    });
+  }
+} catch (e) { console.warn('AOS init failed:', e); }
 
   // ================== AUTH MODAL (only if modal exists) ==================
   window.authModal = null;

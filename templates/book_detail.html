@@ -51,7 +51,7 @@
             <hr>
 
             <!-- Reviews Section -->
-            <div data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
+            <div data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
                 <h5 class="fw-bold mb-3">⭐ Reviews</h5>
                 {% if user_logged_in %}
                 <form id="reviewForm" class="mb-4 p-3 border rounded-4 bg-light">
@@ -122,7 +122,7 @@
             </div>
 
             <!-- ==================== DISCUSSION COMMENTS ==================== -->
-            <section id="discussion" class="mt-5" data-aos="fade-up" data-aos-duration="600" data-aos-delay="300">
+            <section id="discussion" class="mt-5" data-aos="fade-up" data-aos-duration="600" data-aos-delay="150">
                 <h4 class="fw-bold mb-3">💬 Discussion</h4>
                 <div id="commentsContainer" class="mb-4"></div>
                 {% if user_logged_in %}
@@ -567,3 +567,4 @@ document.getElementById('reviewForm')?.addEventListener('submit', async function
     }
 </style>
 {% endblock %}
+

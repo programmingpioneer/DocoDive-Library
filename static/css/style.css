@@ -444,10 +444,18 @@ body {
 }
 
 /* =============================================
-   90FPS PERFORMANCE OPTIMIZATIONS
+   SAFE ANIMATION PERFORMANCE (FIXED)
    ============================================= */
 
-/* GPU acceleration for smooth animations */
+/* 
+   ✅ FIX: Removed aggressive will-change — replaced with safer GPU hints.
+   was: will-change: transform, box-shadow on .product-card, .category-card,
+   .book-3d, .book-card, .btn, .btn-primary, .btn-outline-primary, 
+   form button[type="submit"]
+   
+   will-change was causing GPU memory overload on mobile,
+   conflicting with AOS scroll animations after Render deployment.
+*/
 .product-card,
 .category-card,
 .book-3d,
@@ -456,12 +464,19 @@ body {
 .btn-primary,
 .btn-outline-primary,
 form button[type="submit"] {
-    will-change: transform, box-shadow;
     backface-visibility: hidden;
+    transform: translateZ(0);  /* Safer GPU hint — lets browser decide */
+}
+
+/* Only apply will-change on hover when actually needed */
+.product-card:hover,
+.category-card:hover {
+    will-change: transform;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* 
-   ⚠️ FIX: content-visibility rules temporarily disabled — 
+   ⚠️ FIX: content-visibility rules temporarily disabled —
    was causing page content to not render after loader disappeared.
    Uncomment after verifying rendering is stable.
 */
@@ -501,11 +516,6 @@ select,
 textarea {
     touch-action: manipulation;
 }
-
-/*
-   ⚠️ FIX: Removed content-visibility from img, video, svg
-   to prevent rendering issues. Keep for now.
-*/
 
 /* Optimize font rendering */
 body {

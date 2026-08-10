@@ -221,7 +221,15 @@
     @keyframes fadeDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
     *, *::before, *::after { box-sizing: border-box; }
-    html, body { overflow-x: hidden; width: 100%; max-width: 100%; }
+    /* ========== OVERFLOW FIX ========== */
+    html, body {
+        overflow-x: clip !important;
+        width: 100%;
+        max-width: 100%;
+    }
+    [data-aos] {
+        overflow: hidden;  /* Prevents AOS from creating horizontal overflow */
+    }
     img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
     .container, .container-fluid, .row, .col, [class*="col-"] { max-width: 100%; }
 
@@ -234,10 +242,11 @@
         .navbar .navbar-toggler { margin-left: 4px; }
     }
 
-    html { scroll-behavior: smooth; }
-    *, *::before, *::after { transition-duration: 0.2s !important; }
+    html {
+        scroll-behavior: smooth;
+        scrollbar-gutter: stable;
+    }
 
-    /* ========== 90FPS PERFORMANCE CSS ========== */
     .product-card, .category-card, .hero-icon {
         will-change: auto;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -252,14 +261,21 @@
     .book-card:hover {
         will-change: transform;
     }
-    
+
+    /* Safer GPU hints for all animated elements */
+    .product-card,
+    .category-card,
+    .book-card,
+    .btn,
+    .btn-primary-custom,
+    form button[type="submit"] {
+        backface-visibility: hidden;
+        transform: translateZ(0);
+    }
+
     /* Touch-action for mobile */
     a, button, .btn, [role="button"], .dropdown-toggle {
         touch-action: manipulation;
-    }
-    /* GPU-composited animations only */
-    .btn, .btn-primary-custom, form button[type="submit"], .book-card, .product-card, .category-card {
-        will-change: transform, box-shadow;
     }
 
     #page-loader {
@@ -861,12 +877,39 @@
         </div>
     </div>
 
-    <!-- ================== PAGE LOADER FAILSAFE (moved here from <head>) ================== -->
+    <!-- ================== PAGE LOADER FAILSAFE ================== -->
     <script>
     setTimeout(function(){
     var l = document.getElementById('page-loader');
     if(l){ l.classList.add('hidden'); setTimeout(function(){ if(l.parentNode) l.parentNode.removeChild(l); }, 500); }
     }, 4000);
+    </script>
+
+    <!-- ================== ANIMATION STABILITY FIX ================== -->
+    <script>
+    (function() {
+      // Force AOS refresh after service worker update
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.addEventListener('message', function(event) {
+          if (event.data && event.data.action === 'refresh') {
+            if (typeof AOS !== 'undefined') AOS.refresh();
+          }
+        });
+      }
+
+      // Re-initialize AOS after everything loads
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          if (typeof AOS !== 'undefined') AOS.refresh();
+        }, 500);
+      });
+
+      // Reduce animation complexity on low-power devices
+      if (window.innerWidth < 576) {
+        document.documentElement.style.setProperty('--aos-duration', '250ms');
+        document.documentElement.style.setProperty('--aos-delay', '50ms');
+      }
+    })();
     </script>
 </body>
 </html>

@@ -33,7 +33,7 @@ self.addEventListener('install', event => {
   );
 });
 
-// ================== ACTIVATE ==================
+// ================== ACTIVATE (Force Update) ==================
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -47,6 +47,13 @@ self.addEventListener('activate', event => {
           return caches.delete(name);
         })
       );
+    }).then(() => {
+      // Force all clients to refresh
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ action: 'refresh' });
+        });
+      });
     }).then(() => self.clients.claim())
   );
 });
