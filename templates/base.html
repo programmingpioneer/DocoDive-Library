@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}DocoDive | Free Digital Library{% endblock %}</title>
 
+    <!-- ================== FAVICON ================== -->
+    <!-- Make sure to upload a 32x32 PNG to static/images/favicon.png -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='static/images/Favicion.jpg') }}">
+    <!-- (Optional) alternate ico fallback -->
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='static/images/favicion.ico') }}">
+
     <!-- ================== RESOURCE HINTS (Performance) ================== -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,12 +19,15 @@
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
     <link rel="dns-prefetch" href="https://conversations-widget.brevo.com">
 
-    <!-- SEO Meta Tags -->
+    <!-- ================== SEO META TAGS ================== -->
     <meta name="description" content="{% block meta_description %}Discover and download thousands of free books and documents on DocoDive. Programming, science, history, and more.{% endblock %}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ request.url }}">
+    <!-- Google Search Console -->
     <meta name="google-site-verification" content="gNlRlPsL7QKq4doTDmxo7HTkFJ35BtsNu227g3BDHlQ" />
+    <!-- Bing Webmaster -->
     <meta name="msvalidate.01" content="314B1327B97988FB1B9BDA872B0A261E" />
+
     <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
     <meta property="og:title" content="{{ self.title() }}">
     <meta property="og:description" content="{{ self.meta_description() }}">
@@ -33,527 +42,373 @@
     <meta name="twitter:description" content="{{ self.meta_description() }}">
     <meta name="twitter:image" content="{{ self.og_image() }}">
 
+    <!-- ================== STYLESHEETS ================== -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
-<style>
-    :root {
-        --edox-purple: #4338ca;
-        --edox-orange: #ffb703;
-        --edox-dark: #1e1b4b;
-        --edox-light: #f8faff;
-    }
-    .navbar { backdrop-filter: blur(10px); background: rgba(255,255,255,0.92); }
-    .navbar .nav-link { color: var(--edox-dark); font-weight: 600; transition: 0.2s; }
-    .navbar .nav-link:hover { color: var(--edox-purple); }
-    .dropdown-menu { border: none; box-shadow: 0 20px 40px rgba(0,0,0,0.08); border-radius: 16px; }
-    .navbar .btn { transition: all 0.2s; }
-    .navbar .btn:hover { transform: translateY(-1px); }
 
-    @media (min-width: 992px) {
-        .dropdown:hover .dropdown-menu { display: block; margin-top: 0; }
-        .dropdown-toggle::after { display: none; }
-    }
-
-    .avatar-fallback {
-        width: 30px; height: 30px; background: #e0e7ff; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center; color: #4338ca; font-size: 1rem;
-    }
-
-    .animate.slideIn { animation: slideDown 0.3s ease-out; }
-    @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-10px) translateX(-50%); }
-        to { opacity: 1; transform: translateY(0) translateX(-50%); }
-    }
-
-    .notif-dropdown { left: 50% !important; right: auto !important; transform: translateX(-50%) !important; }
-    .pulse-badge { animation: pulse 2s infinite; }
-    @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
-        70% { box-shadow: 0 0 0 8px rgba(220, 53, 69, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
-    }
-    .bg-purple-light { background-color: #f0eeff; }
-
-    @media (max-width: 576px) {
-        .dropdown-menu[aria-labelledby="notificationBell"] {
-            width: 300px !important; left: auto !important; right: 0 !important;
-            transform: none !important; position: absolute !important; top: 100% !important;
-            margin-top: 4px !important; border-radius: 16px !important;
+    <style>
+        :root {
+            --edox-purple: #4338ca;
+            --edox-orange: #ffb703;
+            --edox-dark: #1e1b4b;
+            --edox-light: #f8faff;
         }
-    }
 
-    /* ---------- AUTH MODAL STYLING ---------- */
-    .auth-modal .modal-content {
-        background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(25px);
-        border: 1px solid rgba(255,255,255,0.5); border-radius: 28px;
-        box-shadow: 0 20px 50px rgba(30, 27, 75, 0.15);
-    }
-    .auth-modal .modal-body { padding: 2rem 1.8rem; }
-    .auth-tabs { display: flex; border-bottom: 1px solid #e0e7ff; margin-bottom: 1.5rem; }
-    .auth-tab {
-        flex: 1; text-align: center; padding: 10px 0; font-weight: 600; font-size: 1rem;
-        color: #6b7280; background: none; border: none; border-bottom: 3px solid transparent;
-        cursor: pointer; transition: 0.3s;
-    }
-    .auth-tab.active { color: #4338ca; border-bottom-color: #4338ca; }
-    .auth-modal .form-control {
-        background: rgba(255,255,255,0.95); border: 1px solid #e0e7ff; border-radius: 14px;
-        padding: 12px 16px; font-size: 0.95rem; transition: all 0.2s;
-    }
-    .auth-modal .form-control:focus { border-color: #4338ca; box-shadow: 0 0 0 3px rgba(67,56,202,0.15); }
-    .auth-modal .form-control.is-valid { border-color: #10b981 !important; box-shadow: 0 0 0 3px rgba(16,185,129,0.15) !important; }
-    .auth-modal .form-control.is-invalid { border-color: #ef4444 !important; box-shadow: 0 0 0 3px rgba(239,68,68,0.15) !important; }
-    .auth-modal .btn-primary-custom {
-        background: #1e1b4b; border: none; border-radius: 50px; padding: 14px;
-        font-weight: 600; font-size: 1rem; color: white; letter-spacing: 0.3px;
-        box-shadow: 0 10px 25px rgba(30, 27, 75, 0.3); transition: all 0.3s;
-    }
-    .auth-modal .btn-primary-custom:hover { background: #312e81; transform: translateY(-2px); box-shadow: 0 15px 30px rgba(30, 27, 75, 0.4); color: white; }
-    .auth-modal .social-btn {
-        display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-        padding: 10px 18px; border-radius: 50px; font-weight: 600; font-size: 0.9rem;
-        background: white; border: 1px solid #e2e8f0; color: #1e293b; transition: all 0.25s ease;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.02); text-decoration: none; min-width: 100px;
-    }
-    .auth-modal .social-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
-    .auth-modal .social-btn.google { color: #ea4335; border-color: #fce8e6; }
-    .auth-modal .social-btn.google:hover { background: #fef2f2; }
-    .auth-modal .social-btn.github { color: #24292f; border-color: #d0d7de; }
-    .auth-modal .social-btn.github:hover { background: #f6f8fa; }
-    .auth-modal .social-btn.facebook { color: #1877f2; border-color: #d6e4ff; }
-    .auth-modal .social-btn.facebook:hover { background: #f0f5ff; }
+        /* ================== NAVBAR ================== */
+        .navbar { backdrop-filter: blur(10px); background: rgba(255,255,255,0.92); }
+        .navbar .nav-link { color: var(--edox-dark); font-weight: 600; transition: 0.2s; }
+        .navbar .nav-link:hover { color: var(--edox-purple); }
+        .dropdown-menu { border: none; box-shadow: 0 20px 40px rgba(0,0,0,0.08); border-radius: 16px; }
+        .navbar .btn { transition: all 0.2s; }
+        .navbar .btn:hover { transform: translateY(-1px); }
 
-    .username-hint {
-        display: flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem;
-        font-size: 0.75rem; color: #6b7280; background: rgba(67, 56, 202, 0.04);
-        border-radius: 10px; padding: 0.5rem 0.75rem; border-left: 3px solid #4338ca;
-    }
-
-    /* ---------- SHOW PASSWORD BOX ---------- */
-    .show-password-box {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 1rem;
-        font-size: 0.85rem;
-        color: #4b5563;
-        cursor: pointer;
-        user-select: none;
-    }
-    .show-password-box input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
-        accent-color: #4338ca;
-        cursor: pointer;
-    }
-
-    /* ---------- BOTTOM LINKS ---------- */
-    .modal-bottom-links {
-        margin-top: 1.8rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-    }
-    .modal-bottom-links .forgot-link {
-        font-size: 0.9rem;
-        color: #4338ca;
-        text-decoration: none;
-        font-weight: 500;
-    }
-    .modal-bottom-links .forgot-link:hover { text-decoration: underline; }
-    .modal-bottom-links .social-login { width: 100%; }
-    .modal-bottom-links .social-divider {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-        color: #6b7280;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .modal-bottom-links .social-divider::before,
-    .modal-bottom-links .social-divider::after {
-        content: '';
-        flex: 1;
-        height: 1px;
-        background: linear-gradient(to right, transparent, #cbd5e1, transparent);
-    }
-    .modal-bottom-links .social-buttons {
-        display: flex;
-        justify-content: center;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-    }
-    .modal-bottom-links .footer-links {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 1.2rem;
-        font-size: 0.85rem;
-        font-weight: 500;
-        margin-top: 0.5rem;
-    }
-    .modal-bottom-links .footer-links a {
-        color: #4338ca;
-        text-decoration: none;
-    }
-    .modal-bottom-links .footer-links a:hover { text-decoration: underline; }
-
-    @media (max-width: 576px) {
-        .auth-modal .modal-body { padding: 1.5rem 1.2rem; }
-        .auth-modal .form-control { padding: 10px 14px; font-size: 0.9rem; }
-        .auth-modal .btn-primary-custom { padding: 12px; font-size: 0.95rem; }
-        .auth-tab { font-size: 0.9rem; }
-    }
-
-    .auth-modal.fade .modal-dialog { transform: translateY(30px); opacity: 0; transition: transform 0.4s ease-out, opacity 0.4s ease-out; }
-    .auth-modal.fade.show .modal-dialog { transform: translateY(0); opacity: 1; }
-
-    .btn, .nav-link, .product-card, .category-card { transition: all 0.3s ease !important; }
-    .btn:active { transform: scale(0.95); }
-    .product-card:hover, .category-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(30, 27, 75, 0.1); }
-    .dropdown-menu { animation: fadeDown 0.25s ease-out; }
-    @keyframes fadeDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-    *, *::before, *::after { box-sizing: border-box; }
-    /* ========== OVERFLOW FIX ========== */
-    html, body {
-        overflow-x: clip !important;
-        width: 100%;
-        max-width: 100%;
-    }
-    [data-aos] {
-        overflow: hidden;  /* Prevents AOS from creating horizontal overflow */
-    }
-    img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
-    .container, .container-fluid, .row, .col, [class*="col-"] { max-width: 100%; }
-
-    @media (max-width: 576px) {
-        .navbar .d-flex.order-lg-last { flex-wrap: wrap; justify-content: flex-end; }
-        .navbar .dropdown .btn { padding: 2px 8px; font-size: 0.85rem; }
-        .avatar-fallback { width: 24px; height: 24px; font-size: 0.8rem; }
-        .navbar .dropdown img.rounded-circle { width: 24px !important; height: 24px !important; }
-        .navbar .nav-link { font-size: 0.9rem; padding: 0.4rem 0.6rem; }
-        .navbar .navbar-toggler { margin-left: 4px; }
-    }
-
-    html {
-        scroll-behavior: smooth;
-        scrollbar-gutter: stable;
-    }
-
-    .product-card, .category-card, .hero-icon {
-        will-change: auto;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .product-card:hover, .category-card:hover {
-        will-change: transform;
-    }
-    .book-card {
-        will-change: auto;
-        transition: transform 0.4s ease, box-shadow 0.4s ease;
-    }
-    .book-card:hover {
-        will-change: transform;
-    }
-
-    /* Safer GPU hints for all animated elements */
-    .product-card,
-    .category-card,
-    .book-card,
-    .btn,
-    .btn-primary-custom,
-    form button[type="submit"] {
-        backface-visibility: hidden;
-        transform: translateZ(0);
-    }
-
-    /* Touch-action for mobile */
-    a, button, .btn, [role="button"], .dropdown-toggle {
-        touch-action: manipulation;
-    }
-
-    #page-loader {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(255, 255, 255, 0.25);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        z-index: 99999;
-        display: flex; align-items: center; justify-content: center;
-        transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
-    }
-    #page-loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-
-    .loader-svg { width: 220px; height: 180px; }
-
-    .draw-path {
-        fill: none; stroke: #4338ca; stroke-width: 3;
-        stroke-linecap: round; stroke-linejoin: round;
-        stroke-dasharray: 400; stroke-dashoffset: 400;
-        animation: drawLine 1.2s ease forwards;
-    }
-    .draw-path.slow { animation-duration: 1.5s; }
-    .draw-path.fast { animation-duration: 0.9s; }
-
-    @keyframes drawLine { to { stroke-dashoffset: 0; } }
-
-    .lamp-glow {
-        fill: #ffb703;
-        opacity: 0;
-        animation: glowPulse 1s ease 1.2s infinite alternate;
-    }
-    @keyframes glowPulse { from { opacity: 0.2; r: 12; } to { opacity: 0.5; r: 16; } }
-
-    .light-cone {
-        fill: #ffb703;
-        opacity: 0;
-        animation: coneFade 1s ease 1.2s forwards, conePulse 2s ease 2.2s infinite alternate;
-    }
-    @keyframes coneFade { to { opacity: 0.08; } }
-    @keyframes conePulse { from { opacity: 0.06; } to { opacity: 0.12; } }
-
-    .bulb-fill { fill: #ffb703; opacity: 0; animation: fadeIn 0.4s ease 1.2s forwards; }
-
-    .loader-brand {
-        font-family: 'Poppins', sans-serif;
-        font-size: 1.4rem; font-weight: 800;
-        color: #1e1b4b; letter-spacing: 2px;
-        margin-top: 16px;
-        opacity: 0;
-        animation: fadeIn 0.5s ease 1.6s forwards, brandPulse 2s ease 2.2s infinite alternate;
-    }
-    @keyframes brandPulse { from { transform: scale(1); } to { transform: scale(1.05); } }
-    @keyframes fadeIn { to { opacity: 1; } }
-
-    /* ========== UNIVERSAL BOOK COVER ========== */
-    .book-cover {
-        width: 100%;
-        height: 220px;
-        object-fit: cover;
-        border-radius: 12px 12px 0 0;
-        display: block;
-    }
-    @media (max-width: 992px) { .book-cover { height: 180px; } }
-    @media (max-width: 576px) { .book-cover { height: 150px; } }
-
-    /* ---------- RESPONSIVE ICONS ---------- */
-    .navbar .nav-link i,
-    .btn i {
-        font-size: 1.1rem;
-    }
-    @media (min-width: 768px) {
-        .navbar .nav-link i,
-        .btn i {
-            font-size: 1.25rem;
+        @media (min-width: 992px) {
+            .dropdown:hover .dropdown-menu { display: block; margin-top: 0; }
+            .dropdown-toggle::after { display: none; }
         }
-    }
 
-    /* ========== ENHANCED BUTTON ANIMATIONS (non-submit) ========== */
-    .btn {
-        position: relative;
-        overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
-    }
+        .avatar-fallback {
+            width: 30px; height: 30px; background: #e0e7ff; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: #4338ca; font-size: 1rem;
+        }
 
-    .btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-    }
+        .animate.slideIn { animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px) translateX(-50%); }
+            to { opacity: 1; transform: translateY(0) translateX(-50%); }
+        }
 
-    .btn:active {
-        transform: scale(0.97);
-    }
+        .notif-dropdown { left: 50% !important; right: auto !important; transform: translateX(-50%) !important; }
+        .pulse-badge { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+        .bg-purple-light { background-color: #f0eeff; }
 
-    .btn::after {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.3);
-        transform: translate(-50%, -50%);
-        transition: width 0.6s, height 0.6s, opacity 0.6s;
-    }
+        @media (max-width: 576px) {
+            .dropdown-menu[aria-labelledby="notificationBell"] {
+                width: 300px !important; left: auto !important; right: 0 !important;
+                transform: none !important; position: absolute !important; top: 100% !important;
+                margin-top: 4px !important; border-radius: 16px !important;
+            }
+        }
 
-    .btn:active::after {
-        width: 300px;
-        height: 300px;
-        opacity: 0;
-    }
+        /* ---------- AUTH MODAL STYLING ---------- */
+        .auth-modal .modal-content {
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(25px);
+            border: 1px solid rgba(255,255,255,0.5); border-radius: 28px;
+            box-shadow: 0 20px 50px rgba(30, 27, 75, 0.15);
+        }
+        .auth-modal .modal-body { padding: 2rem 1.8rem; }
+        .auth-tabs { display: flex; border-bottom: 1px solid #e0e7ff; margin-bottom: 1.5rem; }
+        .auth-tab {
+            flex: 1; text-align: center; padding: 10px 0; font-weight: 600; font-size: 1rem;
+            color: #6b7280; background: none; border: none; border-bottom: 3px solid transparent;
+            cursor: pointer; transition: 0.3s;
+        }
+        .auth-tab.active { color: #4338ca; border-bottom-color: #4338ca; }
+        .auth-modal .form-control {
+            background: rgba(255,255,255,0.95); border: 1px solid #e0e7ff; border-radius: 14px;
+            padding: 12px 16px; font-size: 0.95rem; transition: all 0.2s;
+        }
+        .auth-modal .form-control:focus { border-color: #4338ca; box-shadow: 0 0 0 3px rgba(67,56,202,0.15); }
+        .auth-modal .form-control.is-valid { border-color: #10b981 !important; box-shadow: 0 0 0 3px rgba(16,185,129,0.15) !important; }
+        .auth-modal .form-control.is-invalid { border-color: #ef4444 !important; box-shadow: 0 0 0 3px rgba(239,68,68,0.15) !important; }
+        .auth-modal .btn-primary-custom {
+            background: #1e1b4b; border: none; border-radius: 50px; padding: 14px;
+            font-weight: 600; font-size: 1rem; color: white; letter-spacing: 0.3px;
+            box-shadow: 0 10px 25px rgba(30, 27, 75, 0.3); transition: all 0.3s;
+        }
+        .auth-modal .btn-primary-custom:hover { background: #312e81; transform: translateY(-2px); box-shadow: 0 15px 30px rgba(30, 27, 75, 0.4); color: white; }
+        .auth-modal .social-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+            padding: 10px 18px; border-radius: 50px; font-weight: 600; font-size: 0.9rem;
+            background: white; border: 1px solid #e2e8f0; color: #1e293b; transition: all 0.25s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02); text-decoration: none; min-width: 100px;
+        }
+        .auth-modal .social-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .auth-modal .social-btn.google { color: #ea4335; border-color: #fce8e6; }
+        .auth-modal .social-btn.google:hover { background: #fef2f2; }
+        .auth-modal .social-btn.github { color: #24292f; border-color: #d0d7de; }
+        .auth-modal .social-btn.github:hover { background: #f6f8fa; }
+        .auth-modal .social-btn.facebook { color: #1877f2; border-color: #d6e4ff; }
+        .auth-modal .social-btn.facebook:hover { background: #f0f5ff; }
 
-    /* ========== GLOBAL MODERN SUBMIT BUTTON – eDex Style ========== */
-    form button[type="submit"] {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 28px;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.95rem;
-        color: #fff !important;
-        background: linear-gradient(135deg, #4338ca 0%, #5b21b6 100%);
-        background-size: 200% auto;
-        border: none;
-        box-shadow: 0 8px 24px rgba(67, 56, 202, 0.3);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-position 0.6s ease;
-        overflow: hidden;
-        width: auto;
-        min-width: 160px;
-    }
+        .username-hint {
+            display: flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem;
+            font-size: 0.75rem; color: #6b7280; background: rgba(67, 56, 202, 0.04);
+            border-radius: 10px; padding: 0.5rem 0.75rem; border-left: 3px solid #4338ca;
+        }
 
-    form button[type="submit"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 28px rgba(67, 56, 202, 0.4);
-        background-position: right center;
-    }
+        /* ---------- SHOW PASSWORD BOX ---------- */
+        .show-password-box {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 1rem; font-size: 0.85rem; color: #4b5563;
+            cursor: pointer; user-select: none;
+        }
+        .show-password-box input[type="checkbox"] {
+            width: 16px; height: 16px; accent-color: #4338ca; cursor: pointer;
+        }
 
-    form button[type="submit"]:active {
-        transform: scale(0.97);
-    }
+        /* ---------- BOTTOM LINKS ---------- */
+        .modal-bottom-links {
+            margin-top: 1.8rem; display: flex; flex-direction: column; align-items: center; gap: 1rem;
+        }
+        .modal-bottom-links .forgot-link {
+            font-size: 0.9rem; color: #4338ca; text-decoration: none; font-weight: 500;
+        }
+        .modal-bottom-links .forgot-link:hover { text-decoration: underline; }
+        .modal-bottom-links .social-login { width: 100%; }
+        .modal-bottom-links .social-divider {
+            display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;
+            color: #6b7280; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .modal-bottom-links .social-divider::before,
+        .modal-bottom-links .social-divider::after {
+            content: ''; flex: 1; height: 1px;
+            background: linear-gradient(to right, transparent, #cbd5e1, transparent);
+        }
+        .modal-bottom-links .social-buttons {
+            display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap;
+        }
+        .modal-bottom-links .footer-links {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2rem;
+            font-size: 0.85rem; font-weight: 500; margin-top: 0.5rem;
+        }
+        .modal-bottom-links .footer-links a { color: #4338ca; text-decoration: none; }
+        .modal-bottom-links .footer-links a:hover { text-decoration: underline; }
 
-    form button[type="submit"]::after {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.3);
-        transform: translate(-50%, -50%);
-        transition: width 0.6s, height 0.6s, opacity 0.6s;
-        z-index: 1;
-    }
+        @media (max-width: 576px) {
+            .auth-modal .modal-body { padding: 1.5rem 1.2rem; }
+            .auth-modal .form-control { padding: 10px 14px; font-size: 0.9rem; }
+            .auth-modal .btn-primary-custom { padding: 12px; font-size: 0.95rem; }
+            .auth-tab { font-size: 0.9rem; }
+        }
 
-    form button[type="submit"]:active::after {
-        width: 300px;
-        height: 300px;
-        opacity: 0;
-    }
+        .auth-modal.fade .modal-dialog { transform: translateY(30px); opacity: 0; transition: transform 0.4s ease-out, opacity 0.4s ease-out; }
+        .auth-modal.fade.show .modal-dialog { transform: translateY(0); opacity: 1; }
 
-    form button[type="submit"]::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -75%;
-        width: 50%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-        transform: skewX(-25deg);
-        transition: left 0.75s ease;
-        z-index: 1;
-    }
+        .btn, .nav-link, .product-card, .category-card { transition: all 0.3s ease !important; }
+        .btn:active { transform: scale(0.95); }
+        .product-card:hover, .category-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(30, 27, 75, 0.1); }
+        .dropdown-menu { animation: fadeDown 0.25s ease-out; }
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-    form button[type="submit"]:hover::before {
-        left: 125%;
-    }
+        *, *::before, *::after { box-sizing: border-box; }
 
-    form button[type="submit"] .btn-text,
-    form button[type="submit"] .loading-text,
-    form button[type="submit"] .book-spinner {
-        position: relative;
-        z-index: 2;
-    }
-
-    /* Loading state */
-    .btn-loading {
-        pointer-events: none;
-        opacity: 0.85;
-    }
-
-    .btn-loading .btn-text {
-        display: none;
-    }
-
-    .loading-text {
-        display: none;
-    }
-
-    .btn-loading .loading-text {
-        display: inline-block !important;
-    }
-
-    .book-spinner {
-        display: none;
-    }
-
-    .btn-loading .book-spinner {
-        display: inline-block !important;
-    }
-
-    @media (max-width: 576px) {
-        form button[type="submit"] {
+        /* ========== OVERFLOW & SCROLL FIX ========== */
+        html, body {
+            overflow-x: clip !important;
             width: 100%;
-            padding: 12px 20px;
-            font-size: 0.9rem;
+            max-width: 100%;
         }
-    }
+        html {
+            scroll-behavior: smooth;
+            scrollbar-gutter: stable;
+        }
+        [data-aos] {
+            overflow: hidden;  /* Prevents AOS horizontal overflow */
+        }
 
-    /* ========== BOOK ANIMATIONS ========== */
-    @keyframes bookFlip {
-        0% { transform: rotateY(0deg); }
-        50% { transform: rotateY(180deg); }
-        100% { transform: rotateY(360deg); }
-    }
+        img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
+        .container, .container-fluid, .row, .col, [class*="col-"] { max-width: 100%; }
 
-    .book-spinner {
-        animation: bookFlip 1.5s infinite ease-in-out;
-        font-size: 1.5rem;
-    }
+        @media (max-width: 576px) {
+            .navbar .d-flex.order-lg-last { flex-wrap: wrap; justify-content: flex-end; }
+            .navbar .dropdown .btn { padding: 2px 8px; font-size: 0.85rem; }
+            .avatar-fallback { width: 24px; height: 24px; font-size: 0.8rem; }
+            .navbar .dropdown img.rounded-circle { width: 24px !important; height: 24px !important; }
+            .navbar .nav-link { font-size: 0.9rem; padding: 0.4rem 0.6rem; }
+            .navbar .navbar-toggler { margin-left: 4px; }
+        }
 
-    .book-card {
-        transition: transform 0.4s ease, box-shadow 0.4s ease;
-        transform-style: preserve-3d;
-        cursor: pointer;
-    }
-    .book-card:hover {
-        transform: perspective(800px) rotateY(8deg) scale(1.03);
-        box-shadow: 0 15px 35px rgba(30, 27, 75, 0.25);
-    }
-
-    .book-cover-flip {
-        transition: transform 0.6s ease;
-        transform-origin: left center;
-    }
-    .book-cover-flip:hover {
-        transform: rotateY(-25deg);
-    }
-
-    .book-card .card-body {
-        transition: opacity 0.3s;
-    }
-    .book-card:hover .card-body {
-        opacity: 0.95;
-    }
-
-    @media (max-width: 576px) {
+        /* ========== SAFE ANIMATION PERFORMANCE ========== */
+        .product-card, .category-card, .hero-icon {
+            will-change: auto;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .product-card:hover, .category-card:hover {
+            will-change: transform;
+        }
         .book-card {
-            transform: none !important;
+            will-change: auto;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
         }
         .book-card:hover {
-            transform: scale(1.02) !important;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            will-change: transform;
         }
-    }
 
-    /* ========== SAFE LAZY RENDERING (replaces content-visibility:auto) ========== */
-    section, footer, #reviews, #discussion {
-        contain: layout style;
-    }
-</style>
+        .product-card,
+        .category-card,
+        .book-card,
+        .btn,
+        .btn-primary-custom,
+        form button[type="submit"] {
+            backface-visibility: hidden;
+            transform: translateZ(0);
+        }
 
-    <!-- Google Analytics (GA4) -->
+        /* Touch-action for mobile */
+        a, button, .btn, [role="button"], .dropdown-toggle {
+            touch-action: manipulation;
+        }
+
+        /* ========== PAGE LOADER ========== */
+        #page-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 99999;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
+        }
+        #page-loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        .loader-svg { width: 220px; height: 180px; }
+        .draw-path {
+            fill: none; stroke: #4338ca; stroke-width: 3;
+            stroke-linecap: round; stroke-linejoin: round;
+            stroke-dasharray: 400; stroke-dashoffset: 400;
+            animation: drawLine 1.2s ease forwards;
+        }
+        .draw-path.slow { animation-duration: 1.5s; }
+        .draw-path.fast { animation-duration: 0.9s; }
+        @keyframes drawLine { to { stroke-dashoffset: 0; } }
+        .lamp-glow {
+            fill: #ffb703; opacity: 0;
+            animation: glowPulse 1s ease 1.2s infinite alternate;
+        }
+        @keyframes glowPulse { from { opacity: 0.2; r: 12; } to { opacity: 0.5; r: 16; } }
+        .light-cone {
+            fill: #ffb703; opacity: 0;
+            animation: coneFade 1s ease 1.2s forwards, conePulse 2s ease 2.2s infinite alternate;
+        }
+        @keyframes coneFade { to { opacity: 0.08; } }
+        @keyframes conePulse { from { opacity: 0.06; } to { opacity: 0.12; } }
+        .bulb-fill { fill: #ffb703; opacity: 0; animation: fadeIn 0.4s ease 1.2s forwards; }
+        .loader-brand {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.4rem; font-weight: 800;
+            color: #1e1b4b; letter-spacing: 2px;
+            margin-top: 16px; opacity: 0;
+            animation: fadeIn 0.5s ease 1.6s forwards, brandPulse 2s ease 2.2s infinite alternate;
+        }
+        @keyframes brandPulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        /* ========== UNIVERSAL BOOK COVER ========== */
+        .book-cover {
+            width: 100%; height: 220px;
+            object-fit: cover; border-radius: 12px 12px 0 0; display: block;
+        }
+        @media (max-width: 992px) { .book-cover { height: 180px; } }
+        @media (max-width: 576px) { .book-cover { height: 150px; } }
+
+        /* ========== RESPONSIVE ICONS ========== */
+        .navbar .nav-link i,
+        .btn i { font-size: 1.1rem; }
+        @media (min-width: 768px) {
+            .navbar .nav-link i,
+            .btn i { font-size: 1.25rem; }
+        }
+
+        /* ========== ENHANCED BUTTON ANIMATIONS ========== */
+        .btn {
+            position: relative; overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
+        }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); }
+        .btn:active { transform: scale(0.97); }
+        .btn::after {
+            content: ""; position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s, opacity 0.6s;
+        }
+        .btn:active::after { width: 300px; height: 300px; opacity: 0; }
+
+        /* ========== MODERN SUBMIT BUTTON ========== */
+        form button[type="submit"] {
+            position: relative; display: inline-flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 12px 28px; border-radius: 50px;
+            font-weight: 600; font-size: 0.95rem; color: #fff !important;
+            background: linear-gradient(135deg, #4338ca 0%, #5b21b6 100%);
+            background-size: 200% auto; border: none;
+            box-shadow: 0 8px 24px rgba(67, 56, 202, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-position 0.6s ease;
+            overflow: hidden; width: auto; min-width: 160px;
+        }
+        form button[type="submit"]:hover {
+            transform: translateY(-2px); box-shadow: 0 12px 28px rgba(67, 56, 202, 0.4);
+            background-position: right center;
+        }
+        form button[type="submit"]:active { transform: scale(0.97); }
+        form button[type="submit"]::after {
+            content: ""; position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s, opacity 0.6s; z-index: 1;
+        }
+        form button[type="submit"]:active::after { width: 300px; height: 300px; opacity: 0; }
+        form button[type="submit"]::before {
+            content: ''; position: absolute; top: 0; left: -75%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-25deg); transition: left 0.75s ease; z-index: 1;
+        }
+        form button[type="submit"]:hover::before { left: 125%; }
+        form button[type="submit"] .btn-text,
+        form button[type="submit"] .loading-text,
+        form button[type="submit"] .book-spinner { position: relative; z-index: 2; }
+
+        .btn-loading { pointer-events: none; opacity: 0.85; }
+        .btn-loading .btn-text { display: none; }
+        .loading-text { display: none; }
+        .btn-loading .loading-text { display: inline-block !important; }
+        .book-spinner { display: none; }
+        .btn-loading .book-spinner { display: inline-block !important; }
+
+        @media (max-width: 576px) {
+            form button[type="submit"] { width: 100%; padding: 12px 20px; font-size: 0.9rem; }
+        }
+
+        /* ========== BOOK ANIMATIONS ========== */
+        @keyframes bookFlip {
+            0% { transform: rotateY(0deg); }
+            50% { transform: rotateY(180deg); }
+            100% { transform: rotateY(360deg); }
+        }
+        .book-spinner { animation: bookFlip 1.5s infinite ease-in-out; font-size: 1.5rem; }
+        .book-card {
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            transform-style: preserve-3d; cursor: pointer;
+        }
+        .book-card:hover { transform: perspective(800px) rotateY(8deg) scale(1.03); box-shadow: 0 15px 35px rgba(30, 27, 75, 0.25); }
+        .book-cover-flip { transition: transform 0.6s ease; transform-origin: left center; }
+        .book-cover-flip:hover { transform: rotateY(-25deg); }
+        .book-card .card-body { transition: opacity 0.3s; }
+        .book-card:hover .card-body { opacity: 0.95; }
+
+        @media (max-width: 576px) {
+            .book-card { transform: none !important; }
+            .book-card:hover { transform: scale(1.02) !important; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+        }
+
+        /* ========== LAZY RENDERING (safe) ========== */
+        section, footer, #reviews, #discussion { contain: layout style; }
+    </style>
+
+    <!-- ================== GOOGLE ANALYTICS ================== -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-3GC4V3QX2W"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -562,7 +417,7 @@
         gtag('config', 'G-3GC4V3QX2W');
     </script>
 
-    <!-- Brevo Conversations widget -->
+    <!-- ================== BREVO CHAT WIDGET ================== -->
     <script>
         (function(d, w, c) {
             w.BrevoConversationsID = '6a551981edd95b5e7d08467b';
@@ -576,7 +431,7 @@
 
 <body class="d-flex flex-column min-vh-100" data-user-logged-in="{{ 'true' if session.get('user_id') else 'false' }}">
 
-    <!-- ==================== PAGE LOADER ==================== -->
+    <!-- ================== PAGE LOADER ================== -->
     <div id="page-loader">
         <div style="text-align: center;">
             <svg class="loader-svg" viewBox="0 0 220 180">
@@ -605,7 +460,7 @@
         </div>
     </div>
 
-    <!-- ========== NAVBAR ========== -->
+    <!-- ================== NAVBAR ================== -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white py-3 sticky-top shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bolder fs-4 text-primary d-flex align-items-center gap-2" href="/">
@@ -730,12 +585,12 @@
         </div>
     </nav>
 
-    <!-- ========== MAIN CONTENT ========== -->
+    <!-- ================== MAIN CONTENT ================== -->
     <main class="flex-grow-1">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- ========== FOOTER ========== -->
+    <!-- ================== FOOTER ================== -->
     <footer class="text-center py-4 text-muted bg-white border-top mt-auto" data-aos="fade-up">
         <p class="mb-0 small fw-semibold">© 2026 DocoDive – Free Knowledge, Pure Discipline.</p>
     </footer>
@@ -746,7 +601,7 @@
     <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 
-    <!-- ================== AUTH MODAL (HTML only, scripts in main.js) ================== -->
+    <!-- ================== AUTH MODAL ================== -->
     <div class="modal fade auth-modal" id="authModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
       <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 28px; overflow: hidden;">
@@ -842,9 +697,7 @@
             <div class="modal-bottom-links">
               <a href="/forgot-password" class="forgot-link"><i class="bi bi-question-circle-fill me-1"></i> Forgot Password?</a>
               <div class="social-login">
-                <div class="social-divider">
-                  <span>or continue with</span>
-                </div>
+                <div class="social-divider"><span>or continue with</span></div>
                 <div class="social-buttons">
                   <a href="/login/google" class="social-btn google"><i class="bi bi-google"></i> Google</a>
                   <a href="/login/github" class="social-btn github"><i class="bi bi-github"></i> GitHub</a>
@@ -889,7 +742,6 @@
     <!-- ================== ANIMATION STABILITY FIX ================== -->
     <script>
     (function() {
-      // Force AOS refresh after service worker update
       if (navigator.serviceWorker) {
         navigator.serviceWorker.addEventListener('message', function(event) {
           if (event.data && event.data.action === 'refresh') {
@@ -897,15 +749,11 @@
           }
         });
       }
-
-      // Re-initialize AOS after everything loads
       window.addEventListener('load', function() {
         setTimeout(function() {
           if (typeof AOS !== 'undefined') AOS.refresh();
         }, 500);
       });
-
-      // Reduce animation complexity on low-power devices
       if (window.innerWidth < 576) {
         document.documentElement.style.setProperty('--aos-duration', '250ms');
         document.documentElement.style.setProperty('--aos-delay', '50ms');
