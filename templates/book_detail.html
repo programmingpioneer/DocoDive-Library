@@ -144,13 +144,25 @@
   "@context": "https://schema.org",
   "@type": "Book",
   "name": "{{ book.title }}",
-  "author": { "@type": "Person", "name": "{{ book.author }}" },
+  "author": {
+    "@type": "Person",
+    "name": "{{ book.author }}"
+  },
   "description": "{{ book.description[:200] if book.description else '' }}",
   "image": "{{ book.image_url if book.image_url and book.image_url != 'None' else '' }}",
   "url": "{{ request.url }}",
   "inLanguage": "{{ book.language }}",
   "genre": "{{ book.level }}",
-  "publisher": { "@type": "Organization", "name": "DocoDive" }
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "DocoDive"
+  }
 }
 </script>
 
