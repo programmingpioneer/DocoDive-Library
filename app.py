@@ -254,7 +254,7 @@ def is_valid_pdf(file_bytes):
     return file_bytes[:5] == b'%PDF-'
 
 # ================== IMAGE COMPRESSION ==================
-def compress_image(image_bytes, max_size=(600, 600), quality=85):
+def compress_image(image_bytes, max_size=(400, 400), quality=75):
     img = Image.open(io.BytesIO(image_bytes))
     img.thumbnail(max_size, Image.LANCZOS)
     output = io.BytesIO()
@@ -339,7 +339,13 @@ R2_BUCKET = os.getenv('R2_BUCKET_NAME', 'docodive')
 R2_PUBLIC_BASE = os.getenv('R2_PUBLIC_DOMAIN', 'https://pub-8f5fcc3c01514e53b12396f444c45448.r2.dev')
 
 def upload_to_r2(file_bytes, key, content_type='application/octet-stream'):
-    r2_client.put_object(Bucket=R2_BUCKET, Key=key, Body=file_bytes, ContentType=content_type)
+    r2_client.put_object(
+        Bucket=R2_BUCKET,
+        Key=key,
+        Body=file_bytes,
+        ContentType=content_type,
+        CacheControl='public, max-age=2592000, immutable'
+    )
     return f"{R2_PUBLIC_BASE}/{key}"
 
 def delete_from_r2(key):
@@ -956,7 +962,7 @@ def user_upload():
                 flash(msg, 'danger')
                 return redirect(url_for('user_upload'))
             cover_bytes = cover_file.read()
-            cover_bytes = compress_image(cover_bytes, max_size=(800, 800), quality=80)
+            cover_bytes = compress_image(cover_bytes, max_size=(400, 400), quality=75)
             if len(cover_bytes) > 2 * 1024 * 1024:
                 msg = 'Cover image must be less than 2 MB.'
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -2202,7 +2208,7 @@ def extract_cover_from_pdf(pdf_bytes):
         pix = page.get_pixmap(dpi=150)
         cover_bytes = pix.tobytes("png")
         doc.close()
-        return compress_image(BytesIO(cover_bytes).getvalue(), max_size=(800, 800), quality=80)
+        return compress_image(BytesIO(cover_bytes).getvalue(), max_size=(400, 400), quality=75)
     except Exception as e:
         app.logger.error(f"Cover extraction failed: {e}")
         return None
