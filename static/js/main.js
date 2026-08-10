@@ -32,8 +32,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof AOS !== 'undefined') {
       AOS.init({
         duration: 350,
-        once: true,       // ✅ Optimized
-        mirror: false,     // ✅ Optimized
+        once: false,
+        mirror: true,
         offset: 100,
         easing: 'ease-out',
         throttleDelay: 99,

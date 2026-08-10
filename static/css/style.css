@@ -73,7 +73,7 @@ body {
     color: #fff;
 }
 
-.text-warning { color: #b8860b !important; } 
+.text-warning { color: var(--secondary) !important; }
 
 /* ---- DARK MODE (complete coverage) ---- */
 [data-bs-theme="dark"] body {

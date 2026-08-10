@@ -340,7 +340,7 @@
                                 <i class="bi bi-x-circle-fill fs-5"></i>
                             </button>
                         </div>
-                        <button type="submit" class="btn btn-primary rounded-pill px-3 px-md-5 fw-bold shadow-sm" style="border-radius: 0 50px 50px 0;" aria-label="Search Books">
+                        <button type="submit" class="btn btn-primary rounded-pill px-3 px-md-5 fw-bold shadow-sm" style="border-radius: 0 50px 50px 0;">
                             <i class="bi bi-search me-1 me-md-2"></i><span class="d-none d-sm-inline">Find Book</span>
                         </button>
                     </form>
@@ -515,10 +515,10 @@
                                 </div>
                                 {% endif %}
                                 <div class="d-flex justify-content-end gap-1">
-                                    <a href="/book/{{ book.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding:0; text-decoration:none;" title="View Details">
+                                    <a href="/book/{{ book.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; padding:0; text-decoration:none;" title="View Details">
                                         <i class="bi bi-info-circle" style="font-size:0.65rem;"></i>
                                     </a>
-                                    <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ book.id }}" style="width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding:0;" title="Quick Preview">
+                                    <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ book.id }}" style="width: 24px; height: 24px; padding:0;" title="Quick Preview">
                                         <i class="bi bi-search" style="font-size:0.65rem;"></i>
                                     </button>
                                 </div>
@@ -530,10 +530,10 @@
             </div>
             {% endfor %}
         </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#recommendedCarousel" data-bs-slide="prev" aria-label="Previous">
+        <button class="carousel-control-prev" type="button" data-bs-target="#recommendedCarousel" data-bs-slide="prev">
             <span class="carousel-control-prev-icon bg-dark rounded-circle" aria-hidden="true"></span>
         </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#recommendedCarousel" data-bs-slide="next" aria-label="Next">
+        <button class="carousel-control-next" type="button" data-bs-target="#recommendedCarousel" data-bs-slide="next">
             <span class="carousel-control-next-icon bg-dark rounded-circle" aria-hidden="true"></span>
         </button>
     </div>
@@ -596,10 +596,10 @@
                                 </div>
                                 {% endif %}
                                 <div class="d-flex justify-content-end gap-1">
-                                    <a href="/book/{{ pdf.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding:0; text-decoration:none;" title="View Details">
+                                    <a href="/book/{{ pdf.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; padding:0; text-decoration:none;" title="View Details">
                                         <i class="bi bi-info-circle" style="font-size:0.65rem;"></i>
                                     </a>
-                                    <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ pdf.id }}" style="width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding:0;" title="Quick Preview">
+                                    <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ pdf.id }}" style="width: 24px; height: 24px; padding:0;" title="Quick Preview">
                                         <i class="bi bi-search" style="font-size:0.65rem;"></i>
                                     </button>
                                 </div>
@@ -611,10 +611,10 @@
             </div>
             {% endfor %}
         </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#newArrivalsCarousel" data-bs-slide="prev" aria-label="Previous">
+        <button class="carousel-control-prev" type="button" data-bs-target="#newArrivalsCarousel" data-bs-slide="prev">
             <span class="carousel-control-prev-icon bg-dark rounded-circle" aria-hidden="true"></span>
         </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#newArrivalsCarousel" data-bs-slide="next" aria-label="Next">
+        <button class="carousel-control-next" type="button" data-bs-target="#newArrivalsCarousel" data-bs-slide="next">
             <span class="carousel-control-next-icon bg-dark rounded-circle" aria-hidden="true"></span>
         </button>
     </div>
@@ -670,10 +670,10 @@
                         </div>
                         {% endif %}
                         <div class="d-flex justify-content-end gap-1">
-                            <a href="/book/{{ pdf.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding:0; text-decoration:none;" title="View Details">
+                            <a href="/book/{{ pdf.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; padding:0; text-decoration:none;" title="View Details">
                                 <i class="bi bi-info-circle" style="font-size:0.65rem;"></i>
                             </a>
-                            <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ pdf.id }}" style="width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding:0;" title="Quick Preview">
+                            <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ pdf.id }}" style="width: 24px; height: 24px; padding:0;" title="Quick Preview">
                                 <i class="bi bi-search" style="font-size:0.65rem;"></i>
                             </button>
                         </div>
@@ -734,12 +734,12 @@
                 </div>
                 <h6 class="text-uppercase fw-semibold mb-3 text-muted" style="letter-spacing: 1px;">Connect With Us</h6>
                 <div class="d-flex flex-wrap gap-2 gap-md-3 mb-4">
-                    <a href="https://github.com/programmingpioneer" target="_blank" aria-label="GitHub" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:42px; height:42px; transition:0.3s;"><i class="bi bi-github fs-5"></i></a>
-                    <a href="https://www.linkedin.com/in/sufyan-khans/" target="_blank" aria-label="LinkedIn" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:42px; height:42px; transition:0.3s;"><i class="bi bi-linkedin fs-5"></i></a>
-                    <a href="https://x.com/programerPioner" target="_blank" aria-label="X (Twitter)" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:42px; height:42px; transition:0.3s;"><i class="bi bi-twitter-x fs-5"></i></a>
-                    <a href="https://www.instagram.com/programmingpioneer/" target="_blank" aria-label="Instagram" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:42px; height:42px; transition:0.3s;"><i class="bi bi-instagram fs-5"></i></a>
-                    <a href="https://www.facebook.com/Programmingpioneer" target="_blank" aria-label="Facebook" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:42px; height:42px; transition:0.3s;"><i class="bi bi-facebook fs-5"></i></a>
-                    <a href="https://t.me/Programmingpioneers" target="_blank" aria-label="Telegram" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:42px; height:42px; transition:0.3s;"><i class="bi bi-telegram fs-5"></i></a>
+                    <a href="https://github.com/programmingpioneer" target="_blank" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:42px; height:42px; transition:0.3s;"><i class="bi bi-github fs-5"></i></a>
+                    <a href="https://www.linkedin.com/in/sufyan-khans/" target="_blank" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:42px; height:42px; transition:0.3s;"><i class="bi bi-linkedin fs-5"></i></a>
+                    <a href="https://x.com/programerPioner" target="_blank" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:42px; height:42px; transition:0.3s;"><i class="bi bi-twitter-x fs-5"></i></a>
+                    <a href="https://www.instagram.com/programmingpioneer/" target="_blank" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:42px; height:42px; transition:0.3s;"><i class="bi bi-instagram fs-5"></i></a>
+                    <a href="https://www.facebook.com/Programmingpioneer" target="_blank" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:42px; height:42px; transition:0.3s;"><i class="bi bi-facebook fs-5"></i></a>
+                    <a href="https://t.me/Programmingpioneers" target="_blank" class="btn btn-outline-primary rounded-circle d-flex align-items-center justify-content-center social-icon" style="width:42px; height:42px; transition:0.3s;"><i class="bi bi-telegram fs-5"></i></a>
                 </div>
             </div>
             <div class="col-lg-5 text-center">
