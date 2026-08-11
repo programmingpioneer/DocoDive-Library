@@ -282,6 +282,8 @@ def get_book_of_the_day():
         LIMIT 1 OFFSET %s
     """, (offset,))
     book = cur.fetchone()
+    cur.execute("UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book[0],))
+    mysql.connection.commit()
     cur.close()
     random.seed()
     return book
@@ -1007,10 +1009,14 @@ def user_upload():
         else:
             cat_id = cat[0]
 
+        # ========== RANDOM COUNTS FOR NEW BOOKS ==========
+        dl_count = random.randint(1000, 3000)
+        vw_count = random.randint(2000, 5000)
+
         cur.execute("""
-            INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, approved, uploaded_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s)
-        """, (cat_id, display_title, pdf_url, author, description, image_url, 'English', session['user_id']))
+            INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, approved, uploaded_by, download_count, view_count)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s, %s, %s)
+        """, (cat_id, display_title, pdf_url, author, description, image_url, 'English', session['user_id'], dl_count, vw_count))
         mysql.connection.commit()
         cur.close()
 
@@ -1491,8 +1497,11 @@ def home():
         page = total_pages
         offset = (page - 1) * per_page
 
+    # ========== UPDATED: Added download_count & view_count ==========
     books_query = f"""
         SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language,
+               COALESCE(d.download_count, 0) as download_count,
+               COALESCE(d.view_count, 0) as view_count,
                COALESCE(avg_r.avg_rating, 0) as avg_rating
         FROM documents d
         JOIN categories c ON d.category_id = c.id
@@ -1512,9 +1521,11 @@ def home():
     cat_data = cur.fetchall()
     cur.close()
 
+    # ========== UPDATED: Added download_count & view_count to dict ==========
     real_pdfs = [{"id": r[0], "title": r[1], "level": r[2], "link": r[3],
                   "author": r[4], "description": r[5], "image_url": r[6], "language": r[7],
-                  "avg_rating": round(float(r[8]), 1) if r[8] else 0} for r in books_data]
+                  "download_count": r[8] or 0, "view_count": r[9] or 0,
+                  "avg_rating": round(float(r[10]), 1) if r[10] else 0} for r in books_data]
     categories = [{"id": r[0], "level": r[1], "count": r[2]} for r in cat_data]
 
     featured_book = get_book_of_the_day()
@@ -1544,6 +1555,8 @@ def home():
             placeholders = ','.join(['%s'] * len(cat_ids))
             cur.execute(f"""
                 SELECT d.id, d.title, d.author, c.level, d.image_url, d.telegram_link,
+                       COALESCE(d.download_count, 0) as download_count,
+                       COALESCE(d.view_count, 0) as view_count,
                        COALESCE(avg_r.avg_rating, 0) as avg_rating
                 FROM documents d
                 JOIN categories c ON d.category_id = c.id
@@ -1558,7 +1571,8 @@ def home():
                 recommended_books.append({
                     "id": r[0], "title": r[1], "author": r[2], "level": r[3],
                     "image_url": r[4], "link": r[5],
-                    "avg_rating": round(float(r[6]), 1) if r[6] else 0
+                    "download_count": r[6] or 0, "view_count": r[7] or 0,
+                    "avg_rating": round(float(r[8]), 1) if r[8] else 0
                 })
         cur.close()
 
@@ -1588,6 +1602,8 @@ def book_detail(book_id):
         WHERE d.id = %s AND d.approved = 1
     """, (book_id,))
     book = cur.fetchone()
+    cur.execute("UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book_id,))
+    mysql.connection.commit()
     if not book:
         cur.close()
         abort(404)
@@ -1690,6 +1706,8 @@ def api_book_detail(book_id):
         WHERE d.id = %s AND d.approved = 1
     """, (book_id,))
     book = cur.fetchone()
+    cur.execute("UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book[0],))
+    mysql.connection.commit()
     if not book:
         cur.close()
         return jsonify({"error": "Book not found"}), 404
@@ -1976,6 +1994,8 @@ def download_book(book_id):
     cur = mysql.connection.cursor()
     cur.execute("SELECT telegram_link FROM documents WHERE id = %s AND approved = 1", (book_id,))
     book = cur.fetchone()
+    cur.execute("UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book_id,))
+    mysql.connection.commit()
     cur.close()
     if not book:
         abort(404)
@@ -2010,6 +2030,8 @@ def read_online(book_id):
     cur = mysql.connection.cursor()
     cur.execute("SELECT telegram_link, title FROM documents WHERE id = %s AND approved = 1", (book_id,))
     book = cur.fetchone()
+    cur.execute("UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book_id,))
+    mysql.connection.commit()
     cur.close()
     if not book:
         abort(404)
@@ -2164,10 +2186,14 @@ def admin():
         else:
             cat_id = cat[0]
 
+        # ========== RANDOM COUNTS FOR NEW BOOKS ==========
+        dl_count = random.randint(1000, 3000)
+        vw_count = random.randint(2000, 5000)
+
         cur.execute("""
-            INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, approved, uploaded_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s)
-        """, (cat_id, display_title, pdf_url, author, description, image_url, 'English', session['user_id']))
+            INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, approved, uploaded_by, download_count, view_count)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s, %s, %s)
+        """, (cat_id, display_title, pdf_url, author, description, image_url, 'English', session['user_id'], dl_count, vw_count))
         mysql.connection.commit()
         cur.close()
 
@@ -2630,7 +2656,19 @@ def terms():
 def data_deletion():
     return render_template('data_deletion.html')
 
-
+#--------------- API for Book Counts ---------------
+@app.route('/api/book/<int:book_id>/counts')
+def book_counts_api(book_id):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT download_count, view_count FROM documents WHERE id = %s", (book_id,))
+    row = cur.fetchone()
+    cur.close()
+    if not row:
+        return jsonify({'error': 'Book not found'}), 404
+    return jsonify({
+        'download_count': row[0] or 0,
+        'view_count': row[1] or 0
+    })
 # ================== USER STATS ROUTE ==================
 @app.route('/user/stats')
 def user_stats():

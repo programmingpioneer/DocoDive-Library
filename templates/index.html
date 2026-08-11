@@ -522,6 +522,19 @@
                                         <i class="bi bi-search" style="font-size:0.65rem;"></i>
                                     </button>
                                 </div>
+                                <!-- ========== LIVE COUNTERS (Recommended) ========== -->
+                                <div class="d-flex align-items-center gap-2 mt-1">
+                                    <span class="d-inline-flex align-items-center gap-1" 
+                                          style="background:rgba(67,56,202,0.08); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
+                                        <i class="bi bi-download" style="font-size:0.7rem;"></i>
+                                        <span class="download-count-live" data-book-id="{{ book.id }}">{{ book.download_count }}</span>
+                                    </span>
+                                    <span class="d-inline-flex align-items-center gap-1"
+                                          style="background:rgba(255,183,3,0.1); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#b8860b; font-weight:600;">
+                                        <i class="bi bi-eye-fill" style="font-size:0.7rem;"></i>
+                                        <span class="view-count-live" data-book-id="{{ book.id }}">{{ book.view_count }}</span>
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -603,6 +616,19 @@
                                         <i class="bi bi-search" style="font-size:0.65rem;"></i>
                                     </button>
                                 </div>
+                                <!-- ========== LIVE COUNTERS (New Arrivals) ========== -->
+                                <div class="d-flex align-items-center gap-2 mt-1">
+                                    <span class="d-inline-flex align-items-center gap-1" 
+                                          style="background:rgba(67,56,202,0.08); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
+                                        <i class="bi bi-download" style="font-size:0.7rem;"></i>
+                                        <span class="download-count-live" data-book-id="{{ pdf.id }}">{{ pdf.download_count }}</span>
+                                    </span>
+                                    <span class="d-inline-flex align-items-center gap-1"
+                                          style="background:rgba(255,183,3,0.1); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#b8860b; font-weight:600;">
+                                        <i class="bi bi-eye-fill" style="font-size:0.7rem;"></i>
+                                        <span class="view-count-live" data-book-id="{{ pdf.id }}">{{ pdf.view_count }}</span>
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -676,6 +702,19 @@
                             <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ pdf.id }}" style="width: 24px; height: 24px; padding:0;" title="Quick Preview">
                                 <i class="bi bi-search" style="font-size:0.65rem;"></i>
                             </button>
+                        </div>
+                        <!-- ========== LIVE COUNTERS (All Books) ========== -->
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <span class="d-inline-flex align-items-center gap-1" 
+                                  style="background:rgba(67,56,202,0.08); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
+                                <i class="bi bi-download" style="font-size:0.7rem;"></i>
+                                <span class="download-count-live" data-book-id="{{ pdf.id }}">{{ pdf.download_count }}</span>
+                            </span>
+                            <span class="d-inline-flex align-items-center gap-1"
+                                  style="background:rgba(255,183,3,0.1); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#b8860b; font-weight:600;">
+                                <i class="bi bi-eye-fill" style="font-size:0.7rem;"></i>
+                                <span class="view-count-live" data-book-id="{{ pdf.id }}">{{ pdf.view_count }}</span>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -1106,6 +1145,34 @@ document.addEventListener("DOMContentLoaded", function() {
             alert('❌ Failed to copy. Please copy manually.');
         });
     };
+
+    // ================== LIVE COUNTERS ==================
+    (function() {
+        function refreshCounters() {
+            const els = document.querySelectorAll('.download-count-live, .view-count-live');
+            const ids = [...new Set([...els].map(el => el.dataset.bookId))];
+            ids.forEach(id => {
+                fetch('/api/book/' + id + '/counts')
+                    .then(r => r.json())
+                    .then(d => {
+                        const dl = document.querySelector('.download-count-live[data-book-id="' + id + '"]');
+                        const vw = document.querySelector('.view-count-live[data-book-id="' + id + '"]');
+                        if (dl) dl.textContent = (d.download_count || 0).toLocaleString();
+                        if (vw) vw.textContent = (d.view_count || 0).toLocaleString();
+                    }).catch(()=>{});
+            });
+        }
+        refreshCounters();
+        setInterval(refreshCounters, 30000);   // refresh every 30 seconds
+
+        // Immediate refresh after a download click
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('a[href*="/download"]')) {
+                setTimeout(refreshCounters, 2000);
+            }
+        });
+    })();
+
 });
 </script>
 {% endblock %}
