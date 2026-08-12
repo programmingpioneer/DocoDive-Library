@@ -1593,8 +1593,6 @@ def home():
 # ================== BOOK DETAIL ==================
 @app.route('/book/<int:book_id>')
 def book_detail(book_id):
-    # Public browsing – book page sab dekh sakte hain
-    # ... rest unchanged
     cur = mysql.connection.cursor()
     cur.execute("""
         SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language
@@ -1602,11 +1600,14 @@ def book_detail(book_id):
         WHERE d.id = %s AND d.approved = 1
     """, (book_id,))
     book = cur.fetchone()
-    cur.execute("UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book_id,))
-    mysql.connection.commit()
+
+
     if not book:
         cur.close()
         abort(404)
+
+    cur.execute("UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book_id,))
+    mysql.connection.commit()
 
     cur.execute("""
         SELECT u.username, r.rating, r.comment, r.created_at, u.id, r.id
@@ -1627,6 +1628,8 @@ def book_detail(book_id):
             'user_id': r[4],
             'is_official': is_official_user(r[4])
         })
+
+    lazy_trickle(book_id)
 
     book_data = {"id": book[0], "title": book[1], "level": book[2], "link": book[3],
                  "author": book[4], "description": book[5], "image_url": book[6], "language": book[7]}
@@ -1706,11 +1709,13 @@ def api_book_detail(book_id):
         WHERE d.id = %s AND d.approved = 1
     """, (book_id,))
     book = cur.fetchone()
-    cur.execute("UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book[0],))
-    mysql.connection.commit()
+
     if not book:
         cur.close()
         return jsonify({"error": "Book not found"}), 404
+
+    cur.execute("UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book_id,))
+    mysql.connection.commit()
 
     cur.execute("""
         SELECT u.username, r.rating, r.comment, r.created_at
@@ -1724,6 +1729,8 @@ def api_book_detail(book_id):
         cur.execute("SELECT id FROM favorites WHERE user_id = %s AND book_id = %s", (session['user_id'], book_id))
         is_fav = cur.fetchone() is not None
     cur.close()
+
+    lazy_trickle(book_id)
 
     book_data = {
         "id": book[0], "title": book[1], "level": book[2], "link": book[3],
@@ -1957,11 +1964,16 @@ def user_history():
 # ================== DOWNLOAD TRACKING ==================
 @app.route('/api/download/<int:book_id>', methods=['POST'])
 def track_download_route(book_id):
-    if 'user_id' in session:
-        cur = mysql.connection.cursor()
-        cur.execute("INSERT INTO download_history (user_id, book_id) VALUES (%s, %s)", (session['user_id'], book_id))
-        mysql.connection.commit()
-        cur.close()
+    if 'user_id' not in session:
+        return jsonify({'error': 'Login required'}), 401
+
+    cur = mysql.connection.cursor()
+    cur.execute("INSERT INTO download_history (user_id, book_id) VALUES (%s, %s)",
+                (session['user_id'], book_id))
+    cur.execute("UPDATE documents SET download_count = download_count + 1 WHERE id = %s",
+                (book_id,))
+    mysql.connection.commit()
+    cur.close()
     return jsonify({'success': True})
 
 # ================== REVIEWS ==================
@@ -1994,7 +2006,7 @@ def download_book(book_id):
     cur = mysql.connection.cursor()
     cur.execute("SELECT telegram_link FROM documents WHERE id = %s AND approved = 1", (book_id,))
     book = cur.fetchone()
-    cur.execute("UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book_id,))
+    cur.execute("UPDATE documents SET download_count = download_count + 1 WHERE id = %s", (book_id,))
     mysql.connection.commit()
     cur.close()
     if not book:
@@ -2332,6 +2344,46 @@ def guess_category_from_filename(filename):
         best_category = 'Others'
     return best_category
 
+#---Lazy Trickle Function for New Books---
+def lazy_trickle(book_id):
+    """Books younger than 7 days get small random growth every 6 hours."""
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT created_at, last_trickle_time
+        FROM documents
+        WHERE id = %s AND approved = 1
+    """, (book_id,))
+    book = cur.fetchone()
+    if not book:
+        cur.close()
+        return
+
+    created_at = book[0]
+    last_trickle = book[1]
+    now = datetime.utcnow()
+
+    # Sirf 7 din se kam purani books ke liye
+    if not created_at or created_at < now - timedelta(days=7):
+        cur.close()
+        return
+
+    # Har 6 ghante mein ek baar
+    if last_trickle and last_trickle > now - timedelta(hours=6):
+        cur.close()
+        return
+
+    dl_growth = random.randint(2, 8)
+    vw_growth = random.randint(4, 16)
+
+    cur.execute("""
+        UPDATE documents
+        SET download_count = download_count + %s,
+            view_count = view_count + %s,
+            last_trickle_time = %s
+        WHERE id = %s
+    """, (dl_growth, vw_growth, now, book_id))
+    mysql.connection.commit()
+    cur.close()
 # --------------- Pending & Approval ---------------
 @app.route('/admin/pending/count')
 @official_admin_required
@@ -2611,6 +2663,33 @@ def admin_analytics():
     cur.close()
     return render_template('admin_analytics.html', total_books=total_books,
                            total_downloads=total_downloads, total_users=total_users)
+
+# --------------- GRADUAL COUNT TRICKLE ---------------
+@app.route('/admin/trickle-counts')
+@official_admin_required
+def trickle_counts():
+    """Daily cron – slowly grow counts for books uploaded within last 7 days."""
+    import random
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT id FROM documents
+        WHERE approved = 1 AND created_at >= %s
+    """, (seven_days_ago,))
+    books = cur.fetchall()
+    for book in books:
+        dl_growth = random.randint(5, 20)
+        vw_growth = random.randint(10, 40)
+        cur.execute("""
+            UPDATE documents
+            SET download_count = download_count + %s,
+                view_count = view_count + %s,
+                last_trickle_time = NOW()
+            WHERE id = %s
+        """, (dl_growth, vw_growth, book[0]))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"success": True, "updated": len(books)})
 
 # --------------- QR CODE ROUTE ---------------
 @app.route('/book/<int:book_id>/qr')

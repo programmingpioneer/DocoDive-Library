@@ -1071,10 +1071,15 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         }
 
-        protectModalButton('.modal-download', function() {
-            fetch(`/api/download/${book.id}`, {method:'POST'});
-            window.location.href = book.link;
-        });
+        protectModalButton('.modal-download', function(e) {
+    fetch(`/api/download/${book.id}`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        keepalive: true
+    }).catch(() => {});
+    const downloadUrl = book.link || e.currentTarget.getAttribute('href');
+    window.location.href = downloadUrl;
+});
         protectModalButton('.modal-read', function() {
             window.open(`/book/${book.id}/read`, '_blank');
         });
@@ -1163,7 +1168,7 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         }
         refreshCounters();
-        setInterval(refreshCounters, 30000);   // refresh every 30 seconds
+        setInterval(refreshCounters, 3600000);
 
         // Immediate refresh after a download click
         document.addEventListener('click', function(e) {

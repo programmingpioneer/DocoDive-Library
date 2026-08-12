@@ -629,16 +629,14 @@
                 <label class="form-label small fw-semibold">Email</label>
                 <input type="email" name="email" class="form-control rounded-3" placeholder="you@example.com" required>
               </div>
-              <div class="mb-3 position-relative">
-                <label class="form-label small fw-semibold">Password</label>
-                <input type="password" name="password" id="modalLoginPassword" class="form-control rounded-3 pe-5" placeholder="••••••••" required>
-                <span class="position-absolute top-50 end-0 translate-middle-y me-3" style="cursor:pointer; color:#6b7280;" onclick="togglePassword('modalLoginPassword', this)">
-                </span>
-              </div>
-              <div class="show-password-box">
-                <input type="checkbox" id="modalLoginShowCheckbox" onchange="togglePasswordCheckbox('modalLoginPassword', 'modalLoginEye', this)">
-                <label for="modalLoginShowCheckbox" class="mb-0" style="cursor:pointer;">Show Password</label>
-              </div>
+              <div class="mb-3">
+    <label class="form-label small fw-semibold">Password</label>
+    <input type="password" name="password" id="modalLoginPassword" class="form-control rounded-3" placeholder="••••••••" required>
+</div>
+<div class="show-password-box">
+    <input type="checkbox" id="modalLoginShowCheckbox" onchange="document.getElementById('modalLoginPassword').type = this.checked ? 'text' : 'password'">
+    <label for="modalLoginShowCheckbox" class="mb-0" style="cursor:pointer;">Show Password</label>
+</div>
               <button type="submit" class="btn-primary-custom w-100">
                 <span class="btn-text">Login</span>
                 <span class="loading-text">Loading <span class="book-spinner"><i class="bi bi-book"></i></span></span>
@@ -675,16 +673,14 @@
                 <input type="email" name="email" id="modalEmail" class="form-control rounded-3" placeholder="you@example.com" required>
                 <div class="feedback small mt-1"></div>
               </div>
-              <div class="mb-3 position-relative">
-                <label class="form-label small fw-semibold">Password</label>
-                <input type="password" name="password" id="modalSignupPassword" class="form-control rounded-3 pe-5" placeholder="••••••••" required>
-                <span class="position-absolute top-50 end-0 translate-middle-y me-3" style="cursor:pointer; color:#6b7280;" onclick="togglePassword('modalSignupPassword', this)">
-                </span>
-              </div>
-              <div class="show-password-box">
-                <input type="checkbox" id="modalSignupShowCheckbox" onchange="togglePasswordCheckbox('modalSignupPassword', 'modalSignupEye', this)">
-                <label for="modalSignupShowCheckbox" class="mb-0" style="cursor:pointer;">Show Password</label>
-              </div>
+              <div class="mb-3">
+    <label class="form-label small fw-semibold">Password</label>
+    <input type="password" name="password" id="modalSignupPassword" class="form-control rounded-3" placeholder="••••••••" required>
+</div>
+<div class="show-password-box">
+    <input type="checkbox" id="modalSignupShowCheckbox" onchange="document.getElementById('modalSignupPassword').type = this.checked ? 'text' : 'password'">
+    <label for="modalSignupShowCheckbox" class="mb-0" style="cursor:pointer;">Show Password</label>
+</div>
               <button type="submit" class="btn-primary-custom w-100">
                 <span class="btn-text">Create Free Account</span>
                 <span class="loading-text">Loading <span class="book-spinner"><i class="bi bi-book"></i></span></span>
