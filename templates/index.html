@@ -86,6 +86,7 @@
         padding: 10px 18px;
         cursor: pointer;
         transition: background 0.15s;
+        animation: suggestionIn 0.25s ease both;
     }
     .suggestion-item:hover { background: #f0f0ff; }
     .suggestion-img {
@@ -106,11 +107,65 @@
         color: white; font-weight: 700; font-size: 0.8rem;
     }
 
-    @media (max-width: 576px) {
-        .search-suggestions { border-radius: 0 0 16px 16px; max-height: 300px; }
-        .suggestion-item { padding: 8px 12px; }
-        .suggestion-img, .no-cover-placeholder { width: 32px; height: 44px; }
-        .suggestion-title { font-size: 0.8rem; }
+    @keyframes suggestionIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== SEARCH SUGGESTIONS BOX ===== */
+    .search-suggestions {
+        border-radius: 0 0 16px 16px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        max-height: 380px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #4338ca #e0e7ff;
+        position: relative;
+        z-index: 10;
+    }
+
+    .search-suggestions::-webkit-scrollbar {
+        width: 6px;
+    }
+    .search-suggestions::-webkit-scrollbar-track {
+        background: #e0e7ff;
+    }
+    .search-suggestions::-webkit-scrollbar-thumb {
+        background: #4338ca;
+        border-radius: 10px;
+    }
+
+    /* ===== FIND BOOK BUTTON LOADING & PULSE ===== */
+    #findBookBtn .btn-normal {
+        display: inline-flex;
+        align-items: center;
+    }
+    #findBookBtn .btn-loading {
+        display: none;
+        align-items: center;
+    }
+    #findBookBtn.loading .btn-normal {
+        display: none;
+    }
+    #findBookBtn.loading .btn-loading {
+        display: inline-flex;
+    }
+    #findBookBtn.loading {
+        pointer-events: none;
+        animation: btnSearchPulse 0.9s infinite;
+    }
+    #findBookBtn.is-typing {
+        animation: btnPulse 1.2s infinite;
+    }
+    @keyframes btnPulse {
+        0%, 100% { box-shadow: 0 10px 25px rgba(30, 27, 75, 0.3); }
+        50% { box-shadow: 0 0 0 6px rgba(67, 56, 202, 0.15), 0 10px 25px rgba(30, 27, 75, 0.4); }
+    }
+    @keyframes btnSearchPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
     }
 
     #liveToast {
@@ -325,6 +380,76 @@
     .product-card, .category-card, .hero-icon {
         will-change: transform;
     }
+
+    /* ========== SEARCH SLIDER (5+ RESULTS) ========== */
+    .search-slider-wrapper {
+        position: relative;
+        padding: 0 10px;
+        margin-top: 10px;
+    }
+
+    .search-slider {
+        display: flex;
+        overflow-x: auto;
+        gap: 14px;
+        padding: 8px 0 16px;
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        scrollbar-width: thin;
+        scrollbar-color: #4338ca #e0e7ff;
+    }
+
+    .search-slider::-webkit-scrollbar {
+        height: 8px;
+    }
+    .search-slider::-webkit-scrollbar-track {
+        background: #e0e7ff;
+        border-radius: 10px;
+    }
+    .search-slider::-webkit-scrollbar-thumb {
+        background: #4338ca;
+        border-radius: 10px;
+    }
+
+    .slider-card {
+        flex: 0 0 170px;
+        scroll-snap-align: start;
+    }
+    .slider-card .product-card {
+        height: 100%;
+    }
+
+    .slide-btn {
+        position: absolute;
+        top: 42%;
+        transform: translateY(-50%);
+        width: 38px;
+        height: 38px;
+        border: none;
+        border-radius: 50%;
+        background: #1e1b4b;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 5;
+        box-shadow: 0 6px 18px rgba(30, 27, 75, 0.35);
+        transition: background 0.2s, transform 0.2s;
+    }
+    .slide-btn:hover {
+        background: #4338ca;
+        transform: translateY(-50%) scale(1.08);
+    }
+    .slide-left  { left: -8px; }
+    .slide-right { right: -8px; }
+
+    @media (max-width: 576px) {
+        .slider-card  { flex: 0 0 140px; }
+        .slide-btn    { width: 30px; height: 30px; }
+        .slide-left   { left: -4px; }
+        .slide-right  { right: -4px; }
+    }
 </style>
 {% endblock %}
 
@@ -354,8 +479,13 @@
                                 <i class="bi bi-x-circle-fill fs-5"></i>
                             </button>
                         </div>
-                        <button type="submit" class="btn btn-primary rounded-pill px-3 px-md-5 fw-bold shadow-sm" style="border-radius: 0 50px 50px 0;">
-                            <i class="bi bi-search me-1 me-md-2"></i><span class="d-none d-sm-inline">Find Book</span>
+                        <button type="submit" id="findBookBtn" class="btn btn-primary rounded-pill px-3 px-md-5 fw-bold shadow-sm" style="border-radius: 0 50px 50px 0;">
+                            <span class="btn-normal">
+                                <i class="bi bi-search me-1 me-md-2"></i><span class="d-none d-sm-inline">Find Book</span>
+                            </span>
+                            <span class="btn-loading">
+                                <span class="spinner-border spinner-border-sm me-1"></span> Searching...
+                            </span>
                         </button>
                     </form>
                     <div id="searchSuggestions" class="search-suggestions d-none"></div>
@@ -370,13 +500,13 @@
                 </div>
                 {% endif %}
 
-                {% if user_logged_in %}
-                <div class="mt-4">
-                    <a href="/user/upload" class="btn btn-outline-primary rounded-pill px-4 py-2">
-                        <i class="bi bi-cloud-upload-fill me-2"></i> Upload a Book
-                    </a>
-                </div>
-                {% endif %}
+                {% if user_logged_in and not search_query %}
+<div class="mt-4">
+    <a href="/user/upload" class="btn btn-outline-primary rounded-pill px-4 py-2">
+        <i class="bi bi-cloud-upload-fill me-2"></i> Upload a Book
+    </a>
+</div>
+{% endif %}
             </div>
 
             <!-- ========== ANIMATED HERO ICONS ========== -->
@@ -408,8 +538,86 @@
 {% if search_query %}
 <section id="search-results" class="container my-4 py-3" data-aos="fade-up">
     <h2 class="section-title mb-4">🔍 Search Results</h2>
-    <div class="row g-2 g-sm-3">
-        {% if pdfs %}
+    {% if pdfs %}
+        {% if pdfs|length > 5 %}
+        <!-- ===== 5+ BOOKS: HORIZONTAL SLIDER ===== -->
+        <div class="search-slider-wrapper">
+            <button type="button" class="slide-btn slide-left" id="slideLeft" aria-label="Slide left">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <div class="search-slider" id="searchSlider">
+                {% for pdf in pdfs %}
+                <div class="slider-card" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 50 }}">
+                    <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
+                        <div class="book-cover-outer d-flex align-items-center justify-content-center">
+                            {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
+                            <div class="book-3d-wrapper">
+                                <div class="book-3d">
+                                    <div class="book-front"><img src="{{ pdf.image_url }}" alt="Cover" class="book-cover" loading="lazy"></div>
+                                    <div class="book-spine"></div>
+                                    <div class="book-pages"></div>
+                                    <div class="book-shadow"></div>
+                                </div>
+                            </div>
+                            {% else %}
+                                {% set title_safe = pdf.title | default('Book', true) | replace('_', ' ') %}
+                                {% set words = title_safe.split() %}
+                                {% set short_name = (words[0][:2])|upper if words|length == 1 else (words[0][0] ~ words[1][0])|upper %}
+                                <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100" style="background: linear-gradient(135deg, #a5b4fc, #818cf8); color: white;">
+                                    <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-2 book-fallback-icon">{{ short_name }}</div>
+                                    <h6 class="fw-bold text-center px-2 book-fallback-title">{{ title_safe }}</h6>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-light text-muted" style="font-size:0.6rem;">{{ pdf.level }}</span>
+                                <span class="fw-bold text-warning" style="font-size:0.7rem;">FREE</span>
+                            </div>
+                            <h6 class="fw-bold text-truncate mb-1" style="font-size:0.8rem; color:#1e1b4b;">{{ pdf.title | replace('_', ' ') }}</h6>
+                            <p class="text-muted small mb-1" style="font-size:0.65rem;">By {{ pdf.author }}</p>
+                            {% if pdf.avg_rating and pdf.avg_rating > 0 %}
+                            <div class="text-warning small mb-1">
+                                {% set full = pdf.avg_rating|int %}
+                                {% set half = 1 if (pdf.avg_rating - full) >= 0.5 else 0 %}
+                                {% for i in range(full) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                                {% if half %}<i class="bi bi-star-half"></i>{% endif %}
+                                {% for i in range(5 - full - half) %}<i class="bi bi-star"></i>{% endfor %}
+                                <span class="text-muted ms-1">({{ pdf.avg_rating }})</span>
+                            </div>
+                            {% endif %}
+                            <div class="d-flex justify-content-end gap-1">
+                                <a href="/book/{{ pdf.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; padding:0; text-decoration:none;" title="View Details">
+                                    <i class="bi bi-info-circle" style="font-size:0.65rem;"></i>
+                                </a>
+                                <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ pdf.id }}" style="width: 24px; height: 24px; padding:0;" title="Quick Preview">
+                                    <i class="bi bi-search" style="font-size:0.65rem;"></i>
+                                </button>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span class="d-inline-flex align-items-center gap-1" 
+                                      style="background:rgba(67,56,202,0.08); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
+                                    <i class="bi bi-download" style="font-size:0.7rem;"></i>
+                                    <span class="download-count-live" data-book-id="{{ pdf.id }}">{{ pdf.download_count }}</span>
+                                </span>
+                                <span class="d-inline-flex align-items-center gap-1"
+                                      style="background:rgba(255,183,3,0.1); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#b8860b; font-weight:600;">
+                                    <i class="bi bi-eye-fill" style="font-size:0.7rem;"></i>
+                                    <span class="view-count-live" data-book-id="{{ pdf.id }}">{{ pdf.view_count }}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" class="slide-btn slide-right" id="slideRight" aria-label="Slide right">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+        {% else %}
+        <!-- ===== 5 YA KAM: NORMAL GRID ===== -->
+        <div class="row g-2 g-sm-3">
             {% for pdf in pdfs %}
             <div class="col-6 col-sm-4 col-md-3 col-lg-2" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 50 }}">
                 <div class="card product-card border-0 shadow-sm h-100 book-card-inner books-grid-card">
@@ -474,10 +682,11 @@
                 </div>
             </div>
             {% endfor %}
-        {% else %}
-            <div class="col-12 text-center py-5"><i class="bi bi-inbox display-4 text-muted"></i><h5 class="mt-3">No books found</h5></div>
+        </div>
         {% endif %}
-    </div>
+    {% else %}
+        <div class="col-12 text-center py-5"><i class="bi bi-inbox display-4 text-muted"></i><h5 class="mt-3">No books found</h5></div>
+    {% endif %}
     {% if total_pages > 1 %}
     <nav class="mt-5">
         <ul class="pagination justify-content-center flex-wrap">
@@ -1029,6 +1238,19 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
+    // ===== SEARCH SLIDER ARROWS (5+ RESULTS) =====
+    const searchSlider = document.getElementById('searchSlider');
+    if (searchSlider) {
+        const slideLeft  = document.getElementById('slideLeft');
+        const slideRight = document.getElementById('slideRight');
+        if (slideLeft) slideLeft.addEventListener('click', () => {
+            searchSlider.scrollBy({ left: -220, behavior: 'smooth' });
+        });
+        if (slideRight) slideRight.addEventListener('click', () => {
+            searchSlider.scrollBy({ left: 220, behavior: 'smooth' });
+        });
+    }
+
     const searchInput = document.getElementById('searchInput');
     const suggestionsBox = document.getElementById('searchSuggestions');
     const searchForm = document.getElementById('searchForm');
@@ -1046,27 +1268,63 @@ document.addEventListener("DOMContentLoaded", function() {
     searchInput.addEventListener('input', function() {
         const val = this.value.trim();
         clearBtn.style.display = val.length > 0 ? 'block' : 'none';
+
+        // Button typing pulse
+        const findBtn = document.getElementById('findBookBtn');
+        if (findBtn) {
+            findBtn.classList.toggle('is-typing', val.length > 0);
+        }
+
         if (debounceTimer) clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => fetchSuggestions(val), 300);
     });
 
     function fetchSuggestions(query) {
+        const findBtn = document.getElementById('findBookBtn');
+
+        function showSearchLoading() {
+            if (findBtn) {
+                findBtn.classList.add('loading');
+                findBtn.disabled = true;
+            }
+        }
+        function hideSearchLoading() {
+            if (findBtn) {
+                findBtn.classList.remove('loading');
+                findBtn.disabled = false;
+            }
+        }
+
         if (query.length < 2) {
+            hideSearchLoading();
             suggestionsBox.classList.add('d-none');
             return;
         }
-        suggestionsBox.innerHTML = '<div class="loading-suggestions"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-        suggestionsBox.classList.remove('d-none');
+
+        // Button mein loading, box chhupao
+        showSearchLoading();
+        suggestionsBox.classList.add('d-none');
+
         fetch(`/api/search/suggest?q=${encodeURIComponent(query)}`)
             .then(res => res.json())
             .then(books => {
+                hideSearchLoading();
                 if (!books.length) {
                     suggestionsBox.classList.add('d-none');
                     return;
                 }
                 renderSuggestions(books);
+                suggestionsBox.classList.remove('d-none');
+                if (books.length > 5) {
+                    suggestionsBox.classList.add('suggestions-scrollable');
+                } else {
+                    suggestionsBox.classList.remove('suggestions-scrollable');
+                }
             })
-            .catch(() => suggestionsBox.classList.add('d-none'));
+            .catch(() => {
+                hideSearchLoading();
+                suggestionsBox.classList.add('d-none');
+            });
     }
 
     function renderSuggestions(books) {
@@ -1115,18 +1373,45 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    searchForm.addEventListener('submit', async function(e) {
+    searchForm.addEventListener('submit', function(e) {
         const q = searchInput.value.trim();
-        if (!q) return;
-        try {
-            const resp = await fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`);
-            const books = await resp.json();
-            const exact = books.find(b => b.title.toLowerCase() === q.toLowerCase());
-            if (exact) {
+        if (!q) {
+            e.preventDefault();
+            return;
+        }
+
+        const findBtn = document.getElementById('findBookBtn');
+
+        function showLoading() {
+            if (!findBtn) return;
+            findBtn.classList.add('loading');
+            findBtn.disabled = true;
+        }
+        function hideLoading() {
+            if (!findBtn) return;
+            findBtn.classList.remove('loading');
+            findBtn.disabled = false;
+        }
+
+        showLoading();
+
+        fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`)
+            .then(res => res.json())
+            .then(books => {
+                const exact = books.find(b => b.title.toLowerCase() === q.toLowerCase());
+                if (exact) {
+                    e.preventDefault();
+                    hideLoading();
+                    openBookModal(exact.id);
+                } else {
+                    e.preventDefault();
+                    window.location.href = '/?search_query=' + encodeURIComponent(q);
+                }
+            })
+            .catch(() => {
                 e.preventDefault();
-                openBookModal(exact.id);
-            }
-        } catch {}
+                window.location.href = '/?search_query=' + encodeURIComponent(q);
+            });
     });
 
     document.addEventListener('click', function(e) {
