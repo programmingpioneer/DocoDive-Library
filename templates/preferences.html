@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Notification Preferences - DocoDive{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-0 px-4 py-4">
+                    <h4 class="fw-bold mb-1" style="color: #1e1b4b;">
+                        <i class="bi bi-bell-fill me-2 text-primary"></i>Notification Preferences
+                    </h4>
+                    <p class="text-muted small mb-0">Choose how and when you want to hear from DocoDive.</p>
+                </div>
+                <div class="card-body px-4 py-4">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} rounded-3 py-2">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="/user/preferences">
+                        <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
+
+                        <!-- New Books Notification -->
+                        <div class="card border rounded-4 mb-4 p-3 bg-light bg-opacity-50">
+                            <div class="form-check form-switch fs-6">
+                                <input class="form-check-input" type="checkbox" name="notify_new_books" id="notifyNewBooks"
+                                       {% if pref.notify_new_books %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="notifyNewBooks" style="color:#1e1b4b;">
+                                    📚 Notify me about new books
+                                </label>
+                            </div>
+                            <small class="text-muted ms-4">Receive alerts when new books are added to DocoDive.</small>
+                        </div>
+
+                        <!-- Favorite Categories -->
+                        <div class="mb-4">
+                            <label class="fw-semibold mb-3" style="color:#1e1b4b;">
+                                <i class="bi bi-bookmark-star me-2 text-warning"></i>Favorite Categories
+                            </label>
+                            <p class="text-muted small mb-3">You'll only get notifications for these categories.</p>
+                            <div class="row g-2">
+                                {% for cat in categories %}
+                                <div class="col-6 col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="favorite_categories"
+                                               value="{{ cat }}" id="cat-{{ loop.index }}"
+                                               {% if cat in pref.favorite_categories %}checked{% endif %}>
+                                        <label class="form-check-label small" for="cat-{{ loop.index }}">
+                                            {{ cat }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Email Frequency -->
+                        <div class="mb-4">
+                            <label for="emailFrequency" class="fw-semibold mb-2" style="color:#1e1b4b;">
+                                <i class="bi bi-clock-history me-2 text-info"></i>Email Frequency
+                            </label>
+                            <select name="email_frequency" id="emailFrequency" class="form-select rounded-3">
+                                <option value="daily" {% if pref.email_frequency == 'daily' %}selected{% endif %}>Daily</option>
+                                <option value="weekly" {% if pref.email_frequency == 'weekly' %}selected{% endif %}>Weekly (Recommended)</option>
+                                <option value="off" {% if pref.email_frequency == 'off' %}selected{% endif %}>Off</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary rounded-pill px-5">
+                            <i class="bi bi-check2-circle me-2"></i> Save Preferences
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -14,4 +14,4 @@ with app.app_context():
     
     mysql.connection.commit()
     cur.close()
-    print(f"Seeded {len(book_ids)} documents.")
+    print(f"Seeded {len(book_ids)} documents.") 

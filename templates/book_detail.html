@@ -136,6 +136,47 @@
             </section>
         </div>
     </div>
+
+    <!-- ==================== RELATED BOOKS ==================== -->
+    {% if related_books %}
+    <section class="mt-5" data-aos="fade-up" data-aos-duration="600">
+        <h2 class="fw-bold mb-4" style="color: #1e1b4b;">📚 Related Books</h2>
+        <div class="row g-3">
+            {% for related in related_books %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="/book/{{ related.id }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 related-book-card">
+                        <div class="book-cover-outer d-flex align-items-center justify-content-center">
+                            {% if related.image_url and related.image_url != 'None' and related.image_url.strip() != '' %}
+                                <img src="{{ related.image_url }}" alt="{{ related.title }}" class="related-book-cover" loading="lazy">
+                            {% else %}
+                                {% set title_safe = related.title | default('Book', true) | replace('_', ' ') %}
+                                {% set words = title_safe.split() %}
+                                {% set short_name = (words[0][:2])|upper if words|length == 1 else (words[0][0] ~ words[1][0])|upper %}
+                                <div class="related-book-fallback">{{ short_name }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-2">
+                            <h6 class="fw-bold text-truncate mb-1" style="font-size:0.8rem; color:#1e1b4b;">{{ related.title | replace('_', ' ') }}</h6>
+                            <p class="text-muted small mb-2" style="font-size:0.65rem;">By {{ related.author }}</p>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="d-inline-flex align-items-center gap-1" style="background:rgba(67,56,202,0.08); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
+                                    <i class="bi bi-download" style="font-size:0.7rem;"></i>
+                                    {{ related.download_count }}
+                                </span>
+                                <span class="d-inline-flex align-items-center gap-1" style="background:rgba(255,183,3,0.1); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#b8860b; font-weight:600;">
+                                    <i class="bi bi-eye-fill" style="font-size:0.7rem;"></i>
+                                    {{ related.view_count }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
 </div>
 
 <!-- ================== JSON-LD Structured Data (SEO) ================== -->
@@ -238,6 +279,44 @@ document.addEventListener('click', function(e) {
 
 {% block scripts %}
 <meta name="is-moderator" content="{{ is_moderator|default(false)|tojson }}">
+<style>
+    /* ========== RELATED BOOKS ========== */
+    .related-book-card {
+        border-radius: 16px !important;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .related-book-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 30px rgba(30,27,75,0.15) !important;
+    }
+    .related-book-cover {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        border-radius: 12px 12px 0 0;
+    }
+    .related-book-fallback {
+        width: 100%;
+        height: 180px;
+        background: linear-gradient(135deg, #a5b4fc, #818cf8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.5rem;
+        border-radius: 12px 12px 0 0;
+    }
+    @media (max-width: 576px) {
+        .related-book-cover, .related-book-fallback {
+            height: 130px;
+        }
+        .book-cover-fallback { min-height: 200px !important; }
+        .btn { width: 100%; justify-content: center; }
+        #reviewForm .row > div { margin-bottom: 0.5rem; }
+    }
+</style>
 <script>
 // ==================== SAFE USER_LOGGED_IN ====================
 const USER_LOGGED_IN = document.body.dataset.userLoggedIn === 'true';
@@ -435,7 +514,6 @@ loadComments();
 
 // ================== PROTECTED REPLY BUTTON (for discussions) ==================
 document.addEventListener('click', function(e) {
-    // Reply to comment (discussion)
     if (e.target.matches('.replyBtn') || e.target.closest('.replyBtn')) {
         const btn = e.target.closest('.replyBtn');
         if (!USER_LOGGED_IN) {
@@ -453,7 +531,6 @@ document.addEventListener('click', function(e) {
         }
     }
 
-    // Toggle official reply form for reviews
     if (e.target.closest('.reply-official-review-btn')) {
         const btn = e.target.closest('.reply-official-review-btn');
         const reviewId = btn.dataset.reviewId;
@@ -461,7 +538,6 @@ document.addEventListener('click', function(e) {
         if (form) form.classList.toggle('d-none');
     }
 
-    // Submit official reply for reviews
     if (e.target.closest('.submit-official-review-reply')) {
         const btn = e.target.closest('.submit-official-review-reply');
         const reviewId = btn.dataset.reviewId;
@@ -485,7 +561,6 @@ document.addEventListener('click', function(e) {
         });
     }
 
-    // Delete review
     if (e.target.closest('.delete-review-btn')) {
         const btn = e.target.closest('.delete-review-btn');
         const reviewId = btn.dataset.reviewId;
@@ -499,7 +574,6 @@ document.addEventListener('click', function(e) {
         });
     }
 
-    // Delete comment
     if (e.target.closest('.delete-comment-btn')) {
         const btn = e.target.closest('.delete-comment-btn');
         const commentId = btn.dataset.commentId;
@@ -513,7 +587,6 @@ document.addEventListener('click', function(e) {
         });
     }
 
-    // Toggle official reply form for discussion comments
     if (e.target.closest('.reply-official-btn')) {
         const btn = e.target.closest('.reply-official-btn');
         const commentId = btn.dataset.commentId;
@@ -521,7 +594,6 @@ document.addEventListener('click', function(e) {
         if (form) form.classList.toggle('d-none');
     }
 
-    // Submit official reply for discussion comments
     if (e.target.closest('.submit-official-reply')) {
         const btn = e.target.closest('.submit-official-reply');
         const commentId = btn.dataset.commentId;
@@ -558,13 +630,4 @@ document.getElementById('reviewForm')?.addEventListener('submit', async function
     if (res.ok) location.reload();
 });
 </script>
-
-<style>
-    @media (max-width: 576px) {
-        .book-cover-fallback { min-height: 200px !important; }
-        .btn { width: 100%; justify-content: center; }
-        #reviewForm .row > div { margin-bottom: 0.5rem; }
-    }
-</style>
 {% endblock %}
-

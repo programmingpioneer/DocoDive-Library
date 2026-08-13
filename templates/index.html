@@ -49,21 +49,35 @@
         box-shadow: 0 15px 30px rgba(30, 27, 75, 0.4);
     }
 
-    /* ---- SEARCH SUGGESTIONS ---- */
-    .search-suggestions {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border-radius: 0 0 20px 20px;
-        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-        max-height: 400px;
-        overflow-y: auto;
-        z-index: 1000;
-        margin-top: 8px;
-        padding: 10px 0;
-    }
+    /* ========== SEARCH RESULTS GLASS BOX ========== */
+#search-results {
+    position: relative;
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 24px;
+    padding: 20px 16px;
+    box-shadow: 0 12px 30px rgba(30, 27, 75, 0.08);
+}
+
+#search-results .product-card {
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.6) !important;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(30, 27, 75, 0.08) !important;
+}
+
+#search-results .product-card .card-body {
+    color: #1e1b4b;
+}
+
+#search-results .product-card .badge {
+    background: rgba(30, 27, 75, 0.06) !important;
+    color: #1e1b4b !important;
+}
 
     .suggestion-item {
         display: flex;
@@ -325,7 +339,7 @@
                     <span style="color: #1e1b4b;">Best Place to Find Your</span><br>
                     <span style="color: #ffb703;">Favorite Books</span>
                 </h1>
-                <p class="text-muted lead mb-4">Thousands of programming resources, curated for your growth. Instant download, zero cost.</p>
+                <p class="text-muted lead mb-4">Thousands of free books resources for programming, science, history, and more. Instant download, zero cost.</p>
 
                 <!-- SEARCH BAR -->
                 <div class="position-relative" style="max-width: 500px;">
@@ -390,6 +404,109 @@
     <div class="position-absolute bottom-0 start-0 w-100" style="height: 100px; background: linear-gradient(to top, white, transparent);"></div>
 </section>
 
+<!-- ========== SEARCH RESULTS (SEARCH BOX KE NEECHE) ========== -->
+{% if search_query %}
+<section id="search-results" class="container my-4 py-3" data-aos="fade-up">
+    <h2 class="section-title mb-4">🔍 Search Results</h2>
+    <div class="row g-2 g-sm-3">
+        {% if pdfs %}
+            {% for pdf in pdfs %}
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 50 }}">
+                <div class="card product-card border-0 shadow-sm h-100 book-card-inner books-grid-card">
+                    <div class="book-cover-outer d-flex align-items-center justify-content-center">
+                        {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
+                        <div class="book-3d-wrapper">
+                            <div class="book-3d">
+                                <div class="book-front"><img src="{{ pdf.image_url }}" alt="Cover" class="book-cover" loading="lazy"></div>
+                                <div class="book-spine"></div>
+                                <div class="book-pages"></div>
+                                <div class="book-shadow"></div>
+                            </div>
+                        </div>
+                        {% else %}
+                            {% set title_safe = pdf.title | default('Book', true) | replace('_', ' ') %}
+                            {% set words = title_safe.split() %}
+                            {% set short_name = (words[0][:2])|upper if words|length == 1 else (words[0][0] ~ words[1][0])|upper %}
+                            <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100" style="background: linear-gradient(135deg, #a5b4fc, #818cf8); color: white;">
+                                <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-2 book-fallback-icon">{{ short_name }}</div>
+                                <h6 class="fw-bold text-center px-2 book-fallback-title">{{ title_safe }}</h6>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge bg-light text-muted" style="font-size:0.6rem;">{{ pdf.level }}</span>
+                            <span class="fw-bold text-warning" style="font-size:0.7rem;">FREE</span>
+                        </div>
+                        <h6 class="fw-bold text-truncate mb-1" style="font-size:0.8rem; color:#1e1b4b;">{{ pdf.title | replace('_', ' ') }}</h6>
+                        <p class="text-muted small mb-1" style="font-size:0.65rem;">By {{ pdf.author }}</p>
+                        {% if pdf.avg_rating and pdf.avg_rating > 0 %}
+                        <div class="text-warning small mb-1">
+                            {% set full = pdf.avg_rating|int %}
+                            {% set half = 1 if (pdf.avg_rating - full) >= 0.5 else 0 %}
+                            {% for i in range(full) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                            {% if half %}<i class="bi bi-star-half"></i>{% endif %}
+                            {% for i in range(5 - full - half) %}<i class="bi bi-star"></i>{% endfor %}
+                            <span class="text-muted ms-1">({{ pdf.avg_rating }})</span>
+                        </div>
+                        {% endif %}
+                        <div class="d-flex justify-content-end gap-1">
+                            <a href="/book/{{ pdf.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; padding:0; text-decoration:none;" title="View Details">
+                                <i class="bi bi-info-circle" style="font-size:0.65rem;"></i>
+                            </a>
+                            <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ pdf.id }}" style="width: 24px; height: 24px; padding:0;" title="Quick Preview">
+                                <i class="bi bi-search" style="font-size:0.65rem;"></i>
+                            </button>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <span class="d-inline-flex align-items-center gap-1" 
+                                  style="background:rgba(67,56,202,0.08); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
+                                <i class="bi bi-download" style="font-size:0.7rem;"></i>
+                                <span class="download-count-live" data-book-id="{{ pdf.id }}">{{ pdf.download_count }}</span>
+                            </span>
+                            <span class="d-inline-flex align-items-center gap-1"
+                                  style="background:rgba(255,183,3,0.1); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#b8860b; font-weight:600;">
+                                <i class="bi bi-eye-fill" style="font-size:0.7rem;"></i>
+                                <span class="view-count-live" data-book-id="{{ pdf.id }}">{{ pdf.view_count }}</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5"><i class="bi bi-inbox display-4 text-muted"></i><h5 class="mt-3">No books found</h5></div>
+        {% endif %}
+    </div>
+    {% if total_pages > 1 %}
+    <nav class="mt-5">
+        <ul class="pagination justify-content-center flex-wrap">
+            {% if page > 1 %}
+            <li class="page-item"><a class="page-link rounded-pill mx-1" href="?search_query={{ search_query|urlencode }}&page={{ page-1 }}#search-results">Prev</a></li>
+            {% endif %}
+            {% set window = 2 %}
+            {% set start = [page - window, 1] | max %}
+            {% set end = [page + window, total_pages] | min %}
+            {% if start > 1 %}
+                <li class="page-item"><a class="page-link rounded-pill mx-1" href="?search_query={{ search_query|urlencode }}&page=1#search-results">1</a></li>
+                {% if start > 2 %}<li class="page-item disabled"><span class="page-link rounded-pill mx-1">…</span></li>{% endif %}
+            {% endif %}
+            {% for p in range(start, end + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link rounded-pill mx-1" href="?search_query={{ search_query|urlencode }}&page={{ p }}#search-results">{{ p }}</a></li>
+            {% endfor %}
+            {% if end < total_pages %}
+                {% if end < total_pages - 1 %}<li class="page-item disabled"><span class="page-link rounded-pill mx-1">…</span></li>{% endif %}
+                <li class="page-item"><a class="page-link rounded-pill mx-1" href="?search_query={{ search_query|urlencode }}&page={{ total_pages }}#search-results">{{ total_pages }}</a></li>
+            {% endif %}
+            {% if page < total_pages %}
+            <li class="page-item"><a class="page-link rounded-pill mx-1" href="?search_query={{ search_query|urlencode }}&page={{ page+1 }}#search-results">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</section>
+{% endif %}
+
 <!-- ==================== BOOK OF THE DAY ==================== -->
 {% if featured_book %}
 <section class="container my-4 py-4" data-aos="fade-right">
@@ -428,6 +545,7 @@
 {% endif %}
 
 <!-- ========== BROWSE BY BOOK TYPES ========== -->
+{% if not search_query %}
 <section id="categories" class="container my-4 py-4" data-aos="fade-up">
     <h2 class="text-center fw-bolder mb-4 mb-md-5">
         <span class="section-title">Browse by <span style="color:#ffb703; -webkit-text-fill-color:#ffb703;">Book Types</span></span>
@@ -462,9 +580,10 @@
         {% endfor %}
     </div>
 </section>
+{% endif %}
 
 <!-- ==================== RECOMMENDED FOR YOU ==================== -->
-{% if recommended_books %}
+{% if not search_query and recommended_books %}
 <section class="container my-5" data-aos="fade-up">
     <h2 class="section-title mb-4">✨ Recommended for You</h2>
     <div id="recommendedCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="3000">
@@ -522,7 +641,6 @@
                                         <i class="bi bi-search" style="font-size:0.65rem;"></i>
                                     </button>
                                 </div>
-                                <!-- ========== LIVE COUNTERS (Recommended) ========== -->
                                 <div class="d-flex align-items-center gap-2 mt-1">
                                     <span class="d-inline-flex align-items-center gap-1" 
                                           style="background:rgba(67,56,202,0.08); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
@@ -616,7 +734,6 @@
                                         <i class="bi bi-search" style="font-size:0.65rem;"></i>
                                     </button>
                                 </div>
-                                <!-- ========== LIVE COUNTERS (New Arrivals) ========== -->
                                 <div class="d-flex align-items-center gap-2 mt-1">
                                     <span class="d-inline-flex align-items-center gap-1" 
                                           style="background:rgba(67,56,202,0.08); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
@@ -651,8 +768,9 @@
 {% endif %}
 
 <!-- ========== ALL BOOKS ========== -->
+{% if not search_query %}
 <section id="all-books" class="container my-5 py-4 border-top" data-aos="fade-up">
-    <h2 class="section-title mb-4 mb-md-5">{% if search_query %}🔍 Search Results{% else %}📚 All Books{% endif %}</h2>
+    <h2 class="section-title mb-4 mb-md-5">📚 All Books</h2>
     <div class="row g-2 g-sm-3">
         {% if pdfs %}
             {% for pdf in pdfs %}
@@ -703,7 +821,6 @@
                                 <i class="bi bi-search" style="font-size:0.65rem;"></i>
                             </button>
                         </div>
-                        <!-- ========== LIVE COUNTERS (All Books) ========== -->
                         <div class="d-flex align-items-center gap-2 mt-1">
                             <span class="d-inline-flex align-items-center gap-1" 
                                   style="background:rgba(67,56,202,0.08); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
@@ -728,31 +845,33 @@
     <nav class="mt-5">
         <ul class="pagination justify-content-center flex-wrap">
             {% if page > 1 %}
-            <li class="page-item"><a class="page-link rounded-pill mx-1" href="?{% if search_query %}search_query={{ search_query|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}&{% endif %}page={{ page-1 }}#all-books">Prev</a></li>
+            <li class="page-item"><a class="page-link rounded-pill mx-1" href="?page={{ page-1 }}#all-books">Prev</a></li>
             {% endif %}
             {% set window = 2 %}
             {% set start = [page - window, 1] | max %}
             {% set end = [page + window, total_pages] | min %}
             {% if start > 1 %}
-                <li class="page-item"><a class="page-link rounded-pill mx-1" href="?{% if search_query %}search_query={{ search_query|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}&{% endif %}page=1#all-books">1</a></li>
+                <li class="page-item"><a class="page-link rounded-pill mx-1" href="?page=1#all-books">1</a></li>
                 {% if start > 2 %}<li class="page-item disabled"><span class="page-link rounded-pill mx-1">…</span></li>{% endif %}
             {% endif %}
             {% for p in range(start, end + 1) %}
-                <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link rounded-pill mx-1" href="?{% if search_query %}search_query={{ search_query|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}&{% endif %}page={{ p }}#all-books">{{ p }}</a></li>
+                <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link rounded-pill mx-1" href="?page={{ p }}#all-books">{{ p }}</a></li>
             {% endfor %}
             {% if end < total_pages %}
                 {% if end < total_pages - 1 %}<li class="page-item disabled"><span class="page-link rounded-pill mx-1">…</span></li>{% endif %}
-                <li class="page-item"><a class="page-link rounded-pill mx-1" href="?{% if search_query %}search_query={{ search_query|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}&{% endif %}page={{ total_pages }}#all-books">{{ total_pages }}</a></li>
+                <li class="page-item"><a class="page-link rounded-pill mx-1" href="?page={{ total_pages }}#all-books">{{ total_pages }}</a></li>
             {% endif %}
             {% if page < total_pages %}
-            <li class="page-item"><a class="page-link rounded-pill mx-1" href="?{% if search_query %}search_query={{ search_query|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}&{% endif %}page={{ page+1 }}#all-books">Next</a></li>
+            <li class="page-item"><a class="page-link rounded-pill mx-1" href="?page={{ page+1 }}#all-books">Next</a></li>
             {% endif %}
         </ul>
     </nav>
     {% endif %}
 </section>
+{% endif %}
 
 <!-- ========== ABOUT SECTION ========== -->
+{% if not search_query %}
 <section id="about" class="py-4 py-md-5 mt-4 mt-md-5" style="background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%);" data-aos="fade-left">
     <div class="container py-3 py-md-4">
         <div class="row align-items-center g-4 g-lg-5">
@@ -794,6 +913,7 @@
         </div>
     </div>
 </section>
+{% endif %}
 
 <!-- ==================== BOOK DETAIL MODAL ==================== -->
 <div class="modal fade" id="bookDetailModal" tabindex="-1" aria-hidden="true">
@@ -967,6 +1087,16 @@ document.addEventListener("DOMContentLoaded", function() {
                             <span>${book.author || 'Unknown'}</span>
                             <span class="badge bg-primary">${book.level}</span>
                         </div>
+                        <div class="suggestion-meta mt-1">
+                            <span class="d-inline-flex align-items-center gap-1" style="background:rgba(67,56,202,0.08); border-radius:20px; padding:1px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
+                                <i class="bi bi-download" style="font-size:0.7rem;"></i>
+                                ${Number(book.download_count || 0).toLocaleString()}
+                            </span>
+                            <span class="d-inline-flex align-items-center gap-1" style="background:rgba(255,183,3,0.1); border-radius:20px; padding:1px 8px; font-size:0.65rem; color:#b8860b; font-weight:600;">
+                                <i class="bi bi-eye-fill" style="font-size:0.7rem;"></i>
+                                ${Number(book.view_count || 0).toLocaleString()}
+                            </span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1072,14 +1202,14 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         protectModalButton('.modal-download', function(e) {
-    fetch(`/api/download/${book.id}`, {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        keepalive: true
-    }).catch(() => {});
-    const downloadUrl = book.link || e.currentTarget.getAttribute('href');
-    window.location.href = downloadUrl;
-});
+            fetch(`/api/download/${book.id}`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                keepalive: true
+            }).catch(() => {});
+            const downloadUrl = book.link || e.currentTarget.getAttribute('href');
+            window.location.href = downloadUrl;
+        });
         protectModalButton('.modal-read', function() {
             window.open(`/book/${book.id}/read`, '_blank');
         });
@@ -1170,7 +1300,6 @@ document.addEventListener("DOMContentLoaded", function() {
         refreshCounters();
         setInterval(refreshCounters, 3600000);
 
-        // Immediate refresh after a download click
         document.addEventListener('click', function(e) {
             if (e.target.closest('a[href*="/download"]')) {
                 setTimeout(refreshCounters, 2000);
