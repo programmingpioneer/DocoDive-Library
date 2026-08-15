@@ -1347,6 +1347,26 @@ def internal_error(e):
 def service_unavailable(e):
     return render_template('503.html'), 503
 
+# ================== LEARNING HUB HELPERS ==================
+def category_to_slug(category):
+    """'C / C++' -> 'c-c', 'Web Development' -> 'web-development'"""
+    slug = category.strip().lower()
+    slug = re.sub(r'[^a-z0-9]+', '-', slug)
+    slug = slug.strip('-')
+    return slug
+
+
+def slug_to_category_name(slug, cursor):
+    """Dynamic mapping: DB categories se slug match karo"""
+    cursor.execute("SELECT level FROM categories ORDER BY level")
+    rows = cursor.fetchall()
+    for (level,) in rows:
+        if category_to_slug(level) == slug:
+            return level
+    return None
+
+app.jinja_env.filters['slugify'] = category_to_slug
+
 # ================== PUBLIC ROUTES (Home with new features) ==================
 @app.route('/')
 def home():
@@ -1471,6 +1491,100 @@ def home():
                            featured_book=featured_book, streak=streak, longest=longest,
                            recommended_books=recommended_books)
 
+ # ================== LEARNING HUBS (Category Pages) ==================
+@app.route('/learn/<category_slug>')
+def learning_hub(category_slug):
+    page = max(1, request.args.get('page', 1, type=int))
+    per_page = 24
+    offset = (page - 1) * per_page
+
+    # Dynamic category resolve
+    cur = mysql.connection.cursor()
+    category_name = slug_to_category_name(category_slug, cur)
+
+    if category_name is None:
+        cur.close()
+        abort(404)
+
+    # Total books count
+    cur.execute("""
+        SELECT COUNT(*)
+        FROM documents d
+        JOIN categories c ON d.category_id = c.id
+        WHERE c.level = %s AND d.approved = 1
+    """, (category_name,))
+    total_books = cur.fetchone()[0]
+
+    total_pages = max(1, (total_books + per_page - 1) // per_page)
+    if page > total_pages:
+        page = total_pages
+        offset = (page - 1) * per_page
+
+    # Books fetch
+    cur.execute("""
+        SELECT d.id, d.title, d.author, d.image_url, d.telegram_link,
+               COALESCE(d.download_count, 0) AS download_count,
+               COALESCE(d.view_count, 0) AS view_count,
+               c.level,
+               COALESCE(avg_r.avg_rating, 0) AS avg_rating
+        FROM documents d
+        JOIN categories c ON d.category_id = c.id
+        LEFT JOIN (
+            SELECT book_id, AVG(rating) AS avg_rating
+            FROM reviews
+            GROUP BY book_id
+        ) avg_r ON d.id = avg_r.book_id
+        WHERE c.level = %s AND d.approved = 1
+        ORDER BY d.download_count DESC
+        LIMIT %s OFFSET %s
+    """, (category_name, per_page, offset))
+    rows = cur.fetchall()
+
+    # Total downloads stat
+    cur.execute("""
+        SELECT COALESCE(SUM(d.download_count), 0)
+        FROM documents d
+        JOIN categories c ON d.category_id = c.id
+        WHERE c.level = %s AND d.approved = 1
+    """, (category_name,))
+    total_downloads = cur.fetchone()[0]
+
+    # All categories for "related" section
+    cur.execute("""
+        SELECT c.level, COUNT(d.id) AS total
+        FROM categories c
+        LEFT JOIN documents d ON c.id = d.category_id AND d.approved = 1
+        GROUP BY c.id, c.level
+        HAVING total > 0
+        ORDER BY total DESC
+    """)
+    all_categories = [{"level": r[0], "count": r[1], "slug": category_to_slug(r[0])}
+                      for r in cur.fetchall()]
+    cur.close()
+
+    books = [{
+        "id": r[0],
+        "title": r[1],
+        "author": r[2],
+        "image_url": r[3],
+        "link": r[4],
+        "download_count": r[5] or 0,
+        "view_count": r[6] or 0,
+        "level": r[7],
+        "avg_rating": round(float(r[8]), 1) if r[8] else 0,
+    } for r in rows]
+
+    return render_template(
+        'learning_hub.html',
+        category=category_name,
+        category_slug=category_slug,
+        books=books,
+        total_books=total_books,
+        total_downloads=total_downloads,
+        page=page,
+        total_pages=total_pages,
+        all_categories=all_categories,
+    )
 # ================== BOOK DETAIL ==================
 @app.route('/book/<int:book_id>')
 def book_detail(book_id):

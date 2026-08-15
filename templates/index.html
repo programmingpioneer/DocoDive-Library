@@ -763,7 +763,7 @@
         {% for cat in categories %}
             {% if cat.level != 'Others' or cat.count > 0 %}
             <div class="col-4 col-sm-3 col-md-2 col-lg-2" data-aos="zoom-in" data-aos-delay="{{ loop.index0 * 100 }}">
-                <a href="/?category={{ cat.level|urlencode }}" class="text-decoration-none">
+                <a href="/learn/{{ cat.level|slugify }}" class="text-decoration-none">
                     <div class="card category-card border-0 rounded-3 rounded-md-4 p-2 p-sm-3 p-md-4 text-center h-100">
                         <div class="category-icon">
                             {% if cat.level == 'Python' %}<i class="bi bi-filetype-py text-success"></i>

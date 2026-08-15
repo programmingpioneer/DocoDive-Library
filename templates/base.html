@@ -6,7 +6,6 @@
     <title>{% block title %}DocoDive | Free Digital Library{% endblock %}</title>
 
     <!-- ================== FAVICON ================== -->
-    <!-- Make sure to upload a 32x32 PNG to static/images/favicon.png -->
     <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/Favicion.jpg') }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicion.ico') }}">
 
@@ -21,7 +20,7 @@
     <!-- ================== SEO META TAGS ================== -->
     <meta name="description" content="{% block meta_description %}Discover and download thousands of free books and documents on DocoDive. Programming, science, history, and more.{% endblock %}">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="{{ request.url }}">
+    <link rel="canonical" href="{% block canonical %}{{ request.base_url }}{% endblock %}">
     <!-- Google Search Console -->
     <meta name="google-site-verification" content="gNlRlPsL7QKq4doTDmxo7HTkFJ35BtsNu227g3BDHlQ" />
     <!-- Bing Webmaster -->
@@ -40,41 +39,43 @@
     <meta name="twitter:title" content="{{ self.title() }}">
     <meta name="twitter:description" content="{{ self.meta_description() }}">
     <meta name="twitter:image" content="{{ self.og_image() }}">
-<!-- ================== JSON-LD STRUCTURED DATA (SEO) ================== -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "DocoDive",
-  "url": "{{ request.host_url }}",
-  "description": "Discover and download thousands of free books and resources — programming, science, history, business, and more.",
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": {
-      "@type": "EntryPoint",
-      "urlTemplate": "{{ request.host_url }}?search_query={search_term_string}"
-    },
-    "query-input": "required name=search_term_string"
-  }
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "DocoDive",
-  "url": "{{ request.host_url }}",
-  "logo": "{{ url_for('static', filename='images/docodive-og.jpg', _external=True) }}",
-  "sameAs": [
-    "https://github.com/programmingpioneer",
-    "https://www.linkedin.com/in/sufyan-khans/",
-    "https://x.com/programerPioner",
-    "https://www.instagram.com/programmingpioneer/",
-    "https://www.facebook.com/Programmingpioneer",
-    "https://t.me/Programmingpioneers"
-  ]
-}
-</script>
+
+    <!-- ================== JSON-LD STRUCTURED DATA (SEO) ================== -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "DocoDive",
+      "url": "{{ request.host_url }}",
+      "description": "Discover and download thousands of free books and resources — programming, science, history, business, and more.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "{{ request.host_url }}?search_query={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "DocoDive",
+      "url": "{{ request.host_url }}",
+      "logo": "{{ url_for('static', filename='images/docodive-og.jpg', _external=True) }}",
+      "sameAs": [
+        "https://github.com/programmingpioneer",
+        "https://www.linkedin.com/in/sufyan-khans/",
+        "https://x.com/programerPioner",
+        "https://www.instagram.com/programmingpioneer/",
+        "https://www.facebook.com/Programmingpioneer",
+        "https://t.me/Programmingpioneers"
+      ]
+    }
+    </script>
+
     <!-- ================== STYLESHEETS ================== -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -95,13 +96,137 @@
         .navbar { backdrop-filter: blur(10px); background: rgba(255,255,255,0.92); }
         .navbar .nav-link { color: var(--edox-dark); font-weight: 600; transition: 0.2s; }
         .navbar .nav-link:hover { color: var(--edox-purple); }
-        .dropdown-menu { border: none; box-shadow: 0 20px 40px rgba(0,0,0,0.08); border-radius: 16px; }
         .navbar .btn { transition: all 0.2s; }
         .navbar .btn:hover { transform: translateY(-1px); }
 
+                /* ===== SOLID WEB COLOR DROPDOWN ===== */
+        .dropdown-menu {
+            border: 1px solid #e0e7ff;
+            background: linear-gradient(135deg, #ffffff 0%, #eef2ff 100%);
+            border-radius: 22px;
+            box-shadow: 0 24px 60px rgba(30,27,75,0.18);
+        }
+
         @media (min-width: 992px) {
-            .dropdown:hover .dropdown-menu { display: block; margin-top: 0; }
+            .dropdown:hover .dropdown-menu { display: block; margin-top: 12px; }
             .dropdown-toggle::after { display: none; }
+        }
+
+        /* ===== MODERN HORIZONTAL MEGA MENU (5 per line) ===== */
+        .mega-menu {
+            padding: 18px;
+            min-width: 780px;
+            max-width: calc(100vw - 24px);
+        }
+        .mega-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .mega-head {
+            grid-column: 1 / -1;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 2px 10px 4px;
+        }
+        .mega-head i { color: var(--edox-purple); font-size: 0.9rem; }
+
+        .mega-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 6px;
+            padding: 12px 6px;
+            border-radius: 14px;
+            text-decoration: none;
+            color: var(--edox-dark);
+            border: 1px solid rgba(67,56,202,0.08);
+            background: #ffffff;
+            transition: all 0.22s ease;
+        }
+        .mega-icon {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            background: rgba(67,56,202,0.08);
+            transition: all 0.22s ease;
+        }
+        .mega-text {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.25;
+            min-width: 0;
+        }
+        .mega-title { font-weight: 600; font-size: 0.78rem; color: var(--edox-dark); }
+        .mega-sub { font-size: 0.62rem; color: #8b90a0; }
+
+        .mega-item:hover {
+            background: rgba(67,56,202,0.08);
+            border-color: rgba(67,56,202,0.2);
+            transform: translateY(-2px);
+        }
+        .mega-item:hover .mega-icon {
+            background: var(--edox-purple);
+            box-shadow: 0 8px 18px rgba(67,56,202,0.3);
+        }
+        .mega-item:hover .mega-icon i { color: #fff !important; }
+        .mega-item:hover .mega-title { color: var(--edox-purple); }
+
+        .mega-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(67,56,202,0.12);
+        }
+        .mega-footer a {
+            flex: 1;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--edox-purple);
+            text-decoration: none;
+            padding: 9px 8px;
+            border-radius: 12px;
+            background: rgba(67,56,202,0.05);
+            transition: 0.2s;
+        }
+        .mega-footer a:hover { background: var(--edox-purple); color: #fff; }
+
+        .community-mega { min-width: 640px; }
+
+        /* ===== MOBILE / TABLET RESPONSIVE ===== */
+        @media (max-width: 991.98px) {
+            .mega-menu {
+                min-width: 0 !important;
+                width: 100%;
+                padding: 12px;
+                border-radius: 18px;
+                box-shadow: 0 14px 30px rgba(30,27,75,0.12);
+            }
+            .mega-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+            .mega-sub { display: none; }
+            .mega-footer { flex-direction: column; gap: 8px; }
+            .mega-item:hover { transform: none; }
+        }
+        @media (max-width: 576px) {
+            .mega-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+            .mega-title { font-size: 0.72rem; }
+            .mega-icon { width: 34px; height: 34px; font-size: 1.1rem; }
         }
 
         .avatar-fallback {
@@ -246,7 +371,7 @@
             scrollbar-gutter: stable;
         }
         [data-aos] {
-            overflow: hidden;  /* Prevents AOS horizontal overflow */
+            overflow: hidden;
         }
 
         img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
@@ -287,7 +412,6 @@
             transform: translateZ(0);
         }
 
-        /* Touch-action for mobile */
         a, button, .btn, [role="button"], .dropdown-toggle {
             touch-action: manipulation;
         }
@@ -582,37 +706,105 @@
             <div class="collapse navbar-collapse" id="navbarMain">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1">
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="browseDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-collection me-1"></i> Browse
+                        <a class="nav-link dropdown-toggle" href="#" id="learningDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-mortarboard-fill me-1"></i> Learning Hubs
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="browseDropdown">
-                            <li><a class="dropdown-item" href="/?category=Python"><i class="bi bi-filetype-py text-success me-2"></i>Python</a></li>
-                            <li><a class="dropdown-item" href="/?category=JavaScript"><i class="bi bi-filetype-js text-warning me-2"></i>JavaScript</a></li>
-                            <li><a class="dropdown-item" href="/?category=Java"><i class="bi bi-cup-hot-fill text-danger me-2"></i>Java</a></li>
-                            <li><a class="dropdown-item" href="/?category=Web+Development"><i class="bi bi-window-fullscreen text-primary me-2"></i>Web Dev</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/#categories"><i class="bi bi-grid me-2"></i>All Categories</a></li>
-                            <li><a class="dropdown-item" href="/#all-books"><i class="bi bi-book me-2"></i>All Books</a></li>
-                            <li><a class="dropdown-item" href="/#new-arrivals"><i class="bi bi-star me-2"></i>New Arrivals</a></li>
-                        </ul>
+                        <div class="dropdown-menu mega-menu" aria-labelledby="learningDropdown">
+                            <div class="mega-grid">
+                                <div class="mega-head"><i class="bi bi-grid-fill"></i>All Learning Hubs</div>
+                                <a class="mega-item" href="/learn/python">
+                                    <span class="mega-icon"><i class="bi bi-filetype-py text-success"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Python</span><span class="mega-sub">Zero to hero</span></span>
+                                </a>
+                                <a class="mega-item" href="/learn/javascript">
+                                    <span class="mega-icon"><i class="bi bi-filetype-js text-warning"></i></span>
+                                    <span class="mega-text"><span class="mega-title">JavaScript</span><span class="mega-sub">Web dev & beyond</span></span>
+                                </a>
+                                <a class="mega-item" href="/learn/java">
+                                    <span class="mega-icon"><i class="bi bi-cup-hot-fill text-danger"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Java</span><span class="mega-sub">Enterprise & Android</span></span>
+                                </a>
+                                <a class="mega-item" href="/learn/c-c">
+                                    <span class="mega-icon"><i class="bi bi-cpu text-secondary"></i></span>
+                                    <span class="mega-text"><span class="mega-title">C / C++</span><span class="mega-sub">Systems & DSA</span></span>
+                                </a>
+                                <a class="mega-item" href="/learn/web-development">
+                                    <span class="mega-icon"><i class="bi bi-window-fullscreen text-primary"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Web Development</span><span class="mega-sub">HTML, CSS, React</span></span>
+                                </a>
+                                <a class="mega-item" href="/learn/data-science">
+                                    <span class="mega-icon"><i class="bi bi-bar-chart text-info"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Data Science</span><span class="mega-sub">Python, SQL</span></span>
+                                </a>
+                                <a class="mega-item" href="/learn/machine-learning">
+                                    <span class="mega-icon"><i class="bi bi-robot text-success"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Machine Learning</span><span class="mega-sub">Models & algorithms</span></span>
+                                </a>
+                                <a class="mega-item" href="/learn/algorithms">
+                                    <span class="mega-icon"><i class="bi bi-diagram-3" style="color:#7c3aed;"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Algorithms</span><span class="mega-sub">DSA masterclass</span></span>
+                                </a>
+                                <a class="mega-item" href="/learn/databases">
+                                    <span class="mega-icon"><i class="bi bi-database text-warning"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Databases</span><span class="mega-sub">SQL, NoSQL</span></span>
+                                </a>
+                                <a class="mega-item" href="/learn/cyber-security">
+                                    <span class="mega-icon"><i class="bi bi-shield-lock text-danger"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Cyber Security</span><span class="mega-sub">Hacking & defense</span></span>
+                                </a>
+                                <a class="mega-item" href="/learn/mobile-apps">
+                                    <span class="mega-icon"><i class="bi bi-phone text-primary"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Mobile Apps</span><span class="mega-sub">Flutter, RNative</span></span>
+                                </a>
+                                <a class="mega-item" href="/learn/devops">
+                                    <span class="mega-icon"><i class="bi bi-gear text-secondary"></i></span>
+                                    <span class="mega-text"><span class="mega-title">DevOps</span><span class="mega-sub">CI/CD, Docker</span></span>
+                                </a>
+                                                                <a class="mega-item" href="/learn/others">
+                                    <span class="mega-icon"><i class="bi bi-box-seam text-dark"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Others</span><span class="mega-sub">More resources</span></span>
+                                </a>
+                            </div>
+                            <div class="mega-footer">
+                                <a href="/#categories"><i class="bi bi-grid me-1"></i>Browse All Categories</a>
+                                <a href="/#all-books"><i class="bi bi-book me-1"></i>All Books</a>
+                            </div>
+                        </div>
                     </li>
 
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="communityDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-people me-1"></i> Community
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="communityDropdown">
-                            <li><a class="dropdown-item" href="/leaderboard"><i class="bi bi-trophy text-warning me-2"></i> Leaderboard</a></li>
-                            <li><a class="dropdown-item" href="/#about"><i class="bi bi-info-circle me-2"></i> About Us</a></li>
-                            <li><a class="dropdown-item" href="/feedback"><i class="bi bi-lightbulb-fill me-2 text-warning"></i> Suggestions</a></li>
-                            {% if session.get('user_id') %}
-                            <li><a class="dropdown-item" href="/user/profile/{{ session.get('user_name') }}"><i class="bi bi-person me-2"></i> My Profile</a></li>
-                            {% endif %}
-                            {% if current_user_is_official %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="/moderation"><i class="bi bi-shield-check me-2 text-primary"></i> Moderation Panel</a></li>
-                            {% endif %}
-                        </ul>
+                        <div class="dropdown-menu mega-menu community-mega" aria-labelledby="communityDropdown">
+                            <div class="mega-grid">
+                                <div class="mega-head"><i class="bi bi-people-fill"></i>Community Hub</div>
+                                <a class="mega-item" href="/leaderboard">
+                                    <span class="mega-icon"><i class="bi bi-trophy-fill text-warning"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Leaderboard</span><span class="mega-sub">Top readers</span></span>
+                                </a>
+                                <a class="mega-item" href="/#about">
+                                    <span class="mega-icon"><i class="bi bi-info-circle-fill text-primary"></i></span>
+                                    <span class="mega-text"><span class="mega-title">About Us</span><span class="mega-sub">Story & mission</span></span>
+                                </a>
+                                <a class="mega-item" href="/feedback">
+                                    <span class="mega-icon"><i class="bi bi-lightbulb-fill text-warning"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Suggestions</span><span class="mega-sub">Ideas & feedback</span></span>
+                                </a>
+                                {% if session.get('user_id') %}
+                                <a class="mega-item" href="/user/profile/{{ session.get('user_name') }}">
+                                    <span class="mega-icon"><i class="bi bi-person-fill text-success"></i></span>
+                                    <span class="mega-text"><span class="mega-title">My Profile</span><span class="mega-sub">Books & stats</span></span>
+                                </a>
+                                {% endif %}
+                                {% if current_user_is_official %}
+                                <a class="mega-item" href="/moderation">
+                                    <span class="mega-icon"><i class="bi bi-shield-check text-primary"></i></span>
+                                    <span class="mega-text"><span class="mega-title">Moderation</span><span class="mega-sub">Review & approve</span></span>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
                     </li>
                 </ul>
             </div>
@@ -677,13 +869,13 @@
                 <input type="email" name="email" class="form-control rounded-3" placeholder="you@example.com" required>
               </div>
               <div class="mb-3">
-    <label class="form-label small fw-semibold">Password</label>
-    <input type="password" name="password" id="modalLoginPassword" class="form-control rounded-3" placeholder="••••••••" required>
-</div>
-<div class="show-password-box">
-    <input type="checkbox" id="modalLoginShowCheckbox" onchange="document.getElementById('modalLoginPassword').type = this.checked ? 'text' : 'password'">
-    <label for="modalLoginShowCheckbox" class="mb-0" style="cursor:pointer;">Show Password</label>
-</div>
+                <label class="form-label small fw-semibold">Password</label>
+                <input type="password" name="password" id="modalLoginPassword" class="form-control rounded-3" placeholder="••••••••" required>
+              </div>
+              <div class="show-password-box">
+                <input type="checkbox" id="modalLoginShowCheckbox" onchange="document.getElementById('modalLoginPassword').type = this.checked ? 'text' : 'password'">
+                <label for="modalLoginShowCheckbox" class="mb-0" style="cursor:pointer;">Show Password</label>
+              </div>
               <button type="submit" class="btn-primary-custom w-100">
                 <span class="btn-text">Login</span>
                 <span class="loading-text">Loading <span class="book-spinner"><i class="bi bi-book"></i></span></span>
@@ -721,13 +913,13 @@
                 <div class="feedback small mt-1"></div>
               </div>
               <div class="mb-3">
-    <label class="form-label small fw-semibold">Password</label>
-    <input type="password" name="password" id="modalSignupPassword" class="form-control rounded-3" placeholder="••••••••" required>
-</div>
-<div class="show-password-box">
-    <input type="checkbox" id="modalSignupShowCheckbox" onchange="document.getElementById('modalSignupPassword').type = this.checked ? 'text' : 'password'">
-    <label for="modalSignupShowCheckbox" class="mb-0" style="cursor:pointer;">Show Password</label>
-</div>
+                <label class="form-label small fw-semibold">Password</label>
+                <input type="password" name="password" id="modalSignupPassword" class="form-control rounded-3" placeholder="••••••••" required>
+              </div>
+              <div class="show-password-box">
+                <input type="checkbox" id="modalSignupShowCheckbox" onchange="document.getElementById('modalSignupPassword').type = this.checked ? 'text' : 'password'">
+                <label for="modalSignupShowCheckbox" class="mb-0" style="cursor:pointer;">Show Password</label>
+              </div>
               <button type="submit" class="btn-primary-custom w-100">
                 <span class="btn-text">Create Free Account</span>
                 <span class="loading-text">Loading <span class="book-spinner"><i class="bi bi-book"></i></span></span>
