@@ -8,6 +8,8 @@ import secrets
 import socket
 import fitz
 import requests
+import threading
+import time
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 from datetime import datetime, timedelta
@@ -43,14 +45,12 @@ from authlib.integrations.flask_client import OAuth
 
 load_dotenv()
 
-# Optional AI
 try:
     import google.genai as genai
     HAS_GEMINI = True
 except ImportError:
     HAS_GEMINI = False
 
-# Optional email
 try:
     from flask_mail import Mail, Message
     HAS_MAIL = True
@@ -58,6 +58,9 @@ except ImportError:
     HAS_MAIL = False
 
 app = Flask(__name__)
+
+def _env_bool(name, default=False):
+    return os.environ.get(name, str(default)).lower() in ('1', 'true', 'yes', 'on')
 
 # -------------------- SENTRY INITIALIZATION --------------------
 sentry_dsn = os.getenv('SENTRY_DSN')
@@ -73,37 +76,30 @@ if sentry_dsn:
 else:
     app.logger.warning("SENTRY_DSN not set – error tracking disabled")
 
-# Security headers
 Talisman(app, content_security_policy=None)
 
-# Rate limiter
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
     default_limits=["5000 per day", "500 per hour"]
 )
-# Caching
+
 app.config['CACHE_TYPE'] = 'SimpleCache'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 300
 cache = Cache(app)
 
-# ================== CACHE-CONTROL HEADERS (Performance) ==================
 @app.after_request
 def add_cache_headers(response):
-    """Set aggressive cache for static assets, no-cache for HTML."""
     content_type = response.content_type or ''
     path = request.path
 
-    # Static assets: cache 30 days in browser
     if any(ext in path for ext in ['.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot']):
-        response.cache_control.max_age = 2592000  # 30 days
+        response.cache_control.max_age = 2592000
         response.cache_control.public = True
         response.headers['Cache-Control'] = 'public, max-age=2592000, immutable'
-    # HTML pages: no cache (always fresh)
     elif 'text/html' in content_type:
         response.cache_control.no_cache = True
         response.headers['Cache-Control'] = 'no-cache, must-revalidate'
-    # API/JSON: short cache
     elif 'application/json' in content_type:
         response.cache_control.max_age = 60
         response.headers['Cache-Control'] = 'public, max-age=60'
@@ -112,7 +108,6 @@ def add_cache_headers(response):
 
 IS_PRODUCTION = os.getenv("FLASK_ENV", "").lower() == "production"
 
-# Secret key
 secret_key = os.getenv("FLASK_SECRET_KEY")
 if not secret_key:
     if IS_PRODUCTION:
@@ -121,42 +116,29 @@ if not secret_key:
     app.logger.warning("Using local dev secret key. Set FLASK_SECRET_KEY before deployment.")
 app.config["SECRET_KEY"] = secret_key
 
-# Session timeout (30 minutes)
+CRON_SECRET = os.getenv('CRON_SECRET')
+if not CRON_SECRET:
+    CRON_SECRET = secrets.token_urlsafe(32)
+    app.logger.warning("CRON_SECRET not set; generated random secret: %s", CRON_SECRET)
+
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
- #--FAcebooK Cliant Secrect----
 app.config['FACEBOOK_APP_SECRET'] = os.getenv('FACEBOOK_CLIENT_SECRET')
 
-# ================== DATABASE CONFIGURATION (TiDB Cloud) ==================
-db_host = os.getenv('DB_HOST')
-db_user = os.getenv('DB_USER')
-db_password = os.getenv('DB_PASSWORD')
-db_name = os.getenv('DB_NAME')
-db_port = os.getenv('DB_PORT')
+# ================== DATABASE CONFIGURATION (MYSQL_* with DB_* fallback) ==================
+app.config['MYSQL_HOST'] = os.environ.get('MYSQL_HOST') or os.environ.get('DB_HOST', 'localhost')
+app.config['MYSQL_PORT'] = int(os.environ.get('MYSQL_PORT') or os.environ.get('DB_PORT', '3306'))
+app.config['MYSQL_USER'] = os.environ.get('MYSQL_USER') or os.environ.get('DB_USER', 'root')
+app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD') or os.environ.get('DB_PASSWORD', '')
+app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB') or os.environ.get('DB_NAME', 'docodive_dev')
 
-if IS_PRODUCTION:
-    if not all([db_host, db_user, db_password, db_name, db_port]):
-        raise RuntimeError("Missing one or more database environment variables (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT).")
-else:
-    db_host = db_host or 'localhost'
-    db_user = db_user or 'root'
-    db_password = db_password or ''
-    db_name = db_name or 'docodive_dev'
-    db_port = db_port or '3306'
+app.config['MYSQL_SSL_CA'] = (
+    os.environ.get('MYSQL_SSL_CA')
+    or os.path.join(os.path.dirname(__file__), 'ssl', 'isrgrootx.pem')
+)
+app.config['MYSQL_SSL_VERIFY_CERT'] = _env_bool('MYSQL_SSL_VERIFY_CERT', False)
+app.config['MYSQL_SSL_VERIFY_IDENTITY'] = _env_bool('MYSQL_SSL_VERIFY_IDENTITY', False)
 
-app.config['MYSQL_HOST'] = db_host
-app.config['MYSQL_USER'] = db_user
-app.config['MYSQL_PASSWORD'] = db_password
-app.config['MYSQL_DB'] = db_name
-app.config['MYSQL_PORT'] = int(db_port)
-
-# SSL – relative path (unchanged)
-ca_cert_path = os.path.join(os.path.dirname(__file__), 'ssl', 'tidb-ca.pem')
-app.config['MYSQL_SSL_CA'] = ca_cert_path
-app.config['MYSQL_SSL_VERIFY_CERT'] = True
-app.config['MYSQL_SSL_VERIFY_IDENTITY'] = True
-
-# Connection pool
 from mysql.connector.pooling import MySQLConnectionPool
 
 db_config = {
@@ -165,12 +147,15 @@ db_config = {
     'password': app.config['MYSQL_PASSWORD'],
     'database': app.config['MYSQL_DB'],
     'port': app.config['MYSQL_PORT'],
-    'ssl_ca': app.config.get('MYSQL_SSL_CA'),
-    'ssl_verify_cert': app.config.get('MYSQL_SSL_VERIFY_CERT', True),
-    'ssl_verify_identity': app.config.get('MYSQL_SSL_VERIFY_IDENTITY', True),
     'use_pure': True,
     'autocommit': True,
 }
+
+ssl_ca = app.config.get('MYSQL_SSL_CA')
+if ssl_ca:
+    db_config['ssl_ca'] = ssl_ca
+    db_config['ssl_verify_cert'] = app.config.get('MYSQL_SSL_VERIFY_CERT', False)
+    db_config['ssl_verify_identity'] = app.config.get('MYSQL_SSL_VERIFY_IDENTITY', False)
 
 pool = MySQLConnectionPool(pool_name="mypool", pool_size=20, **db_config)
 
@@ -182,6 +167,17 @@ class MySQLWrapper:
     def connection(self):
         if 'db_conn' not in g:
             g.db_conn = pool.get_connection()
+        else:
+            try:
+                # Har use se pehle connection zinda hai ya nahi check karo
+                g.db_conn.ping(reconnect=True)
+            except Exception:
+                # Agar connection dead ho gaya to naya le lo
+                try:
+                    g.db_conn.close()
+                except Exception:
+                    pass
+                g.db_conn = pool.get_connection()
         return g.db_conn
 
     @property
@@ -199,9 +195,12 @@ def close_db_connection(exception):
 
 mysql = MySQLWrapper(app.config)
 
-# ================== CSRF PROTECTION ==================
+# ================== CSRF (FIXED: digest exempt) ==================
 @app.before_request
 def csrf_protect():
+    if request.path.startswith('/internal/notification-digest/'):
+        return
+
     if request.method in ("POST", "PUT", "DELETE", "PATCH"):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return
@@ -214,7 +213,6 @@ def csrf_protect():
 # ================== OAuth SETUP ==================
 oauth = OAuth(app)
 
-# Google
 oauth.register(
     name='google',
     client_id=os.getenv('GOOGLE_CLIENT_ID'),
@@ -226,7 +224,6 @@ oauth.register(
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration'
 )
 
-# GitHub
 oauth.register(
     name='github',
     client_id=os.getenv('GITHUB_CLIENT_ID'),
@@ -237,7 +234,6 @@ oauth.register(
     client_kwargs={'scope': 'user:email'},
 )
 
-# Facebook
 oauth.register(
     name='facebook',
     client_id=os.getenv('FACEBOOK_CLIENT_ID'),
@@ -248,11 +244,9 @@ oauth.register(
     client_kwargs={'scope': 'email public_profile'},
 )
 
-# ================== HELPER: PDF VALIDATION ==================
 def is_valid_pdf(file_bytes):
     return file_bytes[:5] == b'%PDF-'
 
-# ================== IMAGE COMPRESSION ==================
 def compress_image(image_bytes, max_size=(600, 600), quality=85):
     img = Image.open(io.BytesIO(image_bytes))
     img.thumbnail(max_size, Image.LANCZOS)
@@ -262,7 +256,6 @@ def compress_image(image_bytes, max_size=(600, 600), quality=85):
     img.save(output, format='JPEG', quality=quality, optimize=True)
     return output.getvalue()
 
-# ================== BOOK OF THE DAY ==================
 def get_book_of_the_day():
     today = datetime.utcnow().date()
     seed = today.toordinal()
@@ -287,16 +280,15 @@ def get_book_of_the_day():
     random.seed()
     return book
 
-# ================== MAIL & R2 CONFIG ==================
 app.config['ADMIN_NOTIFICATION_EMAIL'] = os.getenv('ADMIN_NOTIFICATION_EMAIL')
 app.config['SUPPORT_EMAIL'] = os.getenv('SUPPORT_EMAIL', '')
 app.config['MAIL_FROM_NAME'] = os.getenv('MAIL_FROM_NAME', 'DocoDive')
+app.config['MAIL_FROM_EMAIL'] = os.getenv('MAIL_FROM_EMAIL', '7t7sufyan@gmail.com')
 
 ALLOWED_EXTENSIONS = {'pdf'}
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 
-# Brevo SMTP (will be kept for configuration but not used for sending)
 mail = None
 if HAS_MAIL:
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp-relay.brevo.com')
@@ -306,28 +298,16 @@ if HAS_MAIL:
     app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
     app.config['MAIL_TIMEOUT'] = int(os.getenv('MAIL_TIMEOUT', '15'))
-
-    mail_from_email = os.getenv('MAIL_FROM_EMAIL') or app.config['MAIL_USERNAME']
-    if not mail_from_email:
-        mail_from_email = '7t7sufyan@gmail.com'
-
-    if IS_PRODUCTION and not all([app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'],
-                                  mail_from_email, app.config['ADMIN_NOTIFICATION_EMAIL']]):
-        raise RuntimeError("Set all email credentials in production.")
     if app.config['MAIL_USE_TLS'] and app.config['MAIL_USE_SSL']:
         raise RuntimeError("Enable only one of MAIL_USE_TLS or MAIL_USE_SSL.")
-
-    app.config['MAIL_DEFAULT_SENDER'] = (app.config['MAIL_FROM_NAME'], mail_from_email)
+    app.config['MAIL_DEFAULT_SENDER'] = (app.config['MAIL_FROM_NAME'], app.config['MAIL_FROM_EMAIL'])
     mail = Mail(app)
-elif IS_PRODUCTION:
-    raise RuntimeError("flask-mail is required in production for transactional emails.")
 
-# Gemini setup
 genai_client = None
 if HAS_GEMINI and os.getenv('GEMINI_API_KEY'):
     genai_client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
 
-# -------------------- CLOUDFLARE R2 CLIENT --------------------
+# -------------------- CLOUDFLARE R2 CLIENT (FIXED) --------------------
 r2_client = boto3.client(
     's3',
     endpoint_url=os.getenv('R2_ENDPOINT_URL'),
@@ -337,7 +317,7 @@ r2_client = boto3.client(
     region_name='auto'
 )
 R2_BUCKET = os.getenv('R2_BUCKET_NAME', 'docodive')
-R2_PUBLIC_BASE = os.getenv('R2_PUBLIC_DOMAIN', 'https://pub-8f5fcc3c01514e53b12396f444c45448.r2.dev')
+R2_PUBLIC_BASE = os.getenv('R2_PUBLIC_DOMAIN', 'https://pub-8f5fcc3c01514e53b12396f444c45448.r2.dev').rstrip('/')
 
 def upload_to_r2(file_bytes, key, content_type='application/octet-stream'):
     r2_client.put_object(
@@ -347,6 +327,8 @@ def upload_to_r2(file_bytes, key, content_type='application/octet-stream'):
         ContentType=content_type,
         CacheControl='public, max-age=2592000, immutable'
     )
+    if not R2_PUBLIC_BASE:
+        return key
     return f"{R2_PUBLIC_BASE}/{key}"
 
 def delete_from_r2(key):
@@ -358,22 +340,23 @@ def delete_from_r2(key):
 def generate_r2_key(folder, base_name, ext):
     return f"docodive/{folder}/{base_name}{ext}"
 
-# -------------------- HELPERS --------------------
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def allowed_image_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
 
-#-------------------- BREVO API EMAIL SENDING --------------------
+#-------------------- BREVO API EMAIL SENDING (FIXED) --------------------
 def send_email_via_api(subject, recipient, body, html_body=None):
     api_key = os.getenv("BREVO_API_KEY")
     if not api_key:
         app.logger.error("BREVO_API_KEY not set, cannot send via API")
         return False
+    sender_email = app.config.get('MAIL_FROM_EMAIL') or "7t7sufyan@gmail.com"
+    sender_name = app.config.get('MAIL_FROM_NAME') or "DocoDive"
     try:
         data = {
-            "sender": {"email": app.config['MAIL_DEFAULT_SENDER'][1], "name": app.config['MAIL_DEFAULT_SENDER'][0]},
+            "sender": {"email": sender_email, "name": sender_name},
             "to": [{"email": recipient}],
             "subject": subject,
             "htmlContent": html_body or body,
@@ -395,44 +378,41 @@ def send_email_via_api(subject, recipient, body, html_body=None):
         app.logger.exception("Brevo API request failed: %s", e)
         return False
 
-def sync_brevo_contact(email, first_name, last_name):
-    """Create or update a contact in Brevo CRM."""
+def send_email_via_api(subject, recipient, body, html_body=None):
     api_key = os.getenv("BREVO_API_KEY")
     if not api_key:
-        app.logger.warning("BREVO_API_KEY not set, cannot sync contact")
+        app.logger.error("BREVO_API_KEY not set, cannot send via API")
         return False
-
-    url = "https://api.brevo.com/v3/contacts"
-    headers = {
-        "accept": "application/json",
-        "api-key": api_key,
-        "content-type": "application/json",
-    }
-    payload = {
-        "email": email,
-        "attributes": {
-            "FIRSTNAME": first_name,
-            "LASTNAME": last_name,
-        },
-        "updateEnabled": True,
-    }
+    sender_email = app.config.get('MAIL_FROM_EMAIL') or "7t7sufyan@gmail.com"
+    sender_name = app.config.get('MAIL_FROM_NAME') or "DocoDive"
     try:
-        resp = requests.post(url, json=payload, headers=headers, timeout=10)
-        if resp.status_code in (200, 201, 204):
-            app.logger.info("Brevo contact synced for %s", email)
+        data = {
+    "sender": {"email": sender_email, "name": sender_name},
+    "to": [{"email": recipient}],
+    "subject": subject,
+    "htmlContent": html_body or body,
+    "textContent": body
+    }
+        resp = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            json=data,
+            headers={"api-key": api_key, "Content-Type": "application/json"},
+            timeout=10
+        )
+        if resp.status_code == 201:
+            app.logger.info("Email sent via API to %s", recipient)
             return True
         else:
-            app.logger.error("Brevo contact sync failed: %s - %s", resp.status_code, resp.text)
+            app.logger.error("Brevo API error: %s", resp.text)
             return False
     except Exception as e:
-        app.logger.error("Brevo contact sync error: %s", e)
+        app.logger.exception("Brevo API request failed: %s", e)
         return False
 
 def send_email_notification(subject, recipient, body, html_body=None):
     recipient = (recipient or "").strip()
     subject = " ".join((subject or "").splitlines()).strip()
     if not recipient or "\r" in recipient or "\n" in recipient:
-        app.logger.warning("Email not sent: invalid recipient.")
         return False
     return send_email_via_api(subject, recipient, body, html_body)
 
@@ -444,6 +424,36 @@ def is_valid_email(email):
                   'sharklasers.com', '10minutemail.com', 'yopmail.com', 'trashmail.com']
     return email.split('@')[1].lower() not in disposable
 
+def sync_brevo_contact(email, first_name='', last_name=''):
+    """Create or update a Brevo contact. Non-fatal: logs errors but never crashes."""
+    api_key = os.getenv("BREVO_API_KEY")
+    if not api_key:
+        app.logger.warning("BREVO_API_KEY not set, skipping contact sync")
+        return False
+    try:
+        payload = {
+            "email": email,
+            "attributes": {
+                "FIRSTNAME": first_name or "",
+                "LASTNAME": last_name or ""
+            },
+            "updateEnabled": True
+        }
+        resp = requests.post(
+            "https://api.brevo.com/v3/contacts",
+            json=payload,
+            headers={"api-key": api_key, "Content-Type": "application/json"},
+            timeout=10
+        )
+        if resp.status_code in (200, 201, 204):
+            app.logger.info("Brevo contact synced: %s", email)
+            return True
+        app.logger.error("Brevo contact sync failed: %s", resp.text)
+        return False
+    except Exception as e:
+        app.logger.exception("Brevo contact sync error: %s", e)
+        return False
+    
 def track_download(book_id):
     if 'user_id' in session:
         cur = mysql.connection.cursor()
@@ -452,7 +462,6 @@ def track_download(book_id):
         mysql.connection.commit()
         cur.close()
 
-# -------------------- POINTS & NOTIFICATIONS HELPERS --------------------
 def award_points(user_id, points, book_id=None, action='activity'):
     cur = mysql.connection.cursor()
     cur.execute("INSERT INTO user_points (user_id, points, action, book_id) VALUES (%s, %s, %s, %s)",
@@ -469,7 +478,6 @@ def create_notification(user_id, type, message, link=None, metadata=None):
     mysql.connection.commit()
     cur.close()
 
-# -------------------- INTELLIGENT NAME CLEANING --------------------
 BANNED_SUBSTRINGS = ['techbymehdi']
 
 def clean_professional_name(raw_name):
@@ -491,7 +499,6 @@ def clean_professional_name(raw_name):
         name = name[:60].rstrip('_')
     return f"{name}_@DocoDive"
 
-# -------------------- DUPLICATE DETECTION --------------------
 def normalize_for_duplicate_check(title):
     t = re.sub(r'\s*\(\d+\)\s*$', '', title)
     t = re.sub(r'\s*-\s*Copy(\s*\(\d+\))?\s*$', '', t, flags=re.I)
@@ -511,7 +518,6 @@ def is_duplicate(title, author, conn):
     except Exception:
         return False
 
-# -------------------- CATEGORY DETECTION --------------------
 KEYWORDS = {
     'Python': ['import ', 'def ', 'class ', 'print(', 'pandas', 'numpy', 'python', 'django', 'flask', 'tkinter'],
     'JavaScript': ['var ', 'const ', 'function', 'document.', 'console.log', 'react', 'angular', 'node', 'express'],
@@ -567,9 +573,7 @@ Return JSON with keys: title, author, description.
         app.logger.error(f"AI metadata failed: {e}")
     return title, author, f"A comprehensive resource about '{title}'. Covers essential topics."
 
-# -------------------- SOCIAL LOGIN HELPERS --------------------
 def setup_session(user_id):
-    """Set session variables after successful login (email, name, avatar)."""
     cur = mysql.connection.cursor()
     cur.execute("SELECT username, first_name, last_name, avatar_url, email FROM users WHERE id = %s", (user_id,))
     user = cur.fetchone()
@@ -583,33 +587,29 @@ def setup_session(user_id):
         session['email'] = user[4]
 
 def handle_social_login(provider_name, user_info):
-    """Create or login user using social provider info.
-    Returns (user_id, is_new_created)"""
     provider_id_field = f'{provider_name}_id'
     email = user_info.get('email')
     name = user_info.get('name') or user_info.get('login')
     avatar = user_info.get('picture') or user_info.get('avatar_url')
-    
+
     if not email:
         email = f"{user_info['sub']}@{provider_name}.local"
-    
+
     first_name = ''
     last_name = ''
     if name:
         parts = name.split(' ', 1)
         first_name = parts[0]
         last_name = parts[1] if len(parts) > 1 else ''
-    
+
     cur = mysql.connection.cursor()
-    
-    # Check if social ID exists
+
     cur.execute(f"SELECT id FROM users WHERE {provider_id_field} = %s", (user_info['sub'],))
     user = cur.fetchone()
     if user:
         cur.close()
-        return user[0], False   # existing user
-    
-    # Check if email exists (link accounts)
+        return user[0], False
+
     if email and '@' in email:
         cur.execute("SELECT id FROM users WHERE email = %s", (email,))
         existing = cur.fetchone()
@@ -618,9 +618,8 @@ def handle_social_login(provider_name, user_info):
                         (user_info['sub'], avatar, existing[0]))
             mysql.connection.commit()
             cur.close()
-            return existing[0], False  # existing user, linked
-    
-    # New user – create account
+            return existing[0], False
+
     username = email.split('@')[0] if email else user_info['sub']
     base_username = username[:20]
     i = 1
@@ -630,20 +629,20 @@ def handle_social_login(provider_name, user_info):
             break
         username = f"{base_username}{i}"[:20]
         i += 1
-    
+
     hashed = generate_password_hash(secrets.token_urlsafe(16))
-    
+
     cur.execute(f"""
-        INSERT INTO users (username, email, password, verified, verification_token, 
+        INSERT INTO users (username, email, password, verified, verification_token,
                           first_name, last_name, avatar_url, {provider_id_field})
         VALUES (%s, %s, %s, 1, NULL, %s, %s, %s, %s)
     """, (username, email, hashed, first_name, last_name, avatar, user_info['sub']))
     mysql.connection.commit()
     user_id = cur.lastrowid
     cur.close()
-    
+
     sync_brevo_contact(email, first_name, last_name)
-    
+
     return user_id, True
 
 # ================== EMAIL TEMPLATES ==================
@@ -810,6 +809,194 @@ def make_approval_email(title, status, message):
         {_email_button(url_for('home', _external=True), action, color)}
     """
     return _email_layout(f"Your DocoDive submission is {status_label.lower()}.", "Document review", heading, content)
+
+# ================== SITE SETTINGS & OFFICIAL HELPERS ==================
+def get_site_setting(key, default=None):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT `value` FROM site_settings WHERE `key` = %s", (key,))
+    row = cur.fetchone()
+    cur.close()
+    return row[0] if row else default
+
+
+def set_site_setting(key, value):
+    cur = mysql.connection.cursor()
+    cur.execute("REPLACE INTO site_settings (`key`, `value`) VALUES (%s, %s)", (key, value))
+    mysql.connection.commit()
+    cur.close()
+
+
+def is_official_user(user_id):
+    official_id = get_site_setting('official_user_id')
+    return official_id and str(user_id) == official_id
+
+
+def is_moderator():
+    if 'user_id' in session and is_official_user(session['user_id']):
+        return True
+    return False
+
+
+def official_admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            abort(403)
+        if not is_official_user(session['user_id']):
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.context_processor
+def inject_common():
+    return dict(
+        current_user_is_official=is_official_user(session.get('user_id', 0)),
+        is_moderator=is_moderator()
+    )
+
+
+@app.context_processor
+def inject_user_logged_in():
+    return dict(user_logged_in=bool(session.get('user_id')))
+
+
+# ================== UTILITY FUNCTIONS ==================
+def clean_title_extra(title):
+    """Remove @Pdfmatrix, TechByMehdi etc."""
+    title = re.sub(r'@pdfmatrix', '', title, flags=re.IGNORECASE)
+    title = re.sub(r'[-_]?TechByMehdi', '', title, flags=re.IGNORECASE)
+    return re.sub(r'\s+', ' ', title).strip()
+
+
+def extract_cover_from_pdf(pdf_bytes):
+    """Generate cover image from the first page of a PDF. Returns compressed PNG bytes."""
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        page = doc.load_page(0)
+        pix = page.get_pixmap(dpi=150)
+        cover_bytes = pix.tobytes("png")
+        doc.close()
+        return compress_image(BytesIO(cover_bytes).getvalue(), max_size=(400, 400), quality=75)
+    except Exception as e:
+        app.logger.error(f"Cover extraction failed: {e}")
+        return None
+
+
+def generate_description(title, category):
+    """Return a long, professional description based on category."""
+    t = title
+    templates = {
+        'Python': f"Unlock the power of Python with '{t}'. This comprehensive guide takes you from basic syntax to advanced concepts like OOP, data analysis with Pandas, web development with Flask/Django, and task automation. Packed with real-world examples and best practices, it's perfect for beginners and experienced coders.",
+        'JavaScript': f"Master JavaScript from the ground up with '{t}'. Explore core language features, DOM manipulation, asynchronous programming, and modern frameworks like React and Node.js.",
+        'Java': f"Dive deep into Java with '{t}'. Covering OOP principles, collections, multithreading, and enterprise frameworks like Spring and Hibernate.",
+        'C / C++': f"Explore the world of C and C++ with '{t}'. From pointers and memory management to STL and modern C++17/20 features.",
+        'Web Development': f"Build stunning, responsive websites with '{t}'. Learn HTML5, CSS3, JavaScript, and popular frameworks like Bootstrap, React, and Angular.",
+        'Data Science': f"Discover the art of data science with '{t}'. Learn data wrangling, visualization, statistical modeling, and ML using Pandas, NumPy, and Scikit-learn.",
+        'Machine Learning': f"Step into the future with '{t}'. From linear regression to deep neural networks, covers supervised/unsupervised learning and deployment.",
+        'Algorithms': f"Sharpen your problem-solving skills with '{t}'. Detailed explanations of sorting, searching, graph algorithms, and dynamic programming.",
+        'Databases': f"Master database design and SQL with '{t}'. Covers relational models, normalization, indexing, and query optimization.",
+        'Cyber Security': f"Defend the digital world with '{t}'. Learn ethical hacking, penetration testing, network security, and cryptography.",
+        'Mobile Apps': f"Create engaging mobile experiences with '{t}'. Covers native Android (Kotlin), iOS (Swift), and Flutter/React Native.",
+        'DevOps': f"Transform your workflow with '{t}'. Learn CI/CD pipelines, Docker, Kubernetes, Terraform, and cloud services.",
+        'Others': f"An in-depth resource covering '{t}'. Packed with theory, practical examples, and expert insights."
+    }
+    return templates.get(category, f"An in-depth resource covering '{t}' in the field of {category}.")
+
+
+def guess_category_from_text(pdf_text):
+    """Guess category using keyword matching on PDF text. Returns best category or 'Others'."""
+    best_category = 'Others'
+    best_ratio = 0.0
+    for category, keywords in KEYWORDS.items():
+        hits = sum(1 for kw in keywords if kw in pdf_text)
+        ratio = hits / len(keywords)
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best_category = category
+    if best_ratio < 0.7:
+        best_category = 'Others'
+    return best_category
+
+
+def guess_category_from_filename(filename):
+    """Fallback: guess category from filename keywords."""
+    name = filename.lower()
+    scores = {}
+    for category, keywords in KEYWORDS.items():
+        hits = sum(1 for kw in keywords if kw in name)
+        ratio = hits / len(keywords)
+        scores[category] = ratio
+    if not scores:
+        return 'Others'
+    best_category = max(scores, key=scores.get)
+    best_ratio = scores[best_category]
+    if best_ratio < 0.1:
+        best_category = 'Others'
+    return best_category
+
+
+def lazy_trickle(book_id):
+    """Books younger than 7 days get small random growth every 6 hours."""
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT created_at, last_trickle_time
+        FROM documents
+        WHERE id = %s AND approved = 1
+    """, (book_id,))
+    book = cur.fetchone()
+    if not book:
+        cur.close()
+        return
+
+    created_at = book[0]
+    last_trickle = book[1]
+    now = datetime.utcnow()
+
+    if not created_at or created_at < now - timedelta(days=7):
+        cur.close()
+        return
+
+    if last_trickle and last_trickle > now - timedelta(hours=6):
+        cur.close()
+        return
+
+    dl_growth = random.randint(2, 8)
+    vw_growth = random.randint(4, 16)
+
+    cur.execute("""
+        UPDATE documents
+        SET download_count = download_count + %s,
+            view_count = view_count + %s,
+            last_trickle_time = %s
+        WHERE id = %s
+    """, (dl_growth, vw_growth, now, book_id))
+    mysql.connection.commit()
+    cur.close()
+
+
+# ================== R2 HELPER FUNCTIONS (Required) ==================
+def extract_r2_key(url):
+    """Extract the R2 object key from a public URL."""
+    if not url:
+        return None
+    if R2_PUBLIC_BASE and url.startswith(R2_PUBLIC_BASE + '/'):
+        return url.replace(R2_PUBLIC_BASE + '/', '', 1)
+    return url
+
+
+def get_presigned_url(key, expiration=300):
+    """Generate a presigned URL for an R2 object."""
+    try:
+        return r2_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': R2_BUCKET, 'Key': key},
+            ExpiresIn=expiration
+        )
+    except Exception as e:
+        app.logger.error(f"Presigned URL generation failed: {e}")
+        return None
+
 
 # ================== USER UPLOAD (R2) ==================
 @app.route('/user/upload', methods=['GET', 'POST'])
@@ -980,6 +1167,7 @@ def user_upload():
     cur.close()
     return render_template('user_upload.html', categories=categories)
 
+
 @app.route('/api/user/uploads')
 def user_uploads():
     if 'user_id' not in session:
@@ -991,6 +1179,7 @@ def user_uploads():
     cur.close()
     return jsonify([{"id": b[0], "title": b[1], "author": b[2], "status": b[3], "created_at": str(b[4])} for b in books])
 
+
 @app.route('/api/user/pending-uploads')
 def user_pending_uploads():
     if 'user_id' not in session:
@@ -1001,6 +1190,7 @@ def user_pending_uploads():
     books = cur.fetchall()
     cur.close()
     return jsonify([{"id": b[0], "title": b[1], "author": b[2], "created_at": str(b[3])} for b in books])
+
 
 # -------------------- API: CHECK USERNAME/EMAIL AVAILABILITY --------------------
 @app.route('/api/check-availability')
@@ -1032,6 +1222,7 @@ def check_availability():
         return jsonify({'exists': exists, 'message': 'Email already registered.' if exists else 'Email is available.'})
 
     return jsonify({'error': 'Invalid field'}), 400
+
 
 # -------------------- FORGOT PASSWORD (AJAX) --------------------
 @app.route('/forgot-password', methods=['GET', 'POST'])
@@ -1074,6 +1265,7 @@ def forgot_password():
 
     return render_template('forgot_password.html')
 
+
 @app.route('/verify-code', methods=['POST'])
 def verify_code():
     email = request.form.get('email', '').strip()
@@ -1098,6 +1290,7 @@ def verify_code():
                             f"Use this link to reset your DocoDive password (valid for 30 minutes): {reset_link}",
                             html_body=html_body)
     return jsonify({'success': True, 'message': 'A password reset link has been sent to your email.'})
+
 
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
@@ -1126,6 +1319,7 @@ def reset_password(token):
     cur.close()
     return render_template('reset_password.html', token=token)
 
+
 # -------------------- BREVO WEBHOOK --------------------
 @app.route('/api/brevo/webhook', methods=['POST'])
 def brevo_webhook():
@@ -1140,11 +1334,13 @@ def brevo_webhook():
     app.logger.info("Brevo webhook event: %s", json.dumps(data))
     return jsonify({"status": "received"}), 200
 
+
 # ==================== SOCIAL LOGIN ROUTES ====================
 @app.route('/login/google')
 def google_login():
     redirect_uri = url_for('google_callback', _external=True)
     return oauth.google.authorize_redirect(redirect_uri)
+
 
 @app.route('/auth/google/callback')
 def google_callback():
@@ -1200,10 +1396,12 @@ def google_callback():
     flash('Google login failed.', 'danger')
     return redirect(url_for('user_login'))
 
+
 @app.route('/login/github')
 def github_login():
     redirect_uri = url_for('github_callback', _external=True)
     return oauth.github.authorize_redirect(redirect_uri)
+
 
 @app.route('/auth/github/callback')
 def github_callback():
@@ -1236,10 +1434,12 @@ def github_callback():
     flash('GitHub login failed.', 'danger')
     return redirect(url_for('user_login'))
 
+
 @app.route('/login/facebook')
 def facebook_login():
     redirect_uri = url_for('facebook_callback', _external=True)
     return oauth.facebook.authorize_redirect(redirect_uri)
+
 
 @app.route('/auth/facebook/callback')
 def facebook_callback():
@@ -1266,6 +1466,7 @@ def facebook_callback():
     flash('Facebook login failed.', 'danger')
     return redirect(url_for('user_login'))
 
+
 @app.route('/facebook/data-deletion', methods=['POST'])
 def facebook_data_deletion():
     signed_request = request.form.get('signed_request')
@@ -1289,26 +1490,30 @@ def facebook_data_deletion():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-# ================== ERROR HANDLERS (Comprehensive) ==================
+
+# ================== ERROR HANDLERS ==================
 @app.errorhandler(RequestEntityTooLarge)
 def too_large(e):
     return jsonify({"error": "File size too large. Maximum 500 MB allowed."}), 413
+
 
 @app.errorhandler(400)
 def bad_request(e):
     return render_template('400.html'), 400
 
+
 @app.errorhandler(401)
 def unauthorized(e):
     return render_template('401.html'), 401
+
 
 @app.errorhandler(403)
 def forbidden(e):
     return render_template('403.html'), 403
 
+
 @app.errorhandler(404)
 def not_found(e):
-    # ========== PHASE 4: Trending books on 404 ==========
     trending_books = []
     try:
         cur = mysql.connection.cursor()
@@ -1335,21 +1540,24 @@ def not_found(e):
 
     return render_template('404.html', trending_books=trending_books), 404
 
+
 @app.errorhandler(429)
 def too_many_requests(e):
     return render_template('429.html'), 429
+
 
 @app.errorhandler(500)
 def internal_error(e):
     return render_template('500.html'), 500
 
+
 @app.errorhandler(503)
 def service_unavailable(e):
     return render_template('503.html'), 503
 
+
 # ================== LEARNING HUB HELPERS ==================
 def category_to_slug(category):
-    """'C / C++' -> 'c-c', 'Web Development' -> 'web-development'"""
     slug = category.strip().lower()
     slug = re.sub(r'[^a-z0-9]+', '-', slug)
     slug = slug.strip('-')
@@ -1357,7 +1565,6 @@ def category_to_slug(category):
 
 
 def slug_to_category_name(slug, cursor):
-    """Dynamic mapping: DB categories se slug match karo"""
     cursor.execute("SELECT level FROM categories ORDER BY level")
     rows = cursor.fetchall()
     for (level,) in rows:
@@ -1365,16 +1572,18 @@ def slug_to_category_name(slug, cursor):
             return level
     return None
 
+
 app.jinja_env.filters['slugify'] = category_to_slug
 
-# ================== PUBLIC ROUTES (Home with new features) ==================
+
+# ================== PUBLIC ROUTES (Home) ==================
 @app.route('/')
 def home():
     search_query = request.args.get('search_query', '').strip()
     category = request.args.get('category', '').strip()
     author_filter = request.args.get('author', '').strip()
     lang_filter = request.args.get('language', '').strip()
-    
+
     page = max(1, request.args.get('page', 1, type=int))
     per_page = min(50, request.args.get('per_page', 12, type=int))
     if per_page < 1:
@@ -1491,14 +1700,14 @@ def home():
                            featured_book=featured_book, streak=streak, longest=longest,
                            recommended_books=recommended_books)
 
- # ================== LEARNING HUBS (Category Pages) ==================
+
+# ================== LEARNING HUBS (Category Pages) ==================
 @app.route('/learn/<category_slug>')
 def learning_hub(category_slug):
     page = max(1, request.args.get('page', 1, type=int))
     per_page = 24
     offset = (page - 1) * per_page
 
-    # Dynamic category resolve
     cur = mysql.connection.cursor()
     category_name = slug_to_category_name(category_slug, cur)
 
@@ -1506,7 +1715,6 @@ def learning_hub(category_slug):
         cur.close()
         abort(404)
 
-    # Total books count
     cur.execute("""
         SELECT COUNT(*)
         FROM documents d
@@ -1520,7 +1728,6 @@ def learning_hub(category_slug):
         page = total_pages
         offset = (page - 1) * per_page
 
-    # Books fetch
     cur.execute("""
         SELECT d.id, d.title, d.author, d.image_url, d.telegram_link,
                COALESCE(d.download_count, 0) AS download_count,
@@ -1540,7 +1747,6 @@ def learning_hub(category_slug):
     """, (category_name, per_page, offset))
     rows = cur.fetchall()
 
-    # Total downloads stat
     cur.execute("""
         SELECT COALESCE(SUM(d.download_count), 0)
         FROM documents d
@@ -1549,7 +1755,6 @@ def learning_hub(category_slug):
     """, (category_name,))
     total_downloads = cur.fetchone()[0]
 
-    # All categories for "related" section
     cur.execute("""
         SELECT c.level, COUNT(d.id) AS total
         FROM categories c
@@ -1585,11 +1790,12 @@ def learning_hub(category_slug):
         total_pages=total_pages,
         all_categories=all_categories,
     )
+
+
 # ================== BOOK DETAIL ==================
 @app.route('/book/<int:book_id>')
 def book_detail(book_id):
     cur = mysql.connection.cursor()
-    # ========== PHASE 5: Added category_id to query ==========
     cur.execute("""
         SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language, d.category_id
         FROM documents d JOIN categories c ON d.category_id = c.id
@@ -1621,7 +1827,6 @@ def book_detail(book_id):
 
     lazy_trickle(book_id)
 
-    # ========== PHASE 5: Related books (same category) ==========
     related_books = []
     cat_id = book[8] if len(book) > 8 else None
     if cat_id:
@@ -1648,6 +1853,7 @@ def book_detail(book_id):
     book_data = {"id": book[0], "title": book[1], "level": book[2], "link": book[3],
                  "author": book[4], "description": book[5], "image_url": book[6], "language": book[7]}
     return render_template('book_detail.html', book=book_data, reviews=reviews, related_books=related_books)
+
 
 # ================== SEO ROUTES ==================
 @app.route('/sitemap.xml')
@@ -1676,10 +1882,12 @@ def sitemap():
     xml += '</urlset>'
     return Response(xml, mimetype='application/xml')
 
+
 @app.route('/robots.txt')
 def robots():
     content = f"User-agent: *\nAllow: /\nSitemap: {url_for('sitemap', _external=True)}\n"
     return Response(content, mimetype='text/plain')
+
 
 # ================== SEARCH AUTOCOMPLETE ==================
 @app.route('/api/search/suggest')
@@ -1688,7 +1896,6 @@ def search_suggest():
     if len(q) < 2:
         return jsonify([])
     cur = mysql.connection.cursor()
-    # ========== PHASE 3: Added download_count & view_count ==========
     cur.execute("""
         SELECT d.id, d.title, d.author, c.level, d.image_url,
                COALESCE(d.download_count, 0) as download_count,
@@ -1705,6 +1912,7 @@ def search_suggest():
         "id": r[0], "title": r[1], "author": r[2], "level": r[3], "image_url": r[4],
         "download_count": r[5] or 0, "view_count": r[6] or 0
     } for r in results])
+
 
 # ================== API: BOOK DETAIL FOR MODAL ==================
 @app.route('/api/book/<int:book_id>')
@@ -1746,6 +1954,7 @@ def api_book_detail(book_id):
         "is_favorite": is_fav, "is_logged_in": 'user_id' in session
     }
     return jsonify(book_data)
+
 
 # ================== USER ACCOUNTS ==================
 @app.route('/user/signup', methods=['GET', 'POST'])
@@ -1813,6 +2022,7 @@ def user_signup():
         return redirect(url_for('user_login'))
 
     return render_template('auth.html', mode='signup')
+
 
 @app.route('/user/login', methods=['GET', 'POST'])
 def user_login():
@@ -1883,6 +2093,7 @@ def user_login():
 
     return render_template('auth.html', mode='login')
 
+
 @app.route('/verify/<token>')
 def verify_email(token):
     cur = mysql.connection.cursor()
@@ -1898,11 +2109,13 @@ def verify_email(token):
         flash('Invalid or expired verification link.', 'danger')
     return redirect(url_for('user_login'))
 
+
 @app.route('/user/logout')
 def user_logout():
     session.pop('user_id', None)
     session.pop('user_name', None)
     return redirect(url_for('home'))
+
 
 # ================== FAVORITES & HISTORY ==================
 @app.route('/user/favorites')
@@ -1921,6 +2134,7 @@ def user_favorites():
                    "author": r[4], "description": r[5], "image_url": r[6], "language": r[7]} for r in books]
     return render_template('user_favorites.html', pdfs=real_pdfs)
 
+
 @app.route('/user/favorite/<int:book_id>', methods=['POST'])
 def toggle_favorite(book_id):
     if 'user_id' not in session:
@@ -1936,6 +2150,7 @@ def toggle_favorite(book_id):
     mysql.connection.commit()
     cur.close()
     return jsonify({"success": True})
+
 
 @app.route('/user/history')
 def user_history():
@@ -1954,6 +2169,7 @@ def user_history():
                    "downloaded_at": str(r[8])} for r in books]
     return render_template('user_history.html', pdfs=real_pdfs)
 
+
 # ================== DOWNLOAD TRACKING ==================
 @app.route('/api/download/<int:book_id>', methods=['POST'])
 def track_download_route(book_id):
@@ -1968,6 +2184,7 @@ def track_download_route(book_id):
     mysql.connection.commit()
     cur.close()
     return jsonify({'success': True})
+
 
 # ================== REVIEWS ==================
 @app.route('/book/<int:book_id>/review', methods=['POST'])
@@ -1986,6 +2203,7 @@ def add_review(book_id):
     cur.close()
     award_points(user_id, 5, book_id, action='review')
     return jsonify({"success": True})
+
 
 # -------------------- PROTECTED DOWNLOAD & READ ONLINE --------------------
 @app.route('/book/<int:book_id>/download')
@@ -2025,6 +2243,7 @@ def download_book(book_id):
 
     return redirect(presigned)
 
+
 @app.route('/book/<int:book_id>/read')
 def read_online(book_id):
     if 'user_id' not in session:
@@ -2054,32 +2273,10 @@ def read_online(book_id):
     return render_template('read_online.html', pdf_url=presigned, book_title=book[1], book_id=book_id)
 
 # ================== OFFICIAL ADMIN ROUTES ==================
-def get_site_setting(key, default=None):
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT `value` FROM site_settings WHERE `key` = %s", (key,))
-    row = cur.fetchone()
-    cur.close()
-    return row[0] if row else default
-
-def is_official_user(user_id):
-    official_id = get_site_setting('official_user_id')
-    return official_id and str(user_id) == official_id
-
-def official_admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            abort(403)
-        if not is_official_user(session['user_id']):
-            abort(403)
-        return f(*args, **kwargs)
-    return decorated_function
-
 @app.route('/admin', methods=['GET', 'POST'])
 @official_admin_required
 @cache.cached(timeout=600, unless=lambda: request.method == 'POST')
 def admin():
-    # ... (aapka existing admin logic unchanged) ...
     if request.method == 'POST':
         if 'pdf_file' not in request.files:
             return jsonify({"error": "No file part"}), 400
@@ -2200,137 +2397,7 @@ def admin():
     cur.close()
     return render_template('admin.html', categories=categories)
 
-#================== UTILITY FUNCTIONS ==================
-def clean_title_extra(title):
-    """Remove @Pdfmatrix, TechByMehdi etc."""
-    title = re.sub(r'@pdfmatrix', '', title, flags=re.IGNORECASE)
-    title = re.sub(r'[-_]?TechByMehdi', '', title, flags=re.IGNORECASE)
-    return re.sub(r'\s+', ' ', title).strip()
 
-def extract_cover_from_pdf(pdf_bytes):
-    """Generate cover image from the first page of a PDF. Returns compressed PNG bytes."""
-    try:
-        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        page = doc.load_page(0)
-        pix = page.get_pixmap(dpi=150)
-        cover_bytes = pix.tobytes("png")
-        doc.close()
-        return compress_image(BytesIO(cover_bytes).getvalue(), max_size=(400, 400), quality=75)
-    except Exception as e:
-        app.logger.error(f"Cover extraction failed: {e}")
-        return None
-
-def generate_description(title, category):
-    """Return a long, professional description based on category."""
-    t = title
-    templates = {
-        'Python': f"Unlock the power of Python with '{t}'. This comprehensive guide takes you from basic syntax to advanced concepts like OOP, data analysis with Pandas, web development with Flask/Django, and task automation. Packed with real-world examples and best practices, it's perfect for beginners and experienced coders.",
-        'JavaScript': f"Master JavaScript from the ground up with '{t}'. Explore core language features, DOM manipulation, asynchronous programming, and modern frameworks like React and Node.js.",
-        'Java': f"Dive deep into Java with '{t}'. Covering OOP principles, collections, multithreading, and enterprise frameworks like Spring and Hibernate.",
-        'C / C++': f"Explore the world of C and C++ with '{t}'. From pointers and memory management to STL and modern C++17/20 features.",
-        'Web Development': f"Build stunning, responsive websites with '{t}'. Learn HTML5, CSS3, JavaScript, and popular frameworks like Bootstrap, React, and Angular.",
-        'Data Science': f"Discover the art of data science with '{t}'. Learn data wrangling, visualization, statistical modeling, and ML using Pandas, NumPy, and Scikit-learn.",
-        'Machine Learning': f"Step into the future with '{t}'. From linear regression to deep neural networks, covers supervised/unsupervised learning and deployment.",
-        'Algorithms': f"Sharpen your problem-solving skills with '{t}'. Detailed explanations of sorting, searching, graph algorithms, and dynamic programming.",
-        'Databases': f"Master database design and SQL with '{t}'. Covers relational models, normalization, indexing, and query optimization.",
-        'Cyber Security': f"Defend the digital world with '{t}'. Learn ethical hacking, penetration testing, network security, and cryptography.",
-        'Mobile Apps': f"Create engaging mobile experiences with '{t}'. Covers native Android (Kotlin), iOS (Swift), and Flutter/React Native.",
-        'DevOps': f"Transform your workflow with '{t}'. Learn CI/CD pipelines, Docker, Kubernetes, Terraform, and cloud services.",
-        'Others': f"An in-depth resource covering '{t}'. Packed with theory, practical examples, and expert insights."
-    }
-    return templates.get(category, f"An in-depth resource covering '{t}' in the field of {category}.")
-
-def guess_category_from_text(pdf_text):
-    """Guess category using keyword matching on PDF text. Returns best category or 'Others'."""
-    best_category = 'Others'
-    best_ratio = 0.0
-    for category, keywords in KEYWORDS.items():
-        hits = sum(1 for kw in keywords if kw in pdf_text)
-        ratio = hits / len(keywords)
-        if ratio > best_ratio:
-            best_ratio = ratio
-            best_category = category
-    if best_ratio < 0.7:
-        best_category = 'Others'
-    return best_category
-
-def guess_category_from_filename(filename):
-    """Fallback: guess category from filename keywords."""
-    name = filename.lower()
-    scores = {}
-    for category, keywords in KEYWORDS.items():
-        hits = sum(1 for kw in keywords if kw in name)
-        ratio = hits / len(keywords)
-        scores[category] = ratio
-    if not scores:
-        return 'Others'
-    best_category = max(scores, key=scores.get)
-    best_ratio = scores[best_category]
-    if best_ratio < 0.1:
-        best_category = 'Others'
-    return best_category
-
-#---Lazy Trickle Function for New Books---
-def lazy_trickle(book_id):
-    """Books younger than 7 days get small random growth every 6 hours."""
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT created_at, last_trickle_time
-        FROM documents
-        WHERE id = %s AND approved = 1
-    """, (book_id,))
-    book = cur.fetchone()
-    if not book:
-        cur.close()
-        return
-
-    created_at = book[0]
-    last_trickle = book[1]
-    now = datetime.utcnow()
-
-    if not created_at or created_at < now - timedelta(days=7):
-        cur.close()
-        return
-
-    if last_trickle and last_trickle > now - timedelta(hours=6):
-        cur.close()
-        return
-
-    dl_growth = random.randint(2, 8)
-    vw_growth = random.randint(4, 16)
-
-    cur.execute("""
-        UPDATE documents
-        SET download_count = download_count + %s,
-            view_count = view_count + %s,
-            last_trickle_time = %s
-        WHERE id = %s
-    """, (dl_growth, vw_growth, now, book_id))
-    mysql.connection.commit()
-    cur.close()
-
-# ================== R2 HELPER FUNCTIONS (Required) ==================
-def extract_r2_key(url):
-    """Extract the R2 object key from a public URL."""
-    if not url:
-        return None
-    if url.startswith(R2_PUBLIC_BASE + '/'):
-        return url.replace(R2_PUBLIC_BASE + '/', '', 1)
-    return url
-
-def get_presigned_url(key, expiration=300):
-    """Generate a presigned URL for an R2 object."""
-    try:
-        return r2_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': R2_BUCKET, 'Key': key},
-            ExpiresIn=expiration
-        )
-    except Exception as e:
-        app.logger.error(f"Presigned URL generation failed: {e}")
-        return None
-
-# --------------- Pending & Approval ---------------
 @app.route('/admin/pending/count')
 @official_admin_required
 def pending_count():
@@ -2339,6 +2406,7 @@ def pending_count():
     count = cur.fetchone()[0]
     cur.close()
     return jsonify({'count': count})
+
 
 @app.route('/admin/pending')
 @official_admin_required
@@ -2355,6 +2423,7 @@ def pending_books():
                    "created_at": str(b[4]) if b[4] else '', "link": b[5]} for b in books]
     return render_template('pending.html', books=books_list)
 
+
 @app.route('/admin/approve/<int:book_id>', methods=['POST'])
 @official_admin_required
 def approve_book(book_id):
@@ -2365,7 +2434,7 @@ def approve_book(book_id):
         cur.close()
         return jsonify({"error": "Book not found"}), 404
     title, uploader_id = row
-    cur.execute("UPDATE documents SET approved = 1, status = 'approved' WHERE id = %s", (book_id,))
+    cur.execute("UPDATE documents SET approved = 1, status = 'approved', approved_at = NOW() WHERE id = %s", (book_id,))
     mysql.connection.commit()
     if uploader_id:
         cur.execute("SELECT email, username FROM users WHERE id = %s", (uploader_id,))
@@ -2380,6 +2449,7 @@ def approve_book(book_id):
     cur.close()
     return jsonify({"success": True})
 
+
 @app.route('/admin/reject/<int:book_id>', methods=['POST'])
 @official_admin_required
 def reject_book(book_id):
@@ -2390,9 +2460,11 @@ def reject_book(book_id):
         cur.close()
         return jsonify({"error": "Book not found"}), 404
     title, uploader_id, file_link = row
-    if file_link and file_link.startswith(R2_PUBLIC_BASE + '/'):
-        delete_from_r2(file_link.replace(R2_PUBLIC_BASE + '/', '', 1))
-    cur.execute("UPDATE documents SET approved = 0, status = 'rejected' WHERE id = %s", (book_id,))
+    if file_link:
+        r2_key = extract_r2_key(file_link)
+        if r2_key:
+            delete_from_r2(r2_key)
+    cur.execute("UPDATE documents SET approved = 0, status = 'rejected', approved_at = NULL WHERE id = %s", (book_id,))
     mysql.connection.commit()
     if uploader_id:
         cur.execute("SELECT email, username FROM users WHERE id = %s", (uploader_id,))
@@ -2407,17 +2479,18 @@ def reject_book(book_id):
     cur.close()
     return jsonify({"success": True})
 
+
 @app.route('/admin/approve-all', methods=['POST'])
 @official_admin_required
 def approve_all_books():
     cur = mysql.connection.cursor()
-    cur.execute("UPDATE documents SET approved = 1 WHERE approved = 0")
+    cur.execute("UPDATE documents SET approved = 1, status = 'approved', approved_at = NOW() WHERE approved = 0")
     count = cur.rowcount
     mysql.connection.commit()
     cur.close()
     return jsonify({"success": True, "count": count})
 
-# --------------- Admin Books List ---------------
+
 @app.route('/admin/books')
 @official_admin_required
 def admin_books_list():
@@ -2432,7 +2505,7 @@ def admin_books_list():
                    "author": b[4], "description": b[5], "image_url": b[6], "language": b[7], "level": b[8]} for b in books]
     return render_template('admin_books.html', books=books_list)
 
-# --------------- Admin Edit / Delete (R2 aware) ---------------
+
 @app.route('/admin/edit/<int:book_id>', methods=['GET', 'POST'])
 @official_admin_required
 def edit_book(book_id):
@@ -2458,8 +2531,10 @@ def edit_book(book_id):
             clean_title = clean_professional_name(title) if title else clean_professional_name("book")
             pdf_key = generate_r2_key('uploads', clean_title, '.pdf')
             new_pdf_url = upload_to_r2(pdf_bytes, pdf_key, content_type='application/pdf')
-            if old_pdf and old_pdf.startswith(R2_PUBLIC_BASE + '/'):
-                delete_from_r2(old_pdf.replace(R2_PUBLIC_BASE + '/', '', 1))
+            if old_pdf:
+                old_key = extract_r2_key(old_pdf)
+                if old_key:
+                    delete_from_r2(old_key)
             cur.execute("""
                 UPDATE documents SET category_id=(SELECT id FROM categories WHERE level=%s), title=%s,
                 telegram_link=%s, author=%s, description=%s, image_url=%s, language=%s WHERE id=%s
@@ -2481,8 +2556,10 @@ def edit_book(book_id):
                     mime_map = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp'}
                     mime = mime_map.get(img_ext, 'application/octet-stream')
                     new_cover_url = upload_to_r2(cover_bytes, cover_key, content_type=mime)
-                    if old_cover and old_cover.startswith(R2_PUBLIC_BASE + '/'):
-                        delete_from_r2(old_cover.replace(R2_PUBLIC_BASE + '/', '', 1))
+                    if old_cover:
+                        old_key = extract_r2_key(old_cover)
+                        if old_key:
+                            delete_from_r2(old_key)
                     cur.execute("UPDATE documents SET image_url = %s WHERE id = %s", (new_cover_url, book_id))
 
         mysql.connection.commit()
@@ -2491,7 +2568,7 @@ def edit_book(book_id):
 
     cur = mysql.connection.cursor()
     DEFAULT_CATEGORIES = ['Python', 'JavaScript', 'Java', 'C / C++', 'Web Development', 'Data Science',
-                          'Machine Learning', 'Algorithms', 'Databases', 'Cyber Security', 'Mobile Apps', 'DevOps', 'Other']
+                          'Machine Learning', 'Algorithms', 'Databases', 'Cyber Security', 'Mobile Apps', 'DevOps', 'Others']
     for cat in DEFAULT_CATEGORIES:
         cur.execute("SELECT id FROM categories WHERE level = %s", (cat,))
         if not cur.fetchone():
@@ -2510,6 +2587,7 @@ def edit_book(book_id):
             "author": book_row[4], "description": book_row[5], "image_url": book_row[6], "language": book_row[7]}
     return render_template('edit_book.html', book=book, categories=categories)
 
+
 @app.route('/admin/delete/<int:book_id>', methods=['POST'])
 @official_admin_required
 def delete_book(book_id):
@@ -2517,20 +2595,21 @@ def delete_book(book_id):
     cur.execute("SELECT telegram_link, image_url FROM documents WHERE id = %s", (book_id,))
     row = cur.fetchone()
     if row:
-        if row[0] and row[0].startswith(R2_PUBLIC_BASE + '/'):
-            delete_from_r2(row[0].replace(R2_PUBLIC_BASE + '/', '', 1))
-        if row[1] and row[1].startswith(R2_PUBLIC_BASE + '/'):
-            delete_from_r2(row[1].replace(R2_PUBLIC_BASE + '/', '', 1))
+        for url in (row[0], row[1]):
+            key = extract_r2_key(url) if url else None
+            if key:
+                delete_from_r2(key)
     cur.execute("DELETE FROM documents WHERE id = %s", (book_id,))
     mysql.connection.commit()
     cur.close()
     return jsonify({"success": "Book deleted successfully!"})
 
-# --------------- Admin Dashboard / Stats / Live Counts ---------------
+
 @app.route('/admin/dashboard')
 @official_admin_required
 def admin_dashboard():
     return render_template('admin_dashboard.html')
+
 
 @app.route('/api/admin/stats')
 @official_admin_required
@@ -2549,6 +2628,7 @@ def admin_stats():
     return jsonify({"total_books": total_books, "total_categories": total_categories,
                     "total_users": total_users, "recent_uploads": recent_uploads})
 
+
 @app.route('/api/categories/live-counts')
 @cache.cached(timeout=60)
 def live_category_counts():
@@ -2562,7 +2642,7 @@ def live_category_counts():
     cur.close()
     return jsonify([{"id": r[0], "level": r[1], "count": r[2]} for r in data])
 
-# --------------- Manage Users ---------------
+
 @app.route('/admin/users')
 @official_admin_required
 def list_users():
@@ -2573,7 +2653,36 @@ def list_users():
     users_list = [{"id": r[0], "username": r[1], "email": r[2], "verified": r[3], "created_at": str(r[4])} for r in users]
     return render_template('admin_users.html', users=users_list)
 
-# --------------- Analytics ---------------
+
+@app.route('/admin/users/delete/<int:user_id>', methods=['POST'])
+def delete_user(user_id):
+    if 'user_id' not in session or not is_official_user(session['user_id']):
+        return jsonify({"error": "Unauthorized"}), 403
+    if session.get('user_id') == user_id:
+        return jsonify({"error": "You cannot delete your own account."}), 400
+    if is_official_user(user_id):
+        return jsonify({"error": "Cannot delete the official community account."}), 400
+
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute("DELETE FROM favorites WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM download_history WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM reviews WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM book_comments WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM user_points WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM user_streaks WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM notifications WHERE user_id = %s", (user_id,))
+        cur.execute("UPDATE documents SET uploaded_by = NULL WHERE uploaded_by = %s", (user_id,))
+        cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({"success": True})
+    except Exception as e:
+        mysql.connection.rollback()
+        cur.close()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/admin/analytics')
 @official_admin_required
 def admin_analytics():
@@ -2588,12 +2697,10 @@ def admin_analytics():
     return render_template('admin_analytics.html', total_books=total_books,
                            total_downloads=total_downloads, total_users=total_users)
 
-# --------------- GRADUAL COUNT TRICKLE ---------------
+
 @app.route('/admin/trickle-counts')
 @official_admin_required
 def trickle_counts():
-    """Daily cron – slowly grow counts for books uploaded within last 7 days."""
-    import random
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
     cur = mysql.connection.cursor()
     cur.execute("SELECT id FROM documents WHERE approved = 1 AND created_at >= %s", (seven_days_ago,))
@@ -2602,740 +2709,14 @@ def trickle_counts():
         dl_growth = random.randint(5, 20)
         vw_growth = random.randint(10, 40)
         cur.execute("""
-            UPDATE documents
-            SET download_count = download_count + %s,
-                view_count = view_count + %s,
-                last_trickle_time = NOW()
-            WHERE id = %s
+            UPDATE documents SET download_count = download_count + %s,
+                view_count = view_count + %s, last_trickle_time = NOW() WHERE id = %s
         """, (dl_growth, vw_growth, book[0]))
     mysql.connection.commit()
     cur.close()
     return jsonify({"success": True, "updated": len(books)})
 
-# --------------- QR CODE ROUTE ---------------
-@app.route('/book/<int:book_id>/qr')
-def book_qr(book_id):
-    book_url = url_for('book_detail', book_id=book_id, _external=True)
-    qr = qrcode.QRCode(box_size=10, border=4)
-    qr.add_data(book_url)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    buf = BytesIO()
-    img.save(buf, format='PNG')
-    buf.seek(0)
-    return send_file(buf, mimetype='image/png')
 
-# --------------- PWA ---------------
-@app.route('/manifest.json')
-def manifest():
-    return jsonify({
-        "name": "DocoDive", "short_name": "DocoDive", "start_url": "/",
-        "display": "standalone", "background_color": "#ffffff", "theme_color": "#4338ca",
-        "icons": [
-            {"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png"},
-            {"src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png"}
-        ]
-    })
-
-@app.route('/sw.js')
-def service_worker():
-    return app.send_static_file('sw.js')
-
-@app.route('/privacy')
-def privacy():
-    return render_template('privacy.html')
-
-@app.route('/terms')
-def terms():
-    return render_template('terms.html')
-
-@app.route('/data-deletion')
-def data_deletion():
-    return render_template('data_deletion.html')
-
-#--------------- API for Book Counts ---------------
-@app.route('/api/book/<int:book_id>/counts')
-def book_counts_api(book_id):
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT download_count, view_count FROM documents WHERE id = %s", (book_id,))
-    row = cur.fetchone()
-    cur.close()
-    if not row:
-        return jsonify({'error': 'Book not found'}), 404
-    return jsonify({'download_count': row[0] or 0, 'view_count': row[1] or 0})
-
-# ================== USER STATS ROUTE ==================
-@app.route('/user/stats')
-def user_stats():
-    if 'user_id' not in session:
-        return redirect(url_for('user_login'))
-    uid = session['user_id']
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(*) FROM download_history WHERE user_id = %s", (uid,))
-    downloads = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM favorites WHERE user_id = %s", (uid,))
-    favorites = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM reviews WHERE user_id = %s", (uid,))
-    reviews = cur.fetchone()[0]
-    cur.execute("SELECT streak_count, longest_streak FROM user_streaks WHERE user_id = %s", (uid,))
-    streak_row = cur.fetchone()
-    streak, longest = streak_row if streak_row else (0, 0)
-    cur.close()
-    return render_template('user_stats.html', downloads=downloads, favorites=favorites,
-                           reviews=reviews, streak=streak, longest=longest)
-# ================== NEWSLETTER SUBSCRIBE ==================
-@app.route('/newsletter/subscribe', methods=['POST'])
-def newsletter_subscribe():
-    email = request.form.get('email', '').strip()
-    next_url = request.form.get('next', url_for('home'))
-
-    if not email:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'error': 'Please enter your email.'}), 400
-        flash('Please enter your email.', 'danger')
-        return redirect(next_url)
-
-    if not is_valid_email(email):
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'error': 'Please enter a valid email address.'}), 400
-        flash('Please enter a valid email address.', 'danger')
-        return redirect(next_url)
-
-    # Brevo CRM mein sync karo (name unknown = "Subscriber")
-    try:
-        sync_brevo_contact(email, 'DocoDive', 'Subscriber')
-        success = True
-    except Exception as e:
-        app.logger.error(f"Newsletter subscribe failed: {e}")
-        success = False
-
-    if not success:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'error': 'Something went wrong. Please try again.'}), 500
-        flash('Something went wrong. Please try again.', 'danger')
-        return redirect(next_url)
-
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({'success': True, 'message': '✅ Subscribed! Check your inbox for updates.'})
-
-    flash('✅ Subscribed! You will now receive updates about new books.', 'success')
-    return redirect(next_url)
-
-
-# ================== USER NOTIFICATION PREFERENCES ==================
-@app.route('/user/preferences', methods=['GET', 'POST'])
-def user_preferences():
-    if 'user_id' not in session:
-        return redirect(url_for('user_login'))
-
-    user_id = session['user_id']
-
-    if request.method == 'POST':
-        notify_new_books = '1' if request.form.get('notify_new_books') else '0'
-        favorite_categories = request.form.getlist('favorite_categories')
-        email_frequency = request.form.get('email_frequency', 'weekly')
-
-        # Validate email_frequency
-        if email_frequency not in ('daily', 'weekly', 'off'):
-            email_frequency = 'weekly'
-
-        categories_json = json.dumps(favorite_categories)
-
-        cur = mysql.connection.cursor()
-        cur.execute("""
-            INSERT INTO user_preferences (user_id, notify_new_books, favorite_categories, email_frequency)
-            VALUES (%s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-                notify_new_books = VALUES(notify_new_books),
-                favorite_categories = VALUES(favorite_categories),
-                email_frequency = VALUES(email_frequency)
-        """, (user_id, notify_new_books, categories_json, email_frequency))
-        mysql.connection.commit()
-        cur.close()
-
-        flash('✅ Notification preferences saved successfully!', 'success')
-        return redirect(url_for('user_preferences'))
-
-    # GET: Current preferences + categories
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT notify_new_books, favorite_categories, email_frequency
-        FROM user_preferences
-        WHERE user_id = %s
-    """, (user_id,))
-    row = cur.fetchone()
-    cur.close()
-
-    if row:
-        pref = {
-            'notify_new_books': bool(row[0]),
-            'favorite_categories': json.loads(row[1]) if row[1] else [],
-            'email_frequency': row[2] or 'weekly'
-        }
-    else:
-        pref = {
-            'notify_new_books': True,
-            'favorite_categories': [],
-            'email_frequency': 'weekly'
-        }
-
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT level FROM categories ORDER BY level")
-    categories = [r[0] for r in cur.fetchall()]
-    cur.close()
-
-    return render_template('preferences.html', pref=pref, categories=categories)
-
-# ================== USER PROFILE ==================
-@app.route('/user/profile/<username>')
-def user_profile(username):
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT id, username, email, verified, created_at, avatar_url, bio, social_links, first_name, last_name
-        FROM users WHERE username = %s
-    """, (username,))
-    user = cur.fetchone()
-    if not user:
-        cur.close()
-        abort(404)
-    uid = user[0]
-
-    official_user_id = get_site_setting('official_user_id')
-    is_official = bool(official_user_id and str(uid) == official_user_id)
-
-    social_links_dict = {}
-    if user[7]:
-        try:
-            social_links_dict = json.loads(user[7])
-        except Exception:
-            pass
-
-    cur.execute("SELECT COUNT(*) FROM documents WHERE uploaded_by = %s", (uid,))
-    total_uploads = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM reviews WHERE user_id = %s", (uid,))
-    total_reviews = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM favorites WHERE user_id = %s", (uid,))
-    total_favorites = cur.fetchone()[0]
-    cur.execute("SELECT SUM(points) FROM user_points WHERE user_id = %s", (uid,))
-    total_points = cur.fetchone()[0] or 0
-    cur.close()
-
-    return render_template('user_profile.html', user=user, total_uploads=total_uploads,
-                           total_reviews=total_reviews, total_favorites=total_favorites,
-                           total_points=total_points, social_links=social_links_dict, is_official=is_official)
-
-@app.route('/user/profile/edit', methods=['GET', 'POST'])
-def edit_profile():
-    if 'user_id' not in session:
-        return redirect(url_for('user_login'))
-    uid = session['user_id']
-    if request.method == 'POST':
-        first_name = request.form.get('first_name', '').strip()
-        last_name = request.form.get('last_name', '').strip()
-        new_username = request.form.get('username', '').strip()
-        bio = request.form.get('bio', '').strip()
-        social_links = request.form.get('social_links', '').strip()
-        avatar_file = request.files.get('avatar')
-        avatar_url = None
-
-        if avatar_file and allowed_image_file(avatar_file.filename):
-            avatar_data = avatar_file.read()
-            avatar_data = compress_image(avatar_data, max_size=(200, 200), quality=80)
-            avatar_key = generate_r2_key('avatars', f'user_{uid}', '.jpg')
-            try:
-                avatar_url = upload_to_r2(avatar_data, avatar_key, content_type='image/jpeg')
-            except Exception:
-                flash('Avatar upload failed.', 'danger')
-                return redirect(url_for('edit_profile'))
-
-        cur = mysql.connection.cursor()
-
-        if new_username and new_username != session.get('user_name'):
-            cur.execute("SELECT id FROM users WHERE username = %s AND id != %s", (new_username, uid))
-            if cur.fetchone():
-                cur.close()
-                flash('Username already taken. Please choose another.', 'danger')
-                return redirect(url_for('edit_profile'))
-            cur.execute("SELECT username_changed_at FROM users WHERE id = %s", (uid,))
-            last_changed = cur.fetchone()[0]
-            if last_changed and (datetime.utcnow() - last_changed).days < 30:
-                cur.close()
-                flash('You can change your username only once every 30 days.', 'danger')
-                return redirect(url_for('edit_profile'))
-            cur.execute("UPDATE users SET username = %s, username_changed_at = NOW() WHERE id = %s", (new_username, uid))
-            mysql.connection.commit()
-            session['user_name'] = new_username
-            full_name = (first_name + ' ' + last_name).strip()
-            session['user_display_name'] = full_name or new_username
-
-        # Update name, bio, social links, avatar
-        cur.execute("""
-            UPDATE users
-            SET first_name = %s, last_name = %s, bio = %s, social_links = %s,
-                avatar_url = COALESCE(%s, avatar_url)
-            WHERE id = %s
-        """, (first_name, last_name, bio, social_links, avatar_url, uid))
-        mysql.connection.commit()
-        cur.close()
-
-        full_name = (first_name + ' ' + last_name).strip()
-        session['user_display_name'] = full_name or session.get('user_name')
-        if avatar_url:
-            session['avatar_url'] = avatar_url
-
-        flash('Profile updated successfully!', 'success')
-        return redirect(url_for('user_profile', username=session.get('user_name')))
-
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT first_name, last_name, bio, social_links, avatar_url FROM users WHERE id = %s", (uid,))
-    row = cur.fetchone()
-    cur.close()
-    profile = {'first_name': row[0] or '', 'last_name': row[1] or '', 'bio': row[2] or '',
-               'social_links': row[3] or '', 'avatar_url': row[4] or ''}
-    return render_template('edit_profile.html', profile=profile)
-
-# ================== USER STATS API ==================
-@app.route('/api/user-stats')
-def user_stats_api():
-    user_id = request.args.get('user_id', type=int)
-    if not user_id:
-        return jsonify({"error": "Missing user_id"}), 400
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(*) FROM documents WHERE uploaded_by = %s", (user_id,))
-    uploads = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM book_comments WHERE user_id = %s", (user_id,))
-    comments = cur.fetchone()[0]
-    cur.execute("SELECT SUM(points) FROM user_points WHERE user_id = %s", (user_id,))
-    points = cur.fetchone()[0] or 0
-    cur.close()
-    return jsonify({"uploads": uploads, "comments": comments, "points": points})
-
-# ================== NOTIFICATIONS PAGE ==================
-@app.route('/user/notifications')
-def user_notifications():
-    if 'user_id' not in session:
-        return redirect(url_for('user_login'))
-
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT id, message, link, is_read, created_at, type, metadata
-        FROM notifications
-        WHERE user_id = %s
-        ORDER BY created_at DESC
-    """, (session['user_id'],))
-    rows = cur.fetchall()
-    cur.close()
-
-    enriched = []
-    for row in rows:
-        notif = {
-            "id": row[0],
-            "message": row[1],
-            "link": row[2],
-            "is_read": row[3],
-            "created_at": row[4],
-            "type": row[5] or 'info',
-            "metadata": json.loads(row[6]) if row[6] else {}
-        }
-        if notif['type'] in ('approval', 'rejection'):
-            uid = notif['metadata'].get('uploader_id')
-            if uid:
-                cur = mysql.connection.cursor()
-                cur.execute("SELECT avatar_url FROM users WHERE id = %s", (uid,))
-                av = cur.fetchone()
-                cur.close()
-                notif['avatar_url'] = av[0] if av else None
-                notif['is_official_actor'] = is_official_user(uid)
-            else:
-                notif['avatar_url'] = None
-                notif['is_official_actor'] = False
-        elif notif['type'] in ('general_comment', 'reply'):
-            uid = notif['metadata'].get('actor_user_id')
-            if uid:
-                cur = mysql.connection.cursor()
-                cur.execute("SELECT username, avatar_url FROM users WHERE id = %s", (uid,))
-                user = cur.fetchone()
-                cur.close()
-                notif['actor_name'] = user[0] if user else 'Unknown'
-                notif['avatar_url'] = user[1] if user else None
-                notif['is_official_actor'] = is_official_user(uid)
-            else:
-                notif['actor_name'] = 'Someone'
-                notif['avatar_url'] = None
-                notif['is_official_actor'] = False
-        else:
-            notif['avatar_url'] = None
-            notif['is_official_actor'] = False
-
-        enriched.append(notif)
-
-    return render_template('notifications.html', notifications=enriched)
-
-# ================== LEADERBOARD ==================
-@app.route('/leaderboard')
-def leaderboard():
-    official_user_id = get_site_setting('official_user_id')
-
-    cur = mysql.connection.cursor()
-    if official_user_id:
-        cur.execute("""
-            SELECT u.id, u.username, u.first_name, u.last_name, u.avatar_url, SUM(up.points) AS total_points
-            FROM user_points up
-            JOIN users u ON up.user_id = u.id
-            WHERE u.id != %s
-            GROUP BY u.id
-            ORDER BY total_points DESC
-            LIMIT 50
-        """, (official_user_id,))
-    else:
-        cur.execute("""
-            SELECT u.id, u.username, u.first_name, u.last_name, u.avatar_url, SUM(up.points) AS total_points
-            FROM user_points up
-            JOIN users u ON up.user_id = u.id
-            GROUP BY u.id
-            ORDER BY total_points DESC
-            LIMIT 50
-        """)
-    rows = cur.fetchall()
-    cur.close()
-
-    leaderboard = []
-    for row in rows:
-        full_name = ((row[2] or '') + ' ' + (row[3] or '')).strip()
-        if not full_name:
-            full_name = row[1]
-        leaderboard.append({
-            'user_id': row[0],
-            'username': row[1],
-            'name': full_name,
-            'avatar_url': row[4],
-            'points': row[5],
-            'is_official': is_official_user(row[0])
-        })
-
-    current_user_rank = None
-    current_user_points = 0
-    if 'user_id' in session:
-        uid = session['user_id']
-        cur = mysql.connection.cursor()
-        cur.execute("SELECT SUM(points) FROM user_points WHERE user_id = %s", (uid,))
-        total = cur.fetchone()[0] or 0
-        current_user_points = total
-
-        if official_user_id and str(uid) != official_user_id:
-            cur.execute("""
-                SELECT COUNT(*) + 1 FROM (
-                    SELECT user_id, SUM(points) AS total
-                    FROM user_points
-                    WHERE user_id != %s
-                    GROUP BY user_id
-                    HAVING SUM(points) > %s
-                ) AS higher
-            """, (official_user_id, total))
-        else:
-            cur.execute("""
-                SELECT COUNT(*) + 1 FROM (
-                    SELECT user_id, SUM(points) AS total
-                    FROM user_points
-                    GROUP BY user_id
-                    HAVING SUM(points) > %s
-                ) AS higher
-            """, (total,))
-        rank = cur.fetchone()[0]
-        current_user_rank = rank
-        cur.close()
-
-    return render_template('leaderboard.html',
-                           leaderboard=leaderboard,
-                           current_user_rank=current_user_rank,
-                           current_user_points=current_user_points)
-
-# ================== BOOK COMMENTS ==================
-@app.route('/book/<int:book_id>/comments', methods=['GET'])
-def get_comments(book_id):
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT c.id, c.comment, c.parent_id, c.created_at, u.username, u.avatar_url, u.id
-        FROM book_comments c JOIN users u ON c.user_id = u.id
-        WHERE c.book_id = %s ORDER BY c.created_at ASC
-    """, (book_id,))
-    comments = cur.fetchall()
-    cur.close()
-    comment_list = [{
-        "id": r[0],
-        "comment": r[1],
-        "parent_id": r[2],
-        "created_at": str(r[3]),
-        "username": r[4],
-        "avatar_url": r[5],
-        "user_id": r[6],
-        "is_official": is_official_user(r[6])
-    } for r in comments]
-    return jsonify(comment_list)
-
-@app.route('/book/<int:book_id>/comments', methods=['POST'])
-def add_comment(book_id):
-    if 'user_id' not in session:
-        return jsonify({"error": "Login required"}), 401
-    data = request.get_json()
-    comment = data.get('comment', '').strip()
-    parent_id = data.get('parent_id')
-    if not comment:
-        return jsonify({"error": "Comment cannot be empty"}), 400
-
-    cur = mysql.connection.cursor()
-    cur.execute("INSERT INTO book_comments (book_id, user_id, parent_id, comment) VALUES (%s, %s, %s, %s)",
-                (book_id, session['user_id'], parent_id, comment))
-    mysql.connection.commit()
-    new_comment_id = cur.lastrowid
-    cur.close()
-
-    award_points(session['user_id'], 2, book_id)
-
-    if not parent_id:
-        cur = mysql.connection.cursor()
-        cur.execute("SELECT uploaded_by, title FROM documents WHERE id = %s", (book_id,))
-        book_info = cur.fetchone()
-        cur.close()
-        if book_info and book_info[0] and book_info[0] != session['user_id']:
-            uploader_id = book_info[0]
-            book_title = book_info[1]
-            snippet = comment[:60] + ('...' if len(comment) > 60 else '')
-            msg = f'💬 New comment on <em>{book_title}</em><br><small class="text-muted">&ldquo;{snippet}&rdquo;</small>'
-            metadata = {"book_id": book_id, "comment_id": new_comment_id, "actor_user_id": session['user_id']}
-            create_notification(uploader_id, 'general_comment', msg,
-                                url_for('book_detail', book_id=book_id, _anchor='discussion'),
-                                metadata)
-    else:
-        cur = mysql.connection.cursor()
-        cur.execute("""
-            SELECT c.user_id, d.title
-            FROM book_comments c
-            JOIN documents d ON c.book_id = d.id
-            WHERE c.id = %s
-        """, (parent_id,))
-        parent_info = cur.fetchone()
-        cur.close()
-        if parent_info and parent_info[0] != session['user_id']:
-            parent_author_id = parent_info[0]
-            book_title = parent_info[1]
-            reply_username = session.get('user_name')
-            snippet = comment[:60] + ('...' if len(comment) > 60 else '')
-            msg = f'<strong>{reply_username}</strong> replied to your comment on <em>{book_title}</em><br><small class="text-muted">&ldquo;{snippet}&rdquo;</small>'
-            metadata = {"book_id": book_id, "comment_id": new_comment_id, "parent_comment_id": parent_id, "actor_user_id": session['user_id']}
-            create_notification(parent_author_id, 'reply', msg,
-                                url_for('book_detail', book_id=book_id, _anchor='discussion'),
-                                metadata)
-
-    return jsonify({"success": True})
-
-# ================== NOTIFICATIONS API ==================
-@app.route('/api/notifications/unread-count')
-def unread_notification_count():
-    if 'user_id' not in session:
-        return jsonify({"count": 0})
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(*) FROM notifications WHERE user_id=%s AND is_read=0", (session['user_id'],))
-    count = cur.fetchone()[0]
-    cur.close()
-    return jsonify({"count": count})
-
-@app.route('/api/notifications')
-def get_notifications():
-    if 'user_id' not in session:
-        return jsonify([])
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT id, message, link, is_read, created_at, type, metadata
-        FROM notifications
-        WHERE user_id = %s
-        ORDER BY created_at DESC LIMIT 20
-    """, (session['user_id'],))
-    rows = cur.fetchall()
-    cur.close()
-
-    result = []
-    for row in rows:
-        notif = {
-            "id": row[0],
-            "message": row[1],
-            "link": row[2],
-            "is_read": bool(row[3]),
-            "created_at": str(row[4]),
-            "type": row[5] or 'info',
-            "metadata": json.loads(row[6]) if row[6] else {}
-        }
-        if notif['type'] in ('approval', 'rejection'):
-            uploader_id = notif['metadata'].get('uploader_id')
-            if uploader_id:
-                cur = mysql.connection.cursor()
-                cur.execute("SELECT avatar_url FROM users WHERE id = %s", (uploader_id,))
-                img = cur.fetchone()
-                cur.close()
-                notif['image_url'] = img[0] if img else None
-                notif['is_official_actor'] = is_official_user(uploader_id)
-            else:
-                notif['image_url'] = None
-                notif['is_official_actor'] = False
-        elif notif['type'] in ('general_comment', 'reply'):
-            actor_id = notif['metadata'].get('actor_user_id')
-            if actor_id:
-                cur = mysql.connection.cursor()
-                cur.execute("SELECT username, avatar_url FROM users WHERE id = %s", (actor_id,))
-                user = cur.fetchone()
-                cur.close()
-                notif['actor_name'] = user[0] if user else 'Unknown'
-                notif['actor_avatar'] = user[1] if user and user[1] else None
-                notif['is_official_actor'] = is_official_user(actor_id)
-            else:
-                notif['actor_name'] = 'Someone'
-                notif['actor_avatar'] = None
-                notif['is_official_actor'] = False
-        else:
-            notif['is_official_actor'] = False
-
-        result.append(notif)
-
-    return jsonify(result)
-
-@app.route('/api/notifications/<int:notif_id>/read', methods=['POST'])
-def mark_notification_read(notif_id):
-    if 'user_id' not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-    cur = mysql.connection.cursor()
-    cur.execute("UPDATE notifications SET is_read=1 WHERE id=%s AND user_id=%s", (notif_id, session['user_id']))
-    mysql.connection.commit()
-    cur.close()
-    return jsonify({"success": True})
-
-@app.route('/api/notifications/<int:notif_id>/delete', methods=['POST'])
-def delete_notification(notif_id):
-    if 'user_id' not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM notifications WHERE id=%s AND user_id=%s", (notif_id, session['user_id']))
-    mysql.connection.commit()
-    cur.close()
-    return jsonify({"success": True})
-
-# ================== SITE SETTINGS HELPERS ==================
-def set_site_setting(key, value):
-    cur = mysql.connection.cursor()
-    cur.execute("REPLACE INTO site_settings (`key`, `value`) VALUES (%s, %s)", (key, value))
-    mysql.connection.commit()
-    cur.close()
-
-# ================== OFFICIAL USER HELPER & MODERATOR ==================
-def is_moderator():
-    if 'user_id' in session and is_official_user(session['user_id']):
-        return True
-    return False
-
-@app.context_processor
-def inject_common():
-    return dict(
-        current_user_is_official=is_official_user(session.get('user_id', 0)),
-        is_moderator=is_moderator()
-    )
-
-@app.context_processor
-def inject_user_logged_in():
-    return dict(user_logged_in=bool(session.get('user_id')))
-
-# ================== MODERATION API ENDPOINTS ==================
-@app.route('/api/review/<int:review_id>/delete', methods=['POST'])
-@limiter.limit("10 per minute")
-def delete_review_api(review_id):
-    if not is_moderator():
-        return jsonify({"error": "Unauthorized"}), 403
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM reviews WHERE id = %s", (review_id,))
-    mysql.connection.commit()
-    cur.close()
-    return jsonify({"success": True})
-
-@app.route('/api/comment/<int:comment_id>/delete', methods=['POST'])
-@limiter.limit("10 per minute")
-def delete_comment_api(comment_id):
-    if not is_moderator():
-        return jsonify({"error": "Unauthorized"}), 403
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM book_comments WHERE id = %s", (comment_id,))
-    mysql.connection.commit()
-    cur.close()
-    return jsonify({"success": True})
-
-@app.route('/api/comment/<int:comment_id>/reply', methods=['POST'])
-@limiter.limit("10 per minute")
-def reply_as_official_api(comment_id):
-    if not is_moderator():
-        return jsonify({"error": "Unauthorized"}), 403
-
-    data = request.get_json()
-    reply_text = data.get('reply_text', '').strip()
-    if not reply_text:
-        return jsonify({"error": "Reply text required"}), 400
-
-    official_user_id = get_site_setting('official_user_id')
-    if not official_user_id:
-        return jsonify({"error": "Official user not set"}), 500
-
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT book_id FROM book_comments WHERE id = %s", (comment_id,))
-    row = cur.fetchone()
-    if not row:
-        cur.close()
-        return jsonify({"error": "Comment not found"}), 404
-
-    book_id = row[0]
-    cur.execute("INSERT INTO book_comments (book_id, user_id, parent_id, comment) VALUES (%s, %s, %s, %s)",
-                (book_id, official_user_id, comment_id, reply_text))
-    mysql.connection.commit()
-    cur.close()
-
-    return jsonify({"success": True})
-
-@app.route('/api/review/<int:review_id>/reply', methods=['POST'])
-@limiter.limit("10 per minute")
-def reply_to_review_api(review_id):
-    if not is_moderator():
-        return jsonify({"error": "Unauthorized"}), 403
-
-    data = request.get_json()
-    reply_text = data.get('reply_text', '').strip()
-    if not reply_text:
-        return jsonify({"error": "Reply text required"}), 400
-
-    official_user_id = get_site_setting('official_user_id')
-    if not official_user_id:
-        return jsonify({"error": "Official user not set"}), 500
-
-    try:
-        cur = mysql.connection.cursor()
-        cur.execute("SELECT book_id FROM reviews WHERE id = %s", (review_id,))
-        review = cur.fetchone()
-        if not review:
-            cur.close()
-            return jsonify({"error": "Review not found"}), 404
-
-        book_id = review[0]
-        full_comment = f"📢 Official reply: {reply_text}"
-
-        cur.execute("INSERT INTO book_comments (book_id, user_id, parent_id, comment) VALUES (%s, %s, %s, %s)",
-                    (book_id, official_user_id, -review_id, full_comment))
-        mysql.connection.commit()
-        cur.close()
-        return jsonify({"success": True})
-
-    except Exception as e:
-        app.logger.error(f"Official reply to review failed: {e}")
-        try:
-            cur.close()
-        except Exception:
-            pass
-        return jsonify({"error": "Database error"}), 500
-
-# ================== ADMIN ROUTES (continued) ==================
 @app.route('/admin/official-profile', methods=['GET', 'POST'])
 @official_admin_required
 def admin_official_profile():
@@ -3361,6 +2742,93 @@ def admin_official_profile():
         official_user = cur.fetchone()
         cur.close()
     return render_template('admin_official_profile.html', official_user=official_user)
+
+
+# ================== MODERATION API ==================
+@app.route('/api/review/<int:review_id>/delete', methods=['POST'])
+@limiter.limit("10 per minute")
+def delete_review_api(review_id):
+    if not is_moderator():
+        return jsonify({"error": "Unauthorized"}), 403
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM reviews WHERE id = %s", (review_id,))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"success": True})
+
+
+@app.route('/api/comment/<int:comment_id>/delete', methods=['POST'])
+@limiter.limit("10 per minute")
+def delete_comment_api(comment_id):
+    if not is_moderator():
+        return jsonify({"error": "Unauthorized"}), 403
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM book_comments WHERE id = %s", (comment_id,))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"success": True})
+
+
+@app.route('/api/comment/<int:comment_id>/reply', methods=['POST'])
+@limiter.limit("10 per minute")
+def reply_as_official_api(comment_id):
+    if not is_moderator():
+        return jsonify({"error": "Unauthorized"}), 403
+    data = request.get_json()
+    reply_text = data.get('reply_text', '').strip()
+    if not reply_text:
+        return jsonify({"error": "Reply text required"}), 400
+    official_user_id = get_site_setting('official_user_id')
+    if not official_user_id:
+        return jsonify({"error": "Official user not set"}), 500
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT book_id FROM book_comments WHERE id = %s", (comment_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        return jsonify({"error": "Comment not found"}), 404
+    book_id = row[0]
+    cur.execute("INSERT INTO book_comments (book_id, user_id, parent_id, comment) VALUES (%s, %s, %s, %s)",
+                (book_id, official_user_id, comment_id, reply_text))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"success": True})
+
+
+@app.route('/api/review/<int:review_id>/reply', methods=['POST'])
+@limiter.limit("10 per minute")
+def reply_to_review_api(review_id):
+    if not is_moderator():
+        return jsonify({"error": "Unauthorized"}), 403
+    data = request.get_json()
+    reply_text = data.get('reply_text', '').strip()
+    if not reply_text:
+        return jsonify({"error": "Reply text required"}), 400
+    official_user_id = get_site_setting('official_user_id')
+    if not official_user_id:
+        return jsonify({"error": "Official user not set"}), 500
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT book_id FROM reviews WHERE id = %s", (review_id,))
+        review = cur.fetchone()
+        if not review:
+            cur.close()
+            return jsonify({"error": "Review not found"}), 404
+        book_id = review[0]
+        full_comment = f"📢 Official reply: {reply_text}"
+        cur.execute("INSERT INTO book_comments (book_id, user_id, parent_id, comment) VALUES (%s, %s, %s, %s)",
+                    (book_id, official_user_id, -review_id, full_comment))
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({"success": True})
+    except Exception as e:
+        app.logger.error(f"Official reply to review failed: {e}")
+        try:
+            cur.close()
+        except Exception:
+            pass
+        return jsonify({"error": "Database error"}), 500
+
 
 # ================== MODERATION PANEL ==================
 @app.route('/moderation')
@@ -3500,53 +2968,6 @@ def moderation_panel():
                            chart_comments=chart_comments,
                            chart_replies=chart_replies)
 
-# ================== MANAGE USERS ==================
-@app.route('/admin/users/delete/<int:user_id>', methods=['POST'])
-def delete_user(user_id):
-    if 'user_id' not in session or not is_official_user(session['user_id']):
-        return jsonify({"error": "Unauthorized"}), 403
-    if session.get('user_id') == user_id:
-        return jsonify({"error": "You cannot delete your own account."}), 400
-    if is_official_user(user_id):
-        return jsonify({"error": "Cannot delete the official community account."}), 400
-
-    cur = mysql.connection.cursor()
-    try:
-        cur.execute("DELETE FROM favorites WHERE user_id = %s", (user_id,))
-        cur.execute("DELETE FROM download_history WHERE user_id = %s", (user_id,))
-        cur.execute("DELETE FROM reviews WHERE user_id = %s", (user_id,))
-        cur.execute("DELETE FROM book_comments WHERE user_id = %s", (user_id,))
-        cur.execute("DELETE FROM user_points WHERE user_id = %s", (user_id,))
-        cur.execute("DELETE FROM user_streaks WHERE user_id = %s", (user_id,))
-        cur.execute("DELETE FROM notifications WHERE user_id = %s", (user_id,))
-        cur.execute("UPDATE documents SET uploaded_by = NULL WHERE uploaded_by = %s", (user_id,))
-
-        cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
-        mysql.connection.commit()
-        cur.close()
-        return jsonify({"success": True})
-    except Exception as e:
-        mysql.connection.rollback()
-        cur.close()
-        return jsonify({"error": str(e)}), 500
-
-# ================== R2 OBJECT STORAGE HELPERS ==================
-def extract_r2_key(full_url):
-    """R2 public URL se object key nikalo."""
-    if not full_url or not full_url.startswith(R2_PUBLIC_BASE + '/'):
-        return None
-    return full_url.replace(R2_PUBLIC_BASE + '/', '', 1)
-
-def get_presigned_url(r2_key, expiration=300):
-    """R2 object key ke liye temporary presigned download URL."""
-    try:
-        return r2_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': R2_BUCKET, 'Key': r2_key},
-            ExpiresIn=expiration
-        )
-    except Exception:
-        return None
 
 # ================== FEEDBACK COMMUNITY ==================
 @app.route('/feedback', methods=['GET', 'POST'])
@@ -3570,7 +2991,6 @@ def user_feedback():
                 (user_id, subject, message)
             )
             mysql.connection.commit()
-
             cur.execute("SELECT username FROM users WHERE id = %s", (user_id,))
             user_row = cur.fetchone()
             username = user_row[0] if user_row else 'User'
@@ -3584,7 +3004,6 @@ def user_feedback():
                     f"New suggestion from {username}: {subject}",
                     html_body=html_body
                 )
-
             flash('Your suggestion has been posted!', 'success')
         except Exception as e:
             app.logger.error(f"Feedback insert failed: {e}")
@@ -3628,11 +3047,11 @@ def user_feedback():
 
     return render_template('feedback.html', feedbacks=feedback_list)
 
+
 @app.route('/feedback/<int:feedback_id>/like', methods=['POST'])
 def toggle_feedback_like(feedback_id):
     if 'user_id' not in session:
         return jsonify({'error': 'Login required'}), 401
-
     user_id = session['user_id']
     cur = mysql.connection.cursor()
     cur.execute("SELECT user_id, feedback_id FROM feedback_likes WHERE user_id=%s AND feedback_id=%s",
@@ -3651,6 +3070,7 @@ def toggle_feedback_like(feedback_id):
         cur.close()
         return jsonify({'liked': True, 'count': get_like_count(feedback_id)})
 
+
 def get_like_count(feedback_id):
     cur = mysql.connection.cursor()
     cur.execute("SELECT like_count FROM user_feedback WHERE id=%s", (feedback_id,))
@@ -3658,21 +3078,19 @@ def get_like_count(feedback_id):
     cur.close()
     return row[0] if row else 0
 
+
 @app.route('/feedback/<int:feedback_id>/official-reply', methods=['POST'])
 @limiter.limit("10 per minute")
 def official_feedback_reply(feedback_id):
     if not is_moderator():
         return jsonify({'error': 'Unauthorized'}), 403
-
     reply_text = request.form.get('reply', '').strip()
     if not reply_text:
         return jsonify({'error': 'Reply cannot be empty'}), 400
-
     cur = mysql.connection.cursor()
     cur.execute("UPDATE user_feedback SET official_reply=%s, official_replied_at=NOW() WHERE id=%s",
                 (reply_text, feedback_id))
     mysql.connection.commit()
-
     cur.execute("""
         SELECT u.email, u.username, f.subject, f.message
         FROM user_feedback f
@@ -3681,7 +3099,6 @@ def official_feedback_reply(feedback_id):
     """, (feedback_id,))
     row = cur.fetchone()
     cur.close()
-
     if row:
         email, username, subject, message = row
         if email:
@@ -3692,8 +3109,8 @@ def official_feedback_reply(feedback_id):
                 f"Hi {username}, the DocoDive team has replied to your suggestion '{subject}'.",
                 html_body=html_body
             )
-
     return jsonify({'success': True})
+
 
 @app.route('/feedback/<int:feedback_id>/official-reply/edit', methods=['POST'])
 def edit_official_reply(feedback_id):
@@ -3709,18 +3126,18 @@ def edit_official_reply(feedback_id):
     cur.close()
     return jsonify({'success': True})
 
+
 @app.route('/feedback/<int:feedback_id>/official-reply/delete', methods=['POST'])
 def delete_official_reply(feedback_id):
     if not is_moderator():
         return jsonify({'error': 'Unauthorized'}), 403
     cur = mysql.connection.cursor()
-    cur.execute("UPDATE user_feedback SET official_reply=NULL, official_replied_at=NULL WHERE id=%s",
-                (feedback_id,))
+    cur.execute("UPDATE user_feedback SET official_reply=NULL, official_replied_at=NULL WHERE id=%s", (feedback_id,))
     mysql.connection.commit()
     cur.close()
     return jsonify({'success': True})
 
-# ================== FEEDBACK REPLIES ==================
+
 @app.route('/feedback/<int:feedback_id>/reply', methods=['POST'])
 def add_feedback_reply(feedback_id):
     if 'user_id' not in session:
@@ -3740,6 +3157,7 @@ def add_feedback_reply(feedback_id):
     except Exception as e:
         app.logger.error(f"Reply insert failed: {e}")
         return jsonify({'error': 'Something went wrong'}), 500
+
 
 @app.route('/feedback/reply/<int:reply_id>/like', methods=['POST'])
 def toggle_reply_like(reply_id):
@@ -3763,6 +3181,7 @@ def toggle_reply_like(reply_id):
     cur.close()
     return jsonify({'liked': liked, 'count': count})
 
+
 @app.route('/feedback/<int:feedback_id>/edit', methods=['POST'])
 def edit_feedback(feedback_id):
     if 'user_id' not in session:
@@ -3785,6 +3204,7 @@ def edit_feedback(feedback_id):
     cur.close()
     return jsonify({'success': True})
 
+
 @app.route('/feedback/<int:feedback_id>/delete', methods=['POST'])
 def delete_feedback(feedback_id):
     if 'user_id' not in session:
@@ -3803,6 +3223,7 @@ def delete_feedback(feedback_id):
     mysql.connection.commit()
     cur.close()
     return jsonify({'success': True})
+
 
 @app.route('/feedback/reply/<int:reply_id>/edit', methods=['POST'])
 def edit_reply(reply_id):
@@ -3826,6 +3247,7 @@ def edit_reply(reply_id):
     cur.close()
     return jsonify({'success': True})
 
+
 @app.route('/feedback/reply/<int:reply_id>/delete', methods=['POST'])
 def delete_reply(reply_id):
     if 'user_id' not in session:
@@ -3844,6 +3266,7 @@ def delete_reply(reply_id):
     mysql.connection.commit()
     cur.close()
     return jsonify({'success': True})
+
 
 @app.route('/api/feedback/<int:feedback_id>/replies')
 def get_feedback_replies(feedback_id):
@@ -3881,9 +3304,9 @@ def get_feedback_replies(feedback_id):
         })
     return jsonify(replies)
 
+
 # ================== FEEDBACK EMAIL TEMPLATES ==================
 def make_feedback_notification_email(username, subject, message):
-    """Admin ko notify karo jab koi naya feedback aaye."""
     feedback_url = url_for('user_feedback', _external=True)
     content = f"""
         <p style="margin:0;">Hi Admin,</p>
@@ -3903,8 +3326,8 @@ def make_feedback_notification_email(username, subject, message):
         content
     )
 
+
 def make_feedback_reply_email(username, subject, message, official_reply):
-    """User ko official reply ki email notification."""
     feedback_url = url_for('user_feedback', _external=True)
     content = f"""
         <p style="margin:0;">Hi {_safe(username)},</p>
@@ -3927,8 +3350,810 @@ def make_feedback_reply_email(username, subject, message, official_reply):
         content
     )
 
+# ================== NEWSLETTER SUBSCRIBE ==================
+@app.route('/newsletter/subscribe', methods=['POST'])
+def newsletter_subscribe():
+    email = request.form.get('email', '').strip()
+    next_url = request.form.get('next', url_for('home'))
+
+    if not email:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': 'Please enter your email.'}), 400
+        flash('Please enter your email.', 'danger')
+        return redirect(next_url)
+
+    if not is_valid_email(email):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': 'Please enter a valid email address.'}), 400
+        flash('Please enter a valid email address.', 'danger')
+        return redirect(next_url)
+
+    try:
+        sync_brevo_contact(email, 'DocoDive', 'Subscriber')
+        success = True
+    except Exception as e:
+        app.logger.error(f"Newsletter subscribe failed: {e}")
+        success = False
+
+    if not success:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': 'Something went wrong. Please try again.'}), 500
+        flash('Something went wrong. Please try again.', 'danger')
+        return redirect(next_url)
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'success': True, 'message': '✅ Subscribed! Check your inbox for updates.'})
+
+    flash('✅ Subscribed! You will now receive updates about new books.', 'success')
+    return redirect(next_url)
+
+
+# ================== USER NOTIFICATION PREFERENCES ==================
+@app.route('/user/preferences', methods=['GET', 'POST'])
+def user_preferences():
+    if 'user_id' not in session:
+        return redirect(url_for('user_login'))
+
+    user_id = session['user_id']
+
+    if request.method == 'POST':
+        notify_new_books = '1' if request.form.get('notify_new_books') else '0'
+        favorite_categories = request.form.getlist('favorite_categories')
+        email_frequency = request.form.get('email_frequency', 'weekly')
+
+        if email_frequency not in ('daily', 'weekly', 'off'):
+            email_frequency = 'weekly'
+
+        categories_json = json.dumps(favorite_categories)
+
+        cur = mysql.connection.cursor()
+        cur.execute("""
+            INSERT INTO user_preferences (user_id, notify_new_books, favorite_categories, email_frequency)
+            VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                notify_new_books = VALUES(notify_new_books),
+                favorite_categories = VALUES(favorite_categories),
+                email_frequency = VALUES(email_frequency)
+        """, (user_id, notify_new_books, categories_json, email_frequency))
+        mysql.connection.commit()
+        cur.close()
+
+        flash('✅ Notification preferences saved successfully!', 'success')
+        return redirect(url_for('user_preferences'))
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT notify_new_books, favorite_categories, email_frequency
+        FROM user_preferences
+        WHERE user_id = %s
+    """, (user_id,))
+    row = cur.fetchone()
+    cur.close()
+
+    if row:
+        pref = {
+            'notify_new_books': bool(row[0]),
+            'favorite_categories': json.loads(row[1]) if row[1] else [],
+            'email_frequency': row[2] or 'weekly'
+        }
+    else:
+        pref = {
+            'notify_new_books': True,
+            'favorite_categories': [],
+            'email_frequency': 'weekly'
+        }
+
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT level FROM categories ORDER BY level")
+    categories = [r[0] for r in cur.fetchall()]
+    cur.close()
+
+    return render_template('preferences.html', pref=pref, categories=categories)
+
+
+# ================== USER PROFILE ==================
+@app.route('/user/profile/<username>')
+def user_profile(username):
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT id, username, email, verified, created_at, avatar_url, bio, social_links, first_name, last_name
+        FROM users WHERE username = %s
+    """, (username,))
+    user = cur.fetchone()
+    if not user:
+        cur.close()
+        abort(404)
+    uid = user[0]
+
+    official_user_id = get_site_setting('official_user_id')
+    is_official = bool(official_user_id and str(uid) == official_user_id)
+
+    social_links_dict = {}
+    if user[7]:
+        try:
+            social_links_dict = json.loads(user[7])
+        except Exception:
+            pass
+
+    cur.execute("SELECT COUNT(*) FROM documents WHERE uploaded_by = %s", (uid,))
+    total_uploads = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM reviews WHERE user_id = %s", (uid,))
+    total_reviews = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM favorites WHERE user_id = %s", (uid,))
+    total_favorites = cur.fetchone()[0]
+    cur.execute("SELECT SUM(points) FROM user_points WHERE user_id = %s", (uid,))
+    total_points = cur.fetchone()[0] or 0
+    cur.close()
+
+    return render_template('user_profile.html', user=user, total_uploads=total_uploads,
+                           total_reviews=total_reviews, total_favorites=total_favorites,
+                           total_points=total_points, social_links=social_links_dict, is_official=is_official)
+
+
+@app.route('/user/profile/edit', methods=['GET', 'POST'])
+def edit_profile():
+    if 'user_id' not in session:
+        return redirect(url_for('user_login'))
+    uid = session['user_id']
+    if request.method == 'POST':
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        new_username = request.form.get('username', '').strip()
+        bio = request.form.get('bio', '').strip()
+        social_links = request.form.get('social_links', '').strip()
+        avatar_file = request.files.get('avatar')
+        avatar_url = None
+
+        if avatar_file and allowed_image_file(avatar_file.filename):
+            avatar_data = avatar_file.read()
+            avatar_data = compress_image(avatar_data, max_size=(200, 200), quality=80)
+            avatar_key = generate_r2_key('avatars', f'user_{uid}', '.jpg')
+            try:
+                avatar_url = upload_to_r2(avatar_data, avatar_key, content_type='image/jpeg')
+            except Exception:
+                flash('Avatar upload failed.', 'danger')
+                return redirect(url_for('edit_profile'))
+
+        cur = mysql.connection.cursor()
+
+        if new_username and new_username != session.get('user_name'):
+            cur.execute("SELECT id FROM users WHERE username = %s AND id != %s", (new_username, uid))
+            if cur.fetchone():
+                cur.close()
+                flash('Username already taken. Please choose another.', 'danger')
+                return redirect(url_for('edit_profile'))
+            cur.execute("SELECT username_changed_at FROM users WHERE id = %s", (uid,))
+            last_changed = cur.fetchone()[0]
+            if last_changed and (datetime.utcnow() - last_changed).days < 30:
+                cur.close()
+                flash('You can change your username only once every 30 days.', 'danger')
+                return redirect(url_for('edit_profile'))
+            cur.execute("UPDATE users SET username = %s, username_changed_at = NOW() WHERE id = %s", (new_username, uid))
+            mysql.connection.commit()
+            session['user_name'] = new_username
+            full_name = (first_name + ' ' + last_name).strip()
+            session['user_display_name'] = full_name or new_username
+
+        cur.execute("""
+            UPDATE users
+            SET first_name = %s, last_name = %s, bio = %s, social_links = %s,
+                avatar_url = COALESCE(%s, avatar_url)
+            WHERE id = %s
+        """, (first_name, last_name, bio, social_links, avatar_url, uid))
+        mysql.connection.commit()
+        cur.close()
+
+        full_name = (first_name + ' ' + last_name).strip()
+        session['user_display_name'] = full_name or session.get('user_name')
+        if avatar_url:
+            session['avatar_url'] = avatar_url
+
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('user_profile', username=session.get('user_name')))
+
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT first_name, last_name, bio, social_links, avatar_url FROM users WHERE id = %s", (uid,))
+    row = cur.fetchone()
+    cur.close()
+    profile = {'first_name': row[0] or '', 'last_name': row[1] or '', 'bio': row[2] or '',
+               'social_links': row[3] or '', 'avatar_url': row[4] or ''}
+    return render_template('edit_profile.html', profile=profile)
+
+
+# ================== USER STATS API ==================
+@app.route('/api/user-stats')
+def user_stats_api():
+    user_id = request.args.get('user_id', type=int)
+    if not user_id:
+        return jsonify({"error": "Missing user_id"}), 400
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT COUNT(*) FROM documents WHERE uploaded_by = %s", (user_id,))
+    uploads = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM book_comments WHERE user_id = %s", (user_id,))
+    comments = cur.fetchone()[0]
+    cur.execute("SELECT SUM(points) FROM user_points WHERE user_id = %s", (user_id,))
+    points = cur.fetchone()[0] or 0
+    cur.close()
+    return jsonify({"uploads": uploads, "comments": comments, "points": points})
+
+
+# ================== NOTIFICATIONS PAGE ==================
+@app.route('/user/notifications')
+def user_notifications():
+    if 'user_id' not in session:
+        return redirect(url_for('user_login'))
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT id, message, link, is_read, created_at, type, metadata
+        FROM notifications
+        WHERE user_id = %s
+        ORDER BY created_at DESC
+    """, (session['user_id'],))
+    rows = cur.fetchall()
+    cur.close()
+
+    enriched = []
+    for row in rows:
+        notif = {
+            "id": row[0],
+            "message": row[1],
+            "link": row[2],
+            "is_read": row[3],
+            "created_at": row[4],
+            "type": row[5] or 'info',
+            "metadata": json.loads(row[6]) if row[6] else {}
+        }
+        if notif['type'] in ('approval', 'rejection'):
+            uid = notif['metadata'].get('uploader_id')
+            if uid:
+                cur = mysql.connection.cursor()
+                cur.execute("SELECT avatar_url FROM users WHERE id = %s", (uid,))
+                av = cur.fetchone()
+                cur.close()
+                notif['avatar_url'] = av[0] if av else None
+                notif['is_official_actor'] = is_official_user(uid)
+            else:
+                notif['avatar_url'] = None
+                notif['is_official_actor'] = False
+        elif notif['type'] in ('general_comment', 'reply'):
+            uid = notif['metadata'].get('actor_user_id')
+            if uid:
+                cur = mysql.connection.cursor()
+                cur.execute("SELECT username, avatar_url FROM users WHERE id = %s", (uid,))
+                user = cur.fetchone()
+                cur.close()
+                notif['actor_name'] = user[0] if user else 'Unknown'
+                notif['avatar_url'] = user[1] if user else None
+                notif['is_official_actor'] = is_official_user(uid)
+            else:
+                notif['actor_name'] = 'Someone'
+                notif['avatar_url'] = None
+                notif['is_official_actor'] = False
+        else:
+            notif['avatar_url'] = None
+            notif['is_official_actor'] = False
+
+        enriched.append(notif)
+
+    return render_template('notifications.html', notifications=enriched)
+
+
+# ================== NOTIFICATIONS API ==================
+@app.route('/api/notifications/unread-count')
+def unread_notification_count():
+    if 'user_id' not in session:
+        return jsonify({"count": 0})
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT COUNT(*) FROM notifications WHERE user_id=%s AND is_read=0", (session['user_id'],))
+    count = cur.fetchone()[0]
+    cur.close()
+    return jsonify({"count": count})
+
+
+@app.route('/api/notifications')
+def get_notifications():
+    if 'user_id' not in session:
+        return jsonify([])
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT id, message, link, is_read, created_at, type, metadata
+        FROM notifications
+        WHERE user_id = %s
+        ORDER BY created_at DESC LIMIT 20
+    """, (session['user_id'],))
+    rows = cur.fetchall()
+    cur.close()
+
+    result = []
+    for row in rows:
+        notif = {
+            "id": row[0],
+            "message": row[1],
+            "link": row[2],
+            "is_read": bool(row[3]),
+            "created_at": str(row[4]),
+            "type": row[5] or 'info',
+            "metadata": json.loads(row[6]) if row[6] else {}
+        }
+        if notif['type'] in ('approval', 'rejection'):
+            uploader_id = notif['metadata'].get('uploader_id')
+            if uploader_id:
+                cur = mysql.connection.cursor()
+                cur.execute("SELECT avatar_url FROM users WHERE id = %s", (uploader_id,))
+                img = cur.fetchone()
+                cur.close()
+                notif['image_url'] = img[0] if img else None
+                notif['is_official_actor'] = is_official_user(uploader_id)
+            else:
+                notif['image_url'] = None
+                notif['is_official_actor'] = False
+        elif notif['type'] in ('general_comment', 'reply'):
+            actor_id = notif['metadata'].get('actor_user_id')
+            if actor_id:
+                cur = mysql.connection.cursor()
+                cur.execute("SELECT username, avatar_url FROM users WHERE id = %s", (actor_id,))
+                user = cur.fetchone()
+                cur.close()
+                notif['actor_name'] = user[0] if user else 'Unknown'
+                notif['actor_avatar'] = user[1] if user and user[1] else None
+                notif['is_official_actor'] = is_official_user(actor_id)
+            else:
+                notif['actor_name'] = 'Someone'
+                notif['actor_avatar'] = None
+                notif['is_official_actor'] = False
+        else:
+            notif['is_official_actor'] = False
+
+        result.append(notif)
+
+    return jsonify(result)
+
+
+@app.route('/api/notifications/<int:notif_id>/read', methods=['POST'])
+def mark_notification_read(notif_id):
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE notifications SET is_read=1 WHERE id=%s AND user_id=%s", (notif_id, session['user_id']))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"success": True})
+
+
+@app.route('/api/notifications/<int:notif_id>/delete', methods=['POST'])
+def delete_notification(notif_id):
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM notifications WHERE id=%s AND user_id=%s", (notif_id, session['user_id']))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"success": True})
+
+
+# ================== LEADERBOARD ==================
+@app.route('/leaderboard')
+def leaderboard():
+    official_user_id = get_site_setting('official_user_id')
+
+    cur = mysql.connection.cursor()
+    if official_user_id:
+        cur.execute("""
+            SELECT u.id, u.username, u.first_name, u.last_name, u.avatar_url, SUM(up.points) AS total_points
+            FROM user_points up
+            JOIN users u ON up.user_id = u.id
+            WHERE u.id != %s
+            GROUP BY u.id
+            ORDER BY total_points DESC
+            LIMIT 50
+        """, (official_user_id,))
+    else:
+        cur.execute("""
+            SELECT u.id, u.username, u.first_name, u.last_name, u.avatar_url, SUM(up.points) AS total_points
+            FROM user_points up
+            JOIN users u ON up.user_id = u.id
+            GROUP BY u.id
+            ORDER BY total_points DESC
+            LIMIT 50
+        """)
+    rows = cur.fetchall()
+    cur.close()
+
+    leaderboard = []
+    for row in rows:
+        full_name = ((row[2] or '') + ' ' + (row[3] or '')).strip()
+        if not full_name:
+            full_name = row[1]
+        leaderboard.append({
+            'user_id': row[0],
+            'username': row[1],
+            'name': full_name,
+            'avatar_url': row[4],
+            'points': row[5],
+            'is_official': is_official_user(row[0])
+        })
+
+    current_user_rank = None
+    current_user_points = 0
+    if 'user_id' in session:
+        uid = session['user_id']
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT SUM(points) FROM user_points WHERE user_id = %s", (uid,))
+        total = cur.fetchone()[0] or 0
+        current_user_points = total
+
+        if official_user_id and str(uid) != official_user_id:
+            cur.execute("""
+                SELECT COUNT(*) + 1 FROM (
+                    SELECT user_id, SUM(points) AS total
+                    FROM user_points
+                    WHERE user_id != %s
+                    GROUP BY user_id
+                    HAVING SUM(points) > %s
+                ) AS higher
+            """, (official_user_id, total))
+        else:
+            cur.execute("""
+                SELECT COUNT(*) + 1 FROM (
+                    SELECT user_id, SUM(points) AS total
+                    FROM user_points
+                    GROUP BY user_id
+                    HAVING SUM(points) > %s
+                ) AS higher
+            """, (total,))
+        rank = cur.fetchone()[0]
+        current_user_rank = rank
+        cur.close()
+
+    return render_template('leaderboard.html',
+                           leaderboard=leaderboard,
+                           current_user_rank=current_user_rank,
+                           current_user_points=current_user_points)
+
+
+# ================== BOOK COMMENTS ==================
+@app.route('/book/<int:book_id>/comments', methods=['GET'])
+def get_comments(book_id):
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT c.id, c.comment, c.parent_id, c.created_at, u.username, u.avatar_url, u.id
+        FROM book_comments c JOIN users u ON c.user_id = u.id
+        WHERE c.book_id = %s ORDER BY c.created_at ASC
+    """, (book_id,))
+    comments = cur.fetchall()
+    cur.close()
+    comment_list = [{
+        "id": r[0],
+        "comment": r[1],
+        "parent_id": r[2],
+        "created_at": str(r[3]),
+        "username": r[4],
+        "avatar_url": r[5],
+        "user_id": r[6],
+        "is_official": is_official_user(r[6])
+    } for r in comments]
+    return jsonify(comment_list)
+
+
+@app.route('/book/<int:book_id>/comments', methods=['POST'])
+def add_comment(book_id):
+    if 'user_id' not in session:
+        return jsonify({"error": "Login required"}), 401
+    data = request.get_json()
+    comment = data.get('comment', '').strip()
+    parent_id = data.get('parent_id')
+    if not comment:
+        return jsonify({"error": "Comment cannot be empty"}), 400
+
+    cur = mysql.connection.cursor()
+    cur.execute("INSERT INTO book_comments (book_id, user_id, parent_id, comment) VALUES (%s, %s, %s, %s)",
+                (book_id, session['user_id'], parent_id, comment))
+    mysql.connection.commit()
+    new_comment_id = cur.lastrowid
+    cur.close()
+
+    award_points(session['user_id'], 2, book_id)
+
+    if not parent_id:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT uploaded_by, title FROM documents WHERE id = %s", (book_id,))
+        book_info = cur.fetchone()
+        cur.close()
+        if book_info and book_info[0] and book_info[0] != session['user_id']:
+            uploader_id = book_info[0]
+            book_title = book_info[1]
+            snippet = comment[:60] + ('...' if len(comment) > 60 else '')
+            msg = f'💬 New comment on <em>{book_title}</em><br><small class="text-muted">&ldquo;{snippet}&rdquo;</small>'
+            metadata = {"book_id": book_id, "comment_id": new_comment_id, "actor_user_id": session['user_id']}
+            create_notification(uploader_id, 'general_comment', msg,
+                                url_for('book_detail', book_id=book_id, _anchor='discussion'),
+                                metadata)
+    else:
+        cur = mysql.connection.cursor()
+        cur.execute("""
+            SELECT c.user_id, d.title
+            FROM book_comments c
+            JOIN documents d ON c.book_id = d.id
+            WHERE c.id = %s
+        """, (parent_id,))
+        parent_info = cur.fetchone()
+        cur.close()
+        if parent_info and parent_info[0] != session['user_id']:
+            parent_author_id = parent_info[0]
+            book_title = parent_info[1]
+            reply_username = session.get('user_name')
+            snippet = comment[:60] + ('...' if len(comment) > 60 else '')
+            msg = f'<strong>{reply_username}</strong> replied to your comment on <em>{book_title}</em><br><small class="text-muted">&ldquo;{snippet}&rdquo;</small>'
+            metadata = {"book_id": book_id, "comment_id": new_comment_id, "parent_comment_id": parent_id, "actor_user_id": session['user_id']}
+            create_notification(parent_author_id, 'reply', msg,
+                                url_for('book_detail', book_id=book_id, _anchor='discussion'),
+                                metadata)
+
+    return jsonify({"success": True})
+
+
+# ================== NOTIFICATION DIGEST ==================
+def _book_matches_categories(book_category, selected_categories):
+    if not selected_categories:
+        return True
+    return book_category in selected_categories
+
+
+def _send_book_digest_to_user(user, books, digest_type, period_key):
+    uid, email = user[0], user[2]
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT favorite_categories FROM user_preferences WHERE user_id = %s", (uid,))
+    row = cur.fetchone()
+    cur.close()
+
+    selected = []
+    if row and row[0]:
+        try:
+            selected = json.loads(row[0])
+            if not isinstance(selected, list):
+                selected = []
+        except Exception:
+            selected = []
+
+    matching = [b for b in books if _book_matches_categories(b[3], selected)]
+    if not matching:
+        return False
+
+    cur = mysql.connection.cursor()
+    cur.execute(
+        "SELECT id FROM notification_digest_log WHERE user_id=%s AND digest_type=%s AND period_key=%s",
+        (uid, digest_type, period_key)
+    )
+    if cur.fetchone():
+        cur.close()
+        return False
+
+    book_list = [{
+    "id": b[0],
+    "title": b[1],
+    "author": b[2],
+    "category": b[3],
+    "description": b[4],
+    "image_url": b[5] if len(b) > 5 else None
+} for b in matching]
+    
+    html = make_digest_email(book_list)
+
+    body = "\n".join(f"{b[1]} by {b[2]} ({b[3]})" for b in matching)
+    sent = send_email_notification("New books digest - DocoDive", email, body, html_body=html)
+    if sent:
+        cur.execute(
+            "INSERT INTO notification_digest_log (user_id, digest_type, period_key) VALUES (%s, %s, %s)",
+            (uid, digest_type, period_key)
+        )
+        mysql.connection.commit()
+    cur.close()
+    return sent
+
+def send_daily_book_digest():
+    now = datetime.utcnow()
+    since = now - timedelta(hours=24)
+    period_key = now.strftime('%Y-%m-%d')
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT u.id, u.username, u.email
+        FROM user_preferences up
+        JOIN users u ON u.id = up.user_id
+        WHERE up.notify_new_books = '1' AND up.email_frequency = 'daily'
+    """)
+    users = cur.fetchall()
+    cur.execute("""
+        SELECT d.id, d.title, d.author, c.level, d.description
+        FROM documents d JOIN categories c ON d.category_id = c.id
+        WHERE d.approved_at >= %s
+    """, (since,))
+    books = cur.fetchall()
+    cur.close()
+
+    sent_count = 0
+    for user in users:
+        if _send_book_digest_to_user(user, books, 'daily', period_key):
+            sent_count += 1
+    return {"success": True, "digest": "daily", "emails_sent": sent_count}
+
+def send_weekly_book_digest():
+    now = datetime.utcnow()
+    since = now - timedelta(days=7)
+    period_key = now.strftime('%Y-%W')
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT u.id, u.username, u.email
+        FROM user_preferences up
+        JOIN users u ON u.id = up.user_id
+        WHERE up.notify_new_books = '1' AND up.email_frequency = 'weekly'
+    """)
+    users = cur.fetchall()
+    cur.execute("""
+        SELECT d.id, d.title, d.author, c.level, d.description
+        FROM documents d JOIN categories c ON d.category_id = c.id
+        WHERE d.approved_at >= %s
+    """, (since,))
+    books = cur.fetchall()
+    cur.close()
+
+    sent_count = 0
+    for user in users:
+        if _send_book_digest_to_user(user, books, 'weekly', period_key):
+            sent_count += 1
+    return {"success": True, "digest": "weekly", "emails_sent": sent_count}
+
+
+
+@app.route('/internal/notification-digest/<digest_type>', methods=['POST'])
+def notification_digest(digest_type):
+    provided = request.headers.get('X-Cron-Secret', '')
+    if not CRON_SECRET or not provided or not hmac.compare_digest(str(CRON_SECRET), str(provided)):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if digest_type == 'daily':
+        return jsonify(send_daily_book_digest())
+    if digest_type == 'weekly':
+        return jsonify(send_weekly_book_digest())
+    return jsonify({"error": "Invalid digest type"}), 400
+
+def make_digest_email(books):
+    """Build a DocoDive-styled new-books digest email (HTML string)."""
+
+    book_cards = ""
+    for book in books:
+        image_url = book.get("image_url") or ""
+        image_tag = ""
+        if image_url:
+            image_tag = f'''
+                <img src="{_safe(image_url)}" alt="{_safe(book.get('title', 'Book'))}"
+                     style="display:block;width:56px;height:70px;object-fit:cover;border-radius:8px;margin-right:14px;" />
+            '''
+
+        book_cards += f'''
+            <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0"
+                   style="width:100%;margin-bottom:16px;border:1px solid #E5E7EB;border-left:5px solid {BRAND_COLOR};border-radius:14px;background:#FFFFFF;">
+              <tr>
+                <td style="padding:18px 20px;">
+                  <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td valign="top" width="70" style="width:70px;">
+                        {image_tag}
+                      </td>
+                      <td valign="top" style="padding-left:{'0' if image_url else '0'};">
+                        <span style="display:inline-block;padding:5px 10px;border-radius:999px;color:{BRAND_COLOR};background:{BRAND_LIGHT};font-size:10px;line-height:14px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;">
+                          {_safe(book.get('category', ''))}
+                        </span>
+                        <div style="margin-top:9px;color:{BRAND_DARK};font-size:17px;line-height:23px;font-weight:800;">
+                          {_safe(book.get('title', ''))}
+                        </div>
+                        <div style="margin-top:4px;color:#9CA3AF;font-size:12px;line-height:18px;">
+                          By {_safe(book.get('author', ''))}
+                        </div>
+                        <p style="margin:10px 0 0;color:#4B5563;font-size:13px;line-height:20px;">
+                          {_safe(book.get('description', ''))}
+                        </p>
+                        <a href="{url_for('book_detail', book_id=book.get('id'), _external=True)}"
+                           style="display:inline-block;margin-top:14px;padding:11px 18px;background:{BRAND_COLOR};color:#FFFFFF;border-radius:9px;text-decoration:none;font-size:12px;line-height:16px;font-weight:800;">
+                          Explore Book →
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+        '''
+
+    return f'''
+        <!doctype html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>DocoDive — New Books</title>
+        </head>
+        <body style="margin:0;padding:0;background:#EEF2FF;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+          <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Fresh books and resources have been added to DocoDive.</div>
+          <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="width:100%;background:#EEF2FF;">
+            <tr>
+              <td align="center" style="padding:34px 12px;">
+                <table role="presentation" width="600" border="0" cellpadding="0" cellspacing="0"
+                       style="width:600px;max-width:600px;background:#FFFFFF;border-radius:20px;overflow:hidden;box-shadow:0 16px 48px rgba(79,70,229,0.15);">
+                  <tr>
+                    <td style="padding:30px 40px;background:#111827;">
+                      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td width="48" valign="middle" style="width:48px;">
+                            <div style="width:48px;height:48px;line-height:48px;text-align:center;border-radius:14px;background:#6366F1;color:#FFFFFF;font-size:24px;font-weight:900;">D</div>
+                          </td>
+                          <td valign="middle" style="padding-left:14px;">
+                            <div style="color:#FFFFFF;font-size:22px;line-height:26px;font-weight:900;">DocoDive</div>
+                            <div style="margin-top:4px;color:#C7D2FE;font-size:12px;line-height:17px;">Free knowledge. Endless discovery.</div>
+                          </td>
+                          <td align="right" valign="middle">
+                            <span style="display:inline-block;padding:7px 12px;border-radius:999px;background:#312E81;color:#FFFFFF;font-size:11px;font-weight:800;">📚 NEW</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:40px 40px 34px;">
+                      <span style="display:inline-block;padding:7px 12px;border-radius:999px;background:#EEF2FF;color:#4F46E5;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;">✨ Fresh Arrivals</span>
+                      <h1 style="margin:16px 0 10px;color:#111827;font-size:30px;line-height:38px;font-weight:900;">New books are here.</h1>
+                      <p style="margin:0 0 28px;color:#6B7280;font-size:15px;line-height:24px;">We've added new books based on your selected categories.</p>
+                      {book_cards}
+                      <div style="margin-top:30px;padding-top:24px;border-top:1px solid #E5E7EB;text-align:center;">
+                        <div style="color:#111827;font-size:15px;font-weight:800;">Ready to explore more?</div>
+                        <a href="{url_for('home', _external=True)}" style="display:inline-block;margin-top:14px;padding:13px 22px;background:#111827;color:#FFFFFF;border-radius:10px;text-decoration:none;font-size:13px;font-weight:800;">Visit DocoDive</a>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:22px 40px;background:#F9FAFB;border-top:1px solid #E5E7EB;text-align:center;">
+                      <div style="color:#374151;font-size:12px;font-weight:700;">DocoDive</div>
+                      <div style="margin-top:4px;color:#9CA3AF;font-size:11px;">Free knowledge. Built for curious minds.</div>
+                      <div style="margin-top:8px;color:#C7C9CE;font-size:10px;">© 2026 DocoDive. All rights reserved.</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+    '''
+
+def _digest_scheduler_loop():
+    """Background scheduler: daily 8 PM PKT, weekly Sunday 8 PM PKT."""
+    while True:
+        now = datetime.utcnow()
+        if now.hour == 15 and now.minute == 0:
+            try:
+                with app.app_context():
+                    send_daily_book_digest()
+                    if now.weekday() == 6:
+                        send_weekly_book_digest()
+            except Exception as e:
+                app.logger.exception("Scheduled digest failed: %s", e)
+            time.sleep(60)
+        time.sleep(20)
+
+
+def start_digest_scheduler():
+    thread = threading.Thread(target=_digest_scheduler_loop, daemon=True)
+    thread.start()
+    app.logger.info("Digest scheduler started")
+
 # ================== RUN ==================
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+
+    if not debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        start_digest_scheduler()
+
     app.run(host="0.0.0.0", port=port, debug=debug)
