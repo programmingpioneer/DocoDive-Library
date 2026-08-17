@@ -2407,7 +2407,7 @@ def admin():
 @official_admin_required
 def pending_count():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(*) FROM documents WHERE approved = 0")
+    cur.execute("SELECT COUNT(*) FROM documents WHERE approved = 0 AND status = 'pending'")
     count = cur.fetchone()[0]
     cur.close()
     return jsonify({'count': count})
@@ -2420,7 +2420,7 @@ def pending_books():
     cur.execute("""
         SELECT d.id, d.title, c.level, d.author, d.created_at, d.telegram_link
         FROM documents d JOIN categories c ON d.category_id = c.id
-        WHERE d.approved = 0 ORDER BY d.id DESC
+        WHERE d.approved = 0 AND d.status = 'pending' ORDER BY d.id DESC
     """)
     books = cur.fetchall()
     cur.close()
@@ -2433,13 +2433,13 @@ def pending_books():
 @official_admin_required
 def approve_book(book_id):
     cur = mysql.connection.cursor()
-    cur.execute("SELECT title, uploaded_by FROM documents WHERE id = %s", (book_id,))
+    cur.execute("SELECT title, uploaded_by FROM documents WHERE id = %s AND status = 'pending'", (book_id,))
     row = cur.fetchone()
     if not row:
         cur.close()
         return jsonify({"error": "Book not found"}), 404
     title, uploader_id = row
-    cur.execute("UPDATE documents SET approved = 1, status = 'approved', approved_at = NOW() WHERE id = %s", (book_id,))
+    cur.execute("UPDATE documents SET approved = 1, status = 'approved', approved_at = NOW() WHERE id = %s AND status = 'pending'", (book_id,))
     mysql.connection.commit()
     if uploader_id:
         cur.execute("SELECT email, username FROM users WHERE id = %s", (uploader_id,))
@@ -2459,7 +2459,7 @@ def approve_book(book_id):
 @official_admin_required
 def reject_book(book_id):
     cur = mysql.connection.cursor()
-    cur.execute("SELECT title, uploaded_by, telegram_link FROM documents WHERE id = %s", (book_id,))
+    cur.execute("SELECT title, uploaded_by, telegram_link FROM documents WHERE id = %s AND status = 'pending'", (book_id,))
     row = cur.fetchone()
     if not row:
         cur.close()
@@ -2469,7 +2469,7 @@ def reject_book(book_id):
         r2_key = extract_r2_key(file_link)
         if r2_key:
             delete_from_r2(r2_key)
-    cur.execute("UPDATE documents SET approved = 0, status = 'rejected', approved_at = NULL WHERE id = %s", (book_id,))
+    cur.execute("UPDATE documents SET approved = 0, status = 'rejected', approved_at = NULL WHERE id = %s AND status = 'pending'", (book_id,))
     mysql.connection.commit()
     if uploader_id:
         cur.execute("SELECT email, username FROM users WHERE id = %s", (uploader_id,))
@@ -2489,7 +2489,7 @@ def reject_book(book_id):
 @official_admin_required
 def approve_all_books():
     cur = mysql.connection.cursor()
-    cur.execute("UPDATE documents SET approved = 1, status = 'approved', approved_at = NOW() WHERE approved = 0")
+    cur.execute("UPDATE documents SET approved = 1, status = 'approved', approved_at = NOW() WHERE approved = 0 AND status = 'pending'")
     count = cur.rowcount
     mysql.connection.commit()
     cur.close()
@@ -2502,7 +2502,7 @@ def admin_books_list():
     cur = mysql.connection.cursor()
     cur.execute("""
         SELECT d.id, d.title, d.category_id, d.telegram_link, d.author, d.description, d.image_url, d.language, c.level
-        FROM documents d JOIN categories c ON d.category_id = c.id ORDER BY d.id DESC
+        FROM documents d JOIN categories c ON d.category_id = c.id WHERE d.status = 'pending' ORDER BY d.id DESC
     """)
     books = cur.fetchall()
     cur.close()
