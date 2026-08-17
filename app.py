@@ -76,7 +76,12 @@ if sentry_dsn:
 else:
     app.logger.warning("SENTRY_DSN not set – error tracking disabled")
 
-Talisman(app, content_security_policy=None)
+Talisman(
+    app,
+    content_security_policy=None,
+    force_https=(os.getenv("FLASK_ENV", "").lower() == "production"),
+    strict_transport_security=(os.getenv("FLASK_ENV", "").lower() == "production"),
+)
 
 limiter = Limiter(
     app=app,
