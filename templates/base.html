@@ -233,6 +233,17 @@
             width: 30px; height: 30px; background: #e0e7ff; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; color: #4338ca; font-size: 1rem;
         }
+        /* Desktop navbar profile pic + name fix */
+        .navbar .dropdown .dropdown-toggle img.rounded-circle {
+            width: 30px !important;
+            height: 30px !important;
+            object-fit: cover !important;
+            border-radius: 50% !important;
+            flex-shrink: 0;
+        }
+        .navbar .dropdown .dropdown-toggle .fw-semibold {
+            white-space: nowrap;
+        }
 
         .animate.slideIn { animation: slideDown 0.3s ease-out; }
         @keyframes slideDown {
@@ -241,6 +252,20 @@
         }
 
         .notif-dropdown { left: 50% !important; right: auto !important; transform: translateX(-50%) !important; }
+        @media (min-width: 992px) {
+    .navbar .dropdown .notif-dropdown,
+    .navbar .dropdown .dropdown-menu-end {
+        top: 100% !important;
+        left: auto !important;
+        right: 0 !important;
+        transform: none !important;
+        margin-top: 0 !important;
+    }
+    .navbar .dropdown:hover .notif-dropdown,
+    .navbar .dropdown:hover .dropdown-menu-end {
+        display: block !important;
+    }
+}
         .pulse-badge { animation: pulse 2s infinite; }
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
@@ -635,7 +660,7 @@
                             <i class="bi bi-bell fs-5"></i>
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger pulse-badge" id="notifBadge" style="display:none;">0</span>
                         </span>
-                        <div class="dropdown-menu notif-dropdown p-0 shadow-lg border-0 animate slideIn" style="width: 360px; max-height: 440px; overflow-y: auto; overflow-x: hidden; border-radius: 20px; margin-top: 10px;">
+                        <div class="dropdown-menu dropdown-menu-end notif-dropdown p-0 shadow-lg border-0 animate slideIn" style="width: 360px; max-height: 440px; overflow-y: auto; overflow-x: hidden; border-radius: 20px; margin-top: 0;">
                             <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-light" style="border-radius: 20px 20px 0 0; border-bottom: 1px solid #e0e7ff;">
                                 <h6 class="mb-0 fw-bold" style="color: var(--edox-dark);">
                                     <i class="bi bi-bell-fill me-2" style="color: var(--edox-purple);"></i>Notifications

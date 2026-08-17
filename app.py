@@ -3557,11 +3557,11 @@ def edit_profile():
         return redirect(url_for('user_profile', username=session.get('user_name')))
 
     cur = mysql.connection.cursor()
-    cur.execute("SELECT first_name, last_name, bio, social_links, avatar_url FROM users WHERE id = %s", (uid,))
+    cur.execute("SELECT first_name, last_name, bio, social_links, avatar_url, username FROM users WHERE id = %s", (uid,))
     row = cur.fetchone()
     cur.close()
     profile = {'first_name': row[0] or '', 'last_name': row[1] or '', 'bio': row[2] or '',
-               'social_links': row[3] or '', 'avatar_url': row[4] or ''}
+           'social_links': row[3] or '', 'avatar_url': row[4] or '', 'username': row[5] or ''}
     return render_template('edit_profile.html', profile=profile)
 
 

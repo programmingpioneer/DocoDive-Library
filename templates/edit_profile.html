@@ -12,7 +12,7 @@
 
                     <!-- Avatar -->
                     <div class="mb-4 text-center">
-                        <img id="avatarPreview" src="{{ profile[4] or url_for('static', filename='default-avatar.png') }}"
+                        <img id="avatarPreview" src="{{ profile.avatar_url or url_for('static', filename='default-avatar.png') }}"
                              class="rounded-circle border shadow-sm mb-2" width="100" height="100" style="object-fit: cover;">
                         <input type="file" name="avatar" class="form-control" accept="image/*" onchange="previewAvatar(this)">
                         <small class="text-muted">JPG, PNG, GIF, WEBP (max 2MB)</small>
@@ -21,20 +21,21 @@
                     <!-- First Name -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold">First Name</label>
-                        <input type="text" name="first_name" class="form-control" value="{{ profile[0] or '' }}" placeholder="Your first name">
+                        <input type="text" name="first_name" class="form-control" value="{{ profile.first_name or '' }}" placeholder="Your first name">
                     </div>
 
                     <!-- Last Name -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Last Name</label>
-                        <input type="text" name="last_name" class="form-control" value="{{ profile[1] or '' }}" placeholder="Your last name">
+                        <input type="text" name="last_name" class="form-control" 
+value="{{               profile.last_name or '' }}" placeholder="Your last name">
                     </div>
 
                     <!-- Username -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Username</label>
                         <div class="input-group">
-                            <input type="text" name="username" id="usernameInput" class="form-control" value="{{ profile[5] or '' }}">
+                            <input type="text" name="username" id="usernameInput" class="form-control" value="{{ profile.username or '' }}">
                             <span class="input-group-text bg-transparent border-0" id="usernameCheck" style="display:none;">✅</span>
                         </div>
                         <small class="form-text text-muted">You can change your username once every 30 days. Leave empty to keep current.</small>
@@ -44,7 +45,7 @@
                     <!-- Bio -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Bio</label>
-                        <textarea name="bio" class="form-control" rows="3" placeholder="Tell something about yourself...">{{ profile[2] or '' }}</textarea>
+                        <textarea name="bio" class="form-control" rows="3" placeholder="Tell something about yourself...">{{ profile.bio or '' }}</textarea>
                     </div>
 
                     <!-- Social Links Editor -->
@@ -80,10 +81,10 @@ const iconMap = {
     'Website': 'bi-globe'
 };
 
-// Pre-populate existing links from server (profile[3] = social_links JSON)
+// Pre-populate existing links from server (profile.social_links = social_links JSON)
 let existingLinks = {};
 try {
-    const raw = '{{ profile[3] | tojson | safe }}';
+    const raw = '{{ profile.social_links | tojson | safe }}';
     if (raw && raw !== 'null' && raw !== '""') {
         existingLinks = JSON.parse(raw);
     }
@@ -179,7 +180,7 @@ let debounceTimer;
 usernameInput.addEventListener('input', function() {
     clearTimeout(debounceTimer);
     const newUsername = this.value.trim();
-    if (newUsername === '' || newUsername === '{{ profile[5] }}') {
+    if (newUsername === '' || newUsername === '{{ profile.username }}') {
         usernameCheck.style.display = 'none';
         usernameError.classList.add('d-none');
         return;

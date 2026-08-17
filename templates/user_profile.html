@@ -11,8 +11,9 @@
                 <!-- Avatar & Info -->
                 <div class="text-center px-3 px-md-4" style="margin-top: -60px;">
                     <img src="{{ user[5] or url_for('static', filename='default-avatar.png') }}"
-                         class="rounded-circle border-4 border-white shadow"
-                         width="120" height="120" style="object-fit: cover; max-width: 100%; height: auto;" alt="Avatar">
+                    class="rounded-circle border-4 border-white shadow d-block mx-auto"
+                    width="120" height="120"
+                    style="width: 120px !important; height: 120px !important; object-fit: cover; object-position: center; border-radius: 50% !important; display: block; margin: 0 auto;" alt="Avatar">
 
                     <!-- Show full name if available, otherwise username -->
                     {% set first_name = user[8] or '' %}
