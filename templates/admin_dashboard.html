@@ -1,143 +1,159 @@
-{% extends 'base.html' %}
-
-{% block content %}
+{% extends 'base.html' %} {% block content %}
 <div class="container py-5">
-    <!-- Header -->
-    <h2 class="fw-bold mb-4 text-primary">
-        <i class="bi bi-speedometer2 me-2"></i> Admin Dashboard
-    </h2>
+  <!-- Header -->
+  <h2 class="fw-bold mb-4 text-primary">
+    <i class="bi bi-speedometer2 me-2"></i> Admin Dashboard
+  </h2>
 
-    <!-- Stats Cards (clickable links) -->
-    <div class="row g-4 mb-5">
-        <!-- Total Books -->
-        <div class="col-6 col-md-3">
-            <a href="/admin/books" class="text-decoration-none">
-                <div class="card border-0 shadow-sm text-center p-4 h-100 clickable-card">
-                    <i class="bi bi-book fs-1 text-primary"></i>
-                    <h3 id="totalBooks" class="fw-bold mt-2">--</h3>
-                    <small class="text-muted">Total Books</small>
-                </div>
-            </a>
+  <!-- Stats Cards (clickable links) -->
+  <div class="row g-4 mb-5">
+    <!-- Total Books -->
+    <div class="col-6 col-md-3">
+      <a href="/admin/books" class="text-decoration-none">
+        <div
+          class="card border-0 shadow-sm text-center p-4 h-100 clickable-card"
+        >
+          <i class="bi bi-book fs-1 text-primary"></i>
+          <h3 id="totalBooks" class="fw-bold mt-2">--</h3>
+          <small class="text-muted">Total Books</small>
         </div>
-        <!-- Total Categories -->
-        <div class="col-6 col-md-3">
-            <a href="/admin/books" class="text-decoration-none">
-                <div class="card border-0 shadow-sm text-center p-4 h-100 clickable-card">
-                    <i class="bi bi-folder fs-1 text-warning"></i>
-                    <h3 id="totalCategories" class="fw-bold mt-2">--</h3>
-                    <small class="text-muted">Categories</small>
-                </div>
-            </a>
-        </div>
-        <!-- Total Users -->
-        <div class="col-6 col-md-3">
-            <a href="/admin/users" class="text-decoration-none">
-                <div class="card border-0 shadow-sm text-center p-4 h-100 clickable-card">
-                    <i class="bi bi-people fs-1 text-success"></i>
-                    <h3 id="totalUsers" class="fw-bold mt-2">--</h3>
-                    <small class="text-muted">Users</small>
-                </div>
-            </a>
-        </div>
-        <!-- Total Admins (now opens Official Profile) -->
-        <div class="col-6 col-md-3">
-            <a href="/admin/official-profile" class="text-decoration-none">
-                <div class="card border-0 shadow-sm text-center p-4 h-100 clickable-card">
-                    <i class="bi bi-shield-lock fs-1 text-danger"></i>
-                    <h3 id="totalAdmins" class="fw-bold mt-2">--</h3>
-                    <small class="text-muted">Admins</small>
-                </div>
-            </a>
-        </div>
+      </a>
     </div>
-
-    <!-- Community Moderation Card -->
-    <div class="row g-4 mb-5">
-        <div class="col-12">
-            <a href="/moderation" class="text-decoration-none">
-                <div class="card border-0 shadow-sm bg-primary bg-opacity-10 p-4 clickable-card">
-                    <div class="d-flex align-items-center gap-3">
-                        <i class="bi bi-shield-check fs-1 text-primary"></i>
-                        <div>
-                            <h4 class="fw-bold mb-1 text-primary">Community Moderation</h4>
-                            <span class="text-muted">Manage reviews, comments & official replies</span>
-                        </div>
-                    </div>
-                </div>
-            </a>
+    <!-- Total Categories -->
+    <div class="col-6 col-md-3">
+      <a href="/admin/books" class="text-decoration-none">
+        <div
+          class="card border-0 shadow-sm text-center p-4 h-100 clickable-card"
+        >
+          <i class="bi bi-folder fs-1 text-warning"></i>
+          <h3 id="totalCategories" class="fw-bold mt-2">--</h3>
+          <small class="text-muted">Categories</small>
         </div>
+      </a>
     </div>
-
-    <!-- 🆕 Manage Books & Pending Books Cards (now below Community Moderation, responsive) -->
-    <div class="row g-4 mb-5">
-        <!-- Manage Books -->
-        <div class="col-12 col-md-6">
-            <a href="/admin/books" class="text-decoration-none">
-                <div class="card border-0 shadow-sm bg-light p-4 clickable-card">
-                    <div class="d-flex align-items-center gap-3">
-                        <i class="bi bi-journal-bookmark-fill fs-1 text-success"></i>
-                        <div>
-                            <h4 class="fw-bold mb-1 text-dark">Manage Books</h4>
-                            <span class="text-muted">View and edit all books in the library</span>
-                        </div>
-                    </div>
-                </div>
-            </a>
+    <!-- Total Users -->
+    <div class="col-6 col-md-3">
+      <a href="/admin/users" class="text-decoration-none">
+        <div
+          class="card border-0 shadow-sm text-center p-4 h-100 clickable-card"
+        >
+          <i class="bi bi-people fs-1 text-success"></i>
+          <h3 id="totalUsers" class="fw-bold mt-2">--</h3>
+          <small class="text-muted">Users</small>
         </div>
-        <!-- Pending Books -->
-        <div class="col-12 col-md-6">
-            <a href="/admin/pending" class="text-decoration-none">
-                <div class="card border-0 shadow-sm bg-warning bg-opacity-10 p-4 clickable-card">
-                    <div class="d-flex align-items-center gap-3">
-                        <i class="bi bi-hourglass-split fs-1 text-warning"></i>
-                        <div>
-                            <h4 class="fw-bold mb-1" id="pendingCount">--</h4>
-                            <span class="text-muted">Pending Books – Review now</span>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
+      </a>
     </div>
+    <!-- Total Admins (now opens Official Profile) -->
+    <div class="col-6 col-md-3">
+      <a href="/admin/official-profile" class="text-decoration-none">
+        <div
+          class="card border-0 shadow-sm text-center p-4 h-100 clickable-card"
+        >
+          <i class="bi bi-shield-lock fs-1 text-danger"></i>
+          <h3 id="totalAdmins" class="fw-bold mt-2">--</h3>
+          <small class="text-muted">Admins</small>
+        </div>
+      </a>
+    </div>
+  </div>
 
-    <!-- Charts Row -->
-    <div class="row g-4">
-        <div class="col-lg-6">
-            <div class="card shadow-sm border-0 p-4">
-                <h5 class="mb-3">Library Overview</h5>
-                <div style="position: relative; height: 300px; width: 100%;">
-                    <canvas id="booksChart"></canvas>
-                </div>
+  <!-- Community Moderation Card -->
+  <div class="row g-4 mb-5">
+    <div class="col-12">
+      <a href="/moderation" class="text-decoration-none">
+        <div
+          class="card border-0 shadow-sm bg-primary bg-opacity-10 p-4 clickable-card"
+        >
+          <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-shield-check fs-1 text-primary"></i>
+            <div>
+              <h4 class="fw-bold mb-1 text-primary">Community Moderation</h4>
+              <span class="text-muted"
+                >Manage reviews, comments & official replies</span
+              >
             </div>
+          </div>
         </div>
-        <div class="col-lg-6">
-            <div class="card shadow-sm border-0 p-4">
-                <h5 class="mb-3">Categories Distribution</h5>
-                <div style="position: relative; height: 300px; width: 100%;">
-                    <canvas id="categoriesChart"></canvas>
-                </div>
-            </div>
-        </div>
+      </a>
     </div>
+  </div>
 
-    <!-- Recent Uploads Table -->
-    <div class="card shadow-sm border-0 mt-4 p-4">
-        <h5 class="mb-3">Recent Uploads</h5>
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Category</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody id="recentUploadsBody">
-                    <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
-                </tbody>
-            </table>
+  <!-- 🆕 Manage Books & Pending Books Cards (now below Community Moderation, responsive) -->
+  <div class="row g-4 mb-5">
+    <!-- Manage Books -->
+    <div class="col-12 col-md-6">
+      <a href="/admin/books" class="text-decoration-none">
+        <div class="card border-0 shadow-sm bg-light p-4 clickable-card">
+          <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-journal-bookmark-fill fs-1 text-success"></i>
+            <div>
+              <h4 class="fw-bold mb-1 text-dark">Manage Books</h4>
+              <span class="text-muted"
+                >View and edit all books in the library</span
+              >
+            </div>
+          </div>
         </div>
+      </a>
     </div>
+    <!-- Pending Books -->
+    <div class="col-12 col-md-6">
+      <a href="/admin/pending" class="text-decoration-none">
+        <div
+          class="card border-0 shadow-sm bg-warning bg-opacity-10 p-4 clickable-card"
+        >
+          <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-hourglass-split fs-1 text-warning"></i>
+            <div>
+              <h4 class="fw-bold mb-1" id="pendingCount">--</h4>
+              <span class="text-muted">Pending Books – Review now</span>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 p-4">
+        <h5 class="mb-3">Library Overview</h5>
+        <div style="position: relative; height: 300px; width: 100%">
+          <canvas id="booksChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 p-4">
+        <h5 class="mb-3">Categories Distribution</h5>
+        <div style="position: relative; height: 300px; width: 100%">
+          <canvas id="categoriesChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Uploads Table -->
+  <div class="card shadow-sm border-0 mt-4 p-4">
+    <h5 class="mb-3">Recent Uploads</h5>
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="recentUploadsBody">
+          <tr>
+            <td colspan="3" class="text-center text-muted">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- Chart.js CDN -->
@@ -145,113 +161,125 @@
 
 <!-- Clickable card hover effect -->
 <style>
-    .clickable-card {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        cursor: pointer;
-    }
-    .clickable-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-    }
+  .clickable-card {
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+    cursor: pointer;
+  }
+  .clickable-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+  }
 </style>
 
 <script>
-// Fetch overall stats
-fetch('/api/admin/stats')
-.then(r => r.json())
-.then(data => {
-    document.getElementById('totalBooks').textContent = data.total_books;
-    document.getElementById('totalCategories').textContent = data.total_categories;
-    document.getElementById('totalAdmins').textContent = data.total_admins;
-    document.getElementById('totalUsers').textContent = data.total_users;
+  // Fetch overall stats
+  fetch("/api/admin/stats")
+    .then((r) => r.json())
+    .then((data) => {
+      document.getElementById("totalBooks").textContent = data.total_books;
+      document.getElementById("totalCategories").textContent =
+        data.total_categories;
+      document.getElementById("totalAdmins").textContent = data.total_admins;
+      document.getElementById("totalUsers").textContent = data.total_users;
 
-    // Bar chart
-    new Chart(document.getElementById('booksChart'), {
-        type: 'bar',
+      // Bar chart
+      new Chart(document.getElementById("booksChart"), {
+        type: "bar",
         data: {
-            labels: ['Books', 'Categories', 'Users'],
-            datasets: [{
-                label: 'Total',
-                data: [data.total_books, data.total_categories, data.total_users],
-                backgroundColor: ['#4F46E5', '#FFB703', '#10B981'],
-                borderRadius: 10
-            }]
+          labels: ["Books", "Categories", "Users"],
+          datasets: [
+            {
+              label: "Total",
+              data: [data.total_books, data.total_categories, data.total_users],
+              backgroundColor: ["#4F46E5", "#FFB703", "#10B981"],
+              borderRadius: 10,
+            },
+          ],
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true } }
-        }
-    });
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } },
+        },
+      });
 
-    // Recent uploads table
-    let tableHtml = '';
-    data.recent_uploads.forEach(upload => {
+      // Recent uploads table
+      let tableHtml = "";
+      data.recent_uploads.forEach((upload) => {
         tableHtml += `<tr>
             <td>${upload.title}</td>
             <td><span class="badge bg-light text-dark">${upload.level}</span></td>
             <td>${upload.created_at}</td>
         </tr>`;
+      });
+      document.getElementById("recentUploadsBody").innerHTML =
+        tableHtml ||
+        '<tr><td colspan="3" class="text-center text-muted">No uploads yet.</td></tr>';
+    })
+    .catch((err) => {
+      console.error(err);
+      document.getElementById("recentUploadsBody").innerHTML =
+        '<tr><td colspan="3" class="text-center text-danger">Failed to load stats.</td></tr>';
     });
-    document.getElementById('recentUploadsBody').innerHTML = tableHtml || '<tr><td colspan="3" class="text-center text-muted">No uploads yet.</td></tr>';
-})
-.catch(err => {
-    console.error(err);
-    document.getElementById('recentUploadsBody').innerHTML = '<tr><td colspan="3" class="text-center text-danger">Failed to load stats.</td></tr>';
-});
 
-// Pie chart
-fetch('/api/categories/live-counts')
-.then(r => r.json())
-.then(cats => {
-    new Chart(document.getElementById('categoriesChart'), {
-        type: 'pie',
+  // Pie chart
+  fetch("/api/categories/live-counts")
+    .then((r) => r.json())
+    .then((cats) => {
+      new Chart(document.getElementById("categoriesChart"), {
+        type: "pie",
         data: {
-            labels: cats.map(c => c.level),
-            datasets: [{
-                data: cats.map(c => c.count),
-                backgroundColor: [
-                    '#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF',
-                    '#FF9F40','#FF6384','#C9CBCF','#7B68EE','#00FA9A',
-                    '#FFD700','#ADFF2F'
-                ],
-                borderWidth: 0
-            }]
+          labels: cats.map((c) => c.level),
+          datasets: [
+            {
+              data: cats.map((c) => c.count),
+              backgroundColor: [
+                "#FF6384",
+                "#36A2EB",
+                "#FFCE56",
+                "#4BC0C0",
+                "#9966FF",
+                "#FF9F40",
+                "#FF6384",
+                "#C9CBCF",
+                "#7B68EE",
+                "#00FA9A",
+                "#FFD700",
+                "#ADFF2F",
+              ],
+              borderWidth: 0,
+            },
+          ],
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { boxWidth: 12 }
-                }
-            }
-        }
-    });
-})
-.catch(console.error);
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { boxWidth: 12 },
+            },
+          },
+        },
+      });
+    })
+    .catch(console.error);
 
-// Pending books count (dynamic)
-fetch('/admin/pending/count')
-.then(r => r.json())
-.then(data => {
-    const pendingEl = document.getElementById('pendingCount');
-    if (pendingEl) {
-        pendingEl.textContent = data.count + ' book(s) pending';
-    }
-})
-.catch(() => {
-    const pendingEl = document.getElementById('pendingCount');
-    if (pendingEl) pendingEl.textContent = 'Unable to load';
-});
+  // Pending books count (dynamic)
+  fetch("/admin/pending/count")
+    .then((r) => r.json())
+    .then((data) => {
+      const pendingEl = document.getElementById("pendingCount");
+      if (pendingEl) {
+        pendingEl.textContent = data.count + " book(s) pending";
+      }
+    })
+    .catch(() => {
+      const pendingEl = document.getElementById("pendingCount");
+      if (pendingEl) pendingEl.textContent = "Unable to load";
+    });
 </script>
 {% endblock %}
-
-
-
-
-
-
-

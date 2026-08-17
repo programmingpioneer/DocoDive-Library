@@ -1,101 +1,101 @@
-{% extends 'base.html' %}
-
-{% block content %}
+{% extends 'base.html' %} {% block content %}
 <div class="container py-5">
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <h2 class="fw-bold text-primary"><i class="bi bi-people-fill me-2"></i>Manage Users</h2>
-        <a href="/admin/dashboard" class="btn btn-outline-secondary rounded-pill">
-            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
-        </a>
-    </div>
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="fw-bold text-primary">
+      <i class="bi bi-people-fill me-2"></i>Manage Users
+    </h2>
+    <a href="/admin/dashboard" class="btn btn-outline-secondary rounded-pill">
+      <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+    </a>
+  </div>
 
-    <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-body p-0">
-            {% if users %}
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>ID</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Verified</th>
-                            <th>Joined</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in users %}
-                        <tr id="user-row-{{ user.id }}">
-                            <td>{{ user.id }}</td>
-                            <td>{{ user.username }}</td>
-                            <td>{{ user.email }}</td>
-                            <td>
-                                {% if user.verified %}
-                                    <i class="bi bi-check-circle-fill text-success"></i> Verified
-                                {% else %}
-                                    <i class="bi bi-exclamation-circle-fill text-warning"></i> Pending
-                                {% endif %}
-                            </td>
-                            <td>{{ user.created_at }}</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-danger rounded-pill delete-user-btn" data-user-id="{{ user.id }}" title="Delete user">
-                                    <i class="bi bi-trash3"></i> Delete
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="text-center py-4 text-muted">No users found.</div>
-            {% endif %}
-        </div>
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+      {% if users %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Verified</th>
+              <th>Joined</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr id="user-row-{{ user.id }}">
+              <td>{{ user.id }}</td>
+              <td>{{ user.username }}</td>
+              <td>{{ user.email }}</td>
+              <td>
+                {% if user.verified %}
+                <i class="bi bi-check-circle-fill text-success"></i> Verified {%
+                else %}
+                <i class="bi bi-exclamation-circle-fill text-warning"></i>
+                Pending {% endif %}
+              </td>
+              <td>{{ user.created_at }}</td>
+              <td>
+                <button
+                  class="btn btn-sm btn-outline-danger rounded-pill delete-user-btn"
+                  data-user-id="{{ user.id }}"
+                  title="Delete user"
+                >
+                  <i class="bi bi-trash3"></i> Delete
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-4 text-muted">No users found.</div>
+      {% endif %}
     </div>
+  </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
-    document.addEventListener('click', async function(e) {
-        if (e.target.closest('.delete-user-btn')) {
-            const btn = e.target.closest('.delete-user-btn');
-            const userId = btn.dataset.userId;
-            if (!confirm('Are you sure you want to permanently delete this user and all their data? This action cannot be undone.')) return;
+  document.addEventListener("click", async function (e) {
+    if (e.target.closest(".delete-user-btn")) {
+      const btn = e.target.closest(".delete-user-btn");
+      const userId = btn.dataset.userId;
+      if (
+        !confirm(
+          "Are you sure you want to permanently delete this user and all their data? This action cannot be undone.",
+        )
+      )
+        return;
 
-            try {
-                const res = await fetch(`/admin/users/delete/${userId}`, {
-                    method: 'POST',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
+      try {
+        const res = await fetch(`/admin/users/delete/${userId}`, {
+          method: "POST",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
 
-                // Check if response is JSON
-                const contentType = res.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    const data = await res.json();
-                    if (data.success) {
-                        document.getElementById(`user-row-${userId}`)?.remove();
-                        alert('User deleted successfully.');
-                    } else {
-                        alert('Error: ' + (data.error || 'Unknown error'));
-                    }
-                } else {
-                    // Non-JSON response (probably HTML error page)
-                    alert('Server error. Please check your permissions.');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Network error. Check console for details.');
-            }
+        // Check if response is JSON
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await res.json();
+          if (data.success) {
+            document.getElementById(`user-row-${userId}`)?.remove();
+            alert("User deleted successfully.");
+          } else {
+            alert("Error: " + (data.error || "Unknown error"));
+          }
+        } else {
+          // Non-JSON response (probably HTML error page)
+          alert("Server error. Please check your permissions.");
         }
-    });
+      } catch (err) {
+        console.error(err);
+        alert("Network error. Check console for details.");
+      }
+    }
+  });
 </script>
 {% endblock %}
-
-
-
-
-
-
-

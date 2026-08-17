@@ -1,152 +1,175 @@
-{% extends 'base.html' %}
-
-{% block content %}
+{% extends 'base.html' %} {% block content %}
 <div class="container py-5" data-aos="fade-up">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <!-- Profile Card -->
-            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-                <!-- Background gradient header -->
-                <div class="bg-gradient" style="background: linear-gradient(135deg, #4338ca 0%, #818cf8 100%); height: 120px;"></div>
-                <!-- Avatar & Info -->
-                <div class="text-center px-3 px-md-4" style="margin-top: -60px;">
-                    <img src="{{ user[5] or url_for('static', filename='default-avatar.png') }}"
-                    class="rounded-circle border-4 border-white shadow d-block mx-auto"
-                    width="120" height="120"
-                    style="width: 120px !important; height: 120px !important; object-fit: cover; object-position: center; border-radius: 50% !important; display: block; margin: 0 auto;" alt="Avatar">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <!-- Profile Card -->
+      <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+        <!-- Background gradient header -->
+        <div
+          class="bg-gradient"
+          style="
+            background: linear-gradient(135deg, #4338ca 0%, #818cf8 100%);
+            height: 120px;
+          "
+        ></div>
+        <!-- Avatar & Info -->
+        <div class="text-center px-3 px-md-4" style="margin-top: -60px">
+          <img
+            src="{{ user[5] or url_for('static', filename='default-avatar.png') }}"
+            class="rounded-circle border-4 border-white shadow d-block mx-auto"
+            width="120"
+            height="120"
+            style="
+              width: 120px !important;
+              height: 120px !important;
+              object-fit: cover;
+              object-position: center;
+              border-radius: 50% !important;
+              display: block;
+              margin: 0 auto;
+            "
+            alt="Avatar"
+          />
 
-                    <!-- Show full name if available, otherwise username -->
-                    {% set first_name = user[8] or '' %}
-                    {% set last_name = user[9] or '' %}
-                    {% set full_name = (first_name + ' ' + last_name).strip() %}
-                    <h3 class="fw-bold mt-3 mb-1">
-                        {% if is_official %}
-                            <a href="/user/profile/{{ user[1] }}" class="text-decoration-none text-dark">
-                                {{ full_name if full_name else user[1] }}
-                                <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
-                            </a>
-                        {% else %}
-                            {{ full_name if full_name else user[1] }}
-                        {% endif %}
-                    </h3>
+          <!-- Show full name if available, otherwise username -->
+          {% set first_name = user[8] or '' %} {% set last_name = user[9] or ''
+          %} {% set full_name = (first_name + ' ' + last_name).strip() %}
+          <h3 class="fw-bold mt-3 mb-1">
+            {% if is_official %}
+            <a
+              href="/user/profile/{{ user[1] }}"
+              class="text-decoration-none text-dark"
+            >
+              {{ full_name if full_name else user[1] }}
+              <i
+                class="bi bi-patch-check-fill text-primary ms-1"
+                title="Official Account"
+              ></i>
+            </a>
+            {% else %} {{ full_name if full_name else user[1] }} {% endif %}
+          </h3>
 
-                    <!-- Official Account Badge -->
-                    {% if is_official %}
-                    <div class="mb-2">
-                        <span class="badge bg-primary px-3 py-2 rounded-pill">
-                            <i class="bi bi-patch-check-fill me-1"></i> Official Account
-                        </span>
-                    </div>
-                    {% endif %}
+          <!-- Official Account Badge -->
+          {% if is_official %}
+          <div class="mb-2">
+            <span class="badge bg-primary px-3 py-2 rounded-pill">
+              <i class="bi bi-patch-check-fill me-1"></i> Official Account
+            </span>
+          </div>
+          {% endif %} {% if user[6] %}
+          <p class="text-muted px-3">{{ user[6] }}</p>
+          {% endif %}
 
-                    {% if user[6] %}<p class="text-muted px-3">{{ user[6] }}</p>{% endif %}
+          <!-- Social Links with Brand Icons -->
+          {% if social_links %}
+          <div class="d-flex justify-content-center gap-3 mb-4 flex-wrap">
+            {% for platform, url in social_links.items() %} {% set icon_map = {
+            'Facebook': 'bi-facebook', 'Twitter': 'bi-twitter-x', 'LinkedIn':
+            'bi-linkedin', 'GitHub': 'bi-github', 'Instagram': 'bi-instagram',
+            'YouTube': 'bi-youtube', 'Website': 'bi-globe' } %} {% set icon =
+            icon_map.get(platform, 'bi-link-45deg') %}
+            <a
+              href="{{ url }}"
+              target="_blank"
+              class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center social-icon-circle"
+              style="width: 42px; height: 42px; transition: 0.3s"
+              title="{{ platform }}"
+            >
+              <i class="bi {{ icon }} fs-5"></i>
+            </a>
+            {% endfor %}
+          </div>
+          {% endif %}
 
-                    <!-- Social Links with Brand Icons -->
-                    {% if social_links %}
-                    <div class="d-flex justify-content-center gap-3 mb-4 flex-wrap">
-                        {% for platform, url in social_links.items() %}
-                            {% set icon_map = {
-                                'Facebook': 'bi-facebook',
-                                'Twitter': 'bi-twitter-x',
-                                'LinkedIn': 'bi-linkedin',
-                                'GitHub': 'bi-github',
-                                'Instagram': 'bi-instagram',
-                                'YouTube': 'bi-youtube',
-                                'Website': 'bi-globe'
-                            } %}
-                            {% set icon = icon_map.get(platform, 'bi-link-45deg') %}
-                            <a href="{{ url }}" target="_blank" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center social-icon-circle" style="width: 42px; height: 42px; transition: 0.3s;" title="{{ platform }}">
-                                <i class="bi {{ icon }} fs-5"></i>
-                            </a>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-
-                    <!-- Quick Stats (hidden for official account) -->
-                    {% if not is_official %}
-                    <div class="row g-3 mb-4 px-2">
-                        <div class="col-6 col-md-3">
-                            <div class="p-3 bg-light rounded-3">
-                                <h5 class="fw-bold mb-0 text-primary">{{ total_uploads }}</h5>
-                                <small class="text-muted">Uploads</small>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <div class="p-3 bg-light rounded-3">
-                                <h5 class="fw-bold mb-0 text-warning">{{ total_reviews }}</h5>
-                                <small class="text-muted">Reviews</small>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <div class="p-3 bg-light rounded-3">
-                                <h5 class="fw-bold mb-0 text-danger">{{ total_favorites }}</h5>
-                                <small class="text-muted">Favorites</small>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <div class="p-3 bg-light rounded-3">
-                                <h5 class="fw-bold mb-0 text-success">{{ total_points }}</h5>
-                                <small class="text-muted">Points</small>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <!-- Official account message -->
-                    <div class="text-center mb-4">
-                        <p class="text-muted fst-italic">✨ Official DocoDive Community Account</p>
-                    </div>
-                    {% endif %}
-
-                    <!-- Edit Profile Button (if it's own profile) -->
-                    {% if session.get('user_id') == user[0] %}
-                    <a href="/user/profile/edit" class="btn btn-primary rounded-pill px-4 mb-4 shadow-sm" style="background: #1e1b4b; border-color: #1e1b4b;">
-                        <i class="bi bi-pencil-square me-2"></i> Edit Profile
-                    </a>
-                    {% endif %}
-                </div>
+          <!-- Quick Stats (hidden for official account) -->
+          {% if not is_official %}
+          <div class="row g-3 mb-4 px-2">
+            <div class="col-6 col-md-3">
+              <div class="p-3 bg-light rounded-3">
+                <h5 class="fw-bold mb-0 text-primary">{{ total_uploads }}</h5>
+                <small class="text-muted">Uploads</small>
+              </div>
             </div>
-
-            <!-- Additional Info Card -->
-            <div class="card border-0 shadow-sm rounded-4 mt-4 p-4">
-                <h5 class="fw-bold mb-3">Account Info</h5>
-                <p class="mb-1"><i class="bi bi-envelope me-2"></i> {{ user[2] }}</p>
-                <p class="mb-1"><i class="bi bi-calendar3 me-2"></i> Joined {{ user[4].strftime('%B %d, %Y') if user[4] else 'N/A' }}</p>
-                <p class="mb-0">
-                    <i class="bi bi-{{ 'check-circle-fill text-success' if user[3] else 'exclamation-circle-fill text-warning' }} me-2"></i>
-                    {{ 'Verified' if user[3] else 'Unverified' }}
-                </p>
+            <div class="col-6 col-md-3">
+              <div class="p-3 bg-light rounded-3">
+                <h5 class="fw-bold mb-0 text-warning">{{ total_reviews }}</h5>
+                <small class="text-muted">Reviews</small>
+              </div>
             </div>
+            <div class="col-6 col-md-3">
+              <div class="p-3 bg-light rounded-3">
+                <h5 class="fw-bold mb-0 text-danger">{{ total_favorites }}</h5>
+                <small class="text-muted">Favorites</small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-3 bg-light rounded-3">
+                <h5 class="fw-bold mb-0 text-success">{{ total_points }}</h5>
+                <small class="text-muted">Points</small>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <!-- Official account message -->
+          <div class="text-center mb-4">
+            <p class="text-muted fst-italic">
+              ✨ Official DocoDive Community Account
+            </p>
+          </div>
+          {% endif %}
+
+          <!-- Edit Profile Button (if it's own profile) -->
+          {% if session.get('user_id') == user[0] %}
+          <a
+            href="/user/profile/edit"
+            class="btn btn-primary rounded-pill px-4 mb-4 shadow-sm"
+            style="background: #1e1b4b; border-color: #1e1b4b"
+          >
+            <i class="bi bi-pencil-square me-2"></i> Edit Profile
+          </a>
+          {% endif %}
         </div>
+      </div>
+
+      <!-- Additional Info Card -->
+      <div class="card border-0 shadow-sm rounded-4 mt-4 p-4">
+        <h5 class="fw-bold mb-3">Account Info</h5>
+        <p class="mb-1"><i class="bi bi-envelope me-2"></i> {{ user[2] }}</p>
+        <p class="mb-1">
+          <i class="bi bi-calendar3 me-2"></i> Joined {{ user[4].strftime('%B
+          %d, %Y') if user[4] else 'N/A' }}
+        </p>
+        <p class="mb-0">
+          <i
+            class="bi bi-{{ 'check-circle-fill text-success' if user[3] else 'exclamation-circle-fill text-warning' }} me-2"
+          ></i>
+          {{ 'Verified' if user[3] else 'Unverified' }}
+        </p>
+      </div>
     </div>
+  </div>
 </div>
 
 <style>
-    .social-icon-circle:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+  .social-icon-circle:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+  }
+  /* Responsive tweaks for mobile */
+  @media (max-width: 576px) {
+    .card .text-center img {
+      width: 90px !important;
+      height: 90px !important;
     }
-    /* Responsive tweaks for mobile */
-    @media (max-width: 576px) {
-        .card .text-center img {
-            width: 90px !important;
-            height: 90px !important;
-        }
-        .bg-gradient {
-            height: 80px !important;
-        }
-        .text-center[style*="margin-top: -60px"] {
-            margin-top: -45px !important;
-        }
-        h3 {
-            font-size: 1.3rem;
-        }
+    .bg-gradient {
+      height: 80px !important;
     }
+    .text-center[style*="margin-top: -60px"] {
+      margin-top: -45px !important;
+    }
+    h3 {
+      font-size: 1.3rem;
+    }
+  }
 </style>
 {% endblock %}
-
-
-
-
-
-
-

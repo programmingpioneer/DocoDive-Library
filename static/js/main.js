@@ -27,25 +27,25 @@ document.addEventListener('DOMContentLoaded', function () {
     })();
   } catch (e) { console.warn('Passive listeners setup failed:', e); }
 
-// ================== AOS INIT (Modern, Smooth & Responsive) ==================
-try {
-  if (typeof AOS !== 'undefined') {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // ================== AOS INIT (Modern, Smooth & Responsive) ==================
+  try {
+    if (typeof AOS !== 'undefined') {
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    AOS.init({
-      duration: 400,                      // smooth 400ms for all devices
-      once: true,                         // animate once only
-      mirror: false,                      // no re‑animation on scroll up
-      offset: 100,                        // trigger 100px before element enters viewport
-      easing: 'ease-out-cubic',           // more natural deceleration
-      throttleDelay: 50,                  // low delay = responsive scroll feel
-      anchorPlacement: 'top-bottom',
-      disable: prefersReducedMotion,      // respect accessibility
-      startEvent: 'DOMContentLoaded',
-      disableMutationObserver: true
-    });
-  }
-} catch (e) { console.warn('AOS init failed:', e); }
+      AOS.init({
+        duration: 400,                      // smooth 400ms for all devices
+        once: true,                         // animate once only
+        mirror: false,                      // no re‑animation on scroll up
+        offset: 100,                        // trigger 100px before element enters viewport
+        easing: 'ease-out-cubic',           // more natural deceleration
+        throttleDelay: 50,                  // low delay = responsive scroll feel
+        anchorPlacement: 'top-bottom',
+        disable: prefersReducedMotion,      // respect accessibility
+        startEvent: 'DOMContentLoaded',
+        disableMutationObserver: true
+      });
+    }
+  } catch (e) { console.warn('AOS init failed:', e); }
 
   // ================== AUTH MODAL (only if modal exists) ==================
   window.authModal = null;
@@ -99,12 +99,12 @@ try {
 
   window.setButtonLoading = function (btn) {
     if (!btn) return;
-    try { btn.classList.add('btn-loading'); btn.disabled = true; } catch (e) {}
+    try { btn.classList.add('btn-loading'); btn.disabled = true; } catch (e) { }
   };
 
   window.resetButton = function (btn) {
     if (!btn) return;
-    try { btn.classList.remove('btn-loading'); btn.disabled = false; } catch (e) {}
+    try { btn.classList.remove('btn-loading'); btn.disabled = false; } catch (e) { }
   };
 
   function showModalFlash(msg, type) {
@@ -112,7 +112,7 @@ try {
       var flash = document.getElementById('modalFlash');
       if (!flash) return;
       flash.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show py-2 small" role="alert">' + msg + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // Init auth modal (safely)
@@ -196,7 +196,7 @@ try {
       var btn = form.querySelector('button[type="submit"], input[type="submit"]');
       if (btn) window.setButtonLoading(btn);
     });
-  } catch (e) {}
+  } catch (e) { }
 
   // ================== NOTIFICATIONS ==================
   window.updateNotifications = function () { /* will be defined below */ };
@@ -236,7 +236,7 @@ try {
               if (d.count > 0) { badge.style.display = 'inline'; badge.textContent = d.count; }
               else { badge.style.display = 'none'; }
             }
-          }).catch(function () {});
+          }).catch(function () { });
 
         fetch('/api/notifications')
           .then(function (r) { return r.json(); })
@@ -265,8 +265,8 @@ try {
                 '<div class="text-muted small text-truncate">' + snippet + '</div></div></div>';
             });
             container.innerHTML = html;
-          }).catch(function () {});
-      } catch (e) {}
+          }).catch(function () { });
+      } catch (e) { }
     };
 
     window.markAllRead = function () {
@@ -275,7 +275,7 @@ try {
         Promise.all(unread.map(function (n) {
           return fetch('/api/notifications/' + n.id + '/read', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
         })).then(function () { window.updateNotifications(); });
-      }).catch(function () {});
+      }).catch(function () { });
     };
 
     window.updateNotifications();
@@ -291,7 +291,7 @@ try {
         qrCloseBtn.addEventListener('click', function () { qrPopup.style.display = 'none'; });
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // ================== HIDE LOADER (robust) ==================
   (function () {
@@ -319,10 +319,10 @@ try {
   try {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('/static/sw.js').catch(function () {});
+        navigator.serviceWorker.register('/static/sw.js').catch(function () { });
       });
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // ================== PREVIEW MODAL + DOWNLOAD (safe) ==================
   try {

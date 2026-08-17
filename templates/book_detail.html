@@ -1,434 +1,951 @@
-{% extends 'base.html' %}
-
-{% block title %}{{ book.title }} - DocoDive{% endblock %}
-{% block meta_description %}{{ book.description[:160] if book.description else 'Read ' + book.title + ' by ' + book.author + ' on DocoDive. Free PDF download available.' }}{% endblock %}
-{% block og_image %}{{ book.image_url if book.image_url and book.image_url != 'None' else url_for('static', filename='images/docodive-og.png', _external=True) }}{% endblock %}
-
-{% block content %}
+{% extends 'base.html' %} {% block title %}{{ book.title }} - DocoDive{%
+endblock %} {% block meta_description %}{{ book.description[:160] if
+book.description else 'Read ' + book.title + ' by ' + book.author + ' on
+DocoDive. Free PDF download available.' }}{% endblock %} {% block og_image %}{{
+book.image_url if book.image_url and book.image_url != 'None' else
+url_for('static', filename='images/docodive-og.png', _external=True) }}{%
+endblock %} {% block content %}
 <div class="container py-4 py-md-5">
-    <div class="row g-4">
-        <!-- Book Cover -->
-        <div class="col-12 col-md-5 col-lg-4" data-aos="zoom-in" data-aos-duration="600">
-            {% if book.image_url and book.image_url != 'None' %}
-                <img src="{{ book.image_url }}" class="img-fluid rounded-4 shadow-sm w-100" alt="{{ book.title }}" style="object-fit: cover; max-height: 450px;" loading="lazy">
-            {% else %}
-                <div class="book-cover rounded-4 shadow-sm d-flex align-items-center justify-content-center bg-light" style="max-height: 450px; min-height: 250px;">
-                    <div class="text-center p-4">
-                        <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:80px;height:80px;font-size:2rem;">
-                            {{ (book.title[:2]).upper() }}
-                        </div>
-                        <h5 class="text-dark fw-bold">{{ book.title }}</h5>
-                    </div>
-                </div>
-            {% endif %}
+  <div class="row g-4">
+    <!-- Book Cover -->
+    <div
+      class="col-12 col-md-5 col-lg-4"
+      data-aos="zoom-in"
+      data-aos-duration="600"
+    >
+      {% if book.image_url and book.image_url != 'None' %}
+      <img
+        src="{{ book.image_url }}"
+        class="img-fluid rounded-4 shadow-sm w-100"
+        alt="{{ book.title }}"
+        style="object-fit: cover; max-height: 450px"
+        loading="lazy"
+      />
+      {% else %}
+      <div
+        class="book-cover rounded-4 shadow-sm d-flex align-items-center justify-content-center bg-light"
+        style="max-height: 450px; min-height: 250px"
+      >
+        <div class="text-center p-4">
+          <div
+            class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+            style="width: 80px; height: 80px; font-size: 2rem"
+          >
+            {{ (book.title[:2]).upper() }}
+          </div>
+          <h5 class="text-dark fw-bold">{{ book.title }}</h5>
         </div>
-        <!-- Book Details -->
-        <div class="col-12 col-md-7 col-lg-8" data-aos="fade-left" data-aos-duration="600">
-            <h1 class="fw-bold mb-1 h2">{{ book.title }}</h1>
-            <p class="text-muted">by <strong>{{ book.author }}</strong></p>
-            <div class="mb-3">
-                <span class="badge bg-primary px-3 py-2 rounded-pill me-2">{{ book.level }}</span>
-                <span class="badge bg-secondary px-3 py-2 rounded-pill">{{ book.language }}</span>
-            </div>
-            <p class="mb-4">{{ book.description or 'No description available.' }}</p>
-            <div class="d-flex flex-wrap gap-2 mb-4">
-                <a href="/book/{{ book.id }}/download" class="btn btn-primary rounded-pill px-4 download-btn">
-                <i class="bi bi-download me-2"></i> Download
-                </a>
-                <a href="/book/{{ book.id }}/read" target="_blank" class="btn btn-outline-primary rounded-pill px-4 read-btn">
-                    <i class="bi bi-book me-2"></i> Read Online
-                </a>
-                <button class="btn btn-outline-dark rounded-pill px-4 qr-btn" data-book-id="{{ book.id }}">
-                    <i class="bi bi-qr-code me-2"></i> QR Code
-                </button>
-                {% if user_logged_in %}
-                <button class="btn btn-outline-warning rounded-pill px-4 favorite-btn" data-id="{{ book.id }}">
-                    <i class="bi bi-heart me-2"></i> <span>Favorite</span>
-                </button>
-                {% endif %}
-            </div>
-
-            <hr>
-
-            <!-- Reviews Section -->
-            <div data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
-                <h5 class="fw-bold mb-3">⭐ Reviews</h5>
-                {% if user_logged_in %}
-                <form id="reviewForm" class="mb-4 p-3 border rounded-4 bg-light">
-                    <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-3">
-                            <label class="form-label small fw-semibold">Rating</label>
-                            <select name="rating" class="form-select" required>
-                                <option value="5">5 - Excellent</option>
-                                <option value="4">4 - Good</option>
-                                <option value="3">3 - Average</option>
-                                <option value="2">2 - Poor</option>
-                                <option value="1">1 - Terrible</option>
-                            </select>
-                        </div>
-                        <div class="col-md-7">
-                            <label class="form-label small fw-semibold">Comment</label>
-                            <textarea name="comment" class="form-control" rows="2" placeholder="Write your review..."></textarea>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary rounded-pill w-100">Submit</button>
-                        </div>
-                    </div>
-                </form>
-                {% else %}
-                <div class="alert alert-light border rounded-4">Please <a href="#" onclick="showAuthModal(window.location.href);return false;">login</a> to write a review.</div>
-                {% endif %}
-            </div>
-
-            <div id="reviews">
-                {% for r in reviews %}
-                <div class="border-bottom pb-2 mb-2 review-item" data-review-id="{{ r.id }}" data-aos="fade-up" data-aos-duration="500" data-aos-delay="{{ loop.index0 * 100 }}">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="d-flex align-items-center gap-1">
-                            {% if r.is_official %}
-                                <a href="/user/profile/{{ r.username }}" class="fw-bold text-decoration-none text-dark">
-                                    {{ r.username }}
-                                    <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
-                                </a>
-                            {% else %}
-                                <strong>{{ r.username }}</strong>
-                            {% endif %}
-                            <span>- {{ r.rating }} ⭐</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            {% if is_moderator %}
-                            <button class="btn btn-sm btn-outline-primary rounded-pill reply-official-review-btn" data-review-id="{{ r.id }}" title="Reply as Official">
-                                <i class="bi bi-reply-fill"></i> Reply
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill delete-review-btn" data-review-id="{{ r.id }}" title="Delete review">
-                                <i class="bi bi-trash3"></i>
-                            </button>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <p class="text-muted small mb-0">{{ r.comment or '' }}</p>
-                    {% if is_moderator %}
-                    <div class="official-review-reply-form d-none mt-2" id="officialReviewReplyForm-{{ r.id }}">
-                        <textarea class="form-control form-control-sm mb-1" rows="2" placeholder="Official reply..."></textarea>
-                        <button class="btn btn-sm btn-primary submit-official-review-reply" data-review-id="{{ r.id }}">Submit Reply</button>
-                    </div>
-                    {% endif %}
-                    <div class="review-replies ms-3 mt-1" id="review-replies-{{ r.id }}"></div>
-                </div>
-                {% else %}
-                <p class="text-muted">No reviews yet. Be the first to review!</p>
-                {% endfor %}
-            </div>
-
-            <!-- ==================== DISCUSSION COMMENTS ==================== -->
-            <section id="discussion" class="mt-5" data-aos="fade-up" data-aos-duration="600" data-aos-delay="150">
-                <h4 class="fw-bold mb-3">💬 Discussion</h4>
-                <div id="commentsContainer" class="mb-4"></div>
-                {% if user_logged_in %}
-                <form id="commentForm" class="mt-3">
-                    <textarea id="commentText" class="form-control" rows="3" placeholder="Join the discussion..."></textarea>
-                    <button type="submit" class="btn btn-primary rounded-pill mt-2">Post Comment</button>
-                </form>
-                {% else %}
-                <p class="text-muted">Please <a href="#" onclick="showAuthModal(window.location.href);return false;">login</a> to join the discussion.</p>
-                {% endif %}
-            </section>
-        </div>
+      </div>
+      {% endif %}
     </div>
+    <!-- Book Details -->
+    <div
+      class="col-12 col-md-7 col-lg-8"
+      data-aos="fade-left"
+      data-aos-duration="600"
+    >
+      <h1 class="fw-bold mb-1 h2">{{ book.title }}</h1>
+      <p class="text-muted">by <strong>{{ book.author }}</strong></p>
+      <div class="mb-3">
+        <span class="badge bg-primary px-3 py-2 rounded-pill me-2"
+          >{{ book.level }}</span
+        >
+        <span class="badge bg-secondary px-3 py-2 rounded-pill"
+          >{{ book.language }}</span
+        >
+      </div>
+      <p class="mb-4">{{ book.description or 'No description available.' }}</p>
+      <div class="d-flex flex-wrap gap-2 mb-4">
+        <a
+          href="/book/{{ book.id }}/download"
+          class="btn btn-primary rounded-pill px-4 download-btn"
+        >
+          <i class="bi bi-download me-2"></i> Download
+        </a>
+        <a
+          href="/book/{{ book.id }}/read"
+          target="_blank"
+          class="btn btn-outline-primary rounded-pill px-4 read-btn"
+        >
+          <i class="bi bi-book me-2"></i> Read Online
+        </a>
+        <button
+          class="btn btn-outline-dark rounded-pill px-4 qr-btn"
+          data-book-id="{{ book.id }}"
+        >
+          <i class="bi bi-qr-code me-2"></i> QR Code
+        </button>
+        {% if user_logged_in %}
+        <button
+          class="btn btn-outline-warning rounded-pill px-4 favorite-btn"
+          data-id="{{ book.id }}"
+        >
+          <i class="bi bi-heart me-2"></i> <span>Favorite</span>
+        </button>
+        {% endif %}
+      </div>
 
-    <!-- ==================== RELATED BOOKS ==================== -->
-    {% if related_books %}
-    <section class="mt-5" data-aos="fade-up" data-aos-duration="600">
-        <h2 class="fw-bold mb-4" style="color: #1e1b4b;">📚 Related Books</h2>
-        <div class="row g-3">
-            {% for related in related_books %}
-            <div class="col-6 col-md-4 col-lg-3">
-                <a href="/book/{{ related.id }}" class="text-decoration-none">
-                    <div class="card border-0 shadow-sm h-100 related-book-card">
-                        <div class="book-cover-outer d-flex align-items-center justify-content-center">
-                            {% if related.image_url and related.image_url != 'None' and related.image_url.strip() != '' %}
-                                <img src="{{ related.image_url }}" alt="{{ related.title }}" class="related-book-cover" loading="lazy">
-                            {% else %}
-                                {% set title_safe = related.title | default('Book', true) | replace('_', ' ') %}
-                                {% set words = title_safe.split() %}
-                                {% set short_name = (words[0][:2])|upper if words|length == 1 else (words[0][0] ~ words[1][0])|upper %}
-                                <div class="related-book-fallback">{{ short_name }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="card-body p-2">
-                            <h6 class="fw-bold text-truncate mb-1" style="font-size:0.8rem; color:#1e1b4b;">{{ related.title | replace('_', ' ') }}</h6>
-                            <p class="text-muted small mb-2" style="font-size:0.65rem;">By {{ related.author }}</p>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="d-inline-flex align-items-center gap-1" style="background:rgba(67,56,202,0.08); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
-                                    <i class="bi bi-download" style="font-size:0.7rem;"></i>
-                                    {{ related.download_count }}
-                                </span>
-                                <span class="d-inline-flex align-items-center gap-1" style="background:rgba(255,183,3,0.1); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#b8860b; font-weight:600;">
-                                    <i class="bi bi-eye-fill" style="font-size:0.7rem;"></i>
-                                    {{ related.view_count }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </a>
+      <hr />
+
+      <!-- Reviews Section -->
+      <div data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
+        <h5 class="fw-bold mb-3">⭐ Reviews</h5>
+        {% if user_logged_in %}
+        <form id="reviewForm" class="mb-4 p-3 border rounded-4 bg-light">
+          <input
+            type="hidden"
+            name="_csrf_token"
+            value="{{ session['_csrf_token'] }}"
+          />
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold">Rating</label>
+              <select name="rating" class="form-select" required>
+                <option value="5">5 - Excellent</option>
+                <option value="4">4 - Good</option>
+                <option value="3">3 - Average</option>
+                <option value="2">2 - Poor</option>
+                <option value="1">1 - Terrible</option>
+              </select>
             </div>
-            {% endfor %}
+            <div class="col-md-7">
+              <label class="form-label small fw-semibold">Comment</label>
+              <textarea
+                name="comment"
+                class="form-control"
+                rows="2"
+                placeholder="Write your review..."
+              ></textarea>
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-primary rounded-pill w-100">
+                Submit
+              </button>
+            </div>
+          </div>
+        </form>
+        {% else %}
+        <div class="alert alert-light border rounded-4">
+          Please
+          <a
+            href="#"
+            onclick="
+              showAuthModal(window.location.href);
+              return false;
+            "
+            >login</a
+          >
+          to write a review.
         </div>
-    </section>
-    {% endif %}
+        {% endif %}
+      </div>
+
+      <div id="reviews">
+        {% for r in reviews %}
+        <div
+          class="border-bottom pb-2 mb-2 review-item"
+          data-review-id="{{ r.id }}"
+          data-aos="fade-up"
+          data-aos-duration="500"
+          data-aos-delay="{{ loop.index0 * 100 }}"
+        >
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex align-items-center gap-1">
+              {% if r.is_official %}
+              <a
+                href="/user/profile/{{ r.username }}"
+                class="fw-bold text-decoration-none text-dark"
+              >
+                {{ r.username }}
+                <i
+                  class="bi bi-patch-check-fill text-primary ms-1"
+                  title="Official Account"
+                ></i>
+              </a>
+              {% else %}
+              <strong>{{ r.username }}</strong>
+              {% endif %}
+              <span>- {{ r.rating }} ⭐</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              {% if is_moderator %}
+              <button
+                class="btn btn-sm btn-outline-primary rounded-pill reply-official-review-btn"
+                data-review-id="{{ r.id }}"
+                title="Reply as Official"
+              >
+                <i class="bi bi-reply-fill"></i> Reply
+              </button>
+              <button
+                class="btn btn-sm btn-outline-danger rounded-pill delete-review-btn"
+                data-review-id="{{ r.id }}"
+                title="Delete review"
+              >
+                <i class="bi bi-trash3"></i>
+              </button>
+              {% endif %}
+            </div>
+          </div>
+          <p class="text-muted small mb-0">{{ r.comment or '' }}</p>
+          {% if is_moderator %}
+          <div
+            class="official-review-reply-form d-none mt-2"
+            id="officialReviewReplyForm-{{ r.id }}"
+          >
+            <textarea
+              class="form-control form-control-sm mb-1"
+              rows="2"
+              placeholder="Official reply..."
+            ></textarea>
+            <button
+              class="btn btn-sm btn-primary submit-official-review-reply"
+              data-review-id="{{ r.id }}"
+            >
+              Submit Reply
+            </button>
+          </div>
+          {% endif %}
+          <div
+            class="review-replies ms-3 mt-1"
+            id="review-replies-{{ r.id }}"
+          ></div>
+        </div>
+        {% else %}
+        <p class="text-muted">No reviews yet. Be the first to review!</p>
+        {% endfor %}
+      </div>
+
+      <!-- ==================== DISCUSSION COMMENTS ==================== -->
+      <section
+        id="discussion"
+        class="mt-5"
+        data-aos="fade-up"
+        data-aos-duration="600"
+        data-aos-delay="150"
+      >
+        <h4 class="fw-bold mb-3">💬 Discussion</h4>
+        <div id="commentsContainer" class="mb-4"></div>
+        {% if user_logged_in %}
+        <form id="commentForm" class="mt-3">
+          <textarea
+            id="commentText"
+            class="form-control"
+            rows="3"
+            placeholder="Join the discussion..."
+          ></textarea>
+          <button type="submit" class="btn btn-primary rounded-pill mt-2">
+            Post Comment
+          </button>
+        </form>
+        {% else %}
+        <p class="text-muted">
+          Please
+          <a
+            href="#"
+            onclick="
+              showAuthModal(window.location.href);
+              return false;
+            "
+            >login</a
+          >
+          to join the discussion.
+        </p>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+
+  <!-- ==================== RELATED BOOKS ==================== -->
+  {% if related_books %}
+  <section class="mt-5" data-aos="fade-up" data-aos-duration="600">
+    <h2 class="fw-bold mb-4" style="color: #1e1b4b">📚 Related Books</h2>
+    <div class="row g-3">
+      {% for related in related_books %}
+      <div class="col-6 col-md-4 col-lg-3">
+        <a href="/book/{{ related.id }}" class="text-decoration-none">
+          <div class="card border-0 shadow-sm h-100 related-book-card">
+            <div
+              class="book-cover-outer d-flex align-items-center justify-content-center"
+            >
+              {% if related.image_url and related.image_url != 'None' and
+              related.image_url.strip() != '' %}
+              <img
+                src="{{ related.image_url }}"
+                alt="{{ related.title }}"
+                class="related-book-cover"
+                loading="lazy"
+              />
+              {% else %} {% set title_safe = related.title | default('Book',
+              true) | replace('_', ' ') %} {% set words = title_safe.split() %}
+              {% set short_name = (words[0][:2])|upper if words|length == 1 else
+              (words[0][0] ~ words[1][0])|upper %}
+              <div class="related-book-fallback">{{ short_name }}</div>
+              {% endif %}
+            </div>
+            <div class="card-body p-2">
+              <h6
+                class="fw-bold text-truncate mb-1"
+                style="font-size: 0.8rem; color: #1e1b4b"
+              >
+                {{ related.title | replace('_', ' ') }}
+              </h6>
+              <p class="text-muted small mb-2" style="font-size: 0.65rem">
+                By {{ related.author }}
+              </p>
+              <div class="d-flex align-items-center gap-2">
+                <span
+                  class="d-inline-flex align-items-center gap-1"
+                  style="
+                    background: rgba(67, 56, 202, 0.08);
+                    border-radius: 20px;
+                    padding: 2px 8px;
+                    font-size: 0.65rem;
+                    color: #4338ca;
+                    font-weight: 600;
+                  "
+                >
+                  <i class="bi bi-download" style="font-size: 0.7rem"></i>
+                  {{ related.download_count }}
+                </span>
+                <span
+                  class="d-inline-flex align-items-center gap-1"
+                  style="
+                    background: rgba(255, 183, 3, 0.1);
+                    border-radius: 20px;
+                    padding: 2px 8px;
+                    font-size: 0.65rem;
+                    color: #b8860b;
+                    font-weight: 600;
+                  "
+                >
+                  <i class="bi bi-eye-fill" style="font-size: 0.7rem"></i>
+                  {{ related.view_count }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 </div>
 
 <!-- ================== JSON-LD Structured Data (SEO) ================== -->
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Book",
-  "name": {{ book.title|tojson }},
-  "author": {
-    "@type": "Person",
-    "name": {{ book.author|tojson }}
-  },
-  "description": {{ (book.description[:200] if book.description else '')|tojson }},
-  "image": {{ (book.image_url if book.image_url and book.image_url != 'None' else '')|tojson }},
-  "url": {{ request.url|tojson }},
-  "inLanguage": {{ book.language|tojson }},
-  "genre": {{ book.level|tojson }},
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "USD",
-    "availability": "https://schema.org/InStock"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "DocoDive"
+  {
+    "@context": "https://schema.org",
+    "@type": "Book",
+    "name": {{ book.title|tojson }},
+    "author": {
+      "@type": "Person",
+      "name": {{ book.author|tojson }}
+    },
+    "description": {{ (book.description[:200] if book.description else '')|tojson }},
+    "image": {{ (book.image_url if book.image_url and book.image_url != 'None' else '')|tojson }},
+    "url": {{ request.url|tojson }},
+    "inLanguage": {{ book.language|tojson }},
+    "genre": {{ book.level|tojson }},
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "DocoDive"
+    }
   }
-}
 </script>
 
 <!-- ================== QR & SHARE POPUPS ================== -->
-<div id="qrPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:28px 24px 20px; border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,0.25); z-index:9999; text-align:center; max-width:320px; width:90%;">
-    <img id="qrImage" src="" style="width:200px; height:200px; border-radius:16px; display:block; margin:0 auto;">
-    <p style="margin:16px 0 8px; font-size:0.85rem; color:#4b5563; line-height:1.5;">
-        📱 <strong>Scan QR code</strong> to open this book on your phone.
-    </p>
-    <div style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
-        <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="document.getElementById('qrPopup').style.display='none'"><i class="bi bi-x-circle me-1"></i> Close</button>
-        <button class="btn btn-sm btn-primary rounded-pill share-modal-btn" data-book-id="{{ book.id }}"><i class="bi bi-share-fill me-1"></i> Share</button>
-    </div>
+<div
+  id="qrPopup"
+  style="
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 28px 24px 20px;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    z-index: 9999;
+    text-align: center;
+    max-width: 320px;
+    width: 90%;
+  "
+>
+  <img
+    id="qrImage"
+    src=""
+    style="
+      width: 200px;
+      height: 200px;
+      border-radius: 16px;
+      display: block;
+      margin: 0 auto;
+    "
+  />
+  <p
+    style="
+      margin: 16px 0 8px;
+      font-size: 0.85rem;
+      color: #4b5563;
+      line-height: 1.5;
+    "
+  >
+    📱 <strong>Scan QR code</strong> to open this book on your phone.
+  </p>
+  <div
+    style="display: flex; gap: 10px; justify-content: center; margin-top: 10px"
+  >
+    <button
+      class="btn btn-sm btn-outline-primary rounded-pill"
+      onclick="document.getElementById('qrPopup').style.display = 'none'"
+    >
+      <i class="bi bi-x-circle me-1"></i> Close
+    </button>
+    <button
+      class="btn btn-sm btn-primary rounded-pill share-modal-btn"
+      data-book-id="{{ book.id }}"
+    >
+      <i class="bi bi-share-fill me-1"></i> Share
+    </button>
+  </div>
 </div>
 
-<div id="shareModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
-    <div style="background:white; border-radius:24px; max-width:420px; width:90%; padding:32px 24px; position:relative; box-shadow:0 25px 50px rgba(0,0,0,0.2);">
-        <button onclick="closeShareModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#9ca3af;">&times;</button>
-        <div style="display:flex; justify-content:center; margin-bottom:16px;">
-            <div style="width:60px; height:60px; background:#f3f4f6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem;">🔗</div>
-        </div>
-        <h2 style="text-align:center; font-weight:700; color:#1f2937; margin-bottom:4px;">Share with Friends</h2>
-        <p style="text-align:center; color:#6b7280; font-size:0.9rem; margin-bottom:24px;">Reading is better together! Share this book with your network.</p>
-        <div style="margin-bottom:20px;">
-            <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:6px; display:block;">Share your link</label>
-            <div style="display:flex; background:#f9fafb; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb;">
-                <input id="shareLinkInput" type="text" readonly value="" style="flex:1; border:none; padding:12px; background:transparent; font-size:0.9rem; color:#111827;">
-                <button onclick="copyShareLink()" style="background:#4f46e5; border:none; color:white; padding:12px 16px; cursor:pointer; font-size:0.9rem; display:flex; align-items:center; gap:4px;"><i class="bi bi-clipboard"></i> Copy</button>
-            </div>
-        </div>
-        <div>
-            <label style="font-weight:600; font-size:0.85rem; color:#374151; margin-bottom:10px; display:block;">Share to</label>
-            <div style="display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:16px;">
-                <a id="shareFacebook" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#1877f2;"><div style="width:44px; height:44px; background:#1877f2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-facebook"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Facebook</span></a>
-                <a id="shareTwitter" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#000;"><div style="width:44px; height:44px; background:#000; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.2rem;"><i class="bi bi-twitter-x"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">X</span></a>
-                <a id="shareWhatsapp" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#25d366;"><div style="width:44px; height:44px; background:#25d366; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-whatsapp"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">WhatsApp</span></a>
-                <a id="shareTelegram" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0088cc;"><div style="width:44px; height:44px; background:#0088cc; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-telegram"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">Telegram</span></a>
-                <a id="shareLinkedin" href="#" target="_blank" rel="noopener" style="display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#0a66c2;"><div style="width:44px; height:44px; background:#0a66c2; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;"><i class="bi bi-linkedin"></i></div><span style="font-size:0.7rem; margin-top:4px; font-weight:500;">LinkedIn</span></a>
-            </div>
-        </div>
+<div
+  id="shareModal"
+  style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+  "
+>
+  <div
+    style="
+      background: white;
+      border-radius: 24px;
+      max-width: 420px;
+      width: 90%;
+      padding: 32px 24px;
+      position: relative;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+    "
+  >
+    <button
+      onclick="closeShareModal()"
+      style="
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #9ca3af;
+      "
+    >
+      &times;
+    </button>
+    <div style="display: flex; justify-content: center; margin-bottom: 16px">
+      <div
+        style="
+          width: 60px;
+          height: 60px;
+          background: #f3f4f6;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.8rem;
+        "
+      >
+        🔗
+      </div>
     </div>
+    <h2
+      style="
+        text-align: center;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 4px;
+      "
+    >
+      Share with Friends
+    </h2>
+    <p
+      style="
+        text-align: center;
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-bottom: 24px;
+      "
+    >
+      Reading is better together! Share this book with your network.
+    </p>
+    <div style="margin-bottom: 20px">
+      <label
+        style="
+          font-weight: 600;
+          font-size: 0.85rem;
+          color: #374151;
+          margin-bottom: 6px;
+          display: block;
+        "
+        >Share your link</label
+      >
+      <div
+        style="
+          display: flex;
+          background: #f9fafb;
+          border-radius: 12px;
+          overflow: hidden;
+          border: 1px solid #e5e7eb;
+        "
+      >
+        <input
+          id="shareLinkInput"
+          type="text"
+          readonly
+          value=""
+          style="
+            flex: 1;
+            border: none;
+            padding: 12px;
+            background: transparent;
+            font-size: 0.9rem;
+            color: #111827;
+          "
+        />
+        <button
+          onclick="copyShareLink()"
+          style="
+            background: #4f46e5;
+            border: none;
+            color: white;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+          "
+        >
+          <i class="bi bi-clipboard"></i> Copy
+        </button>
+      </div>
+    </div>
+    <div>
+      <label
+        style="
+          font-weight: 600;
+          font-size: 0.85rem;
+          color: #374151;
+          margin-bottom: 10px;
+          display: block;
+        "
+        >Share to</label
+      >
+      <div
+        style="
+          display: flex;
+          justify-content: space-around;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 16px;
+        "
+      >
+        <a
+          id="shareFacebook"
+          href="#"
+          target="_blank"
+          rel="noopener"
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #1877f2;
+          "
+          ><div
+            style="
+              width: 44px;
+              height: 44px;
+              background: #1877f2;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 1.4rem;
+            "
+          >
+            <i class="bi bi-facebook"></i>
+          </div>
+          <span style="font-size: 0.7rem; margin-top: 4px; font-weight: 500"
+            >Facebook</span
+          ></a
+        >
+        <a
+          id="shareTwitter"
+          href="#"
+          target="_blank"
+          rel="noopener"
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #000;
+          "
+          ><div
+            style="
+              width: 44px;
+              height: 44px;
+              background: #000;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 1.2rem;
+            "
+          >
+            <i class="bi bi-twitter-x"></i>
+          </div>
+          <span style="font-size: 0.7rem; margin-top: 4px; font-weight: 500"
+            >X</span
+          ></a
+        >
+        <a
+          id="shareWhatsapp"
+          href="#"
+          target="_blank"
+          rel="noopener"
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #25d366;
+          "
+          ><div
+            style="
+              width: 44px;
+              height: 44px;
+              background: #25d366;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 1.4rem;
+            "
+          >
+            <i class="bi bi-whatsapp"></i>
+          </div>
+          <span style="font-size: 0.7rem; margin-top: 4px; font-weight: 500"
+            >WhatsApp</span
+          ></a
+        >
+        <a
+          id="shareTelegram"
+          href="#"
+          target="_blank"
+          rel="noopener"
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #0088cc;
+          "
+          ><div
+            style="
+              width: 44px;
+              height: 44px;
+              background: #0088cc;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 1.4rem;
+            "
+          >
+            <i class="bi bi-telegram"></i>
+          </div>
+          <span style="font-size: 0.7rem; margin-top: 4px; font-weight: 500"
+            >Telegram</span
+          ></a
+        >
+        <a
+          id="shareLinkedin"
+          href="#"
+          target="_blank"
+          rel="noopener"
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #0a66c2;
+          "
+          ><div
+            style="
+              width: 44px;
+              height: 44px;
+              background: #0a66c2;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 1.4rem;
+            "
+          >
+            <i class="bi bi-linkedin"></i>
+          </div>
+          <span style="font-size: 0.7rem; margin-top: 4px; font-weight: 500"
+            >LinkedIn</span
+          ></a
+        >
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-function showShareModal(bookId) {
-    const shareUrl = window.location.origin + '/book/' + bookId;
-    document.getElementById('shareLinkInput').value = shareUrl;
-    document.getElementById('shareFacebook').href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl);
-    document.getElementById('shareTwitter').href = 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(shareUrl);
-    document.getElementById('shareWhatsapp').href = 'https://wa.me/?text=' + encodeURIComponent(shareUrl);
-    document.getElementById('shareTelegram').href = 'https://t.me/share/url?url=' + encodeURIComponent(shareUrl);
-    document.getElementById('shareLinkedin').href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(shareUrl);
-    document.getElementById('shareModal').style.display = 'block';
-}
-function closeShareModal() {
-    document.getElementById('shareModal').style.display = 'none';
-}
-function copyShareLink() {
-    const input = document.getElementById('shareLinkInput');
+  function showShareModal(bookId) {
+    const shareUrl = window.location.origin + "/book/" + bookId;
+    document.getElementById("shareLinkInput").value = shareUrl;
+    document.getElementById("shareFacebook").href =
+      "https://www.facebook.com/sharer/sharer.php?u=" +
+      encodeURIComponent(shareUrl);
+    document.getElementById("shareTwitter").href =
+      "https://twitter.com/intent/tweet?url=" + encodeURIComponent(shareUrl);
+    document.getElementById("shareWhatsapp").href =
+      "https://wa.me/?text=" + encodeURIComponent(shareUrl);
+    document.getElementById("shareTelegram").href =
+      "https://t.me/share/url?url=" + encodeURIComponent(shareUrl);
+    document.getElementById("shareLinkedin").href =
+      "https://www.linkedin.com/sharing/share-offsite/?url=" +
+      encodeURIComponent(shareUrl);
+    document.getElementById("shareModal").style.display = "block";
+  }
+  function closeShareModal() {
+    document.getElementById("shareModal").style.display = "none";
+  }
+  function copyShareLink() {
+    const input = document.getElementById("shareLinkInput");
     input.select();
     input.setSelectionRange(0, 99999);
-    navigator.clipboard.writeText(input.value).then(() => alert('✅ Link copied!')).catch(() => alert('❌ Copy failed'));
-}
-document.addEventListener('click', function(e) {
-    if (e.target.closest('.share-modal-btn')) {
-        const btn = e.target.closest('.share-modal-btn');
-        const bookId = btn.dataset.bookId;
-        showShareModal(bookId);
+    navigator.clipboard
+      .writeText(input.value)
+      .then(() => alert("✅ Link copied!"))
+      .catch(() => alert("❌ Copy failed"));
+  }
+  document.addEventListener("click", function (e) {
+    if (e.target.closest(".share-modal-btn")) {
+      const btn = e.target.closest(".share-modal-btn");
+      const bookId = btn.dataset.bookId;
+      showShareModal(bookId);
     }
-});
+  });
 </script>
-{% endblock %}
-
-{% block scripts %}
-<meta name="is-moderator" content="{{ is_moderator|default(false)|tojson }}">
+{% endblock %} {% block scripts %}
+<meta name="is-moderator" content="{{ is_moderator|default(false)|tojson }}" />
 <style>
-    /* ========== RELATED BOOKS ========== */
-    .related-book-card {
-        border-radius: 16px !important;
-        overflow: hidden;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .related-book-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 15px 30px rgba(30,27,75,0.15) !important;
-    }
-    .related-book-cover {
-        width: 100%;
-        height: 180px;
-        object-fit: cover;
-        border-radius: 12px 12px 0 0;
-    }
+  /* ========== RELATED BOOKS ========== */
+  .related-book-card {
+    border-radius: 16px !important;
+    overflow: hidden;
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+  .related-book-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 30px rgba(30, 27, 75, 0.15) !important;
+  }
+  .related-book-cover {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 12px 12px 0 0;
+  }
+  .related-book-fallback {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(135deg, #a5b4fc, #818cf8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1.5rem;
+    border-radius: 12px 12px 0 0;
+  }
+  @media (max-width: 576px) {
+    .related-book-cover,
     .related-book-fallback {
-        width: 100%;
-        height: 180px;
-        background: linear-gradient(135deg, #a5b4fc, #818cf8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 700;
-        font-size: 1.5rem;
-        border-radius: 12px 12px 0 0;
+      height: 130px;
     }
-    @media (max-width: 576px) {
-        .related-book-cover, .related-book-fallback {
-            height: 130px;
-        }
-        .book-cover-fallback { min-height: 200px !important; }
-        .btn { width: 100%; justify-content: center; }
-        #reviewForm .row > div { margin-bottom: 0.5rem; }
+    .book-cover-fallback {
+      min-height: 200px !important;
     }
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+    #reviewForm .row > div {
+      margin-bottom: 0.5rem;
+    }
+  }
 </style>
 <script>
-// ==================== SAFE USER_LOGGED_IN ====================
-const USER_LOGGED_IN = document.body.dataset.userLoggedIn === 'true';
-const isModerator = document.querySelector('meta[name="is-moderator"]')?.getAttribute('content') === 'true';
+  // ==================== SAFE USER_LOGGED_IN ====================
+  const USER_LOGGED_IN = document.body.dataset.userLoggedIn === "true";
+  const isModerator =
+    document
+      .querySelector('meta[name="is-moderator"]')
+      ?.getAttribute("content") === "true";
 
-// ==================== PROTECTED ACTION HANDLER ====================
-function protectedAction(el, callback) {
-    el.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (USER_LOGGED_IN) {
-            callback(e);
-            return;
-        }
-        const originalHTML = el.innerHTML;
-        el.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Loading...';
-        el.disabled = true;
-        setTimeout(() => {
-            el.innerHTML = originalHTML;
-            el.disabled = false;
-            showAuthModal(window.location.href);
-        }, 500);
+  // ==================== PROTECTED ACTION HANDLER ====================
+  function protectedAction(el, callback) {
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (USER_LOGGED_IN) {
+        callback(e);
+        return;
+      }
+      const originalHTML = el.innerHTML;
+      el.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-1"></span> Loading...';
+      el.disabled = true;
+      setTimeout(() => {
+        el.innerHTML = originalHTML;
+        el.disabled = false;
+        showAuthModal(window.location.href);
+      }, 500);
     });
-}
+  }
 
-// ================== APPLY TO STATIC BUTTONS ==================
-const downloadLink = document.querySelector('a.download-btn');
-if (downloadLink) protectedAction(downloadLink, () => {
-    fetch(`/api/download/{{ book.id }}`, {method:'POST'});
-    window.location.href = downloadLink.href;
-});
-
-const readLink = document.querySelector('a.read-btn');
-if (readLink) protectedAction(readLink, () => window.open(readLink.href, '_blank'));
-
-const qrBtn = document.querySelector('.qr-btn');
-if (qrBtn) protectedAction(qrBtn, () => {
-    const bookId = qrBtn.dataset.bookId;
-    document.getElementById('qrImage').src = `/book/${bookId}/qr`;
-    document.getElementById('qrPopup').style.display = 'block';
-});
-
-const favBtn = document.querySelector('.favorite-btn');
-if (favBtn) protectedAction(favBtn, async () => {
-    const id = favBtn.dataset.id;
-    const res = await fetch(`/user/favorite/${id}`, {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  // ================== APPLY TO STATIC BUTTONS ==================
+  const downloadLink = document.querySelector("a.download-btn");
+  if (downloadLink)
+    protectedAction(downloadLink, () => {
+      fetch(`/api/download/{{ book.id }}`, { method: "POST" });
+      window.location.href = downloadLink.href;
     });
-    if (res.ok) {
-        const icon = favBtn.querySelector('i');
-        icon.classList.toggle('bi-heart-fill');
-        icon.classList.toggle('bi-heart');
-        favBtn.querySelector('span').textContent = icon.classList.contains('bi-heart-fill') ? 'Favorited' : 'Favorite';
-    }
-});
 
-// Review & comment forms protection
-document.getElementById('reviewForm')?.addEventListener('submit', function(e) {
-    if (!USER_LOGGED_IN) {
+  const readLink = document.querySelector("a.read-btn");
+  if (readLink)
+    protectedAction(readLink, () => window.open(readLink.href, "_blank"));
+
+  const qrBtn = document.querySelector(".qr-btn");
+  if (qrBtn)
+    protectedAction(qrBtn, () => {
+      const bookId = qrBtn.dataset.bookId;
+      document.getElementById("qrImage").src = `/book/${bookId}/qr`;
+      document.getElementById("qrPopup").style.display = "block";
+    });
+
+  const favBtn = document.querySelector(".favorite-btn");
+  if (favBtn)
+    protectedAction(favBtn, async () => {
+      const id = favBtn.dataset.id;
+      const res = await fetch(`/user/favorite/${id}`, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      if (res.ok) {
+        const icon = favBtn.querySelector("i");
+        icon.classList.toggle("bi-heart-fill");
+        icon.classList.toggle("bi-heart");
+        favBtn.querySelector("span").textContent = icon.classList.contains(
+          "bi-heart-fill",
+        )
+          ? "Favorited"
+          : "Favorite";
+      }
+    });
+
+  // Review & comment forms protection
+  document
+    .getElementById("reviewForm")
+    ?.addEventListener("submit", function (e) {
+      if (!USER_LOGGED_IN) {
         e.preventDefault();
         showAuthModal(window.location.href);
-    }
-});
-document.getElementById('commentForm')?.addEventListener('submit', function(e) {
-    if (!USER_LOGGED_IN) {
+      }
+    });
+  document
+    .getElementById("commentForm")
+    ?.addEventListener("submit", function (e) {
+      if (!USER_LOGGED_IN) {
         e.preventDefault();
         showAuthModal(window.location.href);
-    }
-});
+      }
+    });
 
-// ================== DISCUSSION COMMENTS (with review replies) ==================
-function loadComments() {
+  // ================== DISCUSSION COMMENTS (with review replies) ==================
+  function loadComments() {
     fetch(`/book/{{ book.id }}/comments`)
-    .then(r => r.json())
-    .then(comments => {
+      .then((r) => r.json())
+      .then((comments) => {
         const reviewRepliesMap = {};
         const normalComments = [];
 
-        comments.forEach(c => {
-            if (c.parent_id && c.parent_id < 0) {
-                const reviewId = Math.abs(c.parent_id);
-                if (!reviewRepliesMap[reviewId]) reviewRepliesMap[reviewId] = [];
-                reviewRepliesMap[reviewId].push(c);
-            } else {
-                normalComments.push(c);
-            }
+        comments.forEach((c) => {
+          if (c.parent_id && c.parent_id < 0) {
+            const reviewId = Math.abs(c.parent_id);
+            if (!reviewRepliesMap[reviewId]) reviewRepliesMap[reviewId] = [];
+            reviewRepliesMap[reviewId].push(c);
+          } else {
+            normalComments.push(c);
+          }
         });
 
         let commentMap = {};
-        normalComments.forEach(c => { commentMap[c.id] = {...c, children:[]}; });
+        normalComments.forEach((c) => {
+          commentMap[c.id] = { ...c, children: [] };
+        });
         let roots = [];
-        normalComments.forEach(c => {
-            if (c.parent_id) {
-                if (commentMap[c.parent_id]) commentMap[c.parent_id].children.push(commentMap[c.id]);
-            } else {
-                roots.push(commentMap[c.id]);
-            }
+        normalComments.forEach((c) => {
+          if (c.parent_id) {
+            if (commentMap[c.parent_id])
+              commentMap[c.parent_id].children.push(commentMap[c.id]);
+          } else {
+            roots.push(commentMap[c.id]);
+          }
         });
 
         function renderTree(nodes) {
-            let h = '';
-            nodes.forEach(c => {
-                let userHTML = c.is_official
-                    ? `<a href="/user/profile/${c.username}" class="text-decoration-none text-dark fw-bold">
+          let h = "";
+          nodes.forEach((c) => {
+            let userHTML = c.is_official
+              ? `<a href="/user/profile/${c.username}" class="text-decoration-none text-dark fw-bold">
                             ${c.username}
                             <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
                         </a>`
-                    : `<strong>${c.username}</strong>`;
+              : `<strong>${c.username}</strong>`;
 
-                let modActions = '';
-                if (isModerator) {
-                    modActions = `
+            let modActions = "";
+            if (isModerator) {
+              modActions = `
                         <div class="mt-1 d-flex gap-2 align-items-center">
                             <button class="btn btn-sm btn-outline-danger delete-comment-btn" data-comment-id="${c.id}">
                                 <i class="bi bi-trash3"></i> Delete
@@ -441,11 +958,11 @@ function loadComments() {
                                 <button class="btn btn-sm btn-primary submit-official-reply" data-comment-id="${c.id}">Submit</button>
                             </div>
                         </div>`;
-                }
+            }
 
-                h += `<div class="ms-${c.parent_id ? 4 : 0} my-2 p-2 border-start">
+            h += `<div class="ms-${c.parent_id ? 4 : 0} my-2 p-2 border-start">
                        <div class="d-flex align-items-center gap-2">
-                         <img src="${c.avatar_url || '/static/default-avatar.png'}" class="rounded-circle" width="24" height="24">
+                         <img src="${c.avatar_url || "/static/default-avatar.png"}" class="rounded-circle" width="24" height="24">
                          ${userHTML}
                          <small class="text-muted">${c.created_at}</small>
                        </div>
@@ -458,176 +975,213 @@ function loadComments() {
                        </div>
                        ${renderTree(c.children)}
                      </div>`;
-            });
-            return h;
+          });
+          return h;
         }
-        document.getElementById('commentsContainer').innerHTML = renderTree(roots);
+        document.getElementById("commentsContainer").innerHTML =
+          renderTree(roots);
 
-        document.querySelectorAll('.submitReply').forEach(b => {
-            b.addEventListener('click', function() {
-                const parentId = this.dataset.parent;
-                const textarea = document.getElementById(`replyText${parentId}`);
-                if (textarea && textarea.value.trim()) {
-                    fetch(`/book/{{ book.id }}/comments`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
-                        body: JSON.stringify({comment: textarea.value, parent_id: parentId})
-                    }).then(() => { textarea.value = ''; loadComments(); });
-                }
-            });
+        document.querySelectorAll(".submitReply").forEach((b) => {
+          b.addEventListener("click", function () {
+            const parentId = this.dataset.parent;
+            const textarea = document.getElementById(`replyText${parentId}`);
+            if (textarea && textarea.value.trim()) {
+              fetch(`/book/{{ book.id }}/comments`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-Requested-With": "XMLHttpRequest",
+                },
+                body: JSON.stringify({
+                  comment: textarea.value,
+                  parent_id: parentId,
+                }),
+              }).then(() => {
+                textarea.value = "";
+                loadComments();
+              });
+            }
+          });
         });
 
         // Render review replies
-        document.querySelectorAll('.review-replies').forEach(div => {
-            const reviewId = parseInt(div.id.replace('review-replies-', ''));
-            const replies = reviewRepliesMap[reviewId] || [];
-            let replyHTML = '';
-            replies.forEach(c => {
-                let userHTML = `<strong>${c.username}</strong>`;
-                if (c.is_official) {
-                    userHTML = `<a href="/user/profile/${c.username}" class="fw-bold text-decoration-none text-dark">
+        document.querySelectorAll(".review-replies").forEach((div) => {
+          const reviewId = parseInt(div.id.replace("review-replies-", ""));
+          const replies = reviewRepliesMap[reviewId] || [];
+          let replyHTML = "";
+          replies.forEach((c) => {
+            let userHTML = `<strong>${c.username}</strong>`;
+            if (c.is_official) {
+              userHTML = `<a href="/user/profile/${c.username}" class="fw-bold text-decoration-none text-dark">
                                     ${c.username}
                                     <i class="bi bi-patch-check-fill text-primary ms-1"></i>
                                 </a>`;
-                }
-                replyHTML += `<div class="ms-2 mt-1 p-1 border-start border-primary">
-                              <img src="${c.avatar_url || '/static/default-avatar.png'}" class="rounded-circle" width="20" height="20">
+            }
+            replyHTML += `<div class="ms-2 mt-1 p-1 border-start border-primary">
+                              <img src="${c.avatar_url || "/static/default-avatar.png"}" class="rounded-circle" width="20" height="20">
                               ${userHTML} <small class="text-muted">${c.created_at}</small>
                               <p class="mt-1 mb-0 small text-secondary">${c.comment}</p>
                               </div>`;
-            });
-            div.innerHTML = replyHTML;
+          });
+          div.innerHTML = replyHTML;
         });
+      });
+  }
+
+  document
+    .getElementById("commentForm")
+    ?.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const text = document.getElementById("commentText").value;
+      fetch(`/book/{{ book.id }}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({ comment: text, parent_id: null }),
+      }).then(() => {
+        document.getElementById("commentText").value = "";
+        loadComments();
+      });
     });
-}
+  loadComments();
 
-document.getElementById('commentForm')?.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const text = document.getElementById('commentText').value;
-    fetch(`/book/{{ book.id }}/comments`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
-        body: JSON.stringify({comment: text, parent_id: null})
-    }).then(() => { document.getElementById('commentText').value = ''; loadComments(); });
-});
-loadComments();
+  // ================== PROTECTED REPLY BUTTON (for discussions) ==================
+  document.addEventListener("click", function (e) {
+    if (e.target.matches(".replyBtn") || e.target.closest(".replyBtn")) {
+      const btn = e.target.closest(".replyBtn");
+      if (!USER_LOGGED_IN) {
+        const origHTML = btn.innerHTML;
+        btn.innerHTML =
+          '<span class="spinner-border spinner-border-sm me-1"></span>';
+        btn.disabled = true;
+        setTimeout(() => {
+          btn.innerHTML = origHTML;
+          btn.disabled = false;
+          showAuthModal(window.location.href);
+        }, 500);
+      } else {
+        const form = btn.nextElementSibling;
+        form.style.display = form.style.display === "none" ? "block" : "none";
+      }
+    }
 
-// ================== PROTECTED REPLY BUTTON (for discussions) ==================
-document.addEventListener('click', function(e) {
-    if (e.target.matches('.replyBtn') || e.target.closest('.replyBtn')) {
-        const btn = e.target.closest('.replyBtn');
-        if (!USER_LOGGED_IN) {
-            const origHTML = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>';
-            btn.disabled = true;
-            setTimeout(() => {
-                btn.innerHTML = origHTML;
-                btn.disabled = false;
-                showAuthModal(window.location.href);
-            }, 500);
+    if (e.target.closest(".reply-official-review-btn")) {
+      const btn = e.target.closest(".reply-official-review-btn");
+      const reviewId = btn.dataset.reviewId;
+      const form = document.getElementById(
+        `officialReviewReplyForm-${reviewId}`,
+      );
+      if (form) form.classList.toggle("d-none");
+    }
+
+    if (e.target.closest(".submit-official-review-reply")) {
+      const btn = e.target.closest(".submit-official-review-reply");
+      const reviewId = btn.dataset.reviewId;
+      const textarea = document.querySelector(
+        `#officialReviewReplyForm-${reviewId} textarea`,
+      );
+      if (!textarea) return;
+      const replyText = textarea.value.trim();
+      if (!replyText) return;
+      fetch(`/api/review/${reviewId}/reply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({ reply_text: replyText }),
+      }).then((res) => {
+        if (res.ok) {
+          alert("Reply posted!");
+          textarea.value = "";
+          document
+            .getElementById(`officialReviewReplyForm-${reviewId}`)
+            .classList.add("d-none");
+          loadComments();
         } else {
-            const form = btn.nextElementSibling;
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+          alert("Failed to post reply.");
         }
+      });
     }
 
-    if (e.target.closest('.reply-official-review-btn')) {
-        const btn = e.target.closest('.reply-official-review-btn');
-        const reviewId = btn.dataset.reviewId;
-        const form = document.getElementById(`officialReviewReplyForm-${reviewId}`);
-        if (form) form.classList.toggle('d-none');
+    if (e.target.closest(".delete-review-btn")) {
+      const btn = e.target.closest(".delete-review-btn");
+      const reviewId = btn.dataset.reviewId;
+      if (!confirm("Delete this review?")) return;
+      fetch(`/api/review/${reviewId}/delete`, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      }).then((res) => {
+        if (res.ok) btn.closest(".review-item")?.remove();
+        else alert("Failed to delete review.");
+      });
     }
 
-    if (e.target.closest('.submit-official-review-reply')) {
-        const btn = e.target.closest('.submit-official-review-reply');
-        const reviewId = btn.dataset.reviewId;
-        const textarea = document.querySelector(`#officialReviewReplyForm-${reviewId} textarea`);
-        if (!textarea) return;
-        const replyText = textarea.value.trim();
-        if (!replyText) return;
-        fetch(`/api/review/${reviewId}/reply`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({ reply_text: replyText })
-        }).then(res => {
-            if (res.ok) {
-                alert('Reply posted!');
-                textarea.value = '';
-                document.getElementById(`officialReviewReplyForm-${reviewId}`).classList.add('d-none');
-                loadComments();
-            } else {
-                alert('Failed to post reply.');
-            }
-        });
+    if (e.target.closest(".delete-comment-btn")) {
+      const btn = e.target.closest(".delete-comment-btn");
+      const commentId = btn.dataset.commentId;
+      if (!confirm("Delete this comment?")) return;
+      fetch(`/api/comment/${commentId}/delete`, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      }).then((res) => {
+        if (res.ok) btn.closest(".border-start")?.remove();
+        else alert("Failed to delete comment.");
+      });
     }
 
-    if (e.target.closest('.delete-review-btn')) {
-        const btn = e.target.closest('.delete-review-btn');
-        const reviewId = btn.dataset.reviewId;
-        if (!confirm('Delete this review?')) return;
-        fetch(`/api/review/${reviewId}/delete`, {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        }).then(res => {
-            if (res.ok) btn.closest('.review-item')?.remove();
-            else alert('Failed to delete review.');
-        });
+    if (e.target.closest(".reply-official-btn")) {
+      const btn = e.target.closest(".reply-official-btn");
+      const commentId = btn.dataset.commentId;
+      const form = document.getElementById(`officialReplyForm-${commentId}`);
+      if (form) form.classList.toggle("d-none");
     }
 
-    if (e.target.closest('.delete-comment-btn')) {
-        const btn = e.target.closest('.delete-comment-btn');
-        const commentId = btn.dataset.commentId;
-        if (!confirm('Delete this comment?')) return;
-        fetch(`/api/comment/${commentId}/delete`, {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        }).then(res => {
-            if (res.ok) btn.closest('.border-start')?.remove();
-            else alert('Failed to delete comment.');
-        });
+    if (e.target.closest(".submit-official-reply")) {
+      const btn = e.target.closest(".submit-official-reply");
+      const commentId = btn.dataset.commentId;
+      const textarea = document.querySelector(
+        `#officialReplyForm-${commentId} textarea`,
+      );
+      if (!textarea) return;
+      const replyText = textarea.value.trim();
+      if (!replyText) return;
+      fetch(`/api/comment/${commentId}/reply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({ reply_text: replyText }),
+      }).then((res) => {
+        if (res.ok) {
+          alert("Reply posted!");
+          textarea.value = "";
+          document
+            .getElementById(`officialReplyForm-${commentId}`)
+            .classList.add("d-none");
+          loadComments();
+        } else {
+          alert("Failed to post reply.");
+        }
+      });
     }
+  });
 
-    if (e.target.closest('.reply-official-btn')) {
-        const btn = e.target.closest('.reply-official-btn');
-        const commentId = btn.dataset.commentId;
-        const form = document.getElementById(`officialReplyForm-${commentId}`);
-        if (form) form.classList.toggle('d-none');
-    }
-
-    if (e.target.closest('.submit-official-reply')) {
-        const btn = e.target.closest('.submit-official-reply');
-        const commentId = btn.dataset.commentId;
-        const textarea = document.querySelector(`#officialReplyForm-${commentId} textarea`);
-        if (!textarea) return;
-        const replyText = textarea.value.trim();
-        if (!replyText) return;
-        fetch(`/api/comment/${commentId}/reply`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({ reply_text: replyText })
-        }).then(res => {
-            if (res.ok) {
-                alert('Reply posted!');
-                textarea.value = '';
-                document.getElementById(`officialReplyForm-${commentId}`).classList.add('d-none');
-                loadComments();
-            } else {
-                alert('Failed to post reply.');
-            }
-        });
-    }
-});
-
-// ================== REVIEW FORM SUBMIT ==================
-document.getElementById('reviewForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const data = new FormData(this);
-    const res = await fetch(`/book/{{ book.id }}/review`, {
-        method: 'POST',
+  // ================== REVIEW FORM SUBMIT ==================
+  document
+    .getElementById("reviewForm")
+    ?.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const data = new FormData(this);
+      const res = await fetch(`/book/{{ book.id }}/review`, {
+        method: "POST",
         body: data,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      if (res.ok) location.reload();
     });
-    if (res.ok) location.reload();
-});
 </script>
 {% endblock %}

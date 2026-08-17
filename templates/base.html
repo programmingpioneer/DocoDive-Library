@@ -1,882 +1,1776 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}DocoDive | Free Digital Library{% endblock %}</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      {% block title %}DocoDive | Free Digital Library{% endblock %}
+    </title>
 
     <!-- ================== FAVICON ================== -->
-    <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/Favicion.jpg') }}">
-    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicion.ico') }}">
+    <link
+      rel="icon"
+      type="image/jpeg"
+      href="{{ url_for('static', filename='images/Favicion.jpg') }}"
+    />
+    <link
+      rel="shortcut icon"
+      type="image/x-icon"
+      href="{{ url_for('static', filename='images/favicion.ico') }}"
+    />
 
     <!-- ================== RESOURCE HINTS (Performance) ================== -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-    <link rel="dns-prefetch" href="https://unpkg.com">
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
-    <link rel="dns-prefetch" href="https://conversations-widget.brevo.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+    <link rel="dns-prefetch" href="https://unpkg.com" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://conversations-widget.brevo.com" />
 
     <!-- ================== SEO META TAGS ================== -->
-    <meta name="description" content="{% block meta_description %}Discover and download thousands of free books and documents on DocoDive. Programming, science, history, and more.{% endblock %}">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="{% block canonical %}{{ request.base_url }}{% endblock %}">
+    <meta
+      name="description"
+      content="{% block meta_description %}Discover and download thousands of free books and documents on DocoDive. Programming, science, history, and more.{% endblock %}"
+    />
+    <meta name="robots" content="index, follow" />
+    <link
+      rel="canonical"
+      href="{% block canonical %}{{ request.base_url }}{% endblock %}"
+    />
     <!-- Google Search Console -->
-    <meta name="google-site-verification" content="gNlRlPsL7QKq4doTDmxo7HTkFJ35BtsNu227g3BDHlQ" />
+    <meta
+      name="google-site-verification"
+      content="gNlRlPsL7QKq4doTDmxo7HTkFJ35BtsNu227g3BDHlQ"
+    />
     <!-- Bing Webmaster -->
     <meta name="msvalidate.01" content="314B1327B97988FB1B9BDA872B0A261E" />
 
     <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
-    <meta property="og:title" content="{{ self.title() }}">
-    <meta property="og:description" content="{{ self.meta_description() }}">
-    <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/docodive-og.jpg', _external=True) }}{% endblock %}">
-    <meta property="og:url" content="{{ request.url }}">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="DocoDive">
+    <meta property="og:title" content="{{ self.title() }}" />
+    <meta property="og:description" content="{{ self.meta_description() }}" />
+    <meta
+      property="og:image"
+      content="{% block og_image %}{{ url_for('static', filename='images/docodive-og.jpg', _external=True) }}{% endblock %}"
+    />
+    <meta property="og:url" content="{{ request.url }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DocoDive" />
 
     <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ self.title() }}">
-    <meta name="twitter:description" content="{{ self.meta_description() }}">
-    <meta name="twitter:image" content="{{ self.og_image() }}">
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ self.title() }}" />
+    <meta name="twitter:description" content="{{ self.meta_description() }}" />
+    <meta name="twitter:image" content="{{ self.og_image() }}" />
 
     <!-- ================== JSON-LD STRUCTURED DATA (SEO) ================== -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "DocoDive",
-      "url": "{{ request.host_url }}",
-      "description": "Discover and download thousands of free books and resources — programming, science, history, business, and more.",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "{{ request.host_url }}?search_query={search_term_string}"
-        },
-        "query-input": "required name=search_term_string"
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "DocoDive",
+        "url": "{{ request.host_url }}",
+        "description": "Discover and download thousands of free books and resources — programming, science, history, business, and more.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "{{ request.host_url }}?search_query={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
       }
-    }
     </script>
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "DocoDive",
-      "url": "{{ request.host_url }}",
-      "logo": "{{ url_for('static', filename='images/docodive-og.jpg', _external=True) }}",
-      "sameAs": [
-        "https://github.com/programmingpioneer",
-        "https://www.linkedin.com/in/sufyan-khans/",
-        "https://x.com/programerPioner",
-        "https://www.instagram.com/programmingpioneer/",
-        "https://www.facebook.com/Programmingpioneer",
-        "https://t.me/Programmingpioneers"
-      ]
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "DocoDive",
+        "url": "{{ request.host_url }}",
+        "logo": "{{ url_for('static', filename='images/docodive-og.jpg', _external=True) }}",
+        "sameAs": [
+          "https://github.com/programmingpioneer",
+          "https://www.linkedin.com/in/sufyan-khans/",
+          "https://x.com/programerPioner",
+          "https://www.instagram.com/programmingpioneer/",
+          "https://www.facebook.com/Programmingpioneer",
+          "https://t.me/Programmingpioneers"
+        ]
+      }
     </script>
 
     <!-- ================== STYLESHEETS ================== -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media = 'all'"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+    />
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
     {% block extra_css %}{% endblock %}
 
     <style>
-        :root {
-            --edox-purple: #4338ca;
-            --edox-orange: #ffb703;
-            --edox-dark: #1e1b4b;
-            --edox-light: #f8faff;
+      :root {
+        --edox-purple: #4338ca;
+        --edox-orange: #ffb703;
+        --edox-dark: #1e1b4b;
+        --edox-light: #f8faff;
+      }
+
+      /* ================== NAVBAR ================== */
+      .navbar {
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.92);
+      }
+      .navbar .nav-link {
+        color: var(--edox-dark);
+        font-weight: 600;
+        transition: 0.2s;
+      }
+      .navbar .nav-link:hover {
+        color: var(--edox-purple);
+      }
+      .navbar .btn {
+        transition: all 0.2s;
+      }
+      .navbar .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      /* ===== SOLID WEB COLOR DROPDOWN ===== */
+      .dropdown-menu {
+        border: 1px solid #e0e7ff;
+        background: linear-gradient(135deg, #ffffff 0%, #eef2ff 100%);
+        border-radius: 22px;
+        box-shadow: 0 24px 60px rgba(30, 27, 75, 0.18);
+      }
+
+      @media (min-width: 992px) {
+        .dropdown:hover .dropdown-menu {
+          display: block;
+          margin-top: 12px;
         }
-
-        /* ================== NAVBAR ================== */
-        .navbar { backdrop-filter: blur(10px); background: rgba(255,255,255,0.92); }
-        .navbar .nav-link { color: var(--edox-dark); font-weight: 600; transition: 0.2s; }
-        .navbar .nav-link:hover { color: var(--edox-purple); }
-        .navbar .btn { transition: all 0.2s; }
-        .navbar .btn:hover { transform: translateY(-1px); }
-
-                /* ===== SOLID WEB COLOR DROPDOWN ===== */
-        .dropdown-menu {
-            border: 1px solid #e0e7ff;
-            background: linear-gradient(135deg, #ffffff 0%, #eef2ff 100%);
-            border-radius: 22px;
-            box-shadow: 0 24px 60px rgba(30,27,75,0.18);
+        .dropdown-toggle::after {
+          display: none;
         }
+      }
 
-        @media (min-width: 992px) {
-            .dropdown:hover .dropdown-menu { display: block; margin-top: 12px; }
-            .dropdown-toggle::after { display: none; }
-        }
+      /* ===== MODERN HORIZONTAL MEGA MENU (5 per line) ===== */
+      .mega-menu {
+        padding: 18px;
+        min-width: 780px;
+        max-width: calc(100vw - 24px);
+      }
+      .mega-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .mega-head {
+        grid-column: 1 / -1;
+        font-size: 0.68rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 2px 10px 4px;
+      }
+      .mega-head i {
+        color: var(--edox-purple);
+        font-size: 0.9rem;
+      }
 
-        /* ===== MODERN HORIZONTAL MEGA MENU (5 per line) ===== */
+      .mega-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 6px;
+        padding: 12px 6px;
+        border-radius: 14px;
+        text-decoration: none;
+        color: var(--edox-dark);
+        border: 1px solid rgba(67, 56, 202, 0.08);
+        background: #ffffff;
+        transition: all 0.22s ease;
+      }
+      .mega-icon {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        background: rgba(67, 56, 202, 0.08);
+        transition: all 0.22s ease;
+      }
+      .mega-text {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        line-height: 1.25;
+        min-width: 0;
+      }
+      .mega-title {
+        font-weight: 600;
+        font-size: 0.78rem;
+        color: var(--edox-dark);
+      }
+      .mega-sub {
+        font-size: 0.62rem;
+        color: #8b90a0;
+      }
+
+      .mega-item:hover {
+        background: rgba(67, 56, 202, 0.08);
+        border-color: rgba(67, 56, 202, 0.2);
+        transform: translateY(-2px);
+      }
+      .mega-item:hover .mega-icon {
+        background: var(--edox-purple);
+        box-shadow: 0 8px 18px rgba(67, 56, 202, 0.3);
+      }
+      .mega-item:hover .mega-icon i {
+        color: #fff !important;
+      }
+      .mega-item:hover .mega-title {
+        color: var(--edox-purple);
+      }
+
+      .mega-footer {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(67, 56, 202, 0.12);
+      }
+      .mega-footer a {
+        flex: 1;
+        text-align: center;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--edox-purple);
+        text-decoration: none;
+        padding: 9px 8px;
+        border-radius: 12px;
+        background: rgba(67, 56, 202, 0.05);
+        transition: 0.2s;
+      }
+      .mega-footer a:hover {
+        background: var(--edox-purple);
+        color: #fff;
+      }
+
+      .community-mega {
+        min-width: 640px;
+      }
+
+      /* ===== MOBILE / TABLET RESPONSIVE ===== */
+      @media (max-width: 991.98px) {
         .mega-menu {
-            padding: 18px;
-            min-width: 780px;
-            max-width: calc(100vw - 24px);
+          min-width: 0 !important;
+          width: 100%;
+          padding: 12px;
+          border-radius: 18px;
+          box-shadow: 0 14px 30px rgba(30, 27, 75, 0.12);
         }
         .mega-grid {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 10px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
         }
-        .mega-head {
-            grid-column: 1 / -1;
-            font-size: 0.68rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #6b7280;
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            padding: 2px 10px 4px;
+        .mega-sub {
+          display: none;
         }
-        .mega-head i { color: var(--edox-purple); font-size: 0.9rem; }
-
-        .mega-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            gap: 6px;
-            padding: 12px 6px;
-            border-radius: 14px;
-            text-decoration: none;
-            color: var(--edox-dark);
-            border: 1px solid rgba(67,56,202,0.08);
-            background: #ffffff;
-            transition: all 0.22s ease;
+        .mega-footer {
+          flex-direction: column;
+          gap: 8px;
+        }
+        .mega-item:hover {
+          transform: none;
+        }
+      }
+      @media (max-width: 576px) {
+        .mega-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 6px;
+        }
+        .mega-title {
+          font-size: 0.72rem;
         }
         .mega-icon {
-            width: 40px;
-            height: 40px;
-            flex-shrink: 0;
-            border-radius: 11px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3rem;
-            background: rgba(67,56,202,0.08);
-            transition: all 0.22s ease;
+          width: 34px;
+          height: 34px;
+          font-size: 1.1rem;
         }
-        .mega-text {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            line-height: 1.25;
-            min-width: 0;
-        }
-        .mega-title { font-weight: 600; font-size: 0.78rem; color: var(--edox-dark); }
-        .mega-sub { font-size: 0.62rem; color: #8b90a0; }
+      }
 
-        .mega-item:hover {
-            background: rgba(67,56,202,0.08);
-            border-color: rgba(67,56,202,0.2);
-            transform: translateY(-2px);
-        }
-        .mega-item:hover .mega-icon {
-            background: var(--edox-purple);
-            box-shadow: 0 8px 18px rgba(67,56,202,0.3);
-        }
-        .mega-item:hover .mega-icon i { color: #fff !important; }
-        .mega-item:hover .mega-title { color: var(--edox-purple); }
+      .avatar-fallback {
+        width: 30px;
+        height: 30px;
+        background: #e0e7ff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4338ca;
+        font-size: 1rem;
+      }
+      /* Desktop navbar profile pic + name fix */
+      .navbar .dropdown .dropdown-toggle img.rounded-circle {
+        width: 30px !important;
+        height: 30px !important;
+        object-fit: cover !important;
+        border-radius: 50% !important;
+        flex-shrink: 0;
+      }
+      .navbar .dropdown .dropdown-toggle .fw-semibold {
+        white-space: nowrap;
+      }
 
-        .mega-footer {
-            display: flex;
-            gap: 10px;
-            margin-top: 16px;
-            padding-top: 14px;
-            border-top: 1px solid rgba(67,56,202,0.12);
+      .animate.slideIn {
+        animation: slideDown 0.3s ease-out;
+      }
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px) translateX(-50%);
         }
-        .mega-footer a {
-            flex: 1;
-            text-align: center;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--edox-purple);
-            text-decoration: none;
-            padding: 9px 8px;
-            border-radius: 12px;
-            background: rgba(67,56,202,0.05);
-            transition: 0.2s;
+        to {
+          opacity: 1;
+          transform: translateY(0) translateX(-50%);
         }
-        .mega-footer a:hover { background: var(--edox-purple); color: #fff; }
+      }
 
-        .community-mega { min-width: 640px; }
+      .notif-dropdown {
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+      }
+      @media (min-width: 992px) {
+        .navbar .dropdown .notif-dropdown,
+        .navbar .dropdown .dropdown-menu-end {
+          top: 100% !important;
+          left: auto !important;
+          right: 0 !important;
+          transform: none !important;
+          margin-top: 0 !important;
+        }
+        .navbar .dropdown:hover .notif-dropdown,
+        .navbar .dropdown:hover .dropdown-menu-end {
+          display: block !important;
+        }
+      }
+      .pulse-badge {
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 8px rgba(220, 53, 69, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+        }
+      }
+      .bg-purple-light {
+        background-color: #f0eeff;
+      }
 
-        /* ===== MOBILE / TABLET RESPONSIVE ===== */
-        @media (max-width: 991.98px) {
-            .mega-menu {
-                min-width: 0 !important;
-                width: 100%;
-                padding: 12px;
-                border-radius: 18px;
-                box-shadow: 0 14px 30px rgba(30,27,75,0.12);
-            }
-            .mega-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-            .mega-sub { display: none; }
-            .mega-footer { flex-direction: column; gap: 8px; }
-            .mega-item:hover { transform: none; }
+      @media (max-width: 576px) {
+        .dropdown-menu[aria-labelledby="notificationBell"] {
+          width: 300px !important;
+          left: auto !important;
+          right: 0 !important;
+          transform: none !important;
+          position: absolute !important;
+          top: 100% !important;
+          margin-top: 4px !important;
+          border-radius: 16px !important;
         }
-        @media (max-width: 576px) {
-            .mega-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-            .mega-title { font-size: 0.72rem; }
-            .mega-icon { width: 34px; height: 34px; font-size: 1.1rem; }
-        }
+      }
 
-        .avatar-fallback {
-            width: 30px; height: 30px; background: #e0e7ff; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; color: #4338ca; font-size: 1rem;
-        }
-        /* Desktop navbar profile pic + name fix */
-        .navbar .dropdown .dropdown-toggle img.rounded-circle {
-            width: 30px !important;
-            height: 30px !important;
-            object-fit: cover !important;
-            border-radius: 50% !important;
-            flex-shrink: 0;
-        }
-        .navbar .dropdown .dropdown-toggle .fw-semibold {
-            white-space: nowrap;
-        }
+      /* ---------- AUTH MODAL STYLING ---------- */
+      .auth-modal .modal-content {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 28px;
+        box-shadow: 0 20px 50px rgba(30, 27, 75, 0.15);
+      }
+      .auth-modal .modal-body {
+        padding: 2rem 1.8rem;
+      }
+      .auth-tabs {
+        display: flex;
+        border-bottom: 1px solid #e0e7ff;
+        margin-bottom: 1.5rem;
+      }
+      .auth-tab {
+        flex: 1;
+        text-align: center;
+        padding: 10px 0;
+        font-weight: 600;
+        font-size: 1rem;
+        color: #6b7280;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+      .auth-tab.active {
+        color: #4338ca;
+        border-bottom-color: #4338ca;
+      }
+      .auth-modal .form-control {
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid #e0e7ff;
+        border-radius: 14px;
+        padding: 12px 16px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+      }
+      .auth-modal .form-control:focus {
+        border-color: #4338ca;
+        box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.15);
+      }
+      .auth-modal .form-control.is-valid {
+        border-color: #10b981 !important;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+      }
+      .auth-modal .form-control.is-invalid {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+      }
+      .auth-modal .btn-primary-custom {
+        background: #1e1b4b;
+        border: none;
+        border-radius: 50px;
+        padding: 14px;
+        font-weight: 600;
+        font-size: 1rem;
+        color: white;
+        letter-spacing: 0.3px;
+        box-shadow: 0 10px 25px rgba(30, 27, 75, 0.3);
+        transition: all 0.3s;
+      }
+      .auth-modal .btn-primary-custom:hover {
+        background: #312e81;
+        transform: translateY(-2px);
+        box-shadow: 0 15px 30px rgba(30, 27, 75, 0.4);
+        color: white;
+      }
+      .auth-modal .social-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 10px 18px;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        background: white;
+        border: 1px solid #e2e8f0;
+        color: #1e293b;
+        transition: all 0.25s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        text-decoration: none;
+        min-width: 100px;
+      }
+      .auth-modal .social-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      }
+      .auth-modal .social-btn.google {
+        color: #ea4335;
+        border-color: #fce8e6;
+      }
+      .auth-modal .social-btn.google:hover {
+        background: #fef2f2;
+      }
+      .auth-modal .social-btn.github {
+        color: #24292f;
+        border-color: #d0d7de;
+      }
+      .auth-modal .social-btn.github:hover {
+        background: #f6f8fa;
+      }
+      .auth-modal .social-btn.facebook {
+        color: #1877f2;
+        border-color: #d6e4ff;
+      }
+      .auth-modal .social-btn.facebook:hover {
+        background: #f0f5ff;
+      }
 
-        .animate.slideIn { animation: slideDown 0.3s ease-out; }
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px) translateX(-50%); }
-            to { opacity: 1; transform: translateY(0) translateX(-50%); }
-        }
+      .username-hint {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.5rem;
+        font-size: 0.75rem;
+        color: #6b7280;
+        background: rgba(67, 56, 202, 0.04);
+        border-radius: 10px;
+        padding: 0.5rem 0.75rem;
+        border-left: 3px solid #4338ca;
+      }
 
-        .notif-dropdown { left: 50% !important; right: auto !important; transform: translateX(-50%) !important; }
-        @media (min-width: 992px) {
-    .navbar .dropdown .notif-dropdown,
-    .navbar .dropdown .dropdown-menu-end {
-        top: 100% !important;
-        left: auto !important;
-        right: 0 !important;
-        transform: none !important;
-        margin-top: 0 !important;
-    }
-    .navbar .dropdown:hover .notif-dropdown,
-    .navbar .dropdown:hover .dropdown-menu-end {
-        display: block !important;
-    }
-}
-        .pulse-badge { animation: pulse 2s infinite; }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
-            70% { box-shadow: 0 0 0 8px rgba(220, 53, 69, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
-        }
-        .bg-purple-light { background-color: #f0eeff; }
+      /* ---------- SHOW PASSWORD BOX ---------- */
+      .show-password-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+        color: #4b5563;
+        cursor: pointer;
+        user-select: none;
+      }
+      .show-password-box input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #4338ca;
+        cursor: pointer;
+      }
 
-        @media (max-width: 576px) {
-            .dropdown-menu[aria-labelledby="notificationBell"] {
-                width: 300px !important; left: auto !important; right: 0 !important;
-                transform: none !important; position: absolute !important; top: 100% !important;
-                margin-top: 4px !important; border-radius: 16px !important;
-            }
-        }
+      /* ---------- BOTTOM LINKS ---------- */
+      .modal-bottom-links {
+        margin-top: 1.8rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+      }
+      .modal-bottom-links .forgot-link {
+        font-size: 0.9rem;
+        color: #4338ca;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .modal-bottom-links .forgot-link:hover {
+        text-decoration: underline;
+      }
+      .modal-bottom-links .social-login {
+        width: 100%;
+      }
+      .modal-bottom-links .social-divider {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        color: #6b7280;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .modal-bottom-links .social-divider::before,
+      .modal-bottom-links .social-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(
+          to right,
+          transparent,
+          #cbd5e1,
+          transparent
+        );
+      }
+      .modal-bottom-links .social-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .modal-bottom-links .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1.2rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-top: 0.5rem;
+      }
+      .modal-bottom-links .footer-links a {
+        color: #4338ca;
+        text-decoration: none;
+      }
+      .modal-bottom-links .footer-links a:hover {
+        text-decoration: underline;
+      }
 
-        /* ---------- AUTH MODAL STYLING ---------- */
-        .auth-modal .modal-content {
-            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(25px);
-            border: 1px solid rgba(255,255,255,0.5); border-radius: 28px;
-            box-shadow: 0 20px 50px rgba(30, 27, 75, 0.15);
+      @media (max-width: 576px) {
+        .auth-modal .modal-body {
+          padding: 1.5rem 1.2rem;
         }
-        .auth-modal .modal-body { padding: 2rem 1.8rem; }
-        .auth-tabs { display: flex; border-bottom: 1px solid #e0e7ff; margin-bottom: 1.5rem; }
-        .auth-tab {
-            flex: 1; text-align: center; padding: 10px 0; font-weight: 600; font-size: 1rem;
-            color: #6b7280; background: none; border: none; border-bottom: 3px solid transparent;
-            cursor: pointer; transition: 0.3s;
-        }
-        .auth-tab.active { color: #4338ca; border-bottom-color: #4338ca; }
         .auth-modal .form-control {
-            background: rgba(255,255,255,0.95); border: 1px solid #e0e7ff; border-radius: 14px;
-            padding: 12px 16px; font-size: 0.95rem; transition: all 0.2s;
+          padding: 10px 14px;
+          font-size: 0.9rem;
         }
-        .auth-modal .form-control:focus { border-color: #4338ca; box-shadow: 0 0 0 3px rgba(67,56,202,0.15); }
-        .auth-modal .form-control.is-valid { border-color: #10b981 !important; box-shadow: 0 0 0 3px rgba(16,185,129,0.15) !important; }
-        .auth-modal .form-control.is-invalid { border-color: #ef4444 !important; box-shadow: 0 0 0 3px rgba(239,68,68,0.15) !important; }
         .auth-modal .btn-primary-custom {
-            background: #1e1b4b; border: none; border-radius: 50px; padding: 14px;
-            font-weight: 600; font-size: 1rem; color: white; letter-spacing: 0.3px;
-            box-shadow: 0 10px 25px rgba(30, 27, 75, 0.3); transition: all 0.3s;
+          padding: 12px;
+          font-size: 0.95rem;
         }
-        .auth-modal .btn-primary-custom:hover { background: #312e81; transform: translateY(-2px); box-shadow: 0 15px 30px rgba(30, 27, 75, 0.4); color: white; }
-        .auth-modal .social-btn {
-            display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-            padding: 10px 18px; border-radius: 50px; font-weight: 600; font-size: 0.9rem;
-            background: white; border: 1px solid #e2e8f0; color: #1e293b; transition: all 0.25s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02); text-decoration: none; min-width: 100px;
+        .auth-tab {
+          font-size: 0.9rem;
         }
-        .auth-modal .social-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
-        .auth-modal .social-btn.google { color: #ea4335; border-color: #fce8e6; }
-        .auth-modal .social-btn.google:hover { background: #fef2f2; }
-        .auth-modal .social-btn.github { color: #24292f; border-color: #d0d7de; }
-        .auth-modal .social-btn.github:hover { background: #f6f8fa; }
-        .auth-modal .social-btn.facebook { color: #1877f2; border-color: #d6e4ff; }
-        .auth-modal .social-btn.facebook:hover { background: #f0f5ff; }
+      }
 
-        .username-hint {
-            display: flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem;
-            font-size: 0.75rem; color: #6b7280; background: rgba(67, 56, 202, 0.04);
-            border-radius: 10px; padding: 0.5rem 0.75rem; border-left: 3px solid #4338ca;
-        }
+      .auth-modal.fade .modal-dialog {
+        transform: translateY(30px);
+        opacity: 0;
+        transition:
+          transform 0.4s ease-out,
+          opacity 0.4s ease-out;
+      }
+      .auth-modal.fade.show .modal-dialog {
+        transform: translateY(0);
+        opacity: 1;
+      }
 
-        /* ---------- SHOW PASSWORD BOX ---------- */
-        .show-password-box {
-            display: flex; align-items: center; gap: 8px;
-            margin-bottom: 1rem; font-size: 0.85rem; color: #4b5563;
-            cursor: pointer; user-select: none;
+      .btn,
+      .nav-link,
+      .product-card,
+      .category-card {
+        transition: all 0.3s ease !important;
+      }
+      .btn:active {
+        transform: scale(0.95);
+      }
+      .product-card:hover,
+      .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(30, 27, 75, 0.1);
+      }
+      .dropdown-menu {
+        animation: fadeDown 0.25s ease-out;
+      }
+      @keyframes fadeDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
         }
-        .show-password-box input[type="checkbox"] {
-            width: 16px; height: 16px; accent-color: #4338ca; cursor: pointer;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
+      }
 
-        /* ---------- BOTTOM LINKS ---------- */
-        .modal-bottom-links {
-            margin-top: 1.8rem; display: flex; flex-direction: column; align-items: center; gap: 1rem;
-        }
-        .modal-bottom-links .forgot-link {
-            font-size: 0.9rem; color: #4338ca; text-decoration: none; font-weight: 500;
-        }
-        .modal-bottom-links .forgot-link:hover { text-decoration: underline; }
-        .modal-bottom-links .social-login { width: 100%; }
-        .modal-bottom-links .social-divider {
-            display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;
-            color: #6b7280; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .modal-bottom-links .social-divider::before,
-        .modal-bottom-links .social-divider::after {
-            content: ''; flex: 1; height: 1px;
-            background: linear-gradient(to right, transparent, #cbd5e1, transparent);
-        }
-        .modal-bottom-links .social-buttons {
-            display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap;
-        }
-        .modal-bottom-links .footer-links {
-            display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2rem;
-            font-size: 0.85rem; font-weight: 500; margin-top: 0.5rem;
-        }
-        .modal-bottom-links .footer-links a { color: #4338ca; text-decoration: none; }
-        .modal-bottom-links .footer-links a:hover { text-decoration: underline; }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
 
-        @media (max-width: 576px) {
-            .auth-modal .modal-body { padding: 1.5rem 1.2rem; }
-            .auth-modal .form-control { padding: 10px 14px; font-size: 0.9rem; }
-            .auth-modal .btn-primary-custom { padding: 12px; font-size: 0.95rem; }
-            .auth-tab { font-size: 0.9rem; }
-        }
+      /* ========== OVERFLOW & SCROLL FIX ========== */
+      html,
+      body {
+        overflow-x: clip !important;
+        width: 100%;
+        max-width: 100%;
+      }
+      html {
+        scroll-behavior: smooth;
+        scrollbar-gutter: stable;
+      }
+      [data-aos] {
+        overflow: hidden;
+      }
 
-        .auth-modal.fade .modal-dialog { transform: translateY(30px); opacity: 0; transition: transform 0.4s ease-out, opacity 0.4s ease-out; }
-        .auth-modal.fade.show .modal-dialog { transform: translateY(0); opacity: 1; }
+      img,
+      video,
+      iframe,
+      canvas,
+      svg {
+        max-width: 100%;
+        height: auto;
+      }
+      .container,
+      .container-fluid,
+      .row,
+      .col,
+      [class*="col-"] {
+        max-width: 100%;
+      }
 
-        .btn, .nav-link, .product-card, .category-card { transition: all 0.3s ease !important; }
-        .btn:active { transform: scale(0.95); }
-        .product-card:hover, .category-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(30, 27, 75, 0.1); }
-        .dropdown-menu { animation: fadeDown 0.25s ease-out; }
-        @keyframes fadeDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+      @media (max-width: 576px) {
+        .navbar .d-flex.order-lg-last {
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+        .navbar .dropdown .btn {
+          padding: 2px 8px;
+          font-size: 0.85rem;
+        }
+        .avatar-fallback {
+          width: 24px;
+          height: 24px;
+          font-size: 0.8rem;
+        }
+        .navbar .dropdown img.rounded-circle {
+          width: 24px !important;
+          height: 24px !important;
+        }
+        .navbar .nav-link {
+          font-size: 0.9rem;
+          padding: 0.4rem 0.6rem;
+        }
+        .navbar .navbar-toggler {
+          margin-left: 4px;
+        }
+      }
 
-        *, *::before, *::after { box-sizing: border-box; }
+      /* ========== SAFE ANIMATION PERFORMANCE ========== */
+      .product-card,
+      .category-card,
+      .hero-icon {
+        will-change: auto;
+        transition:
+          transform 0.3s ease,
+          box-shadow 0.3s ease;
+      }
+      .product-card:hover,
+      .category-card:hover {
+        will-change: transform;
+      }
+      .book-card {
+        will-change: auto;
+        transition:
+          transform 0.4s ease,
+          box-shadow 0.4s ease;
+      }
+      .book-card:hover {
+        will-change: transform;
+      }
 
-        /* ========== OVERFLOW & SCROLL FIX ========== */
-        html, body {
-            overflow-x: clip !important;
-            width: 100%;
-            max-width: 100%;
-        }
-        html {
-            scroll-behavior: smooth;
-            scrollbar-gutter: stable;
-        }
-        [data-aos] {
-            overflow: hidden;
-        }
+      .product-card,
+      .category-card,
+      .book-card,
+      .btn,
+      .btn-primary-custom,
+      form button[type="submit"] {
+        backface-visibility: hidden;
+        transform: translateZ(0);
+      }
 
-        img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
-        .container, .container-fluid, .row, .col, [class*="col-"] { max-width: 100%; }
+      a,
+      button,
+      .btn,
+      [role="button"],
+      .dropdown-toggle {
+        touch-action: manipulation;
+      }
 
-        @media (max-width: 576px) {
-            .navbar .d-flex.order-lg-last { flex-wrap: wrap; justify-content: flex-end; }
-            .navbar .dropdown .btn { padding: 2px 8px; font-size: 0.85rem; }
-            .avatar-fallback { width: 24px; height: 24px; font-size: 0.8rem; }
-            .navbar .dropdown img.rounded-circle { width: 24px !important; height: 24px !important; }
-            .navbar .nav-link { font-size: 0.9rem; padding: 0.4rem 0.6rem; }
-            .navbar .navbar-toggler { margin-left: 4px; }
-        }
+      /* ========== PAGE LOADER ========== */
+      #page-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          opacity 0.4s ease-out,
+          visibility 0.4s ease-out;
+      }
+      #page-loader.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
 
-        /* ========== SAFE ANIMATION PERFORMANCE ========== */
-        .product-card, .category-card, .hero-icon {
-            will-change: auto;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+      .loader-svg {
+        width: 220px;
+        height: 180px;
+      }
+      .draw-path {
+        fill: none;
+        stroke: #4338ca;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 400;
+        stroke-dashoffset: 400;
+        animation: drawLine 1.2s ease forwards;
+      }
+      .draw-path.slow {
+        animation-duration: 1.5s;
+      }
+      .draw-path.fast {
+        animation-duration: 0.9s;
+      }
+      @keyframes drawLine {
+        to {
+          stroke-dashoffset: 0;
         }
-        .product-card:hover, .category-card:hover {
-            will-change: transform;
+      }
+      .lamp-glow {
+        fill: #ffb703;
+        opacity: 0;
+        animation: glowPulse 1s ease 1.2s infinite alternate;
+      }
+      @keyframes glowPulse {
+        from {
+          opacity: 0.2;
+          r: 12;
         }
+        to {
+          opacity: 0.5;
+          r: 16;
+        }
+      }
+      .light-cone {
+        fill: #ffb703;
+        opacity: 0;
+        animation:
+          coneFade 1s ease 1.2s forwards,
+          conePulse 2s ease 2.2s infinite alternate;
+      }
+      @keyframes coneFade {
+        to {
+          opacity: 0.08;
+        }
+      }
+      @keyframes conePulse {
+        from {
+          opacity: 0.06;
+        }
+        to {
+          opacity: 0.12;
+        }
+      }
+      .bulb-fill {
+        fill: #ffb703;
+        opacity: 0;
+        animation: fadeIn 0.4s ease 1.2s forwards;
+      }
+      .loader-brand {
+        font-family: "Poppins", sans-serif;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #1e1b4b;
+        letter-spacing: 2px;
+        margin-top: 16px;
+        opacity: 0;
+        animation:
+          fadeIn 0.5s ease 1.6s forwards,
+          brandPulse 2s ease 2.2s infinite alternate;
+      }
+      @keyframes brandPulse {
+        from {
+          transform: scale(1);
+        }
+        to {
+          transform: scale(1.05);
+        }
+      }
+      @keyframes fadeIn {
+        to {
+          opacity: 1;
+        }
+      }
+
+      /* ========== UNIVERSAL BOOK COVER ========== */
+      .book-cover {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+        border-radius: 12px 12px 0 0;
+        display: block;
+      }
+      @media (max-width: 992px) {
+        .book-cover {
+          height: 180px;
+        }
+      }
+      @media (max-width: 576px) {
+        .book-cover {
+          height: 150px;
+        }
+      }
+
+      /* ========== RESPONSIVE ICONS ========== */
+      .navbar .nav-link i,
+      .btn i {
+        font-size: 1.1rem;
+      }
+      @media (min-width: 768px) {
+        .navbar .nav-link i,
+        .btn i {
+          font-size: 1.25rem;
+        }
+      }
+
+      /* ========== ENHANCED BUTTON ANIMATIONS ========== */
+      .btn {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
+      .btn:active {
+        transform: scale(0.97);
+      }
+      .btn::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition:
+          width 0.6s,
+          height 0.6s,
+          opacity 0.6s;
+      }
+      .btn:active::after {
+        width: 300px;
+        height: 300px;
+        opacity: 0;
+      }
+
+      /* ========== MODERN SUBMIT BUTTON ========== */
+      form button[type="submit"] {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 28px;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #fff !important;
+        background: linear-gradient(135deg, #4338ca 0%, #5b21b6 100%);
+        background-size: 200% auto;
+        border: none;
+        box-shadow: 0 8px 24px rgba(67, 56, 202, 0.3);
+        transition:
+          all 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+          background-position 0.6s ease;
+        overflow: hidden;
+        width: auto;
+        min-width: 160px;
+      }
+      form button[type="submit"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(67, 56, 202, 0.4);
+        background-position: right center;
+      }
+      form button[type="submit"]:active {
+        transform: scale(0.97);
+      }
+      form button[type="submit"]::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition:
+          width 0.6s,
+          height 0.6s,
+          opacity 0.6s;
+        z-index: 1;
+      }
+      form button[type="submit"]:active::after {
+        width: 300px;
+        height: 300px;
+        opacity: 0;
+      }
+      form button[type="submit"]::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -75%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.4),
+          transparent
+        );
+        transform: skewX(-25deg);
+        transition: left 0.75s ease;
+        z-index: 1;
+      }
+      form button[type="submit"]:hover::before {
+        left: 125%;
+      }
+      form button[type="submit"] .btn-text,
+      form button[type="submit"] .loading-text,
+      form button[type="submit"] .book-spinner {
+        position: relative;
+        z-index: 2;
+      }
+
+      .btn-loading {
+        pointer-events: none;
+        opacity: 0.85;
+      }
+      .btn-loading .btn-text {
+        display: none;
+      }
+      .loading-text {
+        display: none;
+      }
+      .btn-loading .loading-text {
+        display: inline-block !important;
+      }
+      .book-spinner {
+        display: none;
+      }
+      .btn-loading .book-spinner {
+        display: inline-block !important;
+      }
+
+      @media (max-width: 576px) {
+        form button[type="submit"] {
+          width: 100%;
+          padding: 12px 20px;
+          font-size: 0.9rem;
+        }
+      }
+
+      /* ========== BOOK ANIMATIONS ========== */
+      @keyframes bookFlip {
+        0% {
+          transform: rotateY(0deg);
+        }
+        50% {
+          transform: rotateY(180deg);
+        }
+        100% {
+          transform: rotateY(360deg);
+        }
+      }
+      .book-spinner {
+        animation: bookFlip 1.5s infinite ease-in-out;
+        font-size: 1.5rem;
+      }
+      .book-card {
+        transition:
+          transform 0.4s ease,
+          box-shadow 0.4s ease;
+        transform-style: preserve-3d;
+        cursor: pointer;
+      }
+      .book-card:hover {
+        transform: perspective(800px) rotateY(8deg) scale(1.03);
+        box-shadow: 0 15px 35px rgba(30, 27, 75, 0.25);
+      }
+      .book-cover-flip {
+        transition: transform 0.6s ease;
+        transform-origin: left center;
+      }
+      .book-cover-flip:hover {
+        transform: rotateY(-25deg);
+      }
+      .book-card .card-body {
+        transition: opacity 0.3s;
+      }
+      .book-card:hover .card-body {
+        opacity: 0.95;
+      }
+
+      @media (max-width: 576px) {
         .book-card {
-            will-change: auto;
-            transition: transform 0.4s ease, box-shadow 0.4s ease;
+          transform: none !important;
         }
         .book-card:hover {
-            will-change: transform;
+          transform: scale(1.02) !important;
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
         }
+      }
 
-        .product-card,
-        .category-card,
-        .book-card,
-        .btn,
-        .btn-primary-custom,
-        form button[type="submit"] {
-            backface-visibility: hidden;
-            transform: translateZ(0);
-        }
-
-        a, button, .btn, [role="button"], .dropdown-toggle {
-            touch-action: manipulation;
-        }
-
-        /* ========== PAGE LOADER ========== */
-        #page-loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 99999;
-            display: flex; align-items: center; justify-content: center;
-            transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
-        }
-        #page-loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-
-        .loader-svg { width: 220px; height: 180px; }
-        .draw-path {
-            fill: none; stroke: #4338ca; stroke-width: 3;
-            stroke-linecap: round; stroke-linejoin: round;
-            stroke-dasharray: 400; stroke-dashoffset: 400;
-            animation: drawLine 1.2s ease forwards;
-        }
-        .draw-path.slow { animation-duration: 1.5s; }
-        .draw-path.fast { animation-duration: 0.9s; }
-        @keyframes drawLine { to { stroke-dashoffset: 0; } }
-        .lamp-glow {
-            fill: #ffb703; opacity: 0;
-            animation: glowPulse 1s ease 1.2s infinite alternate;
-        }
-        @keyframes glowPulse { from { opacity: 0.2; r: 12; } to { opacity: 0.5; r: 16; } }
-        .light-cone {
-            fill: #ffb703; opacity: 0;
-            animation: coneFade 1s ease 1.2s forwards, conePulse 2s ease 2.2s infinite alternate;
-        }
-        @keyframes coneFade { to { opacity: 0.08; } }
-        @keyframes conePulse { from { opacity: 0.06; } to { opacity: 0.12; } }
-        .bulb-fill { fill: #ffb703; opacity: 0; animation: fadeIn 0.4s ease 1.2s forwards; }
-        .loader-brand {
-            font-family: 'Poppins', sans-serif;
-            font-size: 1.4rem; font-weight: 800;
-            color: #1e1b4b; letter-spacing: 2px;
-            margin-top: 16px; opacity: 0;
-            animation: fadeIn 0.5s ease 1.6s forwards, brandPulse 2s ease 2.2s infinite alternate;
-        }
-        @keyframes brandPulse { from { transform: scale(1); } to { transform: scale(1.05); } }
-        @keyframes fadeIn { to { opacity: 1; } }
-
-        /* ========== UNIVERSAL BOOK COVER ========== */
-        .book-cover {
-            width: 100%; height: 220px;
-            object-fit: cover; border-radius: 12px 12px 0 0; display: block;
-        }
-        @media (max-width: 992px) { .book-cover { height: 180px; } }
-        @media (max-width: 576px) { .book-cover { height: 150px; } }
-
-        /* ========== RESPONSIVE ICONS ========== */
-        .navbar .nav-link i,
-        .btn i { font-size: 1.1rem; }
-        @media (min-width: 768px) {
-            .navbar .nav-link i,
-            .btn i { font-size: 1.25rem; }
-        }
-
-        /* ========== ENHANCED BUTTON ANIMATIONS ========== */
-        .btn {
-            position: relative; overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
-        }
-        .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); }
-        .btn:active { transform: scale(0.97); }
-        .btn::after {
-            content: ""; position: absolute; top: 50%; left: 50%;
-            width: 0; height: 0; border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s, opacity 0.6s;
-        }
-        .btn:active::after { width: 300px; height: 300px; opacity: 0; }
-
-        /* ========== MODERN SUBMIT BUTTON ========== */
-        form button[type="submit"] {
-            position: relative; display: inline-flex; align-items: center; justify-content: center;
-            gap: 8px; padding: 12px 28px; border-radius: 50px;
-            font-weight: 600; font-size: 0.95rem; color: #fff !important;
-            background: linear-gradient(135deg, #4338ca 0%, #5b21b6 100%);
-            background-size: 200% auto; border: none;
-            box-shadow: 0 8px 24px rgba(67, 56, 202, 0.3);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-position 0.6s ease;
-            overflow: hidden; width: auto; min-width: 160px;
-        }
-        form button[type="submit"]:hover {
-            transform: translateY(-2px); box-shadow: 0 12px 28px rgba(67, 56, 202, 0.4);
-            background-position: right center;
-        }
-        form button[type="submit"]:active { transform: scale(0.97); }
-        form button[type="submit"]::after {
-            content: ""; position: absolute; top: 50%; left: 50%;
-            width: 0; height: 0; border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s, opacity 0.6s; z-index: 1;
-        }
-        form button[type="submit"]:active::after { width: 300px; height: 300px; opacity: 0; }
-        form button[type="submit"]::before {
-            content: ''; position: absolute; top: 0; left: -75%;
-            width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transform: skewX(-25deg); transition: left 0.75s ease; z-index: 1;
-        }
-        form button[type="submit"]:hover::before { left: 125%; }
-        form button[type="submit"] .btn-text,
-        form button[type="submit"] .loading-text,
-        form button[type="submit"] .book-spinner { position: relative; z-index: 2; }
-
-        .btn-loading { pointer-events: none; opacity: 0.85; }
-        .btn-loading .btn-text { display: none; }
-        .loading-text { display: none; }
-        .btn-loading .loading-text { display: inline-block !important; }
-        .book-spinner { display: none; }
-        .btn-loading .book-spinner { display: inline-block !important; }
-
-        @media (max-width: 576px) {
-            form button[type="submit"] { width: 100%; padding: 12px 20px; font-size: 0.9rem; }
-        }
-
-        /* ========== BOOK ANIMATIONS ========== */
-        @keyframes bookFlip {
-            0% { transform: rotateY(0deg); }
-            50% { transform: rotateY(180deg); }
-            100% { transform: rotateY(360deg); }
-        }
-        .book-spinner { animation: bookFlip 1.5s infinite ease-in-out; font-size: 1.5rem; }
-        .book-card {
-            transition: transform 0.4s ease, box-shadow 0.4s ease;
-            transform-style: preserve-3d; cursor: pointer;
-        }
-        .book-card:hover { transform: perspective(800px) rotateY(8deg) scale(1.03); box-shadow: 0 15px 35px rgba(30, 27, 75, 0.25); }
-        .book-cover-flip { transition: transform 0.6s ease; transform-origin: left center; }
-        .book-cover-flip:hover { transform: rotateY(-25deg); }
-        .book-card .card-body { transition: opacity 0.3s; }
-        .book-card:hover .card-body { opacity: 0.95; }
-
-        @media (max-width: 576px) {
-            .book-card { transform: none !important; }
-            .book-card:hover { transform: scale(1.02) !important; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
-        }
-
-        /* ========== LAZY RENDERING (safe) ========== */
-        section, footer, #reviews, #discussion { contain: layout style; }
+      /* ========== LAZY RENDERING (safe) ========== */
+      section,
+      footer,
+      #reviews,
+      #discussion {
+        contain: layout style;
+      }
     </style>
 
     <!-- ================== GOOGLE ANALYTICS ================== -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3GC4V3QX2W"></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-3GC4V3QX2W"
+    ></script>
     <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-3GC4V3QX2W');
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-3GC4V3QX2W");
     </script>
 
     <!-- ================== BREVO CHAT WIDGET ================== -->
     <script>
-        (function(d, w, c) {
-            w.BrevoConversationsID = '6a551981edd95b5e7d08467b';
-            w[c] = w[c] || function() { (w[c].q = w[c].q || []).push(arguments); };
-            var s = d.createElement('script'); s.async = true;
-            s.src = 'https://conversations-widget.brevo.com/brevo-conversations.js';
-            if (d.head) d.head.appendChild(s);
-        })(document, window, 'BrevoConversations');
+      (function (d, w, c) {
+        w.BrevoConversationsID = "6a551981edd95b5e7d08467b";
+        w[c] =
+          w[c] ||
+          function () {
+            (w[c].q = w[c].q || []).push(arguments);
+          };
+        var s = d.createElement("script");
+        s.async = true;
+        s.src = "https://conversations-widget.brevo.com/brevo-conversations.js";
+        if (d.head) d.head.appendChild(s);
+      })(document, window, "BrevoConversations");
     </script>
-</head>
+  </head>
 
-<body class="d-flex flex-column min-vh-100" data-user-logged-in="{{ 'true' if session.get('user_id') else 'false' }}">
-
+  <body
+    class="d-flex flex-column min-vh-100"
+    data-user-logged-in="{{ 'true' if session.get('user_id') else 'false' }}"
+  >
     <!-- ================== PAGE LOADER ================== -->
     <div id="page-loader">
-        <div style="text-align: center;">
-            <svg class="loader-svg" viewBox="0 0 220 180">
-                <defs>
-                    <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stop-color="#ffb703" stop-opacity="0.8"/>
-                        <stop offset="100%" stop-color="#ffb703" stop-opacity="0"/>
-                    </radialGradient>
-                </defs>
-                <polygon class="light-cone" points="110,28 150,90 80,90" fill="#ffb703" />
-                <rect class="draw-path" x="30" y="90" width="160" height="8" rx="3" />
-                <line class="draw-path slow" x1="40" y1="98" x2="40" y2="140" />
-                <line class="draw-path slow" x1="180" y1="98" x2="180" y2="140" />
-                <rect class="draw-path fast" x="50" y="60" width="34" height="10" rx="2" />
-                <rect class="draw-path fast" x="54" y="50" width="30" height="10" rx="2" />
-                <rect class="draw-path fast" x="58" y="40" width="26" height="10" rx="2" />
-                <ellipse class="draw-path" cx="160" cy="90" rx="14" ry="5" />
-                <line class="draw-path" x1="160" y1="90" x2="160" y2="55" />
-                <line class="draw-path" x1="160" y1="55" x2="130" y2="35" />
-                <line class="draw-path" x1="118" y1="28" x2="142" y2="42" />
-                <line class="draw-path" x1="130" y1="25" x2="142" y2="42" />
-                <circle class="lamp-glow" cx="130" cy="40" r="12" fill="url(#glowGrad)" />
-                <circle class="draw-path bulb-fill" cx="130" cy="40" r="6" fill="none" />
-            </svg>
-            <div class="loader-brand">DOCODIVE</div>
-        </div>
+      <div style="text-align: center">
+        <svg class="loader-svg" viewBox="0 0 220 180">
+          <defs>
+            <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#ffb703" stop-opacity="0.8" />
+              <stop offset="100%" stop-color="#ffb703" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+          <polygon
+            class="light-cone"
+            points="110,28 150,90 80,90"
+            fill="#ffb703"
+          />
+          <rect class="draw-path" x="30" y="90" width="160" height="8" rx="3" />
+          <line class="draw-path slow" x1="40" y1="98" x2="40" y2="140" />
+          <line class="draw-path slow" x1="180" y1="98" x2="180" y2="140" />
+          <rect
+            class="draw-path fast"
+            x="50"
+            y="60"
+            width="34"
+            height="10"
+            rx="2"
+          />
+          <rect
+            class="draw-path fast"
+            x="54"
+            y="50"
+            width="30"
+            height="10"
+            rx="2"
+          />
+          <rect
+            class="draw-path fast"
+            x="58"
+            y="40"
+            width="26"
+            height="10"
+            rx="2"
+          />
+          <ellipse class="draw-path" cx="160" cy="90" rx="14" ry="5" />
+          <line class="draw-path" x1="160" y1="90" x2="160" y2="55" />
+          <line class="draw-path" x1="160" y1="55" x2="130" y2="35" />
+          <line class="draw-path" x1="118" y1="28" x2="142" y2="42" />
+          <line class="draw-path" x1="130" y1="25" x2="142" y2="42" />
+          <circle
+            class="lamp-glow"
+            cx="130"
+            cy="40"
+            r="12"
+            fill="url(#glowGrad)"
+          />
+          <circle
+            class="draw-path bulb-fill"
+            cx="130"
+            cy="40"
+            r="6"
+            fill="none"
+          />
+        </svg>
+        <div class="loader-brand">DOCODIVE</div>
+      </div>
     </div>
 
     <!-- ================== NAVBAR ================== -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white py-3 sticky-top shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bolder fs-4 text-primary d-flex align-items-center gap-2" href="/">
-                <div class="bg-primary text-white rounded d-flex justify-content-center align-items-center" style="width: 38px; height: 38px;">
-                    <i class="bi bi-book-half fs-5"></i>
+    <nav
+      class="navbar navbar-expand-lg navbar-light bg-white py-3 sticky-top shadow-sm"
+    >
+      <div class="container">
+        <a
+          class="navbar-brand fw-bolder fs-4 text-primary d-flex align-items-center gap-2"
+          href="/"
+        >
+          <div
+            class="bg-primary text-white rounded d-flex justify-content-center align-items-center"
+            style="width: 38px; height: 38px"
+          >
+            <i class="bi bi-book-half fs-5"></i>
+          </div>
+          <span class="d-inline">DocoDive</span>
+        </a>
+
+        <div class="d-flex align-items-center gap-2 order-lg-last">
+          {% if session.get('user_id') %}
+          <!-- Notification Bell -->
+          <div class="dropdown">
+            <span
+              class="nav-link position-relative"
+              id="notificationBell"
+              data-bs-toggle="dropdown"
+              data-bs-trigger="hover"
+              aria-expanded="false"
+              role="button"
+              style="color: var(--edox-dark); cursor: pointer"
+            >
+              <i class="bi bi-bell fs-5"></i>
+              <span
+                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger pulse-badge"
+                id="notifBadge"
+                style="display: none"
+                >0</span
+              >
+            </span>
+            <div
+              class="dropdown-menu dropdown-menu-end notif-dropdown p-0 shadow-lg border-0 animate slideIn"
+              style="
+                width: 360px;
+                max-height: 440px;
+                overflow-y: auto;
+                overflow-x: hidden;
+                border-radius: 20px;
+                margin-top: 0;
+              "
+            >
+              <div
+                class="d-flex justify-content-between align-items-center px-3 py-2 bg-light"
+                style="
+                  border-radius: 20px 20px 0 0;
+                  border-bottom: 1px solid #e0e7ff;
+                "
+              >
+                <h6 class="mb-0 fw-bold" style="color: var(--edox-dark)">
+                  <i
+                    class="bi bi-bell-fill me-2"
+                    style="color: var(--edox-purple)"
+                  ></i
+                  >Notifications
+                </h6>
+                <small
+                  class="text-primary"
+                  style="cursor: pointer"
+                  onclick="markAllRead()"
+                >
+                  <i class="bi bi-check-all me-1"></i>Mark all as read
+                </small>
+              </div>
+              <div id="notifList" class="px-2 py-1">
+                <div class="text-center text-muted py-4">
+                  <i class="bi bi-bell-slash fs-2 d-block mb-2"></i>
+                  <small>No notifications yet</small>
                 </div>
-                <span class="d-inline">DocoDive</span>
-            </a>
+              </div>
+              <div
+                class="text-center py-2 bg-light"
+                style="border-radius: 0 0 20px 20px"
+              >
+                <a
+                  href="/user/notifications"
+                  class="small text-decoration-none"
+                  style="color: var(--edox-purple)"
+                >
+                  View all notifications <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+              </div>
+            </div>
+          </div>
 
-            <div class="d-flex align-items-center gap-2 order-lg-last">
-                {% if session.get('user_id') %}
-                    <!-- Notification Bell -->
-                    <div class="dropdown">
-                        <span class="nav-link position-relative" id="notificationBell" data-bs-toggle="dropdown" data-bs-trigger="hover" aria-expanded="false" role="button" style="color: var(--edox-dark); cursor: pointer;">
-                            <i class="bi bi-bell fs-5"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger pulse-badge" id="notifBadge" style="display:none;">0</span>
-                        </span>
-                        <div class="dropdown-menu dropdown-menu-end notif-dropdown p-0 shadow-lg border-0 animate slideIn" style="width: 360px; max-height: 440px; overflow-y: auto; overflow-x: hidden; border-radius: 20px; margin-top: 0;">
-                            <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-light" style="border-radius: 20px 20px 0 0; border-bottom: 1px solid #e0e7ff;">
-                                <h6 class="mb-0 fw-bold" style="color: var(--edox-dark);">
-                                    <i class="bi bi-bell-fill me-2" style="color: var(--edox-purple);"></i>Notifications
-                                </h6>
-                                <small class="text-primary" style="cursor:pointer;" onclick="markAllRead()">
-                                    <i class="bi bi-check-all me-1"></i>Mark all as read
-                                </small>
-                            </div>
-                            <div id="notifList" class="px-2 py-1">
-                                <div class="text-center text-muted py-4">
-                                    <i class="bi bi-bell-slash fs-2 d-block mb-2"></i>
-                                    <small>No notifications yet</small>
-                                </div>
-                            </div>
-                            <div class="text-center py-2 bg-light" style="border-radius: 0 0 20px 20px;">
-                                <a href="/user/notifications" class="small text-decoration-none" style="color: var(--edox-purple);">
-                                    View all notifications <i class="bi bi-arrow-right ms-1"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Reader Profile Dropdown -->
-                    <div class="dropdown">
-                        <button class="btn btn-light rounded-pill d-flex align-items-center gap-2 dropdown-toggle" type="button"
-                            data-bs-toggle="dropdown" aria-expanded="false" style="border: 1px solid #e0e7ff; background: white; padding: 4px 12px;">
-                            {% if session.get('avatar_url') %}
-                                <img src="{{ session.get('avatar_url') }}" class="rounded-circle" width="30" height="30" alt="Profile" style="object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <span class="avatar-fallback" style="display: none;"><i class="bi bi-person-fill"></i></span>
-                            {% else %}
-                                <span class="avatar-fallback"><i class="bi bi-person-fill"></i></span>
-                            {% endif %}
-                            <span class="fw-semibold d-none d-md-inline">
-                                {{ session.get('user_display_name') or session.get('user_name') }}
-                                {% if current_user_is_official %}
-                                    <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account" style="font-size: 0.9rem;"></i>
-                                {% endif %}
-                            </span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-3 mt-2" style="min-width: 180px;">
-                            {% if current_user_is_official %}
-                                <li><a class="dropdown-item py-2" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2 text-primary"></i> Admin Dashboard</a></li>
-                                <li><a class="dropdown-item py-2" href="/admin"><i class="bi bi-cloud-upload me-2 text-primary"></i> Upload Book</a></li>
-                                <li><a class="dropdown-item py-2" href="/moderation"><i class="bi bi-shield-check me-2 text-primary"></i> Moderation Panel</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                            {% endif %}
-                            <li><a class="dropdown-item py-2" href="/user/profile/{{ session.get('user_name') }}"><i class="bi bi-person me-2 text-primary"></i> My Profile</a></li>
-                            <li><a class="dropdown-item py-2" href="/user/favorites"><i class="bi bi-heart me-2 text-warning"></i> Favorites</a></li>
-                            <li><a class="dropdown-item py-2" href="/user/history"><i class="bi bi-clock-history me-2 text-info"></i> History</a></li>
-                            <li><a class="dropdown-item py-2" href="/user/stats"><i class="bi bi-graph-up me-2 text-success"></i> Stats</a></li>
-                            <li><a class="dropdown-item py-2" href="/user/preferences"><i class="bi bi-bell me-2 text-secondary"></i> Notification Preferences</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item py-2 text-danger" href="/user/logout"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
-                        </ul>
-                    </div>
-                {% else %}
-                    <button class="btn btn-outline-primary rounded-pill px-3" onclick="showAuthModal(window.location.href)">
-                        <i class="bi bi-box-arrow-in-right me-1"></i> Login / Sign Up
-                    </button>
+          <!-- Reader Profile Dropdown -->
+          <div class="dropdown">
+            <button
+              class="btn btn-light rounded-pill d-flex align-items-center gap-2 dropdown-toggle"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              style="
+                border: 1px solid #e0e7ff;
+                background: white;
+                padding: 4px 12px;
+              "
+            >
+              {% if session.get('avatar_url') %}
+              <img
+                src="{{ session.get('avatar_url') }}"
+                class="rounded-circle"
+                width="30"
+                height="30"
+                alt="Profile"
+                style="object-fit: cover"
+                onerror="
+                  this.style.display = 'none';
+                  this.nextElementSibling.style.display = 'flex';
+                "
+              />
+              <span class="avatar-fallback" style="display: none"
+                ><i class="bi bi-person-fill"></i
+              ></span>
+              {% else %}
+              <span class="avatar-fallback"
+                ><i class="bi bi-person-fill"></i
+              ></span>
+              {% endif %}
+              <span class="fw-semibold d-none d-md-inline">
+                {{ session.get('user_display_name') or session.get('user_name')
+                }} {% if current_user_is_official %}
+                <i
+                  class="bi bi-patch-check-fill text-primary ms-1"
+                  title="Official Account"
+                  style="font-size: 0.9rem"
+                ></i>
                 {% endif %}
+              </span>
+            </button>
+            <ul
+              class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-3 mt-2"
+              style="min-width: 180px"
+            >
+              {% if current_user_is_official %}
+              <li>
+                <a class="dropdown-item py-2" href="/admin/dashboard"
+                  ><i class="bi bi-speedometer2 me-2 text-primary"></i> Admin
+                  Dashboard</a
+                >
+              </li>
+              <li>
+                <a class="dropdown-item py-2" href="/admin"
+                  ><i class="bi bi-cloud-upload me-2 text-primary"></i> Upload
+                  Book</a
+                >
+              </li>
+              <li>
+                <a class="dropdown-item py-2" href="/moderation"
+                  ><i class="bi bi-shield-check me-2 text-primary"></i>
+                  Moderation Panel</a
+                >
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              {% endif %}
+              <li>
+                <a
+                  class="dropdown-item py-2"
+                  href="/user/profile/{{ session.get('user_name') }}"
+                  ><i class="bi bi-person me-2 text-primary"></i> My Profile</a
+                >
+              </li>
+              <li>
+                <a class="dropdown-item py-2" href="/user/favorites"
+                  ><i class="bi bi-heart me-2 text-warning"></i> Favorites</a
+                >
+              </li>
+              <li>
+                <a class="dropdown-item py-2" href="/user/history"
+                  ><i class="bi bi-clock-history me-2 text-info"></i> History</a
+                >
+              </li>
+              <li>
+                <a class="dropdown-item py-2" href="/user/stats"
+                  ><i class="bi bi-graph-up me-2 text-success"></i> Stats</a
+                >
+              </li>
+              <li>
+                <a class="dropdown-item py-2" href="/user/preferences"
+                  ><i class="bi bi-bell me-2 text-secondary"></i> Notification
+                  Preferences</a
+                >
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <a class="dropdown-item py-2 text-danger" href="/user/logout"
+                  ><i class="bi bi-box-arrow-right me-2"></i> Logout</a
+                >
+              </li>
+            </ul>
+          </div>
+          {% else %}
+          <button
+            class="btn btn-outline-primary rounded-pill px-3"
+            onclick="showAuthModal(window.location.href)"
+          >
+            <i class="bi bi-box-arrow-in-right me-1"></i> Login / Sign Up
+          </button>
+          {% endif %}
 
-                <button class="navbar-toggler border-0 shadow-none ms-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"
-                    aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-            </div>
-
-            <div class="collapse navbar-collapse" id="navbarMain">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="learningDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-mortarboard-fill me-1"></i> Learning Hubs
-                        </a>
-                        <div class="dropdown-menu mega-menu" aria-labelledby="learningDropdown">
-                            <div class="mega-grid">
-                                <div class="mega-head"><i class="bi bi-grid-fill"></i>All Learning Hubs</div>
-                                <a class="mega-item" href="/learn/python">
-                                    <span class="mega-icon"><i class="bi bi-filetype-py text-success"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Python</span><span class="mega-sub">Zero to hero</span></span>
-                                </a>
-                                <a class="mega-item" href="/learn/javascript">
-                                    <span class="mega-icon"><i class="bi bi-filetype-js text-warning"></i></span>
-                                    <span class="mega-text"><span class="mega-title">JavaScript</span><span class="mega-sub">Web dev & beyond</span></span>
-                                </a>
-                                <a class="mega-item" href="/learn/java">
-                                    <span class="mega-icon"><i class="bi bi-cup-hot-fill text-danger"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Java</span><span class="mega-sub">Enterprise & Android</span></span>
-                                </a>
-                                <a class="mega-item" href="/learn/c-c">
-                                    <span class="mega-icon"><i class="bi bi-cpu text-secondary"></i></span>
-                                    <span class="mega-text"><span class="mega-title">C / C++</span><span class="mega-sub">Systems & DSA</span></span>
-                                </a>
-                                <a class="mega-item" href="/learn/web-development">
-                                    <span class="mega-icon"><i class="bi bi-window-fullscreen text-primary"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Web Development</span><span class="mega-sub">HTML, CSS, React</span></span>
-                                </a>
-                                <a class="mega-item" href="/learn/data-science">
-                                    <span class="mega-icon"><i class="bi bi-bar-chart text-info"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Data Science</span><span class="mega-sub">Python, SQL</span></span>
-                                </a>
-                                <a class="mega-item" href="/learn/machine-learning">
-                                    <span class="mega-icon"><i class="bi bi-robot text-success"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Machine Learning</span><span class="mega-sub">Models & algorithms</span></span>
-                                </a>
-                                <a class="mega-item" href="/learn/algorithms">
-                                    <span class="mega-icon"><i class="bi bi-diagram-3" style="color:#7c3aed;"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Algorithms</span><span class="mega-sub">DSA masterclass</span></span>
-                                </a>
-                                <a class="mega-item" href="/learn/databases">
-                                    <span class="mega-icon"><i class="bi bi-database text-warning"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Databases</span><span class="mega-sub">SQL, NoSQL</span></span>
-                                </a>
-                                <a class="mega-item" href="/learn/cyber-security">
-                                    <span class="mega-icon"><i class="bi bi-shield-lock text-danger"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Cyber Security</span><span class="mega-sub">Hacking & defense</span></span>
-                                </a>
-                                <a class="mega-item" href="/learn/mobile-apps">
-                                    <span class="mega-icon"><i class="bi bi-phone text-primary"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Mobile Apps</span><span class="mega-sub">Flutter, RNative</span></span>
-                                </a>
-                                <a class="mega-item" href="/learn/devops">
-                                    <span class="mega-icon"><i class="bi bi-gear text-secondary"></i></span>
-                                    <span class="mega-text"><span class="mega-title">DevOps</span><span class="mega-sub">CI/CD, Docker</span></span>
-                                </a>
-                                                                <a class="mega-item" href="/learn/others">
-                                    <span class="mega-icon"><i class="bi bi-box-seam text-dark"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Others</span><span class="mega-sub">More resources</span></span>
-                                </a>
-                            </div>
-                            <div class="mega-footer">
-                                <a href="/#categories"><i class="bi bi-grid me-1"></i>Browse All Categories</a>
-                                <a href="/#all-books"><i class="bi bi-book me-1"></i>All Books</a>
-                            </div>
-                        </div>
-                    </li>
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="communityDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-people me-1"></i> Community
-                        </a>
-                        <div class="dropdown-menu mega-menu community-mega" aria-labelledby="communityDropdown">
-                            <div class="mega-grid">
-                                <div class="mega-head"><i class="bi bi-people-fill"></i>Community Hub</div>
-                                <a class="mega-item" href="/leaderboard">
-                                    <span class="mega-icon"><i class="bi bi-trophy-fill text-warning"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Leaderboard</span><span class="mega-sub">Top readers</span></span>
-                                </a>
-                                <a class="mega-item" href="/#about">
-                                    <span class="mega-icon"><i class="bi bi-info-circle-fill text-primary"></i></span>
-                                    <span class="mega-text"><span class="mega-title">About Us</span><span class="mega-sub">Story & mission</span></span>
-                                </a>
-                                <a class="mega-item" href="/feedback">
-                                    <span class="mega-icon"><i class="bi bi-lightbulb-fill text-warning"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Suggestions</span><span class="mega-sub">Ideas & feedback</span></span>
-                                </a>
-                                {% if session.get('user_id') %}
-                                <a class="mega-item" href="/user/profile/{{ session.get('user_name') }}">
-                                    <span class="mega-icon"><i class="bi bi-person-fill text-success"></i></span>
-                                    <span class="mega-text"><span class="mega-title">My Profile</span><span class="mega-sub">Books & stats</span></span>
-                                </a>
-                                {% endif %}
-                                {% if current_user_is_official %}
-                                <a class="mega-item" href="/moderation">
-                                    <span class="mega-icon"><i class="bi bi-shield-check text-primary"></i></span>
-                                    <span class="mega-text"><span class="mega-title">Moderation</span><span class="mega-sub">Review & approve</span></span>
-                                </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </li>
-                </ul>
-            </div>
+          <button
+            class="navbar-toggler border-0 shadow-none ms-1"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarMain"
+            aria-controls="navbarMain"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
         </div>
+
+        <div class="collapse navbar-collapse" id="navbarMain">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1">
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="learningDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="bi bi-mortarboard-fill me-1"></i> Learning Hubs
+              </a>
+              <div
+                class="dropdown-menu mega-menu"
+                aria-labelledby="learningDropdown"
+              >
+                <div class="mega-grid">
+                  <div class="mega-head">
+                    <i class="bi bi-grid-fill"></i>All Learning Hubs
+                  </div>
+                  <a class="mega-item" href="/learn/python">
+                    <span class="mega-icon"
+                      ><i class="bi bi-filetype-py text-success"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Python</span
+                      ><span class="mega-sub">Zero to hero</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/javascript">
+                    <span class="mega-icon"
+                      ><i class="bi bi-filetype-js text-warning"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">JavaScript</span
+                      ><span class="mega-sub">Web dev & beyond</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/java">
+                    <span class="mega-icon"
+                      ><i class="bi bi-cup-hot-fill text-danger"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Java</span
+                      ><span class="mega-sub">Enterprise & Android</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/c-c">
+                    <span class="mega-icon"
+                      ><i class="bi bi-cpu text-secondary"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">C / C++</span
+                      ><span class="mega-sub">Systems & DSA</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/web-development">
+                    <span class="mega-icon"
+                      ><i class="bi bi-window-fullscreen text-primary"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Web Development</span
+                      ><span class="mega-sub">HTML, CSS, React</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/data-science">
+                    <span class="mega-icon"
+                      ><i class="bi bi-bar-chart text-info"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Data Science</span
+                      ><span class="mega-sub">Python, SQL</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/machine-learning">
+                    <span class="mega-icon"
+                      ><i class="bi bi-robot text-success"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Machine Learning</span
+                      ><span class="mega-sub">Models & algorithms</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/algorithms">
+                    <span class="mega-icon"
+                      ><i class="bi bi-diagram-3" style="color: #7c3aed"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Algorithms</span
+                      ><span class="mega-sub">DSA masterclass</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/databases">
+                    <span class="mega-icon"
+                      ><i class="bi bi-database text-warning"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Databases</span
+                      ><span class="mega-sub">SQL, NoSQL</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/cyber-security">
+                    <span class="mega-icon"
+                      ><i class="bi bi-shield-lock text-danger"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Cyber Security</span
+                      ><span class="mega-sub">Hacking & defense</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/mobile-apps">
+                    <span class="mega-icon"
+                      ><i class="bi bi-phone text-primary"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Mobile Apps</span
+                      ><span class="mega-sub">Flutter, RNative</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/devops">
+                    <span class="mega-icon"
+                      ><i class="bi bi-gear text-secondary"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">DevOps</span
+                      ><span class="mega-sub">CI/CD, Docker</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/others">
+                    <span class="mega-icon"
+                      ><i class="bi bi-box-seam text-dark"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Others</span
+                      ><span class="mega-sub">More resources</span></span
+                    >
+                  </a>
+                </div>
+                <div class="mega-footer">
+                  <a href="/#categories"
+                    ><i class="bi bi-grid me-1"></i>Browse All Categories</a
+                  >
+                  <a href="/#all-books"
+                    ><i class="bi bi-book me-1"></i>All Books</a
+                  >
+                </div>
+              </div>
+            </li>
+
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="communityDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="bi bi-people me-1"></i> Community
+              </a>
+              <div
+                class="dropdown-menu mega-menu community-mega"
+                aria-labelledby="communityDropdown"
+              >
+                <div class="mega-grid">
+                  <div class="mega-head">
+                    <i class="bi bi-people-fill"></i>Community Hub
+                  </div>
+                  <a class="mega-item" href="/leaderboard">
+                    <span class="mega-icon"
+                      ><i class="bi bi-trophy-fill text-warning"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Leaderboard</span
+                      ><span class="mega-sub">Top readers</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/#about">
+                    <span class="mega-icon"
+                      ><i class="bi bi-info-circle-fill text-primary"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">About Us</span
+                      ><span class="mega-sub">Story & mission</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/feedback">
+                    <span class="mega-icon"
+                      ><i class="bi bi-lightbulb-fill text-warning"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Suggestions</span
+                      ><span class="mega-sub">Ideas & feedback</span></span
+                    >
+                  </a>
+                  {% if session.get('user_id') %}
+                  <a
+                    class="mega-item"
+                    href="/user/profile/{{ session.get('user_name') }}"
+                  >
+                    <span class="mega-icon"
+                      ><i class="bi bi-person-fill text-success"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">My Profile</span
+                      ><span class="mega-sub">Books & stats</span></span
+                    >
+                  </a>
+                  {% endif %} {% if current_user_is_official %}
+                  <a class="mega-item" href="/moderation">
+                    <span class="mega-icon"
+                      ><i class="bi bi-shield-check text-primary"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Moderation</span
+                      ><span class="mega-sub">Review & approve</span></span
+                    >
+                  </a>
+                  {% endif %}
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
     </nav>
 
     <!-- ================== MAIN CONTENT ================== -->
-    <main class="flex-grow-1">
-        {% block content %}{% endblock %}
-    </main>
+    <main class="flex-grow-1">{% block content %}{% endblock %}</main>
 
     <!-- ================== FOOTER ================== -->
-    <footer class="text-center py-4 py-md-5 text-muted bg-white border-top mt-auto" data-aos="fade-up">
-    <div class="container">
+    <footer
+      class="text-center py-4 py-md-5 text-muted bg-white border-top mt-auto"
+      data-aos="fade-up"
+    >
+      <div class="container">
         <div class="row justify-content-center mb-4">
-            <div class="col-12 col-md-8 col-lg-6">
-                <h6 class="fw-bold text-dark mb-2">📬 Stay Updated</h6>
-                <p class="small mb-3">Get notified about new books and resources — no spam, unsubscribe anytime.</p>
-                <form action="/newsletter/subscribe" method="POST" class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
-                    <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
-                    <input type="email" name="email" class="form-control rounded-pill" placeholder="you@example.com" required>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4">Subscribe</button>
-                </form>
-            </div>
+          <div class="col-12 col-md-8 col-lg-6">
+            <h6 class="fw-bold text-dark mb-2">📬 Stay Updated</h6>
+            <p class="small mb-3">
+              Get notified about new books and resources — no spam, unsubscribe
+              anytime.
+            </p>
+            <form
+              action="/newsletter/subscribe"
+              method="POST"
+              class="d-flex flex-column flex-sm-row gap-2 justify-content-center"
+            >
+              <input
+                type="hidden"
+                name="_csrf_token"
+                value="{{ session['_csrf_token'] }}"
+              />
+              <input
+                type="email"
+                name="email"
+                class="form-control rounded-pill"
+                placeholder="you@example.com"
+                required
+              />
+              <button type="submit" class="btn btn-primary rounded-pill px-4">
+                Subscribe
+              </button>
+            </form>
+          </div>
         </div>
-        <p class="mb-0 small fw-semibold">© 2026 DocoDive – Free Knowledge, Pure Discipline.</p>
-    </div>
-</footer>
+        <p class="mb-0 small fw-semibold">
+          © 2026 DocoDive – Free Knowledge, Pure Discipline.
+        </p>
+      </div>
+    </footer>
 
     <!-- ================== SCRIPTS ================== -->
-    <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    ></script>
     <script defer src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 
     <!-- ================== AUTH MODAL ================== -->
-    <div class="modal fade auth-modal" id="authModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div
+      class="modal fade auth-modal"
+      id="authModal"
+      tabindex="-1"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
       <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 28px; overflow: hidden;">
-          <button type="button" class="btn-close position-absolute top-0 end-0 m-3 z-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div
+          class="modal-content border-0 shadow-lg"
+          style="border-radius: 28px; overflow: hidden"
+        >
+          <button
+            type="button"
+            class="btn-close position-absolute top-0 end-0 m-3 z-3"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
           <div class="modal-body p-4 p-lg-5">
             <div class="text-center mb-4">
-              <div class="d-inline-flex align-items-center justify-content-center rounded-4 mb-3" style="width:60px;height:60px;background:linear-gradient(135deg, #4338ca, #818cf8);color:white;font-size:2rem;box-shadow:0 12px 24px rgba(67,56,202,0.2);">
+              <div
+                class="d-inline-flex align-items-center justify-content-center rounded-4 mb-3"
+                style="
+                  width: 60px;
+                  height: 60px;
+                  background: linear-gradient(135deg, #4338ca, #818cf8);
+                  color: white;
+                  font-size: 2rem;
+                  box-shadow: 0 12px 24px rgba(67, 56, 202, 0.2);
+                "
+              >
                 <i class="bi bi-book-half"></i>
               </div>
               <h4 class="fw-bold text-dark mb-1">Welcome to DocoDive</h4>
-              <p class="text-muted small mb-0">Your Gateway to 50,000+ Free Books &amp; Resources</p>
+              <p class="text-muted small mb-0">
+                Your Gateway to 50,000+ Free Books &amp; Resources
+              </p>
             </div>
 
             <div id="modalFlash"></div>
@@ -887,87 +1781,214 @@
             </div>
 
             <!-- Login Form -->
-            <form id="modalLoginForm" class="auth-form" data-form="login" data-ajax="true">
-              <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
+            <form
+              id="modalLoginForm"
+              class="auth-form"
+              data-form="login"
+              data-ajax="true"
+            >
+              <input
+                type="hidden"
+                name="_csrf_token"
+                value="{{ session['_csrf_token'] }}"
+              />
               <div class="mb-3">
                 <label class="form-label small fw-semibold">Email</label>
-                <input type="email" name="email" class="form-control rounded-3" placeholder="you@example.com" required>
+                <input
+                  type="email"
+                  name="email"
+                  class="form-control rounded-3"
+                  placeholder="you@example.com"
+                  required
+                />
               </div>
               <div class="mb-3">
                 <label class="form-label small fw-semibold">Password</label>
-                <input type="password" name="password" id="modalLoginPassword" class="form-control rounded-3" placeholder="••••••••" required>
+                <input
+                  type="password"
+                  name="password"
+                  id="modalLoginPassword"
+                  class="form-control rounded-3"
+                  placeholder="••••••••"
+                  required
+                />
               </div>
               <div class="show-password-box">
-                <input type="checkbox" id="modalLoginShowCheckbox" onchange="document.getElementById('modalLoginPassword').type = this.checked ? 'text' : 'password'">
-                <label for="modalLoginShowCheckbox" class="mb-0" style="cursor:pointer;">Show Password</label>
+                <input
+                  type="checkbox"
+                  id="modalLoginShowCheckbox"
+                  onchange="
+                    document.getElementById('modalLoginPassword').type = this
+                      .checked
+                      ? 'text'
+                      : 'password'
+                  "
+                />
+                <label
+                  for="modalLoginShowCheckbox"
+                  class="mb-0"
+                  style="cursor: pointer"
+                  >Show Password</label
+                >
               </div>
               <button type="submit" class="btn-primary-custom w-100">
                 <span class="btn-text">Login</span>
-                <span class="loading-text">Loading <span class="book-spinner"><i class="bi bi-book"></i></span></span>
+                <span class="loading-text"
+                  >Loading
+                  <span class="book-spinner"><i class="bi bi-book"></i></span
+                ></span>
               </button>
               <p class="text-center mt-3 small text-muted">
-                New here? <span class="text-link" onclick="switchTab('signup')">Create an account</span>
+                New here?
+                <span class="text-link" onclick="switchTab('signup')"
+                  >Create an account</span
+                >
               </p>
             </form>
 
             <!-- Signup Form -->
-            <form id="modalSignupForm" class="auth-form d-none" data-form="signup" data-ajax="true">
-              <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
+            <form
+              id="modalSignupForm"
+              class="auth-form d-none"
+              data-form="signup"
+              data-ajax="true"
+            >
+              <input
+                type="hidden"
+                name="_csrf_token"
+                value="{{ session['_csrf_token'] }}"
+              />
               <div class="row mb-3">
                 <div class="col-md-6 mb-3 mb-md-0">
-                  <label class="form-label small fw-semibold">First Name *</label>
-                  <input type="text" name="first_name" class="form-control rounded-3" placeholder="John" required>
+                  <label class="form-label small fw-semibold"
+                    >First Name *</label
+                  >
+                  <input
+                    type="text"
+                    name="first_name"
+                    class="form-control rounded-3"
+                    placeholder="John"
+                    required
+                  />
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label small fw-semibold">Last Name *</label>
-                  <input type="text" name="last_name" class="form-control rounded-3" placeholder="Doe" required>
+                  <label class="form-label small fw-semibold"
+                    >Last Name *</label
+                  >
+                  <input
+                    type="text"
+                    name="last_name"
+                    class="form-control rounded-3"
+                    placeholder="Doe"
+                    required
+                  />
                 </div>
               </div>
               <div class="mb-3">
                 <label class="form-label small fw-semibold">Username</label>
-                <input type="text" name="username" id="modalUsername" class="form-control rounded-3" placeholder="bookworm42" required>
+                <input
+                  type="text"
+                  name="username"
+                  id="modalUsername"
+                  class="form-control rounded-3"
+                  placeholder="bookworm42"
+                  required
+                />
                 <div class="username-hint">
                   <i class="bi bi-info-circle-fill"></i>
-                  <span>Letters & numbers only (3‑20 chars). Cannot contain reserved words.</span>
+                  <span
+                    >Letters & numbers only (3‑20 chars). Cannot contain
+                    reserved words.</span
+                  >
                 </div>
                 <div class="feedback small mt-1"></div>
               </div>
               <div class="mb-3">
                 <label class="form-label small fw-semibold">Email</label>
-                <input type="email" name="email" id="modalEmail" class="form-control rounded-3" placeholder="you@example.com" required>
+                <input
+                  type="email"
+                  name="email"
+                  id="modalEmail"
+                  class="form-control rounded-3"
+                  placeholder="you@example.com"
+                  required
+                />
                 <div class="feedback small mt-1"></div>
               </div>
               <div class="mb-3">
                 <label class="form-label small fw-semibold">Password</label>
-                <input type="password" name="password" id="modalSignupPassword" class="form-control rounded-3" placeholder="••••••••" required>
+                <input
+                  type="password"
+                  name="password"
+                  id="modalSignupPassword"
+                  class="form-control rounded-3"
+                  placeholder="••••••••"
+                  required
+                />
               </div>
               <div class="show-password-box">
-                <input type="checkbox" id="modalSignupShowCheckbox" onchange="document.getElementById('modalSignupPassword').type = this.checked ? 'text' : 'password'">
-                <label for="modalSignupShowCheckbox" class="mb-0" style="cursor:pointer;">Show Password</label>
+                <input
+                  type="checkbox"
+                  id="modalSignupShowCheckbox"
+                  onchange="
+                    document.getElementById('modalSignupPassword').type = this
+                      .checked
+                      ? 'text'
+                      : 'password'
+                  "
+                />
+                <label
+                  for="modalSignupShowCheckbox"
+                  class="mb-0"
+                  style="cursor: pointer"
+                  >Show Password</label
+                >
               </div>
               <button type="submit" class="btn-primary-custom w-100">
                 <span class="btn-text">Create Free Account</span>
-                <span class="loading-text">Loading <span class="book-spinner"><i class="bi bi-book"></i></span></span>
+                <span class="loading-text"
+                  >Loading
+                  <span class="book-spinner"><i class="bi bi-book"></i></span
+                ></span>
               </button>
               <p class="text-center mt-3 small text-muted">
-                Already registered? <span class="text-link" onclick="switchTab('login')">Login</span>
+                Already registered?
+                <span class="text-link" onclick="switchTab('login')"
+                  >Login</span
+                >
               </p>
             </form>
 
             <div class="modal-bottom-links">
-              <a href="/forgot-password" class="forgot-link"><i class="bi bi-question-circle-fill me-1"></i> Forgot Password?</a>
+              <a href="/forgot-password" class="forgot-link"
+                ><i class="bi bi-question-circle-fill me-1"></i> Forgot
+                Password?</a
+              >
               <div class="social-login">
                 <div class="social-divider"><span>or continue with</span></div>
                 <div class="social-buttons">
-                  <a href="/login/google" class="social-btn google"><i class="bi bi-google"></i> Google</a>
-                  <a href="/login/github" class="social-btn github"><i class="bi bi-github"></i> GitHub</a>
-                  <a href="/login/facebook" class="social-btn facebook"><i class="bi bi-facebook"></i> Facebook</a>
+                  <a href="/login/google" class="social-btn google"
+                    ><i class="bi bi-google"></i> Google</a
+                  >
+                  <a href="/login/github" class="social-btn github"
+                    ><i class="bi bi-github"></i> GitHub</a
+                  >
+                  <a href="/login/facebook" class="social-btn facebook"
+                    ><i class="bi bi-facebook"></i> Facebook</a
+                  >
                 </div>
               </div>
               <div class="footer-links">
-                <a href="/privacy"><i class="bi bi-shield-lock me-1"></i> Privacy Policy</a>
-                <a href="/terms"><i class="bi bi-file-earmark-text me-1"></i> Terms of Service</a>
-                <a href="/data-deletion"><i class="bi bi-trash me-1"></i> Data Deletion</a>
+                <a href="/privacy"
+                  ><i class="bi bi-shield-lock me-1"></i> Privacy Policy</a
+                >
+                <a href="/terms"
+                  ><i class="bi bi-file-earmark-text me-1"></i> Terms of
+                  Service</a
+                >
+                <a href="/data-deletion"
+                  ><i class="bi bi-trash me-1"></i> Data Deletion</a
+                >
               </div>
             </div>
           </div>
@@ -976,49 +1997,78 @@
     </div>
 
     <!-- ================== QR CODE POPUP ================== -->
-    <div id="qrPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:24px; border-radius:20px; box-shadow:0 15px 50px rgba(0,0,0,0.3); z-index:9999; text-align:center;">
-        <img id="qrImage" src="" style="width:200px;height:200px;border-radius:12px;">
-        <div style="margin-top:16px;">
-            <p style="font-size:0.85rem; color:#4b5563; line-height:1.5;">
-                📱 <strong>Scan this QR code</strong> with your phone camera to instantly open this page.
-            </p>
-            <p style="font-size:0.75rem; color:#9ca3af; margin-bottom:12px;">
-                Works on iOS, Android, and any modern device. No app installation required.
-            </p>
-            <button class="btn btn-primary btn-sm rounded-pill px-4" onclick="document.getElementById('qrPopup').style.display='none'">
-                <i class="bi bi-x-circle me-1"></i> Close
-            </button>
-        </div>
+    <div
+      id="qrPopup"
+      style="
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 24px;
+        border-radius: 20px;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+        z-index: 9999;
+        text-align: center;
+      "
+    >
+      <img
+        id="qrImage"
+        src=""
+        style="width: 200px; height: 200px; border-radius: 12px"
+      />
+      <div style="margin-top: 16px">
+        <p style="font-size: 0.85rem; color: #4b5563; line-height: 1.5">
+          📱 <strong>Scan this QR code</strong> with your phone camera to
+          instantly open this page.
+        </p>
+        <p style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 12px">
+          Works on iOS, Android, and any modern device. No app installation
+          required.
+        </p>
+        <button
+          class="btn btn-primary btn-sm rounded-pill px-4"
+          onclick="document.getElementById('qrPopup').style.display = 'none'"
+        >
+          <i class="bi bi-x-circle me-1"></i> Close
+        </button>
+      </div>
     </div>
 
     <!-- ================== PAGE LOADER FAILSAFE ================== -->
     <script>
-    setTimeout(function(){
-    var l = document.getElementById('page-loader');
-    if(l){ l.classList.add('hidden'); setTimeout(function(){ if(l.parentNode) l.parentNode.removeChild(l); }, 500); }
-    }, 4000);
+      setTimeout(function () {
+        var l = document.getElementById("page-loader");
+        if (l) {
+          l.classList.add("hidden");
+          setTimeout(function () {
+            if (l.parentNode) l.parentNode.removeChild(l);
+          }, 500);
+        }
+      }, 4000);
     </script>
 
     <!-- ================== ANIMATION STABILITY FIX ================== -->
     <script>
-    (function() {
-      if (navigator.serviceWorker) {
-        navigator.serviceWorker.addEventListener('message', function(event) {
-          if (event.data && event.data.action === 'refresh') {
-            if (typeof AOS !== 'undefined') AOS.refresh();
-          }
+      (function () {
+        if (navigator.serviceWorker) {
+          navigator.serviceWorker.addEventListener("message", function (event) {
+            if (event.data && event.data.action === "refresh") {
+              if (typeof AOS !== "undefined") AOS.refresh();
+            }
+          });
+        }
+        window.addEventListener("load", function () {
+          setTimeout(function () {
+            if (typeof AOS !== "undefined") AOS.refresh();
+          }, 500);
         });
-      }
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          if (typeof AOS !== 'undefined') AOS.refresh();
-        }, 500);
-      });
-      if (window.innerWidth < 576) {
-        document.documentElement.style.setProperty('--aos-duration', '250ms');
-        document.documentElement.style.setProperty('--aos-delay', '50ms');
-      }
-    })();
+        if (window.innerWidth < 576) {
+          document.documentElement.style.setProperty("--aos-duration", "250ms");
+          document.documentElement.style.setProperty("--aos-delay", "50ms");
+        }
+      })();
     </script>
-</body>
+  </body>
 </html>

@@ -1,102 +1,135 @@
-{% extends 'base.html' %}
-
-{% block extra_css %}
+{% extends 'base.html' %} {% block extra_css %}
 <style>
-    /* Responsive adjustments for history cards */
-    @media (max-width: 576px) {
-        .history-card .card-body {
-            padding: 0.3rem 0.2rem !important;
-        }
-        .history-card .card-body h6 {
-            font-size: 0.72rem !important;
-        }
-        .history-card .badge {
-            font-size: 0.55rem !important;
-        }
-        .history-card .text-warning {
-            font-size: 0.65rem !important;
-        }
-        .history-card .btn-sm.rounded-circle {
-            width: 22px !important;
-            height: 22px !important;
-        }
-        .history-card .btn-sm.rounded-circle i {
-            font-size: 0.7rem !important;
-        }
-        .history-card .text-muted {
-            font-size: 0.6rem !important;
-        }
-        .history-card .d-flex.align-items-center.justify-content-center {
-            height: 140px !important;
-        }
+  /* Responsive adjustments for history cards */
+  @media (max-width: 576px) {
+    .history-card .card-body {
+      padding: 0.3rem 0.2rem !important;
     }
+    .history-card .card-body h6 {
+      font-size: 0.72rem !important;
+    }
+    .history-card .badge {
+      font-size: 0.55rem !important;
+    }
+    .history-card .text-warning {
+      font-size: 0.65rem !important;
+    }
+    .history-card .btn-sm.rounded-circle {
+      width: 22px !important;
+      height: 22px !important;
+    }
+    .history-card .btn-sm.rounded-circle i {
+      font-size: 0.7rem !important;
+    }
+    .history-card .text-muted {
+      font-size: 0.6rem !important;
+    }
+    .history-card .d-flex.align-items-center.justify-content-center {
+      height: 140px !important;
+    }
+  }
 </style>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <div class="container py-4">
-    <h2 class="fw-bold mb-4"><i class="bi bi-clock-history"></i> Download History</h2>
+  <h2 class="fw-bold mb-4">
+    <i class="bi bi-clock-history"></i> Download History
+  </h2>
 
-    {% if pdfs %}
-    <div class="row g-3">
-        {% for pdf in pdfs %}
-        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-            <div class="card product-card border-0 shadow-sm h-100 history-card">
-                <!-- Cover -->
-                <div class="d-flex align-items-center justify-content-center" style="height: 180px;">
-                    {% if pdf.image_url and pdf.image_url != 'None' and pdf.image_url.strip() != '' %}
-                        <img src="{{ pdf.image_url }}" alt="Cover" class="img-fluid rounded" style="max-height: 100%; width: auto; object-fit: cover;" loading="lazy">
-                    {% else %}
-                        {% set title_safe = pdf.title | default('Book', true) | replace('_', ' ') %}
-                        {% set words = title_safe.split() %}
-                        {% set short_name = (words[0][:2])|upper if words|length == 1 else (words[0][0] ~ words[1][0])|upper %}
-                        <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100"
-                             style="background: linear-gradient(135deg, #a5b4fc, #818cf8); color: white;">
-                            <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-1"
-                                 style="width: 50px; height: 50px; font-weight: 800; font-size: 1.3rem;">
-                                {{ short_name }}
-                            </div>
-                            <h6 class="fw-bold text-center px-2" style="font-size:0.8rem;">{{ title_safe }}</h6>
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="card-body p-2">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="badge bg-light text-muted" style="font-size:0.65rem;">{{ pdf.level }}</span>
-                        <span class="fw-bold text-warning" style="font-size:0.75rem;">FREE</span>
-                    </div>
-                    <h6 class="fw-bold text-truncate mb-1" style="font-size:0.85rem;">{{ pdf.title | replace('_', ' ') }}</h6>
-                    <p class="text-muted small mb-1" style="font-size:0.7rem;">By {{ pdf.author }}</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="text-muted" style="font-size:0.6rem;">{{ pdf.downloaded_at }}</span>
-                        <button class="btn btn-sm btn-light rounded-circle preview-btn"
-                                data-title="{{ pdf.title }}" data-level="{{ pdf.level }}" data-link="{{ pdf.link }}"
-                                data-author="{{ pdf.author }}" data-desc="{{ pdf.description }}"
-                                data-img="{{ pdf.image_url }}" data-lang="{{ pdf.language }}"
-                                style="width: 28px; height: 28px; padding:0;">
-                            <i class="bi bi-download" style="font-size:0.75rem;"></i>
-                        </button>
-                    </div>
-                </div>
+  {% if pdfs %}
+  <div class="row g-3">
+    {% for pdf in pdfs %}
+    <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+      <div class="card product-card border-0 shadow-sm h-100 history-card">
+        <!-- Cover -->
+        <div
+          class="d-flex align-items-center justify-content-center"
+          style="height: 180px"
+        >
+          {% if pdf.image_url and pdf.image_url != 'None' and
+          pdf.image_url.strip() != '' %}
+          <img
+            src="{{ pdf.image_url }}"
+            alt="Cover"
+            class="img-fluid rounded"
+            style="max-height: 100%; width: auto; object-fit: cover"
+            loading="lazy"
+          />
+          {% else %} {% set title_safe = pdf.title | default('Book', true) |
+          replace('_', ' ') %} {% set words = title_safe.split() %} {% set
+          short_name = (words[0][:2])|upper if words|length == 1 else
+          (words[0][0] ~ words[1][0])|upper %}
+          <div
+            class="d-flex flex-column justify-content-center align-items-center w-100 h-100"
+            style="
+              background: linear-gradient(135deg, #a5b4fc, #818cf8);
+              color: white;
+            "
+          >
+            <div
+              class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-1"
+              style="
+                width: 50px;
+                height: 50px;
+                font-weight: 800;
+                font-size: 1.3rem;
+              "
+            >
+              {{ short_name }}
             </div>
+            <h6 class="fw-bold text-center px-2" style="font-size: 0.8rem">
+              {{ title_safe }}
+            </h6>
+          </div>
+          {% endif %}
         </div>
-        {% endfor %}
+
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="badge bg-light text-muted" style="font-size: 0.65rem"
+              >{{ pdf.level }}</span
+            >
+            <span class="fw-bold text-warning" style="font-size: 0.75rem"
+              >FREE</span
+            >
+          </div>
+          <h6 class="fw-bold text-truncate mb-1" style="font-size: 0.85rem">
+            {{ pdf.title | replace('_', ' ') }}
+          </h6>
+          <p class="text-muted small mb-1" style="font-size: 0.7rem">
+            By {{ pdf.author }}
+          </p>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted" style="font-size: 0.6rem"
+              >{{ pdf.downloaded_at }}</span
+            >
+            <button
+              class="btn btn-sm btn-light rounded-circle preview-btn"
+              data-title="{{ pdf.title }}"
+              data-level="{{ pdf.level }}"
+              data-link="{{ pdf.link }}"
+              data-author="{{ pdf.author }}"
+              data-desc="{{ pdf.description }}"
+              data-img="{{ pdf.image_url }}"
+              data-lang="{{ pdf.language }}"
+              style="width: 28px; height: 28px; padding: 0"
+            >
+              <i class="bi bi-download" style="font-size: 0.75rem"></i>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-    {% else %}
-    <div class="text-center py-5">
-        <i class="bi bi-inbox display-4 text-muted"></i>
-        <h5>No downloads yet</h5>
-        <p class="text-muted">Browse the library and download some books!</p>
-        <a href="/" class="btn btn-primary rounded-pill px-4 mt-2">Explore Library</a>
-    </div>
-    {% endif %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <i class="bi bi-inbox display-4 text-muted"></i>
+    <h5>No downloads yet</h5>
+    <p class="text-muted">Browse the library and download some books!</p>
+    <a href="/" class="btn btn-primary rounded-pill px-4 mt-2"
+      >Explore Library</a
+    >
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
-
-
-
-
-
-
-

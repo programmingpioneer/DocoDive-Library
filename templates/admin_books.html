@@ -1,162 +1,183 @@
-{% extends 'base.html' %}
-{% block content %}
+{% extends 'base.html' %} {% block content %}
 <div class="container py-4">
-    <h2 class="fw-bold mb-4"><i class="bi bi-book"></i> All Books (Admin)</h2>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle bg-white shadow-sm rounded-3 overflow-hidden">
-            <thead class="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Category</th>
-                    <th>Author</th>
-                    <th>Language</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for book in books %}
-                <tr id="book-row-{{ book.id }}">
-                    <td>{{ book.id }}</td>
-                    <td><strong>{{ book.title }}</strong></td>
-                    <td><span class="badge bg-primary">{{ book.level }}</span></td>
-                    <td>{{ book.author }}</td>
-                    <td>{{ book.language }}</td>
-                    <td>
-                        <div class="d-flex gap-2">
-                            <a href="/admin/edit/{{ book.id }}" class="btn btn-sm btn-outline-primary rounded-pill">
-                                <i class="bi bi-pencil"></i> Edit
-                            </a>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill delete-btn" 
-                                    data-id="{{ book.id }}" data-title="{{ book.title }}">
-                                <i class="bi bi-trash"></i> Delete
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+  <h2 class="fw-bold mb-4"><i class="bi bi-book"></i> All Books (Admin)</h2>
+  <div class="table-responsive">
+    <table
+      class="table table-hover align-middle bg-white shadow-sm rounded-3 overflow-hidden"
+    >
+      <thead class="table-dark">
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Author</th>
+          <th>Language</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for book in books %}
+        <tr id="book-row-{{ book.id }}">
+          <td>{{ book.id }}</td>
+          <td><strong>{{ book.title }}</strong></td>
+          <td><span class="badge bg-primary">{{ book.level }}</span></td>
+          <td>{{ book.author }}</td>
+          <td>{{ book.language }}</td>
+          <td>
+            <div class="d-flex gap-2">
+              <a
+                href="/admin/edit/{{ book.id }}"
+                class="btn btn-sm btn-outline-primary rounded-pill"
+              >
+                <i class="bi bi-pencil"></i> Edit
+              </a>
+              <button
+                class="btn btn-sm btn-outline-danger rounded-pill delete-btn"
+                data-id="{{ book.id }}"
+                data-title="{{ book.title }}"
+              >
+                <i class="bi bi-trash"></i> Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Confirm Delete</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete <strong id="deleteBookTitle"></strong>?</p>
-                <p class="text-muted small">This will permanently remove the PDF and cover image.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
-            </div>
-        </div>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-exclamation-triangle"></i> Confirm Delete
+        </h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <p>
+          Are you sure you want to delete
+          <strong id="deleteBookTitle"></strong>?
+        </p>
+        <p class="text-muted small">
+          This will permanently remove the PDF and cover image.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+          Delete
+        </button>
+      </div>
     </div>
+  </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
-let bookToDelete = null;
+  let bookToDelete = null;
 
-// Attach click event to all delete buttons
-document.querySelectorAll('.delete-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        bookToDelete = {
-            id: this.dataset.id,
-            title: this.dataset.title
-        };
-        document.getElementById('deleteBookTitle').textContent = bookToDelete.title;
-        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        modal.show();
+  // Attach click event to all delete buttons
+  document.querySelectorAll(".delete-btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      bookToDelete = {
+        id: this.dataset.id,
+        title: this.dataset.title,
+      };
+      document.getElementById("deleteBookTitle").textContent =
+        bookToDelete.title;
+      const modal = new bootstrap.Modal(document.getElementById("deleteModal"));
+      modal.show();
     });
-});
+  });
 
-// Confirm delete action
-document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
-    if (!bookToDelete) return;
-    const id = bookToDelete.id;
-    const row = document.getElementById('book-row-' + id);
-    const btn = this;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Deleting...';
+  // Confirm delete action
+  document
+    .getElementById("confirmDeleteBtn")
+    .addEventListener("click", async function () {
+      if (!bookToDelete) return;
+      const id = bookToDelete.id;
+      const row = document.getElementById("book-row-" + id);
+      const btn = this;
+      btn.disabled = true;
+      btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm"></span> Deleting...';
 
-    try {
+      try {
         const res = await fetch(`/admin/delete/${id}`, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'   // 👈 THIS WAS MISSING
-            }
+          method: "POST",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest", // 👈 THIS WAS MISSING
+          },
         });
         const data = await res.json();
         if (res.ok && data.success) {
-            // Smooth fade out and remove row
-            row.style.transition = 'opacity 0.3s';
-            row.style.opacity = '0';
-            setTimeout(() => row.remove(), 300);
-            bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
-            showToast('Book deleted successfully!', 'success');
+          // Smooth fade out and remove row
+          row.style.transition = "opacity 0.3s";
+          row.style.opacity = "0";
+          setTimeout(() => row.remove(), 300);
+          bootstrap.Modal.getInstance(
+            document.getElementById("deleteModal"),
+          ).hide();
+          showToast("Book deleted successfully!", "success");
         } else {
-            showToast(data.error || 'Delete failed.', 'danger');
+          showToast(data.error || "Delete failed.", "danger");
         }
-    } catch (err) {
-        showToast('Network error. Please check console.', 'danger');
+      } catch (err) {
+        showToast("Network error. Please check console.", "danger");
         console.error(err);
-    } finally {
+      } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Delete';
+        btn.innerHTML = "Delete";
         bookToDelete = null;
-    }
-});
+      }
+    });
 
-// Toast notification (same as pending page)
-function showToast(message, type) {
-    const container = document.createElement('div');
-    container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;';
+  // Toast notification (same as pending page)
+  function showToast(message, type) {
+    const container = document.createElement("div");
+    container.style.cssText =
+      "position:fixed;top:20px;right:20px;z-index:9999;";
     container.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
     document.body.appendChild(container);
     setTimeout(() => container.remove(), 4000);
-}
+  }
 </script>
 
 <style>
-    @media (max-width: 768px) {
-        .table td, .table th {
-            white-space: nowrap;
-            font-size: 0.85rem;
-        }
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-        }
-        .d-flex.gap-2 {
-            gap: 0.3rem !important;
-        }
+  @media (max-width: 768px) {
+    .table td,
+    .table th {
+      white-space: nowrap;
+      font-size: 0.85rem;
     }
-    @media (max-width: 576px) {
-        .container.py-4 {
-            padding-top: 1rem !important;
-            padding-bottom: 1rem !important;
-        }
-        h2.fw-bold {
-            font-size: 1.3rem;
-        }
-        .modal-dialog {
-            margin: 0.5rem;
-        }
+    .btn-sm {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
     }
+    .d-flex.gap-2 {
+      gap: 0.3rem !important;
+    }
+  }
+  @media (max-width: 576px) {
+    .container.py-4 {
+      padding-top: 1rem !important;
+      padding-bottom: 1rem !important;
+    }
+    h2.fw-bold {
+      font-size: 1.3rem;
+    }
+    .modal-dialog {
+      margin: 0.5rem;
+    }
+  }
 </style>
 {% endblock %}
-
-
-
-
-
-
-

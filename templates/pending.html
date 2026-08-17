@@ -1,235 +1,303 @@
-{% extends 'base.html' %}
-
-{% block content %}
+{% extends 'base.html' %} {% block content %}
 <div class="container py-5">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h2 class="fw-bold text-primary mb-0">
-            <i class="bi bi-hourglass-split me-2"></i> Pending Books
-        </h2>
-        <div class="d-flex gap-2 flex-wrap">
-            <button id="approveAllBtn" class="btn btn-success rounded-pill px-4">
-                <i class="bi bi-check-all me-1"></i> Approve All
-            </button>
-            <button id="rejectAllBtn" class="btn btn-danger rounded-pill px-4">
-                <i class="bi bi-x-circle me-1"></i> Reject All
-            </button>
-            <a href="/admin/dashboard" class="btn btn-outline-secondary rounded-pill px-4">
-                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
-            </a>
-        </div>
+  <!-- Header -->
+  <div
+    class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2"
+  >
+    <h2 class="fw-bold text-primary mb-0">
+      <i class="bi bi-hourglass-split me-2"></i> Pending Books
+    </h2>
+    <div class="d-flex gap-2 flex-wrap">
+      <button id="approveAllBtn" class="btn btn-success rounded-pill px-4">
+        <i class="bi bi-check-all me-1"></i> Approve All
+      </button>
+      <button id="rejectAllBtn" class="btn btn-danger rounded-pill px-4">
+        <i class="bi bi-x-circle me-1"></i> Reject All
+      </button>
+      <a
+        href="/admin/dashboard"
+        class="btn btn-outline-secondary rounded-pill px-4"
+      >
+        <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+      </a>
     </div>
+  </div>
 
-    <!-- Search -->
-    <div class="mb-4">
-        <input type="text" id="pendingSearch" class="form-control rounded-pill px-4" placeholder="🔍 Search pending books..." style="max-width: 400px;">
-    </div>
+  <!-- Search -->
+  <div class="mb-4">
+    <input
+      type="text"
+      id="pendingSearch"
+      class="form-control rounded-pill px-4"
+      placeholder="🔍 Search pending books..."
+      style="max-width: 400px"
+    />
+  </div>
 
-    {% if books %}
-    <div class="row g-4" id="booksGrid">
-        {% for book in books %}
-        <div class="col-6 col-sm-4 col-md-3 col-lg-2 pending-card" data-title="{{ book.title.lower() }}" data-author="{{ book.author.lower() }}">
-            <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
-                <!-- 3D Cover or fallback -->
-                <div class="book-cover-outer d-flex align-items-center justify-content-center">
-                    {% if book.image_url and book.image_url != 'None' and book.image_url.strip() != '' %}
-                    <div class="book-3d-wrapper">
-                        <div class="book-3d">
-                            <div class="book-front">
-                                <img src="{{ book.image_url }}" alt="Cover" class="book-cover" loading="lazy">
-                            </div>
-                            <div class="book-spine"></div>
-                            <div class="book-pages"></div>
-                            <div class="book-shadow"></div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <!-- No cover placeholder -->
-                    <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100"
-                         style="background: linear-gradient(135deg, #a5b4fc, #818cf8); color: white; border-radius: 12px;">
-                        <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-2"
-                             style="width:40px;height:40px;font-size:0.8rem;">
-                            {{ (book.title[:2]).upper() }}
-                        </div>
-                        <h6 class="fw-bold text-center px-2" style="font-size:0.6rem;">{{ book.title }}</h6>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- Card body -->
-                <div class="card-body p-2">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="badge bg-light text-muted" style="font-size:0.6rem;">{{ book.level }}</span>
-                        <span class="text-muted" style="font-size:0.6rem;">{{ book.created_at[:10] }}</span>
-                    </div>
-                    <h6 class="fw-bold text-truncate mb-1" style="font-size:0.8rem; color:#1e1b4b;">{{ book.title }}</h6>
-                    <p class="text-muted small mb-1" style="font-size:0.65rem;">By {{ book.author }}</p>
-
-                    <!-- Action Buttons -->
-                    <div class="d-flex justify-content-center gap-1 flex-wrap mt-2">
-                        <a href="/book/{{ book.id }}" target="_blank"
-                           class="btn btn-sm btn-outline-primary rounded-pill px-2" style="font-size:0.7rem;" title="Preview">
-                            <i class="bi bi-eye me-1"></i> Preview
-                        </a>
-                        <button class="btn btn-sm btn-success rounded-pill px-2 approve-btn" data-book-id="{{ book.id }}" style="font-size:0.7rem;">
-                            <i class="bi bi-check-lg me-1"></i> Approve
-                        </button>
-                        <button class="btn btn-sm btn-danger rounded-pill px-2 reject-btn" data-book-id="{{ book.id }}" style="font-size:0.7rem;">
-                            <i class="bi bi-x-lg me-1"></i> Reject
-                        </button>
-                    </div>
-                </div>
+  {% if books %}
+  <div class="row g-4" id="booksGrid">
+    {% for book in books %}
+    <div
+      class="col-6 col-sm-4 col-md-3 col-lg-2 pending-card"
+      data-title="{{ book.title.lower() }}"
+      data-author="{{ book.author.lower() }}"
+    >
+      <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
+        <!-- 3D Cover or fallback -->
+        <div
+          class="book-cover-outer d-flex align-items-center justify-content-center"
+        >
+          {% if book.image_url and book.image_url != 'None' and
+          book.image_url.strip() != '' %}
+          <div class="book-3d-wrapper">
+            <div class="book-3d">
+              <div class="book-front">
+                <img
+                  src="{{ book.image_url }}"
+                  alt="Cover"
+                  class="book-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div class="book-spine"></div>
+              <div class="book-pages"></div>
+              <div class="book-shadow"></div>
             </div>
+          </div>
+          {% else %}
+          <!-- No cover placeholder -->
+          <div
+            class="d-flex flex-column justify-content-center align-items-center w-100 h-100"
+            style="
+              background: linear-gradient(135deg, #a5b4fc, #818cf8);
+              color: white;
+              border-radius: 12px;
+            "
+          >
+            <div
+              class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-2"
+              style="width: 40px; height: 40px; font-size: 0.8rem"
+            >
+              {{ (book.title[:2]).upper() }}
+            </div>
+            <h6 class="fw-bold text-center px-2" style="font-size: 0.6rem">
+              {{ book.title }}
+            </h6>
+          </div>
+          {% endif %}
         </div>
-        {% endfor %}
+
+        <!-- Card body -->
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="badge bg-light text-muted" style="font-size: 0.6rem"
+              >{{ book.level }}</span
+            >
+            <span class="text-muted" style="font-size: 0.6rem"
+              >{{ book.created_at[:10] }}</span
+            >
+          </div>
+          <h6
+            class="fw-bold text-truncate mb-1"
+            style="font-size: 0.8rem; color: #1e1b4b"
+          >
+            {{ book.title }}
+          </h6>
+          <p class="text-muted small mb-1" style="font-size: 0.65rem">
+            By {{ book.author }}
+          </p>
+
+          <!-- Action Buttons -->
+          <div class="d-flex justify-content-center gap-1 flex-wrap mt-2">
+            <a
+              href="/book/{{ book.id }}"
+              target="_blank"
+              class="btn btn-sm btn-outline-primary rounded-pill px-2"
+              style="font-size: 0.7rem"
+              title="Preview"
+            >
+              <i class="bi bi-eye me-1"></i> Preview
+            </a>
+            <button
+              class="btn btn-sm btn-success rounded-pill px-2 approve-btn"
+              data-book-id="{{ book.id }}"
+              style="font-size: 0.7rem"
+            >
+              <i class="bi bi-check-lg me-1"></i> Approve
+            </button>
+            <button
+              class="btn btn-sm btn-danger rounded-pill px-2 reject-btn"
+              data-book-id="{{ book.id }}"
+              style="font-size: 0.7rem"
+            >
+              <i class="bi bi-x-lg me-1"></i> Reject
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-    {% else %}
-    <div class="text-center py-5">
-        <i class="bi bi-check-circle display-4 text-success"></i>
-        <h4 class="mt-3">No pending books</h4>
-    </div>
-    {% endif %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <i class="bi bi-check-circle display-4 text-success"></i>
+    <h4 class="mt-3">No pending books</h4>
+  </div>
+  {% endif %}
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-
+  document.addEventListener("DOMContentLoaded", function () {
     // ---------- SINGLE APPROVE / REJECT ----------
     async function approveBook(bookId) {
-        const res = await fetch(`/admin/approve/${bookId}`, {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        if (res.ok) {
-            document.getElementById(`book-row-${bookId}`)?.remove();
-            // also remove the pending card
-            const card = document.querySelector(`.pending-card button[data-book-id="${bookId}"]`)?.closest('.pending-card');
-            if (card) card.remove();
-            showToast('Book approved!', 'success');
-        } else {
-            const data = await res.json();
-            showToast(data.error || 'Failed to approve', 'danger');
-        }
+      const res = await fetch(`/admin/approve/${bookId}`, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      if (res.ok) {
+        document.getElementById(`book-row-${bookId}`)?.remove();
+        // also remove the pending card
+        const card = document
+          .querySelector(`.pending-card button[data-book-id="${bookId}"]`)
+          ?.closest(".pending-card");
+        if (card) card.remove();
+        showToast("Book approved!", "success");
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Failed to approve", "danger");
+      }
     }
 
     async function rejectBook(bookId) {
-        const res = await fetch(`/admin/reject/${bookId}`, {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        if (res.ok) {
-            const card = document.querySelector(`.pending-card button[data-book-id="${bookId}"]`)?.closest('.pending-card');
-            if (card) card.remove();
-            showToast('Book rejected!', 'danger');
-        } else {
-            const data = await res.json();
-            showToast(data.error || 'Failed to reject', 'danger');
-        }
+      const res = await fetch(`/admin/reject/${bookId}`, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      if (res.ok) {
+        const card = document
+          .querySelector(`.pending-card button[data-book-id="${bookId}"]`)
+          ?.closest(".pending-card");
+        if (card) card.remove();
+        showToast("Book rejected!", "danger");
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Failed to reject", "danger");
+      }
     }
 
     // Bind single buttons
-    document.querySelectorAll('.approve-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id = this.dataset.bookId;
-            if (confirm('Approve this book?')) approveBook(id);
-        });
+    document.querySelectorAll(".approve-btn").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const id = this.dataset.bookId;
+        if (confirm("Approve this book?")) approveBook(id);
+      });
     });
 
-    document.querySelectorAll('.reject-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id = this.dataset.bookId;
-            if (confirm('Reject this book?')) rejectBook(id);
-        });
+    document.querySelectorAll(".reject-btn").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const id = this.dataset.bookId;
+        if (confirm("Reject this book?")) rejectBook(id);
+      });
     });
 
     // ---------- APPROVE ALL ----------
-    document.getElementById('approveAllBtn')?.addEventListener('click', async function() {
-        if (!confirm('Approve ALL pending books?')) return;
-        const ids = [...document.querySelectorAll('.approve-btn')].map(b => b.dataset.bookId);
+    document
+      .getElementById("approveAllBtn")
+      ?.addEventListener("click", async function () {
+        if (!confirm("Approve ALL pending books?")) return;
+        const ids = [...document.querySelectorAll(".approve-btn")].map(
+          (b) => b.dataset.bookId,
+        );
         let count = 0;
         for (const id of ids) {
-            try {
-                const res = await fetch(`/admin/approve/${id}`, {
-                    method: 'POST',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                if (res.ok) {
-                    count++;
-                    const card = document.querySelector(`.pending-card button[data-book-id="${id}"]`)?.closest('.pending-card');
-                    if (card) card.remove();
-                }
-            } catch(e) {}
+          try {
+            const res = await fetch(`/admin/approve/${id}`, {
+              method: "POST",
+              headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            if (res.ok) {
+              count++;
+              const card = document
+                .querySelector(`.pending-card button[data-book-id="${id}"]`)
+                ?.closest(".pending-card");
+              if (card) card.remove();
+            }
+          } catch (e) {}
         }
-        showToast(`${count} books approved!`, 'success');
-    });
+        showToast(`${count} books approved!`, "success");
+      });
 
     // ---------- REJECT ALL ----------
-    document.getElementById('rejectAllBtn')?.addEventListener('click', async function() {
-        if (!confirm('Reject ALL pending books?')) return;
-        const ids = [...document.querySelectorAll('.reject-btn')].map(b => b.dataset.bookId);
+    document
+      .getElementById("rejectAllBtn")
+      ?.addEventListener("click", async function () {
+        if (!confirm("Reject ALL pending books?")) return;
+        const ids = [...document.querySelectorAll(".reject-btn")].map(
+          (b) => b.dataset.bookId,
+        );
         let count = 0;
         for (const id of ids) {
-            try {
-                const res = await fetch(`/admin/reject/${id}`, {
-                    method: 'POST',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                if (res.ok) {
-                    count++;
-                    const card = document.querySelector(`.pending-card button[data-book-id="${id}"]`)?.closest('.pending-card');
-                    if (card) card.remove();
-                }
-            } catch(e) {}
+          try {
+            const res = await fetch(`/admin/reject/${id}`, {
+              method: "POST",
+              headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            if (res.ok) {
+              count++;
+              const card = document
+                .querySelector(`.pending-card button[data-book-id="${id}"]`)
+                ?.closest(".pending-card");
+              if (card) card.remove();
+            }
+          } catch (e) {}
         }
-        showToast(`${count} books rejected!`, 'danger');
-    });
+        showToast(`${count} books rejected!`, "danger");
+      });
 
     // ---------- SEARCH ----------
-    document.getElementById('pendingSearch')?.addEventListener('input', function() {
+    document
+      .getElementById("pendingSearch")
+      ?.addEventListener("input", function () {
         const query = this.value.toLowerCase();
-        document.querySelectorAll('.pending-card').forEach(card => {
-            const title = card.dataset.title || '';
-            const author = card.dataset.author || '';
-            if (title.includes(query) || author.includes(query)) {
-                card.style.display = '';
-            } else {
-                card.style.display = 'none';
-            }
+        document.querySelectorAll(".pending-card").forEach((card) => {
+          const title = card.dataset.title || "";
+          const author = card.dataset.author || "";
+          if (title.includes(query) || author.includes(query)) {
+            card.style.display = "";
+          } else {
+            card.style.display = "none";
+          }
         });
-    });
+      });
 
     // Helper toast
     function showToast(message, type) {
-        const container = document.createElement('div');
-        container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;';
-        container.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
-        document.body.appendChild(container);
-        setTimeout(() => container.remove(), 4000);
+      const container = document.createElement("div");
+      container.style.cssText =
+        "position:fixed;top:20px;right:20px;z-index:9999;";
+      container.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+      document.body.appendChild(container);
+      setTimeout(() => container.remove(), 4000);
     }
-});
+  });
 </script>
 
 <style>
+  .pending-card .book-cover-outer {
+    height: 180px;
+    overflow: hidden;
+    border-radius: 12px 12px 0 0;
+  }
+  .pending-card .book-3d-wrapper {
+    height: 150px;
+  }
+  @media (max-width: 576px) {
     .pending-card .book-cover-outer {
-        height: 180px;
-        overflow: hidden;
-        border-radius: 12px 12px 0 0;
+      height: 140px;
     }
     .pending-card .book-3d-wrapper {
-        height: 150px;
+      height: 110px;
     }
-    @media (max-width: 576px) {
-        .pending-card .book-cover-outer { height: 140px; }
-        .pending-card .book-3d-wrapper { height: 110px; }
-    }
+  }
 </style>
 {% endblock %}
-
-
-
-
-
-
-

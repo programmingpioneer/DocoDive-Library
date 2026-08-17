@@ -1,123 +1,165 @@
-{% extends 'base.html' %}
-{% block content %}
+{% extends 'base.html' %} {% block content %}
 <div class="container py-5">
-    <!-- Page Header -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-        <h2 class="fw-bold text-primary mb-0">
-            <i class="bi bi-graph-up me-2"></i> My Library Stats
-        </h2>
-        <a href="/" class="btn btn-outline-secondary rounded-pill px-4">
-            <i class="bi bi-arrow-left me-1"></i> Back to Library
-        </a>
+  <!-- Page Header -->
+  <div
+    class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3"
+  >
+    <h2 class="fw-bold text-primary mb-0">
+      <i class="bi bi-graph-up me-2"></i> My Library Stats
+    </h2>
+    <a href="/" class="btn btn-outline-secondary rounded-pill px-4">
+      <i class="bi bi-arrow-left me-1"></i> Back to Library
+    </a>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row g-4 mb-5">
+    <!-- Downloads -->
+    <div class="col-6 col-sm-6 col-lg-3">
+      <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
+        <div class="mb-3">
+          <span
+            class="d-inline-flex align-items-center justify-content-center rounded-4"
+            style="
+              width: 70px;
+              height: 70px;
+              background: linear-gradient(135deg, #4338ca, #818cf8);
+              box-shadow: 0 8px 20px rgba(67, 56, 202, 0.2);
+            "
+          >
+            <i class="bi bi-download text-white fs-2"></i>
+          </span>
+        </div>
+        <h3 class="fw-bold display-6 mb-1" style="color: #1e1b4b">
+          {{ downloads }}
+        </h3>
+        <p class="text-muted small mb-0">Downloads</p>
+      </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="row g-4 mb-5">
-        <!-- Downloads -->
-        <div class="col-6 col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
-                <div class="mb-3">
-                    <span class="d-inline-flex align-items-center justify-content-center rounded-4" style="width: 70px; height: 70px; background: linear-gradient(135deg, #4338ca, #818cf8); box-shadow: 0 8px 20px rgba(67,56,202,0.2);">
-                        <i class="bi bi-download text-white fs-2"></i>
-                    </span>
-                </div>
-                <h3 class="fw-bold display-6 mb-1" style="color: #1e1b4b;">{{ downloads }}</h3>
-                <p class="text-muted small mb-0">Downloads</p>
-            </div>
+    <!-- Favorites -->
+    <div class="col-6 col-sm-6 col-lg-3">
+      <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
+        <div class="mb-3">
+          <span
+            class="d-inline-flex align-items-center justify-content-center rounded-4"
+            style="
+              width: 70px;
+              height: 70px;
+              background: linear-gradient(135deg, #ef4444, #f87171);
+              box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
+            "
+          >
+            <i class="bi bi-heart-fill text-white fs-2"></i>
+          </span>
         </div>
-
-        <!-- Favorites -->
-        <div class="col-6 col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
-                <div class="mb-3">
-                    <span class="d-inline-flex align-items-center justify-content-center rounded-4" style="width: 70px; height: 70px; background: linear-gradient(135deg, #ef4444, #f87171); box-shadow: 0 8px 20px rgba(239,68,68,0.2);">
-                        <i class="bi bi-heart-fill text-white fs-2"></i>
-                    </span>
-                </div>
-                <h3 class="fw-bold display-6 mb-1" style="color: #1e1b4b;">{{ favorites }}</h3>
-                <p class="text-muted small mb-0">Favorites</p>
-            </div>
-        </div>
-
-        <!-- Reviews -->
-        <div class="col-6 col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
-                <div class="mb-3">
-                    <span class="d-inline-flex align-items-center justify-content-center rounded-4" style="width: 70px; height: 70px; background: linear-gradient(135deg, #f59e0b, #fbbf24); box-shadow: 0 8px 20px rgba(245,158,11,0.2);">
-                        <i class="bi bi-star-fill text-white fs-2"></i>
-                    </span>
-                </div>
-                <h3 class="fw-bold display-6 mb-1" style="color: #1e1b4b;">{{ reviews }}</h3>
-                <p class="text-muted small mb-0">Reviews</p>
-            </div>
-        </div>
-
-        <!-- Current Streak -->
-        <div class="col-6 col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
-                <div class="mb-3">
-                    <span class="d-inline-flex align-items-center justify-content-center rounded-4" style="width: 70px; height: 70px; background: linear-gradient(135deg, #10b981, #34d399); box-shadow: 0 8px 20px rgba(16,185,129,0.2);">
-                        <i class="bi bi-fire text-white fs-2"></i>
-                    </span>
-                </div>
-                <h3 class="fw-bold display-6 mb-1" style="color: #1e1b4b;">{{ streak }}</h3>
-                <p class="text-muted small mb-0">Day Streak</p>
-            </div>
-        </div>
+        <h3 class="fw-bold display-6 mb-1" style="color: #1e1b4b">
+          {{ favorites }}
+        </h3>
+        <p class="text-muted small mb-0">Favorites</p>
+      </div>
     </div>
 
-    <!-- Streak Detail & Badges -->
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 p-4">
-                <h5 class="fw-bold mb-3"><i class="bi bi-award me-2"></i> Your Achievements</h5>
-                <div class="d-flex flex-wrap gap-3 align-items-center">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-success px-3 py-2 rounded-pill fs-6">
-                            🔥 {{ streak }} day streak
-                        </span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge {% if longest >= 7 %}bg-warning text-dark{% else %}bg-light text-muted{% endif %} px-3 py-2 rounded-pill fs-6">
-                            {% if longest >= 7 %}🏅 Book Lover{% else %}🔒 Book Lover (reach 7 days){% endif %}
-                        </span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge {% if longest >= 30 %}bg-info text-dark{% else %}bg-light text-muted{% endif %} px-3 py-2 rounded-pill fs-6">
-                            {% if longest >= 30 %}📚 Avid Reader{% else %}🔒 Avid Reader (reach 30 days){% endif %}
-                        </span>
-                    </div>
-                </div>
-                <hr class="my-3">
-                <p class="text-muted small mb-0">
-                    Longest streak ever: <strong>{{ longest }}</strong> days. <br>
-                    Keep reading every day to unlock more badges!
-                </p>
-            </div>
+    <!-- Reviews -->
+    <div class="col-6 col-sm-6 col-lg-3">
+      <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
+        <div class="mb-3">
+          <span
+            class="d-inline-flex align-items-center justify-content-center rounded-4"
+            style="
+              width: 70px;
+              height: 70px;
+              background: linear-gradient(135deg, #f59e0b, #fbbf24);
+              box-shadow: 0 8px 20px rgba(245, 158, 11, 0.2);
+            "
+          >
+            <i class="bi bi-star-fill text-white fs-2"></i>
+          </span>
         </div>
+        <h3 class="fw-bold display-6 mb-1" style="color: #1e1b4b">
+          {{ reviews }}
+        </h3>
+        <p class="text-muted small mb-0">Reviews</p>
+      </div>
     </div>
+
+    <!-- Current Streak -->
+    <div class="col-6 col-sm-6 col-lg-3">
+      <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
+        <div class="mb-3">
+          <span
+            class="d-inline-flex align-items-center justify-content-center rounded-4"
+            style="
+              width: 70px;
+              height: 70px;
+              background: linear-gradient(135deg, #10b981, #34d399);
+              box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+            "
+          >
+            <i class="bi bi-fire text-white fs-2"></i>
+          </span>
+        </div>
+        <h3 class="fw-bold display-6 mb-1" style="color: #1e1b4b">
+          {{ streak }}
+        </h3>
+        <p class="text-muted small mb-0">Day Streak</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Streak Detail & Badges -->
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card border-0 shadow-sm rounded-4 p-4">
+        <h5 class="fw-bold mb-3">
+          <i class="bi bi-award me-2"></i> Your Achievements
+        </h5>
+        <div class="d-flex flex-wrap gap-3 align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-success px-3 py-2 rounded-pill fs-6">
+              🔥 {{ streak }} day streak
+            </span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span
+              class="badge {% if longest >= 7 %}bg-warning text-dark{% else %}bg-light text-muted{% endif %} px-3 py-2 rounded-pill fs-6"
+            >
+              {% if longest >= 7 %}🏅 Book Lover{% else %}🔒 Book Lover (reach 7
+              days){% endif %}
+            </span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span
+              class="badge {% if longest >= 30 %}bg-info text-dark{% else %}bg-light text-muted{% endif %} px-3 py-2 rounded-pill fs-6"
+            >
+              {% if longest >= 30 %}📚 Avid Reader{% else %}🔒 Avid Reader
+              (reach 30 days){% endif %}
+            </span>
+          </div>
+        </div>
+        <hr class="my-3" />
+        <p class="text-muted small mb-0">
+          Longest streak ever: <strong>{{ longest }}</strong> days. <br />
+          Keep reading every day to unlock more badges!
+        </p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
-    /* Responsive tweaks */
-    @media (max-width: 576px) {
-        .display-6 {
-            font-size: 1.5rem;
-        }
-        .card .rounded-4 {
-            width: 50px !important;
-            height: 50px !important;
-        }
-        .card .rounded-4 i {
-            font-size: 1.4rem !important;
-        }
+  /* Responsive tweaks */
+  @media (max-width: 576px) {
+    .display-6 {
+      font-size: 1.5rem;
     }
+    .card .rounded-4 {
+      width: 50px !important;
+      height: 50px !important;
+    }
+    .card .rounded-4 i {
+      font-size: 1.4rem !important;
+    }
+  }
 </style>
 {% endblock %}
-
-
-
-
-
-
-

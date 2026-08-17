@@ -12,8 +12,11 @@
 
                     <!-- Avatar -->
                     <div class="mb-4 text-center">
-                        <img id="avatarPreview" src="{{ profile.avatar_url or url_for('static', filename='default-avatar.png') }}"
-                             class="rounded-circle border shadow-sm mb-2" width="100" height="100" style="object-fit: cover;">
+                        <img id="avatarPreview"
+                          src="{{ profile.avatar_url or url_for('static', filename='default-avatar.png') }}"
+                          class="rounded-circle border shadow-sm mb-2 d-block mx-auto"
+                          alt="Avatar preview"
+                          style="width: 100px !important; height: 100px !important; object-fit: cover; object-position: center; border-radius: 50% !important; display: block; margin-left: auto; margin-right: auto;">
                         <input type="file" name="avatar" class="form-control" accept="image/*" onchange="previewAvatar(this)">
                         <small class="text-muted">JPG, PNG, GIF, WEBP (max 2MB)</small>
                     </div>
