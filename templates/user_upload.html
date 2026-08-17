@@ -56,6 +56,7 @@
         text-align: center;
         box-shadow: 0 25px 50px rgba(0,0,0,0.1);
         margin: 20px 0;
+        overflow: hidden;
     }
     .progress-top-icons {
         display: flex;
@@ -65,7 +66,7 @@
         margin-bottom: 20px;
         flex-wrap: wrap;
     }
-    .laptop-icon, .server-icon { position: relative; }
+    .laptop-icon, .server-icon { position: relative; flex-shrink: 0; }
     .flying-files .pdf-file-icon {
         position: absolute;
         left: 50%;
@@ -74,6 +75,7 @@
         transform: translate(-50%, -50%);
         animation: flyToServer 1.5s infinite ease-in-out;
         opacity: 0;
+        white-space: nowrap;
     }
     .delay1 { animation-delay: 0.5s; }
     .delay2 { animation-delay: 1s; }
@@ -87,6 +89,7 @@
         height: 2px;
         background: linear-gradient(90deg, transparent, #4338ca, transparent);
         animation: pulseLine 1s infinite;
+        flex-shrink: 0;
     }
     @keyframes pulseLine {
         0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
@@ -107,15 +110,32 @@
         from { box-shadow: 0 0 10px rgba(16,185,129,0.4); transform: translate(-50%, -50%) scale(0.9); }
         to { box-shadow: 0 0 25px rgba(16,185,129,0.8); transform: translate(-50%, -50%) scale(1.2); }
     }
+
+    /* ========== CIRCULAR PROGRESS ========== */
     .circular-progress-container {
         position: relative;
         width: 120px;
         height: 120px;
         margin: 0 auto 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .progress-ring {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+    .progress-ring .ring-bg {
+        fill: none;
+        stroke: #e0e7ff;
+        stroke-width: 8;
     }
     .progress-ring .ring-fg {
-        stroke-dasharray: 327 327;
-        stroke-dashoffset: 327;
+        fill: none;
+        stroke: #4338ca;
+        stroke-width: 8;
+        stroke-linecap: round;
         transition: stroke-dashoffset 0.2s ease;
     }
     .progress-text {
@@ -126,25 +146,34 @@
         font-size: 24px;
         font-weight: 800;
         color: #1e1b4b;
+        pointer-events: none;
     }
+
+    /* ========== PROGRESS STATS - ALWAYS SINGLE ROW ========== */
     .progress-stats {
         display: flex;
-        justify-content: space-around;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
         margin-bottom: 10px;
-        flex-wrap: wrap;
-        gap: 0.5rem;
+        width: 100%;
+        flex-wrap: nowrap;
     }
     .stat-item {
         display: flex;
         flex-direction: column;
         font-size: 0.85rem;
+        flex: 1;
+        min-width: 0;
+        text-align: center;
     }
-    .stat-label { color: #6b7280; }
+    .stat-label { color: #6b7280; font-size: 0.75rem; }
     .stat-value { font-weight: 600; color: #1e1b4b; }
     .progress-status-text {
         font-weight: 600;
         color: #4338ca;
         min-height: 20px;
+        font-size: 0.95rem;
     }
 
     /* ========== RESPONSIVE IMPROVEMENTS ========== */
@@ -156,39 +185,31 @@
         .disclaimer { font-size: 0.8rem; padding: 10px; }
         .progress-glass-card {
             padding: 15px;
+            border-radius: 18px;
         }
         .progress-top-icons {
-            gap: 10px;
+            gap: 12px;
             margin-bottom: 15px;
         }
+        .progress-top-icons svg { width: 48px; height: 40px; }
         .circular-progress-container {
             width: 100px;
             height: 100px;
             margin-bottom: 15px;
         }
-        .progress-ring {
-            width: 100px;
-            height: 100px;
+        .progress-ring .ring-bg,
+        .progress-ring .ring-fg {
+            stroke-width: 7;
         }
-        .progress-ring .ring-bg, .progress-ring .ring-fg {
-            stroke-width: 6;
-        }
-        .progress-text {
-            font-size: 20px;
-        }
+        .progress-text { font-size: 20px; }
         .progress-stats {
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
+            gap: 5px;
         }
-        .stat-item {
-            flex-direction: row;
-            gap: 4px;
-            font-size: 0.8rem;
-        }
+        .stat-item { font-size: 0.78rem; }
         .pending-item { flex-direction: column; align-items: flex-start; }
-        .connection-lines { width: 30px; }
+        .connection-lines { width: 35px; }
         .flying-files .pdf-file-icon { font-size: 18px; }
+        .progress-status-text { font-size: 0.85rem; }
     }
 
     @media (max-width: 576px) {
@@ -199,36 +220,37 @@
         .btn { width: 100%; }
         .form-control, .form-select { font-size: 0.85rem; padding: 8px 12px; }
         .disclaimer { font-size: 0.75rem; }
-        .progress-glass-card { padding: 12px; }
+        .progress-glass-card {
+            padding: 12px 10px;
+            border-radius: 16px;
+        }
         .progress-top-icons {
-            gap: 6px;
+            gap: 8px;
             margin-bottom: 12px;
         }
         .progress-top-icons svg { width: 40px; height: 35px; }
-        .connection-lines { width: 20px; }
+        .connection-lines { width: 24px; }
         .circular-progress-container {
             width: 80px;
             height: 80px;
             margin-bottom: 12px;
         }
-        .progress-ring {
-            width: 80px;
-            height: 80px;
+        .progress-ring .ring-bg,
+        .progress-ring .ring-fg {
+            stroke-width: 6;
         }
-        .progress-ring .ring-bg, .progress-ring .ring-fg {
-            stroke-width: 5;
-        }
-        .progress-text {
-            font-size: 16px;
+        .progress-text { font-size: 16px; }
+        .progress-stats {
+            gap: 3px;
         }
         .stat-item {
-            font-size: 0.7rem;
+            font-size: 0.68rem;
         }
+        .stat-label { font-size: 0.62rem; }
+        .stat-value { font-size: 0.7rem; }
         .flying-files .pdf-file-icon { font-size: 14px; }
-        .server-pulse {
-            width: 30px;
-            height: 30px;
-        }
+        .server-pulse { width: 30px; height: 30px; }
+        .progress-status-text { font-size: 0.78rem; min-height: 18px; }
     }
 </style>
 {% endblock %}
@@ -330,9 +352,12 @@
                     </div>
 
                     <div class="circular-progress-container">
-                        <svg class="progress-ring" width="120" height="120">
-                            <circle class="ring-bg" cx="60" cy="60" r="52" fill="none" stroke="#e0e7ff" stroke-width="8"/>
-                            <circle class="ring-fg" cx="60" cy="60" r="52" fill="none" stroke="#4338ca" stroke-width="8" stroke-linecap="round" stroke-dasharray="327 327" stroke-dashoffset="327" transform="rotate(-90 60 60)"/>
+                        <svg class="progress-ring" viewBox="0 0 120 120">
+                            <circle class="ring-bg" cx="60" cy="60" r="52"/>
+                            <circle class="ring-fg" cx="60" cy="60" r="52"
+                                    stroke-dasharray="326.7 326.7"
+                                    stroke-dashoffset="326.7"
+                                    transform="rotate(-90 60 60)"/>
                         </svg>
                         <div class="progress-text" id="progressPercent">0%</div>
                     </div>
@@ -380,6 +405,7 @@
 {% block scripts %}
 <script>
 const MAX_FILE_SIZE = 500 * 1024 * 1024;
+const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
 
 // Cover image preview
 function previewCoverImage(input) {
@@ -490,7 +516,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
         if (e.lengthComputable) {
             let percent = Math.round((e.loaded / e.total) * 100);
             // Update ring
-            let offset = 327 - (327 * percent / 100);
+            let offset = RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * percent / 100);
             ringFg.style.strokeDashoffset = offset;
             progressPercent.textContent = percent + '%';
 
@@ -552,10 +578,3 @@ function formatTime(seconds) {
 }
 </script>
 {% endblock %}
-
-
-
-
-
-
-
