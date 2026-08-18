@@ -1,57 +1,86 @@
-{% extends 'base.html' %}
-
-{% block extra_css %}
+{% extends 'base.html' %} {% block extra_css %}
 <!-- Tailwind CSS CDN -->
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-    .avatar-img { object-fit: cover; }
-    .podium-block { transition: transform 0.2s ease; }
-    .podium-block:hover { transform: translateY(-2px); }
-    .scrollable-list::-webkit-scrollbar { width: 4px; }
-    .scrollable-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  .avatar-img {
+    object-fit: cover;
+  }
+  .podium-block {
+    transition: transform 0.2s ease;
+  }
+  .podium-block:hover {
+    transform: translateY(-2px);
+  }
+  .scrollable-list::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollable-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
 </style>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <div class="min-h-screen bg-gray-50 py-8 px-4">
   <div class="max-w-md mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
-
     <!-- ===== HEADER ===== -->
     <div class="px-6 pt-6 pb-2 flex items-center gap-3">
-      <a href="/" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      <a
+        href="/"
+        class="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5 text-gray-700"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15 19l-7-7 7-7"
+          />
         </svg>
       </a>
-      <h1 class="text-2xl font-extrabold text-gray-800 tracking-tight">🏆 Leaderboard</h1>
+      <h1 class="text-2xl font-extrabold text-gray-800 tracking-tight">
+        🏆 Leaderboard
+      </h1>
     </div>
 
     {% if leaderboard and leaderboard|length > 0 %}
     <!-- ===== TOP 3 PODIUM ===== -->
-    {% set first = leaderboard[0] %}
-    {% set second = leaderboard[1] if leaderboard|length > 1 else None %}
-    {% set third = leaderboard[2] if leaderboard|length > 2 else None %}
+    {% set first = leaderboard[0] %} {% set second = leaderboard[1] if
+    leaderboard|length > 1 else None %} {% set third = leaderboard[2] if
+    leaderboard|length > 2 else None %}
 
     <div class="px-6 mt-4">
       <div class="flex justify-center items-end gap-2 sm:gap-4">
-
         <!-- 2nd Place -->
         {% if second %}
         <div class="flex flex-col items-center podium-block">
-          <img src="{{ second.avatar_url if second.avatar_url else 'https://ui-avatars.com/api/?name=' + second.name + '&background=cbd5e1&color=1e293b&size=64' }}"
-               class="w-14 h-14 rounded-full border-2 border-gray-300 -mb-2 z-10 avatar-img">
-          <div class="w-20 h-24 flex flex-col items-center justify-center bg-gray-200 rounded-t-xl rounded-b-xl shadow-inner">
+          <img
+            src="{{ second.avatar_url if second.avatar_url else 'https://ui-avatars.com/api/?name=' + second.name + '&background=cbd5e1&color=1e293b&size=64' }}"
+            class="w-14 h-14 rounded-full border-2 border-gray-300 -mb-2 z-10 avatar-img"
+          />
+          <div
+            class="w-20 h-24 flex flex-col items-center justify-center bg-gray-200 rounded-t-xl rounded-b-xl shadow-inner"
+          >
             <span class="text-3xl font-bold text-gray-700">2</span>
           </div>
           <p class="text-sm font-semibold text-gray-700 mt-2">
             {% if second.is_official %}
-              <a href="/user/profile/{{ second.username }}" class="text-decoration-none text-gray-700">
-                {{ second.name }}
-                <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
-              </a>
-            {% else %}
+            <a
+              href="/user/profile/{{ second.username }}"
+              class="text-decoration-none text-gray-700"
+            >
               {{ second.name }}
-            {% endif %}
+              <i
+                class="bi bi-patch-check-fill text-primary ms-1"
+                title="Official Account"
+              ></i>
+            </a>
+            {% else %} {{ second.name }} {% endif %}
           </p>
           <span class="text-xs text-gray-500">{{ second.points }} pts</span>
         </div>
@@ -59,20 +88,28 @@
 
         <!-- 1st Place -->
         <div class="flex flex-col items-center podium-block">
-          <img src="{{ first.avatar_url if first.avatar_url else 'https://ui-avatars.com/api/?name=' + first.name + '&background=FFD700&color=1e293b&size=64' }}"
-               class="w-16 h-16 rounded-full border-4 border-yellow-400 -mb-2 z-10 avatar-img">
-          <div class="w-24 h-32 flex flex-col items-center justify-center bg-yellow-400 rounded-t-xl rounded-b-xl shadow-lg">
+          <img
+            src="{{ first.avatar_url if first.avatar_url else 'https://ui-avatars.com/api/?name=' + first.name + '&background=FFD700&color=1e293b&size=64' }}"
+            class="w-16 h-16 rounded-full border-4 border-yellow-400 -mb-2 z-10 avatar-img"
+          />
+          <div
+            class="w-24 h-32 flex flex-col items-center justify-center bg-yellow-400 rounded-t-xl rounded-b-xl shadow-lg"
+          >
             <span class="text-4xl font-bold text-yellow-900">1</span>
           </div>
           <p class="text-sm font-semibold text-gray-700 mt-2">
             {% if first.is_official %}
-              <a href="/user/profile/{{ first.username }}" class="text-decoration-none text-gray-700">
-                {{ first.name }}
-                <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
-              </a>
-            {% else %}
+            <a
+              href="/user/profile/{{ first.username }}"
+              class="text-decoration-none text-gray-700"
+            >
               {{ first.name }}
-            {% endif %}
+              <i
+                class="bi bi-patch-check-fill text-primary ms-1"
+                title="Official Account"
+              ></i>
+            </a>
+            {% else %} {{ first.name }} {% endif %}
           </p>
           <span class="text-xs text-gray-500">{{ first.points }} pts</span>
         </div>
@@ -80,20 +117,28 @@
         <!-- 3rd Place -->
         {% if third %}
         <div class="flex flex-col items-center podium-block">
-          <img src="{{ third.avatar_url if third.avatar_url else 'https://ui-avatars.com/api/?name=' + third.name + '&background=e2e8f0&color=1e293b&size=64' }}"
-               class="w-14 h-14 rounded-full border-2 border-gray-300 -mb-2 z-10 avatar-img">
-          <div class="w-20 h-20 flex flex-col items-center justify-center bg-gray-200 rounded-t-xl rounded-b-xl shadow-inner">
+          <img
+            src="{{ third.avatar_url if third.avatar_url else 'https://ui-avatars.com/api/?name=' + third.name + '&background=e2e8f0&color=1e293b&size=64' }}"
+            class="w-14 h-14 rounded-full border-2 border-gray-300 -mb-2 z-10 avatar-img"
+          />
+          <div
+            class="w-20 h-20 flex flex-col items-center justify-center bg-gray-200 rounded-t-xl rounded-b-xl shadow-inner"
+          >
             <span class="text-3xl font-bold text-gray-600">3</span>
           </div>
           <p class="text-sm font-semibold text-gray-700 mt-2">
             {% if third.is_official %}
-              <a href="/user/profile/{{ third.username }}" class="text-decoration-none text-gray-700">
-                {{ third.name }}
-                <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
-              </a>
-            {% else %}
+            <a
+              href="/user/profile/{{ third.username }}"
+              class="text-decoration-none text-gray-700"
+            >
               {{ third.name }}
-            {% endif %}
+              <i
+                class="bi bi-patch-check-fill text-primary ms-1"
+                title="Official Account"
+              ></i>
+            </a>
+            {% else %} {{ third.name }} {% endif %}
           </p>
           <span class="text-xs text-gray-500">{{ third.points }} pts</span>
         </div>
@@ -103,13 +148,19 @@
 
     <!-- ===== ACTIVE USER HIGHLIGHT CARD ===== -->
     {% if current_user_rank %}
-    <div class="mx-6 mt-8 bg-gradient-to-r from-orange-400 to-rose-500 rounded-2xl p-4 shadow-lg">
+    <div
+      class="mx-6 mt-8 bg-gradient-to-r from-orange-400 to-rose-500 rounded-2xl p-4 shadow-lg"
+    >
       <div class="flex items-center gap-4">
-        <span class="text-4xl font-bold text-white">#{{ current_user_rank }}</span>
-        {% set current_avatar = session.get('avatar_url') %}
-        {% set current_name = session.get('user_display_name') or session.get('user_name') %}
-        <img src="{{ current_avatar if current_avatar else 'https://ui-avatars.com/api/?name=' + current_name + '&background=fff&color=1e293b&size=48' }}"
-             class="w-12 h-12 rounded-full border-2 border-white avatar-img">
+        <span class="text-4xl font-bold text-white"
+          >#{{ current_user_rank }}</span
+        >
+        {% set current_avatar = session.get('avatar_url') %} {% set current_name
+        = session.get('user_display_name') or session.get('user_name') %}
+        <img
+          src="{{ current_avatar if current_avatar else 'https://ui-avatars.com/api/?name=' + current_name + '&background=fff&color=1e293b&size=48' }}"
+          class="w-12 h-12 rounded-full border-2 border-white avatar-img"
+        />
         <div class="flex-1">
           <h3 class="font-bold text-white text-lg">{{ current_name }}</h3>
           <p class="text-white/80 text-sm">{{ current_user_points }} points</p>
@@ -123,23 +174,35 @@
     <div class="mx-6 mt-6 mb-6">
       <div class="space-y-1 max-h-96 overflow-y-auto scrollable-list">
         {% for user in leaderboard[3:] %}
-        <div class="flex items-center gap-4 px-4 py-3 rounded-xl odd:bg-gray-50 even:bg-white hover:shadow-sm transition">
-          <span class="text-lg font-bold text-gray-500 w-10">{{ '%02d' % (loop.index + 3) }}</span>
-          <img src="{{ user.avatar_url if user.avatar_url else 'https://ui-avatars.com/api/?name=' + user.name + '&background=bfdbfe&color=1e3a8a&size=40' }}"
-               class="w-10 h-10 rounded-full avatar-img">
+        <div
+          class="flex items-center gap-4 px-4 py-3 rounded-xl odd:bg-gray-50 even:bg-white hover:shadow-sm transition"
+        >
+          <span class="text-lg font-bold text-gray-500 w-10"
+            >{{ '%02d' % (loop.index + 3) }}</span
+          >
+          <img
+            src="{{ user.avatar_url if user.avatar_url else 'https://ui-avatars.com/api/?name=' + user.name + '&background=bfdbfe&color=1e3a8a&size=40' }}"
+            class="w-10 h-10 rounded-full avatar-img"
+          />
           <div class="flex-1">
             <h4 class="font-semibold text-gray-800">
               {% if user.is_official %}
-                <a href="/user/profile/{{ user.username }}" class="text-decoration-none text-gray-800">
-                  {{ user.name }}
-                  <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
-                </a>
-              {% else %}
+              <a
+                href="/user/profile/{{ user.username }}"
+                class="text-decoration-none text-gray-800"
+              >
                 {{ user.name }}
-              {% endif %}
+                <i
+                  class="bi bi-patch-check-fill text-primary ms-1"
+                  title="Official Account"
+                ></i>
+              </a>
+              {% else %} {{ user.name }} {% endif %}
             </h4>
           </div>
-          <span class="text-sm font-medium text-gray-600">{{ user.points }} pts</span>
+          <span class="text-sm font-medium text-gray-600"
+            >{{ user.points }} pts</span
+          >
           <span class="text-lg">⭐</span>
         </div>
         {% else %}
@@ -153,16 +216,12 @@
     <div class="text-center py-12 px-6">
       <span class="text-6xl">🏆</span>
       <h2 class="text-xl font-bold text-gray-700 mt-4">Leaderboard is empty</h2>
-      <p class="text-gray-500">Start earning points by uploading books, writing reviews, or logging in daily!</p>
+      <p class="text-gray-500">
+        Start earning points by uploading books, writing reviews, or logging in
+        daily!
+      </p>
     </div>
     {% endif %}
   </div>
 </div>
 {% endblock %}
-
-
-
-
-
-
-

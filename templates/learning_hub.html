@@ -1,405 +1,628 @@
-{% extends 'base.html' %}
-
-{% block title %}{{ category }} Books — DocoDive{% endblock %}
-
-
-{% block meta_description %}
-Download free {{ category }} books, PDFs and study materials — handpicked resources for beginners to advanced learners on DocoDive.
-{% endblock %}
-
-{% block canonical %}{{ request.base_url }}{% endblock %}
-
-
-{% block extra_css %}
+{% extends 'base.html' %} {% block title %}{{ category }} Books — DocoDive{%
+endblock %} {% block meta_description %} Download free {{ category }} books,
+PDFs and study materials — handpicked resources for beginners to advanced
+learners on DocoDive. {% endblock %} {% block canonical %}{{ request.base_url
+}}{% endblock %} {% block extra_css %}
 <style>
-    :root {
-        --edox-purple: #4338ca;
-        --edox-orange: #ffb703;
-        --edox-dark: #1e1b4b;
-        --edox-light: #f8faff;
-        --edox-white: #ffffff;
-    }
+  :root {
+    --edox-purple: #4338ca;
+    --edox-orange: #ffb703;
+    --edox-dark: #1e1b4b;
+    --edox-light: #f8faff;
+    --edox-white: #ffffff;
+  }
 
-    body { background: #f5f7ff; }
+  body {
+    background: #f5f7ff;
+  }
 
-    /* ===== LEARNING HUB HERO ===== */
-    .lh-hero {
-        background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%);
-        border-bottom: 1px solid rgba(67, 56, 202, 0.08);
-        position: relative;
-        overflow: hidden;
-        padding: 3rem 0;
-    }
-    .lh-hero::before {
-        content: "";
-        position: absolute;
-        width: 320px;
-        height: 320px;
-        background: rgba(255, 183, 3, 0.12);
-        border-radius: 50%;
-        top: -120px;
-        right: -80px;
-        z-index: 0;
-    }
-    .lh-hero::after {
-        content: "";
-        position: absolute;
-        width: 280px;
-        height: 280px;
-        background: rgba(67, 56, 202, 0.10);
-        border-radius: 50%;
-        bottom: -140px;
-        left: -60px;
-        z-index: 0;
-    }
-    .lh-hero .container {
-        position: relative;
-        z-index: 1;
-    }
-    .lh-hero-icon {
-        width: 96px;
-        height: 96px;
-        background: #fff;
-        border-radius: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 3rem;
-        box-shadow: 0 15px 35px rgba(30, 27, 75, 0.12);
-        margin-bottom: 1.2rem;
-    }
-    .lh-hero h1 {
-        font-weight: 800;
-        font-size: 2.8rem;
-        color: #1e1b4b;
-        letter-spacing: -0.5px;
-        margin-bottom: 0.5rem;
-    }
-    .lh-hero p {
-        color: #6b7280;
-        font-size: 1.05rem;
-        max-width: 620px;
-    }
+  /* ===== LEARNING HUB HERO ===== */
+  .lh-hero {
+    background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%);
+    border-bottom: 1px solid rgba(67, 56, 202, 0.08);
+    position: relative;
+    overflow: hidden;
+    padding: 3rem 0;
+  }
+  .lh-hero::before {
+    content: "";
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    background: rgba(255, 183, 3, 0.12);
+    border-radius: 50%;
+    top: -120px;
+    right: -80px;
+    z-index: 0;
+  }
+  .lh-hero::after {
+    content: "";
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    background: rgba(67, 56, 202, 0.1);
+    border-radius: 50%;
+    bottom: -140px;
+    left: -60px;
+    z-index: 0;
+  }
+  .lh-hero .container {
+    position: relative;
+    z-index: 1;
+  }
+  .lh-hero-icon {
+    width: 96px;
+    height: 96px;
+    background: #fff;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    box-shadow: 0 15px 35px rgba(30, 27, 75, 0.12);
+    margin-bottom: 1.2rem;
+  }
+  .lh-hero h1 {
+    font-weight: 800;
+    font-size: 2.8rem;
+    color: #1e1b4b;
+    letter-spacing: -0.5px;
+    margin-bottom: 0.5rem;
+  }
+  .lh-hero p {
+    color: #6b7280;
+    font-size: 1.05rem;
+    max-width: 620px;
+  }
 
-    /* ===== STATS ===== */
-    .lh-stat-card {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(14px);
-        border: 1px solid rgba(255, 255, 255, 0.7);
-        border-radius: 16px;
-        padding: 1rem 1.4rem;
-        box-shadow: 0 8px 24px rgba(30, 27, 75, 0.06);
-    }
-    .lh-stat-card .num {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #4338ca;
-    }
-    .lh-stat-card .lbl {
-        font-size: 0.75rem;
-        color: #6b7280;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-    }
+  /* ===== STATS ===== */
+  .lh-stat-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 16px;
+    padding: 1rem 1.4rem;
+    box-shadow: 0 8px 24px rgba(30, 27, 75, 0.06);
+  }
+  .lh-stat-card .num {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #4338ca;
+  }
+  .lh-stat-card .lbl {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
 
-    /* ===== RELATED CATEGORY CHIPS ===== */
-    .lh-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 16px;
-        background: #fff;
-        border: 1px solid #e0e7ff;
-        border-radius: 30px;
-        color: #1e1b4b;
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-decoration: none;
-        transition: 0.2s;
-        box-shadow: 0 3px 10px rgba(30, 27, 75, 0.04);
-    }
-    .lh-chip:hover {
-        background: #4338ca;
-        border-color: #4338ca;
-        color: #fff;
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(67, 56, 202, 0.2);
-    }
-    .lh-chip.active {
-        background: #4338ca;
-        border-color: #4338ca;
-        color: #fff;
-    }
-    .lh-chip .badge {
-        background: #ffb703;
-        color: #1e1b4b;
-        font-size: 0.65rem;
-        border-radius: 20px;
-    }
-    .lh-chip.active .badge {
-        background: #fff;
-        color: #4338ca;
-    }
+  /* ===== RELATED CATEGORY CHIPS ===== */
+  .lh-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #fff;
+    border: 1px solid #e0e7ff;
+    border-radius: 30px;
+    color: #1e1b4b;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: 0.2s;
+    box-shadow: 0 3px 10px rgba(30, 27, 75, 0.04);
+  }
+  .lh-chip:hover {
+    background: #4338ca;
+    border-color: #4338ca;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(67, 56, 202, 0.2);
+  }
+  .lh-chip.active {
+    background: #4338ca;
+    border-color: #4338ca;
+    color: #fff;
+  }
+  .lh-chip .badge {
+    background: #ffb703;
+    color: #1e1b4b;
+    font-size: 0.65rem;
+    border-radius: 20px;
+  }
+  .lh-chip.active .badge {
+    background: #fff;
+    color: #4338ca;
+  }
 
-    /* ===== BOOK CARD FIX (match index) ===== */
-    .book-cover-outer {
-        height: auto;
-        overflow: visible;
+  /* ===== BOOK CARD FIX (match index) ===== */
+  .book-cover-outer {
+    height: auto;
+    overflow: visible;
+  }
+  .book-3d-wrapper {
+    height: auto;
+    max-height: 220px;
+  }
+  .books-grid-card .book-3d-wrapper {
+    max-height: 160px;
+  }
+  @media (max-width: 768px) {
+    .books-grid-card .book-3d-wrapper {
+      max-height: 140px;
     }
-    .book-3d-wrapper {
-        height: auto;
-        max-height: 220px;
+  }
+  @media (max-width: 576px) {
+    .books-grid-card .book-3d-wrapper {
+      max-height: 100px;
     }
-    .books-grid-card .book-3d-wrapper { max-height: 160px; }
-    @media (max-width: 768px) { .books-grid-card .book-3d-wrapper { max-height: 140px; } }
-    @media (max-width: 576px) { .books-grid-card .book-3d-wrapper { max-height: 100px; } }
+  }
 
-    .book-fallback-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
-    .book-fallback-title { font-size: 0.7rem; }
+  .book-fallback-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  .book-fallback-title {
+    font-size: 0.7rem;
+  }
 
-    /* ===== PAGINATION ===== */
-    .pagination .page-link {
-        border: none;
-        color: #4338ca;
-        font-weight: 600;
-        padding: 0.5rem 0.9rem;
-        border-radius: 10px;
-        margin: 0 3px;
-        transition: 0.2s;
-    }
-    .pagination .page-item.active .page-link {
-        background: #4338ca;
-        color: #fff;
-        box-shadow: 0 6px 16px rgba(67, 56, 202, 0.3);
-    }
-    .pagination .page-link:hover {
-        background: #e0e7ff;
-        color: #1e1b4b;
-    }
+  /* ===== PAGINATION ===== */
+  .pagination .page-link {
+    border: none;
+    color: #4338ca;
+    font-weight: 600;
+    padding: 0.5rem 0.9rem;
+    border-radius: 10px;
+    margin: 0 3px;
+    transition: 0.2s;
+  }
+  .pagination .page-item.active .page-link {
+    background: #4338ca;
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(67, 56, 202, 0.3);
+  }
+  .pagination .page-link:hover {
+    background: #e0e7ff;
+    color: #1e1b4b;
+  }
 </style>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position": 1,
-      "name": "Home",
-      "item": "{{ request.host_url }}"
-    },
-    {
-      "@type": "ListItem",
-      "position": 2,
-      "name": "Learning Hubs",
-      "item": "{{ request.host_url }}#categories"
-    },
-    {
-      "@type": "ListItem",
-      "position": 3,
-      "name": "{{ category }} Books",
-      "item": "{{ request.base_url }}"
-    }
-  ]
-}
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "{{ request.host_url }}"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Learning Hubs",
+        "item": "{{ request.host_url }}#categories"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "{{ category }} Books",
+        "item": "{{ request.base_url }}"
+      }
+    ]
+  }
 </script>
 
 <!-- ========== LEARNING HUB HERO ========== -->
 <section class="lh-hero">
-    <div class="container">
-        <div class="row align-items-center g-4">
-            <div class="col-lg-8">
-                <div class="lh-hero-icon">
-                    {% if category == 'Python' %}<i class="bi bi-filetype-py text-success"></i>
-                    {% elif category == 'JavaScript' %}<i class="bi bi-filetype-js text-warning"></i>
-                    {% elif category == 'Java' %}<i class="bi bi-cup-hot-fill text-danger"></i>
-                    {% elif category == 'C / C++' %}<i class="bi bi-cpu text-secondary"></i>
-                    {% elif category == 'Web Development' %}<i class="bi bi-window-fullscreen text-primary"></i>
-                    {% elif category == 'Data Science' %}<i class="bi bi-bar-chart text-info"></i>
-                    {% elif category == 'Machine Learning' %}<i class="bi bi-robot text-success"></i>
-                    {% elif category == 'Algorithms' %}<i class="bi bi-diagram-3" style="color:#7c3aed;"></i>
-                    {% elif category == 'Databases' %}<i class="bi bi-database text-warning"></i>
-                    {% elif category == 'Cyber Security' %}<i class="bi bi-shield-lock text-danger"></i>
-                    {% elif category == 'Mobile Apps' %}<i class="bi bi-phone text-primary"></i>
-                    {% elif category == 'DevOps' %}<i class="bi bi-gear text-secondary"></i>
-                    {% elif category == 'Others' %}<i class="bi bi-box-seam text-dark"></i>
-                    {% else %}<i class="bi bi-collection text-dark"></i>{% endif %}
-                </div>
-                <h1>{{ category }} <span style="color:#ffb703;">Books</span></h1>
-                <p>
-                    Download free {{ category }} books, resources, and study material.
-                    Handpicked and curated by the DocoDive community for every level.
-                </p>
-            </div>
-            <div class="col-lg-4">
-                <div class="d-flex flex-wrap gap-3 justify-content-lg-end">
-                    <div class="lh-stat-card text-center">
-                        <div class="num">{{ total_books }}</div>
-                        <div class="lbl">Books</div>
-                    </div>
-                    <div class="lh-stat-card text-center">
-                        <div class="num">{{ total_downloads }}</div>
-                        <div class="lbl">Downloads</div>
-                    </div>
-                </div>
-            </div>
+  <div class="container">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-8">
+        <div class="lh-hero-icon">
+          {% if category == 'Python' %}<i
+            class="bi bi-filetype-py text-success"
+          ></i>
+          {% elif category == 'JavaScript' %}<i
+            class="bi bi-filetype-js text-warning"
+          ></i>
+          {% elif category == 'Java' %}<i
+            class="bi bi-cup-hot-fill text-danger"
+          ></i>
+          {% elif category == 'C / C++' %}<i
+            class="bi bi-cpu text-secondary"
+          ></i>
+          {% elif category == 'Web Development' %}<i
+            class="bi bi-window-fullscreen text-primary"
+          ></i>
+          {% elif category == 'Data Science' %}<i
+            class="bi bi-bar-chart text-info"
+          ></i>
+          {% elif category == 'Machine Learning' %}<i
+            class="bi bi-robot text-success"
+          ></i>
+          {% elif category == 'Algorithms' %}<i
+            class="bi bi-diagram-3"
+            style="color: #7c3aed"
+          ></i>
+          {% elif category == 'Databases' %}<i
+            class="bi bi-database text-warning"
+          ></i>
+          {% elif category == 'Cyber Security' %}<i
+            class="bi bi-shield-lock text-danger"
+          ></i>
+          {% elif category == 'Mobile Apps' %}<i
+            class="bi bi-phone text-primary"
+          ></i>
+          {% elif category == 'DevOps' %}<i
+            class="bi bi-gear text-secondary"
+          ></i>
+          {% elif category == 'Others' %}<i
+            class="bi bi-box-seam text-dark"
+          ></i>
+          {% elif category == 'IELTS' %}<i
+            class="bi bi-globe2 text-primary"
+          ></i>
+          {% else %}<i class="bi bi-collection text-dark"></i>{% endif %}
         </div>
+        <h1>{{ category }} <span style="color: #ffb703">Books</span></h1>
+        <p>
+          Download free {{ category }} books, resources, and study material.
+          Handpicked and curated by the DocoDive community for every level.
+        </p>
+      </div>
+      <div class="col-lg-4">
+        <div class="d-flex flex-wrap gap-3 justify-content-lg-end">
+          <div class="lh-stat-card text-center">
+            <div class="num">{{ total_books }}</div>
+            <div class="lbl">Books</div>
+          </div>
+          <div class="lh-stat-card text-center">
+            <div class="num">{{ total_downloads }}</div>
+            <div class="lbl">Downloads</div>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 </section>
 
 <!-- ========== RELATED CATEGORIES ========== -->
 <section class="container py-4">
-    <div class="d-flex flex-wrap gap-2">
-        {% for c in all_categories %}
-        <a href="/learn/{{ c.slug }}" class="lh-chip {% if c.level == category %}active{% endif %}">
-            {{ c.level }}
-            <span class="badge">{{ c.count }}</span>
-        </a>
-        {% endfor %}
-    </div>
+  <div class="d-flex flex-wrap gap-2">
+    {% for c in all_categories %}
+    <a
+      href="/learn/{{ c.slug }}"
+      class="lh-chip {% if c.level == category %}active{% endif %}"
+    >
+      {{ c.level }}
+      <span class="badge">{{ c.count }}</span>
+    </a>
+    {% endfor %}
+  </div>
 </section>
-
+{% if category == 'IELTS' %}
+<!-- ========== IELTS MODULES ========== -->
+<section class="container py-4">
+  <h2 class="fw-bold mb-3" style="color: #1e1b4b">🎯 IELTS Modules</h2>
+  <div class="row g-2 g-sm-3">
+    <div class="col-6 col-md-3">
+      <a
+        href="/ielts/listening"
+        class="card border-0 shadow-sm p-3 h-100 text-decoration-none"
+        style="
+          border-radius: 16px;
+          background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+        "
+      >
+        <i class="bi bi-headphones fs-1 text-primary mb-2"></i>
+        <h6 class="fw-bold text-dark">Listening</h6>
+        <small class="text-muted">Tips & practice</small>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a
+        href="/ielts/reading"
+        class="card border-0 shadow-sm p-3 h-100 text-decoration-none"
+        style="
+          border-radius: 16px;
+          background: linear-gradient(135deg, #fef3c7, #fde68a);
+        "
+      >
+        <i class="bi bi-book fs-1 text-warning mb-2"></i>
+        <h6 class="fw-bold text-dark">Reading</h6>
+        <small class="text-muted">Passages & strategies</small>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a
+        href="/ielts/writing"
+        class="card border-0 shadow-sm p-3 h-100 text-decoration-none"
+        style="
+          border-radius: 16px;
+          background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+        "
+      >
+        <i class="bi bi-pencil-square fs-1 text-danger mb-2"></i>
+        <h6 class="fw-bold text-dark">Writing</h6>
+        <small class="text-muted">Task 1 & 2</small>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a
+        href="/ielts/speaking"
+        class="card border-0 shadow-sm p-3 h-100 text-decoration-none"
+        style="
+          border-radius: 16px;
+          background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+        "
+      >
+        <i class="bi bi-mic fs-1 text-success mb-2"></i>
+        <h6 class="fw-bold text-dark">Speaking</h6>
+        <small class="text-muted">Cue cards & fluency</small>
+      </a>
+    </div>
+  </div>
+</section>
+{% endif %} {% if category != 'IELTS' %}
+<section class="container py-4">
+  <h2 class="fw-bold mb-3" style="color: #1e1b4b">
+    📘 {{ category }} Learning Path
+  </h2>
+  <div class="row g-2 g-sm-3">
+    {% for m in category_modules %}
+    <div class="col-6 col-md-3">
+      <a
+        href="/learn/{{ category_slug }}/{{ m.slug }}"
+        class="card border-0 shadow-sm p-3 h-100 text-decoration-none"
+        style="border-radius: 16px; background: rgba(67, 56, 202, 0.04)"
+      >
+        <i class="bi {{ m.icon }} fs-1 {{ m.color }} mb-2"></i>
+        <h6 class="fw-bold text-dark">{{ m.title }}</h6>
+        <small class="text-muted">{{ m.desc }}</small>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 <!-- ========== BOOKS GRID ========== -->
 <section class="container pb-5">
-    {% if books %}
-    <div class="row g-2 g-sm-3">
-        {% for book in books %}
-        <div class="col-6 col-sm-4 col-md-3 col-lg-2" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 40 }}">
-            <div class="card product-card border-0 shadow-sm h-100 book-card-inner books-grid-card">
-                <div class="book-cover-outer d-flex align-items-center justify-content-center">
-                    {% if book.image_url and book.image_url != 'None' and book.image_url.strip() != '' %}
-                    <div class="book-3d-wrapper">
-                        <div class="book-3d">
-                            <div class="book-front"><img src="{{ book.image_url }}" alt="Cover" class="book-cover" loading="lazy"></div>
-                            <div class="book-spine"></div>
-                            <div class="book-pages"></div>
-                            <div class="book-shadow"></div>
-                        </div>
-                    </div>
-                    {% else %}
-                        {% set title_safe = book.title | default('Book', true) | replace('_', ' ') %}
-                        {% set words = title_safe.split() %}
-                        {% set short_name = (words[0][:2])|upper if words|length == 1 else (words[0][0] ~ words[1][0])|upper %}
-                        <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100" style="background: linear-gradient(135deg, #a5b4fc, #818cf8); color: white;">
-                            <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-2 book-fallback-icon">{{ short_name }}</div>
-                            <h6 class="fw-bold text-center px-2 book-fallback-title">{{ title_safe }}</h6>
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="card-body p-2">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="badge bg-light text-muted" style="font-size:0.6rem;">{{ book.level }}</span>
-                        <span class="fw-bold text-warning" style="font-size:0.7rem;">FREE</span>
-                    </div>
-                    <h6 class="fw-bold text-truncate mb-1" style="font-size:0.8rem; color:#1e1b4b;">{{ book.title | replace('_', ' ') }}</h6>
-                    <p class="text-muted small mb-1" style="font-size:0.65rem;">By {{ book.author }}</p>
-                    {% if book.avg_rating and book.avg_rating > 0 %}
-                    <div class="text-warning small mb-1">
-                        {% set full = book.avg_rating|int %}
-                        {% set half = 1 if (book.avg_rating - full) >= 0.5 else 0 %}
-                        {% for i in range(full) %}<i class="bi bi-star-fill"></i>{% endfor %}
-                        {% if half %}<i class="bi bi-star-half"></i>{% endif %}
-                        {% for i in range(5 - full - half) %}<i class="bi bi-star"></i>{% endfor %}
-                        <span class="text-muted ms-1">({{ book.avg_rating }})</span>
-                    </div>
-                    {% endif %}
-                    <div class="d-flex justify-content-end gap-1">
-                        <a href="/book/{{ book.id }}" class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 24px; height: 24px; padding:0; text-decoration:none;" title="View Details">
-                            <i class="bi bi-info-circle" style="font-size:0.65rem;"></i>
-                        </a>
-                        <button class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger" data-book-id="{{ book.id }}" style="width: 24px; height: 24px; padding:0;" title="Quick Preview">
-                            <i class="bi bi-search" style="font-size:0.65rem;"></i>
-                        </button>
-                    </div>
-                    <div class="d-flex align-items-center gap-2 mt-1">
-                        <span class="d-inline-flex align-items-center gap-1"
-                              style="background:rgba(67,56,202,0.08); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
-                            <i class="bi bi-download" style="font-size:0.7rem;"></i>
-                            <span class="download-count-live" data-book-id="{{ book.id }}">{{ book.download_count }}</span>
-                        </span>
-                        <span class="d-inline-flex align-items-center gap-1"
-                              style="background:rgba(255,183,3,0.1); border-radius:20px; padding:2px 8px; font-size:0.65rem; color:#b8860b; font-weight:600;">
-                            <i class="bi bi-eye-fill" style="font-size:0.7rem;"></i>
-                            <span class="view-count-live" data-book-id="{{ book.id }}">{{ book.view_count }}</span>
-                        </span>
-                    </div>
-                </div>
+  {% if books %}
+  <div class="row g-2 g-sm-3">
+    {% for book in books %}
+    <div
+      class="col-6 col-sm-4 col-md-3 col-lg-2"
+      data-aos="fade-up"
+      data-aos-delay="{{ loop.index0 * 40 }}"
+    >
+      <div
+        class="card product-card border-0 shadow-sm h-100 book-card-inner books-grid-card"
+      >
+        <div
+          class="book-cover-outer d-flex align-items-center justify-content-center"
+        >
+          {% if book.image_url and book.image_url != 'None' and
+          book.image_url.strip() != '' %}
+          <div class="book-3d-wrapper">
+            <div class="book-3d">
+              <div class="book-front">
+                <img
+                  src="{{ book.image_url }}"
+                  alt="Cover"
+                  class="book-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div class="book-spine"></div>
+              <div class="book-pages"></div>
+              <div class="book-shadow"></div>
             </div>
+          </div>
+          {% else %} {% set title_safe = book.title | default('Book', true) |
+          replace('_', ' ') %} {% set words = title_safe.split() %} {% set
+          short_name = (words[0][:2])|upper if words|length == 1 else
+          (words[0][0] ~ words[1][0])|upper %}
+          <div
+            class="d-flex flex-column justify-content-center align-items-center w-100 h-100"
+            style="
+              background: linear-gradient(135deg, #a5b4fc, #818cf8);
+              color: white;
+            "
+          >
+            <div
+              class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-2 book-fallback-icon"
+            >
+              {{ short_name }}
+            </div>
+            <h6 class="fw-bold text-center px-2 book-fallback-title">
+              {{ title_safe }}
+            </h6>
+          </div>
+          {% endif %}
         </div>
-        {% endfor %}
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="badge bg-light text-muted" style="font-size: 0.6rem"
+              >{{ book.level }}</span
+            >
+            <span class="fw-bold text-warning" style="font-size: 0.7rem"
+              >FREE</span
+            >
+          </div>
+          <h6
+            class="fw-bold text-truncate mb-1"
+            style="font-size: 0.8rem; color: #1e1b4b"
+          >
+            {{ book.title | replace('_', ' ') }}
+          </h6>
+          <p class="text-muted small mb-1" style="font-size: 0.65rem">
+            By {{ book.author }}
+          </p>
+          {% if book.avg_rating and book.avg_rating > 0 %}
+          <div class="text-warning small mb-1">
+            {% set full = book.avg_rating|int %} {% set half = 1 if
+            (book.avg_rating - full) >= 0.5 else 0 %} {% for i in range(full)
+            %}<i class="bi bi-star-fill"></i>{% endfor %} {% if half %}<i
+              class="bi bi-star-half"
+            ></i
+            >{% endif %} {% for i in range(5 - full - half) %}<i
+              class="bi bi-star"
+            ></i
+            >{% endfor %}
+            <span class="text-muted ms-1">({{ book.avg_rating }})</span>
+          </div>
+          {% endif %}
+          <div class="d-flex justify-content-end gap-1">
+            <a
+              href="/book/{{ book.id }}"
+              class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
+              style="
+                width: 24px;
+                height: 24px;
+                padding: 0;
+                text-decoration: none;
+              "
+              title="View Details"
+            >
+              <i class="bi bi-info-circle" style="font-size: 0.65rem"></i>
+            </a>
+            <button
+              class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger"
+              data-book-id="{{ book.id }}"
+              style="width: 24px; height: 24px; padding: 0"
+              title="Quick Preview"
+            >
+              <i class="bi bi-search" style="font-size: 0.65rem"></i>
+            </button>
+          </div>
+          <div class="d-flex align-items-center gap-2 mt-1">
+            <span
+              class="d-inline-flex align-items-center gap-1"
+              style="
+                background: rgba(67, 56, 202, 0.08);
+                border-radius: 20px;
+                padding: 2px 8px;
+                font-size: 0.65rem;
+                color: #4338ca;
+                font-weight: 600;
+              "
+            >
+              <i class="bi bi-download" style="font-size: 0.7rem"></i>
+              <span class="download-count-live" data-book-id="{{ book.id }}"
+                >{{ book.download_count }}</span
+              >
+            </span>
+            <span
+              class="d-inline-flex align-items-center gap-1"
+              style="
+                background: rgba(255, 183, 3, 0.1);
+                border-radius: 20px;
+                padding: 2px 8px;
+                font-size: 0.65rem;
+                color: #b8860b;
+                font-weight: 600;
+              "
+            >
+              <i class="bi bi-eye-fill" style="font-size: 0.7rem"></i>
+              <span class="view-count-live" data-book-id="{{ book.id }}"
+                >{{ book.view_count }}</span
+              >
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
+    {% endfor %}
+  </div>
 
-    {% if total_pages > 1 %}
-    <nav class="mt-5">
-        <ul class="pagination justify-content-center flex-wrap">
-            {% if page > 1 %}
-            <li class="page-item"><a class="page-link" href="/learn/{{ category_slug }}?page={{ page-1 }}">Prev</a></li>
-            {% endif %}
-            {% set window = 2 %}
-            {% set start = [page - window, 1] | max %}
-            {% set end = [page + window, total_pages] | min %}
-            {% if start > 1 %}
-                <li class="page-item"><a class="page-link" href="/learn/{{ category_slug }}?page=1">1</a></li>
-                {% if start > 2 %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
-            {% endif %}
-            {% for p in range(start, end + 1) %}
-                <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link" href="/learn/{{ category_slug }}?page={{ p }}">{{ p }}</a></li>
-            {% endfor %}
-            {% if end < total_pages %}
-                {% if end < total_pages - 1 %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
-                <li class="page-item"><a class="page-link" href="/learn/{{ category_slug }}?page={{ total_pages }}">{{ total_pages }}</a></li>
-            {% endif %}
-            {% if page < total_pages %}
-            <li class="page-item"><a class="page-link" href="/learn/{{ category_slug }}?page={{ page+1 }}">Next</a></li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
-    {% else %}
-    <div class="text-center py-5">
-        <i class="bi bi-inbox display-4 text-muted"></i>
-        <h5 class="mt-3">No books found in this category yet.</h5>
-        <a href="/" class="btn btn-primary rounded-pill px-4 mt-2">Browse All Books</a>
-    </div>
-    {% endif %}
+  {% if total_pages > 1 %}
+  <nav class="mt-5">
+    <ul class="pagination justify-content-center flex-wrap">
+      {% if page > 1 %}
+      <li class="page-item">
+        <a class="page-link" href="/learn/{{ category_slug }}?page={{ page-1 }}"
+          >Prev</a
+        >
+      </li>
+      {% endif %} {% set window = 2 %} {% set start = [page - window, 1] | max
+      %} {% set end = [page + window, total_pages] | min %} {% if start > 1 %}
+      <li class="page-item">
+        <a class="page-link" href="/learn/{{ category_slug }}?page=1">1</a>
+      </li>
+      {% if start > 2 %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %} {% endif %} {% for p in range(start, end + 1) %}
+      <li class="page-item {% if p == page %}active{% endif %}">
+        <a class="page-link" href="/learn/{{ category_slug }}?page={{ p }}"
+          >{{ p }}</a
+        >
+      </li>
+      {% endfor %} {% if end < total_pages %} {% if end < total_pages - 1 %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+      <li class="page-item">
+        <a
+          class="page-link"
+          href="/learn/{{ category_slug }}?page={{ total_pages }}"
+          >{{ total_pages }}</a
+        >
+      </li>
+      {% endif %} {% if page < total_pages %}
+      <li class="page-item">
+        <a class="page-link" href="/learn/{{ category_slug }}?page={{ page+1 }}"
+          >Next</a
+        >
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %} {% else %}
+  <div class="text-center py-5">
+    <i class="bi bi-inbox display-4 text-muted"></i>
+    <h5 class="mt-3">No books found in this category yet.</h5>
+    <a href="/" class="btn btn-primary rounded-pill px-4 mt-2"
+      >Browse All Books</a
+    >
+  </div>
+  {% endif %}
 </section>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener("DOMContentLoaded", function () {
     // Live counts for this page's books
     function refreshCounters() {
-        const els = document.querySelectorAll('.download-count-live, .view-count-live');
-        const ids = [...new Set([...els].map(el => el.dataset.bookId))];
-        ids.forEach(id => {
-            fetch('/api/book/' + id + '/counts')
-                .then(r => r.json())
-                .then(d => {
-                    const dl = document.querySelector('.download-count-live[data-book-id="' + id + '"]');
-                    const vw = document.querySelector('.view-count-live[data-book-id="' + id + '"]');
-                    if (dl) dl.textContent = (d.download_count || 0).toLocaleString();
-                    if (vw) vw.textContent = (d.view_count || 0).toLocaleString();
-                }).catch(()=>{});
-        });
+      const els = document.querySelectorAll(
+        ".download-count-live, .view-count-live",
+      );
+      const ids = [...new Set([...els].map((el) => el.dataset.bookId))];
+      ids.forEach((id) => {
+        fetch("/api/book/" + id + "/counts")
+          .then((r) => r.json())
+          .then((d) => {
+            const dl = document.querySelector(
+              '.download-count-live[data-book-id="' + id + '"]',
+            );
+            const vw = document.querySelector(
+              '.view-count-live[data-book-id="' + id + '"]',
+            );
+            if (dl) dl.textContent = (d.download_count || 0).toLocaleString();
+            if (vw) vw.textContent = (d.view_count || 0).toLocaleString();
+          })
+          .catch(() => {});
+      });
     }
     refreshCounters();
 
     // Preview trigger (same as index)
-    document.addEventListener('click', function(e) {
-        const trigger = e.target.closest('.preview-trigger');
-        if (trigger && window.openBookModal) {
-            e.preventDefault();
-            openBookModal(trigger.dataset.bookId);
-        }
+    document.addEventListener("click", function (e) {
+      const trigger = e.target.closest(".preview-trigger");
+      if (trigger && window.openBookModal) {
+        e.preventDefault();
+        openBookModal(trigger.dataset.bookId);
+      }
     });
-});
+  });
 </script>
 {% endblock %}

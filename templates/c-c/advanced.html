@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}{{ info.title }} — {{ category }} | DocoDive{% endblock %}
+{% block content %}
+<section class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 24px;">
+
+        <!-- HERO -->
+        <div class="p-5 text-center" style="background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);">
+          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+               style="width: 96px; height: 96px; background: #fff; box-shadow: 0 12px 30px rgba(67, 56, 202, 0.12);">
+            <i class="bi {{ info.icon }} fs-1 {{ info.color }}"></i>
+          </div>
+
+          <span class="badge rounded-pill px-3 py-2 mb-3"
+                style="background: #ffb703; color: #1e1b4b; font-weight: 700; font-size: 0.9rem;">
+            <i class="bi bi-cone-striped me-2"></i> COMING SOON
+          </span>
+
+          <h1 class="fw-bolder mt-2" style="color: #1e1b4b;">{{ info.title }}</h1>
+          <p class="text-muted lead mb-4">
+            We're building something amazing for <strong>{{ category }}</strong> learners!
+          </p>
+
+          <div class="alert border-0 rounded-4 text-start shadow-sm mx-auto"
+               style="max-width: 640px; background: #e0f2fe; color: #0c4a6e;">
+            <p class="mb-2 fw-semibold">
+              <i class="bi bi-tools me-2"></i>This module is under construction
+            </p>
+            <p class="small mb-0">
+              Our team is preparing detailed lessons, practical examples, downloadable
+              resources and interactive exercises for <strong>{{ info.title }}</strong> in
+              <strong>{{ category }}</strong>. This content will guide you step-by-step,
+              from the fundamentals right up to an advanced level.
+            </p>
+          </div>
+        </div>
+
+        <!-- WHAT YOU'LL GET -->
+        <div class="p-5">
+          <h5 class="fw-bold mb-4 text-center" style="color: #4338ca;">
+            What you'll get in this module
+          </h5>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #f0f4ff;">
+                <i class="bi bi-journal-text fs-3 text-primary"></i>
+                <div>
+                  <h6 class="fw-bold mb-1">Detailed Lessons</h6>
+                  <p class="small text-muted mb-0">Step-by-step structured content designed for every level.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fff4e5;">
+                <i class="bi bi-lightbulb fs-3 text-warning"></i>
+                <div>
+                  <h6 class="fw-bold mb-1">Real Examples</h6>
+                  <p class="small text-muted mb-0">Practical examples you can understand and apply instantly.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #e8faf0;">
+                <i class="bi bi-patch-check fs-3 text-success"></i>
+                <div>
+                  <h6 class="fw-bold mb-1">Practice &amp; Quizzes</h6>
+                  <p class="small text-muted mb-0">Test your knowledge with quizzes and hands-on exercises.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fdeef4;">
+                <i class="bi bi-download fs-3 text-danger"></i>
+                <div>
+                  <h6 class="fw-bold mb-1">Resources &amp; PDFs</h6>
+                  <p class="small text-muted mb-0">Curated notes and downloadable study material.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center mt-5">
+            <a href="/learn/{{ category_slug }}" class="btn btn-primary rounded-pill px-4 py-2 me-2">
+              <i class="bi bi-collection me-2"></i> Explore {{ category }}
+            </a>
+            <a href="/" class="btn btn-outline-primary rounded-pill px-4 py-2">
+              <i class="bi bi-arrow-left me-2"></i> Back to Home
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

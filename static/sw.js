@@ -40,8 +40,8 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.filter(name => {
           return (name.startsWith('docodive-') &&
-                  name !== STATIC_CACHE &&
-                  name !== IMAGE_CACHE);
+            name !== STATIC_CACHE &&
+            name !== IMAGE_CACHE);
         }).map(name => {
           console.log('SW: Deleting old cache', name);
           return caches.delete(name);
@@ -68,9 +68,9 @@ self.addEventListener('fetch', event => {
 
   // Skip third-party analytics and chat
   if (url.hostname.includes('brevo.com') ||
-      url.hostname.includes('conversations-widget') ||
-      url.hostname.includes('googletagmanager.com') ||
-      url.hostname.includes('google-analytics.com')) return;
+    url.hostname.includes('conversations-widget') ||
+    url.hostname.includes('googletagmanager.com') ||
+    url.hostname.includes('google-analytics.com')) return;
 
   // Skip social login callbacks
   if (url.pathname.startsWith('/auth/') || url.pathname.startsWith('/login/')) return;

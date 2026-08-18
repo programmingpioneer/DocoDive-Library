@@ -1,351 +1,423 @@
-{% extends 'base.html' %}
-
-{% block extra_css %}
+{% extends 'base.html' %} {% block extra_css %}
 <style>
+  .mod-card {
+    background: var(--bs-white);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 1rem;
+    transition: 0.2s;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .mod-card:hover {
+    box-shadow: 0 8px 20px rgba(67, 56, 202, 0.1);
+    border-color: var(--edox-purple);
+  }
+  .official-reply {
+    border-left: 3px solid var(--edox-purple);
+    background: #f8f6ff;
+    border-radius: 0 0.5rem 0.5rem 0;
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.5rem;
+    margin-left: 1rem;
+  }
+  .text-truncate-mod {
+    display: inline-block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+  }
+  @media (max-width: 576px) {
     .mod-card {
-        background: var(--bs-white);
-        border: 1px solid rgba(0,0,0,0.08);
-        border-radius: 1rem;
-        transition: 0.2s;
-        padding: 1rem;
-        margin-bottom: 0.75rem;
-    }
-    .mod-card:hover {
-        box-shadow: 0 8px 20px rgba(67,56,202,0.1);
-        border-color: var(--edox-purple);
+      padding: 0.75rem;
     }
     .official-reply {
-        border-left: 3px solid var(--edox-purple);
-        background: #f8f6ff;
-        border-radius: 0 0.5rem 0.5rem 0;
-        padding: 0.5rem 0.75rem;
-        margin-top: 0.5rem;
-        margin-left: 1rem;
+      margin-left: 0.5rem;
     }
-    .text-truncate-mod {
-        display: inline-block;
-        max-width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        vertical-align: middle;
-    }
-    @media (max-width: 576px) {
-        .mod-card { padding: 0.75rem; }
-        .official-reply { margin-left: 0.5rem; }
-    }
-    .filter-btn.active {
-        background: var(--edox-purple) !important;
-        color: white !important;
-        border-color: var(--edox-purple) !important;
-    }
+  }
+  .filter-btn.active {
+    background: var(--edox-purple) !important;
+    color: white !important;
+    border-color: var(--edox-purple) !important;
+  }
 </style>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <div class="container py-4">
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <h2 class="fw-bold mb-0" style="color: var(--edox-dark);">
-            <i class="bi bi-shield-check me-2 text-primary"></i>Community Moderation
-        </h2>
-        <a href="{{ url_for('home') }}" class="btn btn-outline-secondary rounded-pill">
-            <i class="bi bi-house-door me-1"></i> Home
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="fw-bold mb-0" style="color: var(--edox-dark)">
+      <i class="bi bi-shield-check me-2 text-primary"></i>Community Moderation
+    </h2>
+    <a
+      href="{{ url_for('home') }}"
+      class="btn btn-outline-secondary rounded-pill"
+    >
+      <i class="bi bi-house-door me-1"></i> Home
+    </a>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <i class="bi bi-star-fill fs-3 text-warning"></i>
+        <h5 class="fw-bold mt-2">{{ total_reviews }}</h5>
+        <small class="text-muted">Reviews ({{ days }}d)</small>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <i class="bi bi-chat-left-text fs-3 text-info"></i>
+        <h5 class="fw-bold mt-2">{{ total_comments }}</h5>
+        <small class="text-muted">Comments ({{ days }}d)</small>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <i class="bi bi-calendar-check fs-3 text-success"></i>
+        <h5 class="fw-bold mt-2">{{ new_reviews_today }}</h5>
+        <small class="text-muted">New Reviews Today</small>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <i class="bi bi-calendar-plus fs-3 text-primary"></i>
+        <h5 class="fw-bold mt-2">{{ new_comments_today }}</h5>
+        <small class="text-muted">New Comments Today</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Time filter -->
+  <div class="mb-4">
+    <div class="btn-group" role="group">
+      <a
+        href="?days=7"
+        class="btn btn-sm btn-outline-primary rounded-pill px-3 filter-btn {% if days == 7 %}active{% endif %}"
+        >7 days</a
+      >
+      <a
+        href="?days=30"
+        class="btn btn-sm btn-outline-primary rounded-pill px-3 filter-btn {% if days == 30 %}active{% endif %}"
+        >30 days</a
+      >
+      <a
+        href="?days=90"
+        class="btn btn-sm btn-outline-primary rounded-pill px-3 filter-btn {% if days == 90 %}active{% endif %}"
+        >90 days</a
+      >
+    </div>
+  </div>
+
+  <!-- ========== REVIEWS SECTION ========== -->
+  <h5 class="fw-bold mb-3">
+    <i class="bi bi-star-fill me-2 text-warning"></i>Recent Reviews
+  </h5>
+  {% if reviews %} {% for r in reviews %}
+  <div class="mod-card" id="review-row-{{ r.id }}">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <a
+          href="/book/{{ r.book_id }}"
+          class="fw-semibold text-decoration-none text-dark"
+        >
+          {{ r.book_title }}
         </a>
+        <div class="d-flex align-items-center gap-2 mt-1">
+          <img
+            src="{{ r.avatar or url_for('static', filename='default-avatar.png') }}"
+            class="rounded-circle"
+            width="24"
+            height="24"
+          />
+          {% if r.is_official %}
+          <a
+            href="/user/profile/{{ r.username }}"
+            class="text-decoration-none text-dark fw-semibold small"
+          >
+            {{ r.username }} <i class="bi bi-patch-check-fill text-primary"></i>
+          </a>
+          {% else %}
+          <span class="fw-semibold small">{{ r.username }}</span>
+          {% endif %}
+          <span class="text-warning small">{{ r.rating }} ⭐</span>
+          <small class="text-muted ms-2">{{ r.created_at }}</small>
+        </div>
+        <p
+          class="mt-2 mb-0 text-muted small text-truncate-mod"
+          title="{{ r.comment }}"
+        >
+          {{ r.comment[:100] ~ '…' if r.comment|length > 100 else r.comment }}
+        </p>
+      </div>
+      <div>
+        <button
+          class="btn btn-sm btn-outline-danger rounded-pill delete-review-btn"
+          data-review-id="{{ r.id }}"
+          title="Delete review"
+        >
+          <i class="bi bi-trash3"></i>
+        </button>
+      </div>
     </div>
+  </div>
+  {% endfor %} {% else %}
+  <p class="text-muted">No recent reviews found.</p>
+  {% endif %}
 
-    <!-- Quick Stats -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3">
-                <i class="bi bi-star-fill fs-3 text-warning"></i>
-                <h5 class="fw-bold mt-2">{{ total_reviews }}</h5>
-                <small class="text-muted">Reviews ({{ days }}d)</small>
-            </div>
+  <!-- ========== COMMENTS SECTION ========== -->
+  <h5 class="fw-bold mt-5 mb-3">
+    <i class="bi bi-chat-left-text me-2 text-info"></i>Recent Comments
+  </h5>
+  {% if comments %} {% for c in comments %}
+  <div class="mod-card" id="comment-row-{{ c.id }}">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <a
+          href="/book/{{ c.book_id }}"
+          class="fw-semibold text-decoration-none text-dark"
+        >
+          {{ c.book_title }}
+        </a>
+        <div class="d-flex align-items-center gap-2 mt-1">
+          <img
+            src="{{ c.avatar or url_for('static', filename='default-avatar.png') }}"
+            class="rounded-circle"
+            width="24"
+            height="24"
+          />
+          {% if c.is_official %}
+          <a
+            href="/user/profile/{{ c.username }}"
+            class="text-decoration-none text-dark fw-semibold small"
+          >
+            {{ c.username }} <i class="bi bi-patch-check-fill text-primary"></i>
+          </a>
+          {% else %}
+          <span class="fw-semibold small">{{ c.username }}</span>
+          {% endif %}
+          <small class="text-muted ms-2">{{ c.created_at }}</small>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3">
-                <i class="bi bi-chat-left-text fs-3 text-info"></i>
-                <h5 class="fw-bold mt-2">{{ total_comments }}</h5>
-                <small class="text-muted">Comments ({{ days }}d)</small>
-            </div>
+        <p
+          class="mt-2 mb-0 text-muted small text-truncate-mod"
+          title="{{ c.comment }}"
+        >
+          {{ c.comment[:120] ~ '…' if c.comment|length > 120 else c.comment }}
+        </p>
+        <!-- Official reply to this comment -->
+        {% if comment_replies and comment_replies.get(c.id) %}
+        <div class="official-reply">
+          <div class="d-flex align-items-center gap-2 small">
+            <i class="bi bi-patch-check-fill text-primary"></i>
+            <strong class="text-primary">Official reply</strong>
+            <span class="text-muted"
+              >{{ comment_replies[c.id].created_at }}</span
+            >
+          </div>
+          <p class="mt-1 mb-0 small text-dark">
+            {{ comment_replies[c.id].comment }}
+          </p>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3">
-                <i class="bi bi-calendar-check fs-3 text-success"></i>
-                <h5 class="fw-bold mt-2">{{ new_reviews_today }}</h5>
-                <small class="text-muted">New Reviews Today</small>
-            </div>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-1 flex-wrap">
+        <button
+          class="btn btn-sm btn-outline-danger rounded-pill delete-comment-btn"
+          data-comment-id="{{ c.id }}"
+          title="Delete comment"
+        >
+          <i class="bi bi-trash3"></i>
+        </button>
+        <button
+          class="btn btn-sm btn-outline-primary rounded-pill reply-moderator-btn"
+          data-comment-id="{{ c.id }}"
+          title="Reply as Official"
+        >
+          <i class="bi bi-reply-fill"></i> Reply
+        </button>
+        <div
+          class="official-reply-form d-none w-100"
+          id="modReplyForm-{{ c.id }}"
+        >
+          <textarea
+            class="form-control form-control-sm mb-1"
+            rows="2"
+            placeholder="Official reply..."
+          ></textarea>
+          <button
+            class="btn btn-sm btn-primary submit-moderator-reply"
+            data-comment-id="{{ c.id }}"
+          >
+            Submit
+          </button>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3">
-                <i class="bi bi-calendar-plus fs-3 text-primary"></i>
-                <h5 class="fw-bold mt-2">{{ new_comments_today }}</h5>
-                <small class="text-muted">New Comments Today</small>
-            </div>
-        </div>
+      </div>
     </div>
+  </div>
+  {% endfor %} {% else %}
+  <p class="text-muted">No recent comments found.</p>
+  {% endif %}
 
-    <!-- Time filter -->
-    <div class="mb-4">
-        <div class="btn-group" role="group">
-            <a href="?days=7" class="btn btn-sm btn-outline-primary rounded-pill px-3 filter-btn {% if days == 7 %}active{% endif %}">7 days</a>
-            <a href="?days=30" class="btn btn-sm btn-outline-primary rounded-pill px-3 filter-btn {% if days == 30 %}active{% endif %}">30 days</a>
-            <a href="?days=90" class="btn btn-sm btn-outline-primary rounded-pill px-3 filter-btn {% if days == 90 %}active{% endif %}">90 days</a>
-        </div>
+  <!-- ========== DAILY ACTIVITY CHART ========== -->
+  <div class="card border-0 shadow-sm rounded-4 mt-4 p-4">
+    <h5 class="fw-bold mb-3">
+      <i class="bi bi-graph-up me-2 text-primary"></i>Daily Activity ({{ days }}
+      days)
+    </h5>
+    <div style="position: relative; height: 300px; width: 100%">
+      <canvas id="activityChart"></canvas>
     </div>
-
-    <!-- ========== REVIEWS SECTION ========== -->
-    <h5 class="fw-bold mb-3"><i class="bi bi-star-fill me-2 text-warning"></i>Recent Reviews</h5>
-    {% if reviews %}
-        {% for r in reviews %}
-        <div class="mod-card" id="review-row-{{ r.id }}">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <a href="/book/{{ r.book_id }}" class="fw-semibold text-decoration-none text-dark">
-                        {{ r.book_title }}
-                    </a>
-                    <div class="d-flex align-items-center gap-2 mt-1">
-                        <img src="{{ r.avatar or url_for('static', filename='default-avatar.png') }}" class="rounded-circle" width="24" height="24">
-                        {% if r.is_official %}
-                            <a href="/user/profile/{{ r.username }}" class="text-decoration-none text-dark fw-semibold small">
-                                {{ r.username }} <i class="bi bi-patch-check-fill text-primary"></i>
-                            </a>
-                        {% else %}
-                            <span class="fw-semibold small">{{ r.username }}</span>
-                        {% endif %}
-                        <span class="text-warning small">{{ r.rating }} ⭐</span>
-                        <small class="text-muted ms-2">{{ r.created_at }}</small>
-                    </div>
-                    <p class="mt-2 mb-0 text-muted small text-truncate-mod" title="{{ r.comment }}">
-                        {{ r.comment[:100] ~ '…' if r.comment|length > 100 else r.comment }}
-                    </p>
-                </div>
-                <div>
-                    <button class="btn btn-sm btn-outline-danger rounded-pill delete-review-btn" data-review-id="{{ r.id }}" title="Delete review">
-                        <i class="bi bi-trash3"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <p class="text-muted">No recent reviews found.</p>
-    {% endif %}
-
-    <!-- ========== COMMENTS SECTION ========== -->
-    <h5 class="fw-bold mt-5 mb-3"><i class="bi bi-chat-left-text me-2 text-info"></i>Recent Comments</h5>
-    {% if comments %}
-        {% for c in comments %}
-        <div class="mod-card" id="comment-row-{{ c.id }}">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <a href="/book/{{ c.book_id }}" class="fw-semibold text-decoration-none text-dark">
-                        {{ c.book_title }}
-                    </a>
-                    <div class="d-flex align-items-center gap-2 mt-1">
-                        <img src="{{ c.avatar or url_for('static', filename='default-avatar.png') }}" class="rounded-circle" width="24" height="24">
-                        {% if c.is_official %}
-                            <a href="/user/profile/{{ c.username }}" class="text-decoration-none text-dark fw-semibold small">
-                                {{ c.username }} <i class="bi bi-patch-check-fill text-primary"></i>
-                            </a>
-                        {% else %}
-                            <span class="fw-semibold small">{{ c.username }}</span>
-                        {% endif %}
-                        <small class="text-muted ms-2">{{ c.created_at }}</small>
-                    </div>
-                    <p class="mt-2 mb-0 text-muted small text-truncate-mod" title="{{ c.comment }}">
-                        {{ c.comment[:120] ~ '…' if c.comment|length > 120 else c.comment }}
-                    </p>
-                    <!-- Official reply to this comment -->
-                    {% if comment_replies and comment_replies.get(c.id) %}
-                    <div class="official-reply">
-                        <div class="d-flex align-items-center gap-2 small">
-                            <i class="bi bi-patch-check-fill text-primary"></i>
-                            <strong class="text-primary">Official reply</strong>
-                            <span class="text-muted">{{ comment_replies[c.id].created_at }}</span>
-                        </div>
-                        <p class="mt-1 mb-0 small text-dark">{{ comment_replies[c.id].comment }}</p>
-                    </div>
-                    {% endif %}
-                </div>
-                <div class="d-flex gap-1 flex-wrap">
-                    <button class="btn btn-sm btn-outline-danger rounded-pill delete-comment-btn" data-comment-id="{{ c.id }}" title="Delete comment">
-                        <i class="bi bi-trash3"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-primary rounded-pill reply-moderator-btn" data-comment-id="{{ c.id }}" title="Reply as Official">
-                        <i class="bi bi-reply-fill"></i> Reply
-                    </button>
-                    <div class="official-reply-form d-none w-100" id="modReplyForm-{{ c.id }}">
-                        <textarea class="form-control form-control-sm mb-1" rows="2" placeholder="Official reply..."></textarea>
-                        <button class="btn btn-sm btn-primary submit-moderator-reply" data-comment-id="{{ c.id }}">Submit</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <p class="text-muted">No recent comments found.</p>
-    {% endif %}
-
-    <!-- ========== DAILY ACTIVITY CHART ========== -->
-    <div class="card border-0 shadow-sm rounded-4 mt-4 p-4">
-        <h5 class="fw-bold mb-3"><i class="bi bi-graph-up me-2 text-primary"></i>Daily Activity ({{ days }} days)</h5>
-        <div style="position: relative; height: 300px; width: 100%;">
-            <canvas id="activityChart"></canvas>
-        </div>
-    </div>
+  </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    // Delete review / comment / toggle reply forms
-    document.addEventListener('click', async function(e) {
-        // Delete review
-        if (e.target.closest('.delete-review-btn')) {
-            const btn = e.target.closest('.delete-review-btn');
-            const reviewId = btn.dataset.reviewId;
-            if (!confirm('Delete this review?')) return;
-            const res = await fetch(`/api/review/${reviewId}/delete`, {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            if (res.ok) {
-                document.getElementById(`review-row-${reviewId}`)?.remove();
-            } else {
-                alert('Failed to delete review.');
-            }
+  // Delete review / comment / toggle reply forms
+  document.addEventListener("click", async function (e) {
+    // Delete review
+    if (e.target.closest(".delete-review-btn")) {
+      const btn = e.target.closest(".delete-review-btn");
+      const reviewId = btn.dataset.reviewId;
+      if (!confirm("Delete this review?")) return;
+      const res = await fetch(`/api/review/${reviewId}/delete`, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      if (res.ok) {
+        document.getElementById(`review-row-${reviewId}`)?.remove();
+      } else {
+        alert("Failed to delete review.");
+      }
+    }
+
+    // Delete comment
+    if (e.target.closest(".delete-comment-btn")) {
+      const btn = e.target.closest(".delete-comment-btn");
+      const commentId = btn.dataset.commentId;
+      if (!confirm("Delete this comment?")) return;
+      const res = await fetch(`/api/comment/${commentId}/delete`, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      if (res.ok) {
+        document.getElementById(`comment-row-${commentId}`)?.remove();
+      } else {
+        alert("Failed to delete comment.");
+      }
+    }
+
+    // Toggle reply form for COMMENT
+    if (e.target.closest(".reply-moderator-btn")) {
+      const btn = e.target.closest(".reply-moderator-btn");
+      const commentId = btn.dataset.commentId;
+      const form = document.getElementById(`modReplyForm-${commentId}`);
+      if (form) form.classList.toggle("d-none");
+    }
+
+    // Submit official reply for COMMENT
+    if (e.target.closest(".submit-moderator-reply")) {
+      const btn = e.target.closest(".submit-moderator-reply");
+      const commentId = btn.dataset.commentId;
+      const textarea = document.querySelector(
+        `#modReplyForm-${commentId} textarea`,
+      );
+      if (!textarea) return;
+      const replyText = textarea.value.trim();
+      if (!replyText) return;
+      try {
+        const res = await fetch(`/api/comment/${commentId}/reply`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: JSON.stringify({ reply_text: replyText }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert("Reply posted!");
+          textarea.value = "";
+          document
+            .getElementById(`modReplyForm-${commentId}`)
+            .classList.add("d-none");
+          location.reload();
+        } else {
+          alert("Failed: " + (data.error || "Unknown"));
         }
+      } catch (err) {
+        console.error(err);
+        alert("Network error.");
+      }
+    }
+  });
 
-        // Delete comment
-        if (e.target.closest('.delete-comment-btn')) {
-            const btn = e.target.closest('.delete-comment-btn');
-            const commentId = btn.dataset.commentId;
-            if (!confirm('Delete this comment?')) return;
-            const res = await fetch(`/api/comment/${commentId}/delete`, {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            if (res.ok) {
-                document.getElementById(`comment-row-${commentId}`)?.remove();
-            } else {
-                alert('Failed to delete comment.');
-            }
-        }
+  // Activity chart
+  const ctx = document.getElementById("activityChart").getContext("2d");
+  const labels = JSON.parse("{{ chart_labels | safe }}");
+  const reviewsData = JSON.parse("{{ chart_reviews | safe }}");
+  const commentsData = JSON.parse("{{ chart_comments | safe }}");
+  const repliesData = JSON.parse("{{ chart_replies | safe }}");
 
-        // Toggle reply form for COMMENT
-        if (e.target.closest('.reply-moderator-btn')) {
-            const btn = e.target.closest('.reply-moderator-btn');
-            const commentId = btn.dataset.commentId;
-            const form = document.getElementById(`modReplyForm-${commentId}`);
-            if (form) form.classList.toggle('d-none');
-        }
-
-        // Submit official reply for COMMENT
-        if (e.target.closest('.submit-moderator-reply')) {
-            const btn = e.target.closest('.submit-moderator-reply');
-            const commentId = btn.dataset.commentId;
-            const textarea = document.querySelector(`#modReplyForm-${commentId} textarea`);
-            if (!textarea) return;
-            const replyText = textarea.value.trim();
-            if (!replyText) return;
-            try {
-                const res = await fetch(`/api/comment/${commentId}/reply`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                    body: JSON.stringify({ reply_text: replyText })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert('Reply posted!');
-                    textarea.value = '';
-                    document.getElementById(`modReplyForm-${commentId}`).classList.add('d-none');
-                    location.reload();
-                } else {
-                    alert('Failed: ' + (data.error || 'Unknown'));
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Network error.');
-            }
-        }
-    });
-
-    // Activity chart
-    const ctx = document.getElementById('activityChart').getContext('2d');
-    const labels = JSON.parse('{{ chart_labels | safe }}');
-    const reviewsData = JSON.parse('{{ chart_reviews | safe }}');
-    const commentsData = JSON.parse('{{ chart_comments | safe }}');
-    const repliesData = JSON.parse('{{ chart_replies | safe }}');
-
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Reviews',
-                    data: reviewsData,
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    pointBackgroundColor: '#f59e0b',
-                },
-                {
-                    label: 'Comments',
-                    data: commentsData,
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    pointBackgroundColor: '#3b82f6',
-                },
-                {
-                    label: 'Official Replies',
-                    data: repliesData,
-                    borderColor: '#8b5cf6',
-                    backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                    tension: 0.4,
-                    fill: true,
-                    borderDash: [5, 5],
-                    pointBackgroundColor: '#8b5cf6',
-                }
-            ]
+  new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "Reviews",
+          data: reviewsData,
+          borderColor: "#f59e0b",
+          backgroundColor: "rgba(245, 158, 11, 0.1)",
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: "#f59e0b",
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        boxWidth: 12,
-                        padding: 15
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 },
-                    grid: { color: '#e2e8f0' }
-                },
-                x: {
-                    grid: { display: false }
-                }
-            }
-        }
-    });
+        {
+          label: "Comments",
+          data: commentsData,
+          borderColor: "#3b82f6",
+          backgroundColor: "rgba(59, 130, 246, 0.1)",
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: "#3b82f6",
+        },
+        {
+          label: "Official Replies",
+          data: repliesData,
+          borderColor: "#8b5cf6",
+          backgroundColor: "rgba(139, 92, 246, 0.2)",
+          tension: 0.4,
+          fill: true,
+          borderDash: [5, 5],
+          pointBackgroundColor: "#8b5cf6",
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            boxWidth: 12,
+            padding: 15,
+          },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 },
+          grid: { color: "#e2e8f0" },
+        },
+        x: {
+          grid: { display: false },
+        },
+      },
+    },
+  });
 </script>
 {% endblock %}
-
-
-
-
-
-
-

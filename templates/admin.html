@@ -1,457 +1,629 @@
-{% extends 'base.html' %}
-
-{% block content %}
+{% extends 'base.html' %} {% block content %}
 <div class="container py-5 animate-fade-in">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h2 class="fw-bold mb-0 text-primary">
-            <i class="bi bi-cloud-arrow-up-fill me-2"></i> Auto PDF Upload
-        </h2>
-        <div class="d-flex flex-column flex-md-row align-items-center gap-2">
-            <!-- Only Back to Library button -->
-            <a href="/" class="btn btn-outline-secondary rounded-pill px-4 d-block d-md-inline-block">
-                <i class="bi bi-house-door me-1"></i> Back to Library
-            </a>
-        </div>
+  <div
+    class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2"
+  >
+    <h2 class="fw-bold mb-0 text-primary">
+      <i class="bi bi-cloud-arrow-up-fill me-2"></i> Auto PDF Upload
+    </h2>
+    <div class="d-flex flex-column flex-md-row align-items-center gap-2">
+      <!-- Only Back to Library button -->
+      <a
+        href="/"
+        class="btn btn-outline-secondary rounded-pill px-4 d-block d-md-inline-block"
+      >
+        <i class="bi bi-house-door me-1"></i> Back to Library
+      </a>
     </div>
+  </div>
 
-    <div class="row justify-content-center">
-        <div class="col-md-7 col-lg-6">
-            <div class="card border-0 shadow-lg p-4">
-                <div class="card-body">
-                    
-                    <!-- 📄 PDF Upload Zone -->
-                    <form id="uploadForm" enctype="multipart/form-data">
-                        <input type="hidden" name="_csrf_token" value="{{ session._csrf_token }}">
-                        <div class="mb-4 p-4 border border-2 border-primary rounded bg-light upload-zone">
-                            <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 3rem;"></i>
-                            <h5 class="mt-2 fw-bold">Select PDF from your System</h5>
-                            <p class="text-muted small mb-2">Title, category, author & description will be auto‑detected.</p>
-                            <input type="file" name="pdf_file" id="pdfFileInput" class="form-control mt-3" accept=".pdf" required>
-                        </div>
-
-                        <!-- 🗂️ Manual Category Dropdown -->
-                        <div class="mb-3">
-                            <label for="categorySelect" class="form-label fw-semibold">
-                                <i class="bi bi-tag me-1"></i> Category
-                            </label>
-                            <select class="form-select" id="categorySelect" name="category">
-                                <option value="">Auto‑Detect (from PDF)</option>
-                                {% for cat in categories %}
-                                <option value="{{ cat }}">{{ cat }}</option>
-                                {% endfor %}
-                            </select>
-                            <div class="form-text">Choose a category or leave it for auto‑detection.</div>
-                        </div>
-
-                        <!-- 🖼️ Cover Image Upload -->
-                        <div class="mb-4">
-                            <label for="coverImageInput" class="form-label fw-semibold">
-                                <i class="bi bi-image me-1"></i> Cover Image (optional)
-                            </label>
-                            <input type="file" name="cover_image" id="coverImageInput" class="form-control" accept="image/*" onchange="previewCoverImage(this)">
-                            <div class="form-text">Recommended: square image, max 5 MB · JPG, PNG, GIF, WEBP allowed</div>
-                            <div class="mt-2" id="coverPreview" style="display:none;">
-                                <img id="coverThumb" src="" alt="Cover preview" class="img-thumbnail" style="max-height:150px;">
-                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="removeCover()">
-                                    <i class="bi bi-x-circle"></i> Remove
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- ⚠️ Disclaimer -->
-                        <div class="disclaimer mb-4">
-                            <strong><i class="bi bi-info-circle-fill me-1"></i> Disclaimer:</strong><br>
-                            • Only <strong>PDF files</strong> are accepted (max 500 MB).<br>
-                            • Cover image is optional but recommended (max 5 MB).<br>
-                            • Do not upload copyrighted material without permission.<br>
-                            • Your upload will be <strong>hidden until approved</strong> by a admin.
-                        </div>
-
-                        <!-- ========== PREMIUM PROGRESS CARD (GLASSMORPHISM) ========== -->
-                        <div id="progressCard" class="d-none">
-                            <div class="progress-glass-card">
-                                <div class="progress-top-icons">
-                                    <div class="laptop-icon">
-                                        <svg width="60" height="50" viewBox="0 0 60 50" fill="none">
-                                            <rect x="5" y="5" width="50" height="30" rx="3" fill="#3B82F6" stroke="#2563EB" stroke-width="2"/>
-                                            <path d="M10 40 L50 40 L55 48 L5 48 Z" fill="#1E3A8A"/>
-                                            <circle cx="30" cy="18" r="4" fill="#DBEAFE"/>
-                                        </svg>
-                                        <div class="flying-files">
-                                            <span class="pdf-file-icon">📄</span>
-                                            <span class="pdf-file-icon delay1">📄</span>
-                                            <span class="pdf-file-icon delay2">📄</span>
-                                        </div>
-                                    </div>
-                                    <div class="connection-lines"></div>
-                                    <div class="server-icon">
-                                        <svg width="60" height="50" viewBox="0 0 60 50" fill="none">
-                                            <rect x="10" y="5" width="40" height="15" rx="2" fill="#10B981" stroke="#059669" stroke-width="2"/>
-                                            <rect x="15" y="25" width="30" height="5" rx="1" fill="#34D399"/>
-                                            <rect x="15" y="34" width="20" height="5" rx="1" fill="#34D399"/>
-                                            <circle cx="50" cy="32" r="8" fill="#ECFDF5" stroke="#10B981" stroke-width="2"/>
-                                            <path d="M47 32 L49 34 L53 29" stroke="#10B981" stroke-width="2" fill="none"/>
-                                        </svg>
-                                        <div class="server-pulse"></div>
-                                    </div>
-                                </div>
-
-                                <!-- Circular Progress Ring -->
-                                <div class="circular-progress-container">
-                                    <svg class="progress-ring" width="120" height="120">
-                                        <circle class="ring-bg" cx="60" cy="60" r="52" fill="none" stroke="#e0e7ff" stroke-width="8"/>
-                                        <circle class="ring-fg" cx="60" cy="60" r="52" fill="none" stroke="#4338ca" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 327" transform="rotate(-90 60 60)"/>
-                                    </svg>
-                                    <div class="progress-text" id="progressPercent">0%</div>
-                                </div>
-
-                                <!-- Stats -->
-                                <div class="progress-stats">
-                                    <div class="stat-item">
-                                        <span class="stat-label">File Size</span>
-                                        <span id="statSize" class="stat-value">--</span>
-                                    </div>
-                                    <div class="stat-item">
-                                        <span class="stat-label">Speed</span>
-                                        <span id="statSpeed" class="stat-value">--</span>
-                                    </div>
-                                    <div class="stat-item">
-                                        <span class="stat-label">ETA</span>
-                                        <span id="statETA" class="stat-value">--</span>
-                                    </div>
-                                </div>
-                                <div id="progressStatus" class="progress-status-text">Uploading PDF...</div>
-                            </div>
-                        </div>
-
-                        <div id="statusMessage" class="text-center fw-bold mb-3 d-none"></div>
-
-                        <button type="submit" id="uploadBtn" class="btn btn-primary w-100 fw-bold py-3" style="border-radius: 12px;">
-                            <i class="bi bi-rocket-fill me-2"></i> Upload File & Publish
-                        </button>
-                    </form>
-                </div>
+  <div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+      <div class="card border-0 shadow-lg p-4">
+        <div class="card-body">
+          <!-- 📄 PDF Upload Zone -->
+          <form id="uploadForm" enctype="multipart/form-data">
+            <input
+              type="hidden"
+              name="_csrf_token"
+              value="{{ session._csrf_token }}"
+            />
+            <div
+              class="mb-4 p-4 border border-2 border-primary rounded bg-light upload-zone"
+            >
+              <i
+                class="bi bi-file-earmark-pdf text-danger"
+                style="font-size: 3rem"
+              ></i>
+              <h5 class="mt-2 fw-bold">Select PDF from your System</h5>
+              <p class="text-muted small mb-2">
+                Title, category, author & description will be auto‑detected.
+              </p>
+              <input
+                type="file"
+                name="pdf_file"
+                id="pdfFileInput"
+                class="form-control mt-3"
+                accept=".pdf"
+                required
+              />
             </div>
+
+            <!-- 🗂️ Manual Category Dropdown -->
+            <div class="mb-3">
+              <label for="categorySelect" class="form-label fw-semibold">
+                <i class="bi bi-tag me-1"></i> Category
+              </label>
+              <select class="form-select" id="categorySelect" name="category">
+                <option value="">Auto‑Detect (from PDF)</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+              </select>
+              <div class="form-text">
+                Choose a category or leave it for auto‑detection.
+              </div>
+            </div>
+
+            <!-- 🖼️ Cover Image Upload -->
+            <div class="mb-4">
+              <label for="coverImageInput" class="form-label fw-semibold">
+                <i class="bi bi-image me-1"></i> Cover Image (optional)
+              </label>
+              <input
+                type="file"
+                name="cover_image"
+                id="coverImageInput"
+                class="form-control"
+                accept="image/*"
+                onchange="previewCoverImage(this)"
+              />
+              <div class="form-text">
+                Recommended: square image, max 5 MB · JPG, PNG, GIF, WEBP
+                allowed
+              </div>
+              <div class="mt-2" id="coverPreview" style="display: none">
+                <img
+                  id="coverThumb"
+                  src=""
+                  alt="Cover preview"
+                  class="img-thumbnail"
+                  style="max-height: 150px"
+                />
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary ms-2"
+                  onclick="removeCover()"
+                >
+                  <i class="bi bi-x-circle"></i> Remove
+                </button>
+              </div>
+            </div>
+
+            <!-- ⚠️ Disclaimer -->
+            <div class="disclaimer mb-4">
+              <strong
+                ><i class="bi bi-info-circle-fill me-1"></i> Disclaimer:</strong
+              ><br />
+              • Only <strong>PDF files</strong> are accepted (max 500 MB).<br />
+              • Cover image is optional but recommended (max 5 MB).<br />
+              • Do not upload copyrighted material without permission.<br />
+              • Your upload will be <strong>hidden until approved</strong> by a
+              admin.
+            </div>
+
+            <!-- ========== PREMIUM PROGRESS CARD (GLASSMORPHISM) ========== -->
+            <div id="progressCard" class="d-none">
+              <div class="progress-glass-card">
+                <div class="progress-top-icons">
+                  <div class="laptop-icon">
+                    <svg width="60" height="50" viewBox="0 0 60 50" fill="none">
+                      <rect
+                        x="5"
+                        y="5"
+                        width="50"
+                        height="30"
+                        rx="3"
+                        fill="#3B82F6"
+                        stroke="#2563EB"
+                        stroke-width="2"
+                      />
+                      <path d="M10 40 L50 40 L55 48 L5 48 Z" fill="#1E3A8A" />
+                      <circle cx="30" cy="18" r="4" fill="#DBEAFE" />
+                    </svg>
+                    <div class="flying-files">
+                      <span class="pdf-file-icon">📄</span>
+                      <span class="pdf-file-icon delay1">📄</span>
+                      <span class="pdf-file-icon delay2">📄</span>
+                    </div>
+                  </div>
+                  <div class="connection-lines"></div>
+                  <div class="server-icon">
+                    <svg width="60" height="50" viewBox="0 0 60 50" fill="none">
+                      <rect
+                        x="10"
+                        y="5"
+                        width="40"
+                        height="15"
+                        rx="2"
+                        fill="#10B981"
+                        stroke="#059669"
+                        stroke-width="2"
+                      />
+                      <rect
+                        x="15"
+                        y="25"
+                        width="30"
+                        height="5"
+                        rx="1"
+                        fill="#34D399"
+                      />
+                      <rect
+                        x="15"
+                        y="34"
+                        width="20"
+                        height="5"
+                        rx="1"
+                        fill="#34D399"
+                      />
+                      <circle
+                        cx="50"
+                        cy="32"
+                        r="8"
+                        fill="#ECFDF5"
+                        stroke="#10B981"
+                        stroke-width="2"
+                      />
+                      <path
+                        d="M47 32 L49 34 L53 29"
+                        stroke="#10B981"
+                        stroke-width="2"
+                        fill="none"
+                      />
+                    </svg>
+                    <div class="server-pulse"></div>
+                  </div>
+                </div>
+
+                <!-- Circular Progress Ring -->
+                <div class="circular-progress-container">
+                  <svg class="progress-ring" width="120" height="120">
+                    <circle
+                      class="ring-bg"
+                      cx="60"
+                      cy="60"
+                      r="52"
+                      fill="none"
+                      stroke="#e0e7ff"
+                      stroke-width="8"
+                    />
+                    <circle
+                      class="ring-fg"
+                      cx="60"
+                      cy="60"
+                      r="52"
+                      fill="none"
+                      stroke="#4338ca"
+                      stroke-width="8"
+                      stroke-linecap="round"
+                      stroke-dasharray="0 327"
+                      transform="rotate(-90 60 60)"
+                    />
+                  </svg>
+                  <div class="progress-text" id="progressPercent">0%</div>
+                </div>
+
+                <!-- Stats -->
+                <div class="progress-stats">
+                  <div class="stat-item">
+                    <span class="stat-label">File Size</span>
+                    <span id="statSize" class="stat-value">--</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">Speed</span>
+                    <span id="statSpeed" class="stat-value">--</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">ETA</span>
+                    <span id="statETA" class="stat-value">--</span>
+                  </div>
+                </div>
+                <div id="progressStatus" class="progress-status-text">
+                  Uploading PDF...
+                </div>
+              </div>
+            </div>
+
+            <div
+              id="statusMessage"
+              class="text-center fw-bold mb-3 d-none"
+            ></div>
+
+            <button
+              type="submit"
+              id="uploadBtn"
+              class="btn btn-primary w-100 fw-bold py-3"
+              style="border-radius: 12px"
+            >
+              <i class="bi bi-rocket-fill me-2"></i> Upload File & Publish
+            </button>
+          </form>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <!-- Toast notification (center‑top) -->
-<div aria-live="polite" aria-atomic="true" class="d-flex justify-content-center align-items-center w-100" style="position: fixed; top: 20px; left: 0; z-index: 1100;">
-    <div id="liveToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-            <div class="toast-body">
-                <i id="toastIcon" class="bi bi-check-circle-fill me-2"></i>
-                <span id="toastMessage"></span>
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
+<div
+  aria-live="polite"
+  aria-atomic="true"
+  class="d-flex justify-content-center align-items-center w-100"
+  style="position: fixed; top: 20px; left: 0; z-index: 1100"
+>
+  <div
+    id="liveToast"
+    class="toast align-items-center text-white bg-success border-0"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+  >
+    <div class="d-flex">
+      <div class="toast-body">
+        <i id="toastIcon" class="bi bi-check-circle-fill me-2"></i>
+        <span id="toastMessage"></span>
+      </div>
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"
+        aria-label="Close"
+      ></button>
     </div>
+  </div>
 </div>
 
 <style>
-    .disclaimer {
-        background: #fff3cd;
-        border-left: 4px solid #ffb703;
-        padding: 12px 16px;
-        border-radius: 10px;
-        font-size: 0.9rem;
-        color: #333;
-    }
-    .upload-zone {
-        transition: all 0.2s ease;
-    }
-    .upload-zone:hover {
-        background: #e9f0ff !important;
-    }
+  .disclaimer {
+    background: #fff3cd;
+    border-left: 4px solid #ffb703;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: #333;
+  }
+  .upload-zone {
+    transition: all 0.2s ease;
+  }
+  .upload-zone:hover {
+    background: #e9f0ff !important;
+  }
 
-    /* ========== PREMIUM PROGRESS GLASSMORPHISM ========== */
-    .progress-glass-card {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 24px;
-        padding: 25px;
-        text-align: center;
-        box-shadow: 0 25px 50px rgba(0,0,0,0.1);
-        margin: 20px 0;
+  /* ========== PREMIUM PROGRESS GLASSMORPHISM ========== */
+  .progress-glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 24px;
+    padding: 25px;
+    text-align: center;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+    margin: 20px 0;
+  }
+  .progress-top-icons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 20px;
+  }
+  .laptop-icon,
+  .server-icon {
+    position: relative;
+  }
+  .flying-files .pdf-file-icon {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    font-size: 24px;
+    transform: translate(-50%, -50%);
+    animation: flyToServer 1.5s infinite ease-in-out;
+    opacity: 0;
+  }
+  .delay1 {
+    animation-delay: 0.5s;
+  }
+  .delay2 {
+    animation-delay: 1s;
+  }
+  @keyframes flyToServer {
+    0% {
+      left: 50%;
+      top: 50%;
+      opacity: 0;
+      transform: translate(-50%, -50%) rotate(0deg);
     }
-    .progress-top-icons {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 30px;
-        margin-bottom: 20px;
+    30% {
+      opacity: 1;
     }
-    .laptop-icon, .server-icon {
-        position: relative;
+    100% {
+      left: calc(100% + 20px);
+      top: 10%;
+      opacity: 0;
+      transform: translate(0, 0) rotate(20deg);
     }
-    .flying-files .pdf-file-icon {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        font-size: 24px;
-        transform: translate(-50%, -50%);
-        animation: flyToServer 1.5s infinite ease-in-out;
-        opacity: 0;
+  }
+  .connection-lines {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #4338ca, transparent);
+    animation: pulseLine 1s infinite;
+  }
+  @keyframes pulseLine {
+    0%,
+    100% {
+      opacity: 0.3;
+      transform: scaleX(0.8);
     }
-    .delay1 { animation-delay: 0.5s; }
-    .delay2 { animation-delay: 1s; }
-    @keyframes flyToServer {
-        0% { left: 50%; top: 50%; opacity: 0; transform: translate(-50%, -50%) rotate(0deg); }
-        30% { opacity: 1; }
-        100% { left: calc(100% + 20px); top: 10%; opacity: 0; transform: translate(0, 0) rotate(20deg); }
+    50% {
+      opacity: 1;
+      transform: scaleX(1.2);
     }
-    .connection-lines {
-        width: 60px;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, #4338ca, transparent);
-        animation: pulseLine 1s infinite;
+  }
+  .server-pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    background: rgba(16, 185, 129, 0.2);
+    border-radius: 50%;
+    animation: serverGlow 0.8s infinite alternate;
+  }
+  @keyframes serverGlow {
+    from {
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+      transform: translate(-50%, -50%) scale(0.9);
     }
-    @keyframes pulseLine {
-        0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
-        50% { opacity: 1; transform: scaleX(1.2); }
+    to {
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
+      transform: translate(-50%, -50%) scale(1.2);
     }
-    .server-pulse {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 40px;
-        height: 40px;
-        background: rgba(16, 185, 129, 0.2);
-        border-radius: 50%;
-        animation: serverGlow 0.8s infinite alternate;
-    }
-    @keyframes serverGlow {
-        from { box-shadow: 0 0 10px rgba(16,185,129,0.4); transform: translate(-50%, -50%) scale(0.9); }
-        to { box-shadow: 0 0 25px rgba(16,185,129,0.8); transform: translate(-50%, -50%) scale(1.2); }
-    }
-    .circular-progress-container {
-        position: relative;
-        width: 120px;
-        height: 120px;
-        margin: 0 auto 20px;
-    }
-    .progress-ring .ring-fg {
-        stroke-dasharray: 327;
-        stroke-dashoffset: 327;
-        transition: stroke-dashoffset 0.2s ease;
-    }
-    .progress-text {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 24px;
-        font-weight: 800;
-        color: #1e1b4b;
-    }
-    .progress-stats {
-        display: flex;
-        justify-content: space-around;
-        margin-bottom: 10px;
-    }
-    .stat-item {
-        display: flex;
-        flex-direction: column;
-        font-size: 0.85rem;
-    }
-    .stat-label { color: #6b7280; }
-    .stat-value { font-weight: 600; color: #1e1b4b; }
-    .progress-status-text {
-        font-weight: 600;
-        color: #4338ca;
-        min-height: 20px;
-    }
+  }
+  .circular-progress-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 20px;
+  }
+  .progress-ring .ring-fg {
+    stroke-dasharray: 327;
+    stroke-dashoffset: 327;
+    transition: stroke-dashoffset 0.2s ease;
+  }
+  .progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    font-weight: 800;
+    color: #1e1b4b;
+  }
+  .progress-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 10px;
+  }
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+  }
+  .stat-label {
+    color: #6b7280;
+  }
+  .stat-value {
+    font-weight: 600;
+    color: #1e1b4b;
+  }
+  .progress-status-text {
+    font-weight: 600;
+    color: #4338ca;
+    min-height: 20px;
+  }
 
-    #progressCard.d-none {
-        pointer-events: none !important;
-    }
+  #progressCard.d-none {
+    pointer-events: none !important;
+  }
 
-    /* Responsive fix for action buttons */
-    @media (max-width: 767.98px) {
-        .d-md-inline-block {
-            display: block !important;
-            width: 100%;
-        }
+  /* Responsive fix for action buttons */
+  @media (max-width: 767.98px) {
+    .d-md-inline-block {
+      display: block !important;
+      width: 100%;
     }
+  }
 </style>
 
 <script>
-const MAX_FILE_SIZE = 500 * 1024 * 1024;
+  const MAX_FILE_SIZE = 500 * 1024 * 1024;
 
-// PDF size validation
-document.getElementById('pdfFileInput').addEventListener('change', function() {
-    const file = this.files[0];
-    if (file && file.size > MAX_FILE_SIZE) {
-        showToast('File too large! Maximum 500 MB allowed.', 'danger');
-        this.value = '';
-    }
-});
+  // PDF size validation
+  document
+    .getElementById("pdfFileInput")
+    .addEventListener("change", function () {
+      const file = this.files[0];
+      if (file && file.size > MAX_FILE_SIZE) {
+        showToast("File too large! Maximum 500 MB allowed.", "danger");
+        this.value = "";
+      }
+    });
 
-// Cover image preview
-function previewCoverImage(input) {
-    const preview = document.getElementById('coverPreview');
-    const thumb = document.getElementById('coverThumb');
+  // Cover image preview
+  function previewCoverImage(input) {
+    const preview = document.getElementById("coverPreview");
+    const thumb = document.getElementById("coverThumb");
     if (input.files && input.files[0]) {
-        const file = input.files[0];
-        if (file.size > 5 * 1024 * 1024) {
-            showToast('Cover image must be less than 5 MB.', 'danger');
-            input.value = '';
-            preview.style.display = 'none';
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            thumb.src = e.target.result;
-            preview.style.display = 'flex';
-            preview.style.alignItems = 'center';
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-function removeCover() {
-    document.getElementById('coverImageInput').value = '';
-    document.getElementById('coverPreview').style.display = 'none';
-}
-
-// Form submission with premium progress
-document.getElementById('uploadForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const fileInput = document.getElementById('pdfFileInput');
-    const file = fileInput.files[0];
-    if (!file) return;
-
-    if (file.size > MAX_FILE_SIZE) {
-        showToast('File too large! Maximum 500 MB allowed.', 'danger');
+      const file = input.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        showToast("Cover image must be less than 5 MB.", "danger");
+        input.value = "";
+        preview.style.display = "none";
         return;
+      }
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        thumb.src = e.target.result;
+        preview.style.display = "flex";
+        preview.style.alignItems = "center";
+      };
+      reader.readAsDataURL(file);
     }
+  }
 
-    let formData = new FormData(this);
-    const progressCard = document.getElementById('progressCard');
-    const statusMsg = document.getElementById('statusMessage');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const ringFg = document.querySelector('.ring-fg');
-    const progressPercent = document.getElementById('progressPercent');
-    const statSize = document.getElementById('statSize');
-    const statSpeed = document.getElementById('statSpeed');
-    const statETA = document.getElementById('statETA');
-    const progressStatus = document.getElementById('progressStatus');
+  function removeCover() {
+    document.getElementById("coverImageInput").value = "";
+    document.getElementById("coverPreview").style.display = "none";
+  }
 
-    progressCard.classList.remove('d-none');
-    uploadBtn.disabled = true;
-    statusMsg.classList.add('d-none');
+  // Form submission with premium progress
+  document
+    .getElementById("uploadForm")
+    .addEventListener("submit", function (e) {
+      e.preventDefault();
 
-    const sizeMB = (file.size / (1024*1024)).toFixed(2);
-    statSize.textContent = sizeMB + ' MB';
+      const fileInput = document.getElementById("pdfFileInput");
+      const file = fileInput.files[0];
+      if (!file) return;
 
-    let startTime = Date.now();
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', '/admin', true);
+      if (file.size > MAX_FILE_SIZE) {
+        showToast("File too large! Maximum 500 MB allowed.", "danger");
+        return;
+      }
 
-    xhr.upload.onprogress = function(e) {
+      let formData = new FormData(this);
+      const progressCard = document.getElementById("progressCard");
+      const statusMsg = document.getElementById("statusMessage");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const ringFg = document.querySelector(".ring-fg");
+      const progressPercent = document.getElementById("progressPercent");
+      const statSize = document.getElementById("statSize");
+      const statSpeed = document.getElementById("statSpeed");
+      const statETA = document.getElementById("statETA");
+      const progressStatus = document.getElementById("progressStatus");
+
+      progressCard.classList.remove("d-none");
+      uploadBtn.disabled = true;
+      statusMsg.classList.add("d-none");
+
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      statSize.textContent = sizeMB + " MB";
+
+      let startTime = Date.now();
+      let xhr = new XMLHttpRequest();
+      xhr.open("POST", "/admin", true);
+
+      xhr.upload.onprogress = function (e) {
         if (e.lengthComputable) {
-            let percent = Math.round((e.loaded / e.total) * 100);
-            let offset = 327 - (327 * percent / 100);
-            ringFg.style.strokeDashoffset = offset;
-            progressPercent.textContent = percent + '%';
+          let percent = Math.round((e.loaded / e.total) * 100);
+          let offset = 327 - (327 * percent) / 100;
+          ringFg.style.strokeDashoffset = offset;
+          progressPercent.textContent = percent + "%";
 
-            let elapsed = (Date.now() - startTime) / 1000;
-            let speed = elapsed > 0 ? e.loaded / elapsed : 0;
-            statSpeed.textContent = formatSpeed(speed);
+          let elapsed = (Date.now() - startTime) / 1000;
+          let speed = elapsed > 0 ? e.loaded / elapsed : 0;
+          statSpeed.textContent = formatSpeed(speed);
 
-            let remaining = e.total - e.loaded;
-            let eta = speed > 0 ? remaining / speed : 0;
-            statETA.textContent = formatTime(eta);
+          let remaining = e.total - e.loaded;
+          let eta = speed > 0 ? remaining / speed : 0;
+          statETA.textContent = formatTime(eta);
 
-            if (percent < 25) progressStatus.textContent = 'Reading PDF metadata...';
-            else if (percent < 50) progressStatus.textContent = 'Uploading to cloud...';
-            else if (percent < 75) progressStatus.textContent = 'Processing cover image...';
-            else if (percent < 100) progressStatus.textContent = 'Finalizing...';
-            else progressStatus.textContent = 'Almost done!';
+          if (percent < 25)
+            progressStatus.textContent = "Reading PDF metadata...";
+          else if (percent < 50)
+            progressStatus.textContent = "Uploading to cloud...";
+          else if (percent < 75)
+            progressStatus.textContent = "Processing cover image...";
+          else if (percent < 100) progressStatus.textContent = "Finalizing...";
+          else progressStatus.textContent = "Almost done!";
         }
-    };
+      };
 
-    xhr.onload = function() {
-        progressCard.classList.add('d-none');
+      xhr.onload = function () {
+        progressCard.classList.add("d-none");
         if (xhr.status === 200) {
-            let data = JSON.parse(xhr.responseText);
-            showToast(data.message, 'success');
-            if (data.warning) showToast(data.warning, 'danger');
+          let data = JSON.parse(xhr.responseText);
+          showToast(data.message, "success");
+          if (data.warning) showToast(data.warning, "danger");
 
-            const channel = new BroadcastChannel('docodive_upload');
-            channel.postMessage('refresh');
-            channel.close();
+          const channel = new BroadcastChannel("docodive_upload");
+          channel.postMessage("refresh");
+          channel.close();
 
-            statusMsg.classList.remove('d-none');
-            statusMsg.innerHTML = "<span class='text-success'>Upload Successful!</span>";
-            document.getElementById('uploadForm').reset();
-            removeCover();
-            uploadBtn.disabled = false;
+          statusMsg.classList.remove("d-none");
+          statusMsg.innerHTML =
+            "<span class='text-success'>Upload Successful!</span>";
+          document.getElementById("uploadForm").reset();
+          removeCover();
+          uploadBtn.disabled = false;
         } else {
-            let errorMsg = 'Upload Failed.';
-            try {
-                let data = JSON.parse(xhr.responseText);
-                errorMsg = data.error || errorMsg;
-            } catch(e) {}
-            showToast(errorMsg, 'danger');
-            statusMsg.classList.remove('d-none');
-            statusMsg.innerHTML = `<span class='text-danger'>${errorMsg}</span>`;
-            uploadBtn.disabled = false;
+          let errorMsg = "Upload Failed.";
+          try {
+            let data = JSON.parse(xhr.responseText);
+            errorMsg = data.error || errorMsg;
+          } catch (e) {}
+          showToast(errorMsg, "danger");
+          statusMsg.classList.remove("d-none");
+          statusMsg.innerHTML = `<span class='text-danger'>${errorMsg}</span>`;
+          uploadBtn.disabled = false;
         }
-    };
+      };
 
-    xhr.onerror = function() {
-        progressCard.classList.add('d-none');
-        showToast('Network error.', 'danger');
+      xhr.onerror = function () {
+        progressCard.classList.add("d-none");
+        showToast("Network error.", "danger");
         uploadBtn.disabled = false;
-    };
+      };
 
-    xhr.send(formData);
-});
+      xhr.send(formData);
+    });
 
-function formatSpeed(bytesPerSec) {
-    if (bytesPerSec > 1024*1024) return (bytesPerSec/(1024*1024)).toFixed(1) + ' MB/s';
-    else if (bytesPerSec > 1024) return (bytesPerSec/1024).toFixed(1) + ' KB/s';
-    else return bytesPerSec.toFixed(0) + ' B/s';
-}
+  function formatSpeed(bytesPerSec) {
+    if (bytesPerSec > 1024 * 1024)
+      return (bytesPerSec / (1024 * 1024)).toFixed(1) + " MB/s";
+    else if (bytesPerSec > 1024)
+      return (bytesPerSec / 1024).toFixed(1) + " KB/s";
+    else return bytesPerSec.toFixed(0) + " B/s";
+  }
 
-function formatTime(seconds) {
-    if (seconds < 60) return Math.ceil(seconds) + 's';
+  function formatTime(seconds) {
+    if (seconds < 60) return Math.ceil(seconds) + "s";
     let mins = Math.floor(seconds / 60);
     let secs = Math.ceil(seconds % 60);
-    return mins + 'm ' + secs + 's';
-}
+    return mins + "m " + secs + "s";
+  }
 
-function showToast(message, type) {
-    const toastEl = document.getElementById('liveToast');
-    const toastMessage = document.getElementById('toastMessage');
-    const toastIcon = document.getElementById('toastIcon');
-    
+  function showToast(message, type) {
+    const toastEl = document.getElementById("liveToast");
+    const toastMessage = document.getElementById("toastMessage");
+    const toastIcon = document.getElementById("toastIcon");
+
     toastMessage.textContent = message;
-    if (type === 'danger') {
-        toastEl.classList.remove('bg-success');
-        toastEl.classList.add('bg-danger');
-        toastIcon.className = 'bi bi-exclamation-triangle-fill me-2';
+    if (type === "danger") {
+      toastEl.classList.remove("bg-success");
+      toastEl.classList.add("bg-danger");
+      toastIcon.className = "bi bi-exclamation-triangle-fill me-2";
     } else {
-        toastEl.classList.remove('bg-danger');
-        toastEl.classList.add('bg-success');
-        toastIcon.className = 'bi bi-check-circle-fill me-2';
+      toastEl.classList.remove("bg-danger");
+      toastEl.classList.add("bg-success");
+      toastIcon.className = "bi bi-check-circle-fill me-2";
     }
-    
+
     const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
     toast.show();
-}
+  }
 </script>
 {% endblock %}
-
-
-
-
-
-
-
