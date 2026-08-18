@@ -261,6 +261,9 @@ learners on DocoDive. {% endblock %} {% block canonical %}{{ request.base_url
           {% elif category == 'Others' %}<i
             class="bi bi-box-seam text-dark"
           ></i>
+          {% elif category == 'IELTS' %}<i
+            class="bi bi-globe2 text-primary"
+          ></i>
           {% else %}<i class="bi bi-collection text-dark"></i>{% endif %}
         </div>
         <h1>{{ category }} <span style="color: #ffb703">Books</span></h1>
@@ -299,7 +302,91 @@ learners on DocoDive. {% endblock %} {% block canonical %}{{ request.base_url
     {% endfor %}
   </div>
 </section>
-
+{% if category == 'IELTS' %}
+<!-- ========== IELTS MODULES ========== -->
+<section class="container py-4">
+  <h2 class="fw-bold mb-3" style="color: #1e1b4b">🎯 IELTS Modules</h2>
+  <div class="row g-2 g-sm-3">
+    <div class="col-6 col-md-3">
+      <a
+        href="/ielts/listening"
+        class="card border-0 shadow-sm p-3 h-100 text-decoration-none"
+        style="
+          border-radius: 16px;
+          background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+        "
+      >
+        <i class="bi bi-headphones fs-1 text-primary mb-2"></i>
+        <h6 class="fw-bold text-dark">Listening</h6>
+        <small class="text-muted">Tips & practice</small>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a
+        href="/ielts/reading"
+        class="card border-0 shadow-sm p-3 h-100 text-decoration-none"
+        style="
+          border-radius: 16px;
+          background: linear-gradient(135deg, #fef3c7, #fde68a);
+        "
+      >
+        <i class="bi bi-book fs-1 text-warning mb-2"></i>
+        <h6 class="fw-bold text-dark">Reading</h6>
+        <small class="text-muted">Passages & strategies</small>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a
+        href="/ielts/writing"
+        class="card border-0 shadow-sm p-3 h-100 text-decoration-none"
+        style="
+          border-radius: 16px;
+          background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+        "
+      >
+        <i class="bi bi-pencil-square fs-1 text-danger mb-2"></i>
+        <h6 class="fw-bold text-dark">Writing</h6>
+        <small class="text-muted">Task 1 & 2</small>
+      </a>
+    </div>
+    <div class="col-6 col-md-3">
+      <a
+        href="/ielts/speaking"
+        class="card border-0 shadow-sm p-3 h-100 text-decoration-none"
+        style="
+          border-radius: 16px;
+          background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+        "
+      >
+        <i class="bi bi-mic fs-1 text-success mb-2"></i>
+        <h6 class="fw-bold text-dark">Speaking</h6>
+        <small class="text-muted">Cue cards & fluency</small>
+      </a>
+    </div>
+  </div>
+</section>
+{% endif %} {% if category != 'IELTS' %}
+<section class="container py-4">
+  <h2 class="fw-bold mb-3" style="color: #1e1b4b">
+    📘 {{ category }} Learning Path
+  </h2>
+  <div class="row g-2 g-sm-3">
+    {% for m in category_modules %}
+    <div class="col-6 col-md-3">
+      <a
+        href="/learn/{{ category_slug }}/{{ m.slug }}"
+        class="card border-0 shadow-sm p-3 h-100 text-decoration-none"
+        style="border-radius: 16px; background: rgba(67, 56, 202, 0.04)"
+      >
+        <i class="bi {{ m.icon }} fs-1 {{ m.color }} mb-2"></i>
+        <h6 class="fw-bold text-dark">{{ m.title }}</h6>
+        <small class="text-muted">{{ m.desc }}</small>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 <!-- ========== BOOKS GRID ========== -->
 <section class="container pb-5">
   {% if books %}

@@ -1970,6 +1970,66 @@ def service_unavailable(e):
     return render_template("503.html"), 503
 
 
+GENERIC_MODULES = [
+    {
+        "slug": "beginner",
+        "title": "Beginner Guide",
+        "icon": "bi-mortarboard",
+        "color": "text-primary",
+        "desc": "Start from zero",
+        "tips": [
+            "Understand the fundamentals first",
+            "Follow a structured learning path",
+            "Practice small examples daily",
+            "Take notes and revise regularly",
+            "Don't rush — build a strong base",
+        ],
+    },
+    {
+        "slug": "intermediate",
+        "title": "Intermediate",
+        "icon": "bi-graph-up-arrow",
+        "color": "text-warning",
+        "desc": "Level up your skills",
+        "tips": [
+            "Build real projects to apply knowledge",
+            "Learn advanced concepts in depth",
+            "Read documentation and source code",
+            "Practice problem-solving consistently",
+            "Review and refactor your code",
+        ],
+    },
+    {
+        "slug": "advanced",
+        "title": "Advanced",
+        "icon": "bi-rocket-takeoff",
+        "color": "text-danger",
+        "desc": "Master the field",
+        "tips": [
+            "Master optimization and best practices",
+            "Deep dive into complex topics",
+            "Contribute to open-source projects",
+            "Explore industry-level case studies",
+            "Keep updating with latest trends",
+        ],
+    },
+    {
+        "slug": "practice",
+        "title": "Practice Resources",
+        "icon": "bi-journal-check",
+        "color": "text-success",
+        "desc": "Exercises & quizzes",
+        "tips": [
+            "Solve problems and take quizzes",
+            "Apply concepts in hands-on tasks",
+            "Work on mini projects",
+            "Join discussions and share solutions",
+            "Track your progress weekly",
+        ],
+    },
+]
+
+
 # ================== LEARNING HUB HELPERS ==================
 def category_to_slug(category):
     slug = category.strip().lower()
@@ -2254,7 +2314,141 @@ def learning_hub(category_slug):
         page=page,
         total_pages=total_pages,
         all_categories=all_categories,
+        category_modules=GENERIC_MODULES,
     )
+
+
+@app.route("/learn/<slug>/<module>")
+def category_module(slug, module):
+    cur = mysql.connection.cursor()
+    category = slug_to_category_name(slug, cur)
+    cur.close()
+
+    if not category:
+        abort(404)
+
+    module_info = next(
+        (m for m in GENERIC_MODULES if m["slug"] == module),
+        None,
+    )
+    if not module_info:
+        abort(404)
+
+    folder = category_to_slug(category)
+    return render_template(
+        f"{folder}/{module}.html",
+        category=category,
+        category_slug=slug,
+        info=module_info,
+    )
+
+
+# ------IELTS PAGE ROUTE------
+@app.route("/ielts")
+def ielts_page():
+    cur = mysql.connection.cursor()
+
+    # 1) IELTS category id find karo
+    cur.execute("SELECT id FROM categories WHERE level = 'IELTS' LIMIT 1")
+    cat_row = cur.fetchone()
+
+    if not cat_row:
+        cur.close()
+        books = []
+    else:
+        cat_id = cat_row[0]
+
+        # 2) Approved IELTS books lo
+        cur.execute(
+            """
+            SELECT id, title, author, image_url,
+                   COALESCE(download_count, 0),
+                   COALESCE(view_count, 0),
+                   description, language
+            FROM documents
+            WHERE category_id = %s AND approved = 1
+            ORDER BY id DESC
+            """,
+            (cat_id,),
+        )
+        rows = cur.fetchall()
+        books = [
+            {
+                "id": r[0],
+                "title": r[1],
+                "author": r[2],
+                "image_url": r[3],
+                "download_count": r[4],
+                "view_count": r[5],
+                "description": r[6],
+                "language": r[7],
+            }
+            for r in rows
+        ]
+        cur.close()
+
+    return redirect("/learn/ielts")
+
+
+# -----IELTS MODULE ROUTE-----
+@app.route("/ielts/<module>")
+def ielts_module(module):
+    module_map = {
+        "listening": {
+            "title": "IELTS Listening",
+            "icon": "bi-headphones",
+            "color": "text-primary",
+            "tips": [
+                "Read questions before audio starts",
+                "Listen for synonyms and paraphrases",
+                "Practice note-taking while listening",
+                "Focus on numbers, dates, and names",
+                "Don't leave any answer blank",
+            ],
+        },
+        "reading": {
+            "title": "IELTS Reading",
+            "icon": "bi-book",
+            "color": "text-warning",
+            "tips": [
+                "Skim passage first, then read questions",
+                "Manage time: 20 minutes per passage",
+                "Underline keywords and dates",
+                "Practice True/False/Not Given questions",
+                "Improve vocabulary daily",
+            ],
+        },
+        "writing": {
+            "title": "IELTS Writing",
+            "icon": "bi-pencil-square",
+            "color": "text-danger",
+            "tips": [
+                "Task 1: describe data clearly",
+                "Task 2: plan before writing",
+                "Keep paragraphs short and focused",
+                "Use linking words (however, therefore)",
+                "Check grammar and spelling",
+            ],
+        },
+        "speaking": {
+            "title": "IELTS Speaking",
+            "icon": "bi-mic",
+            "color": "text-success",
+            "tips": [
+                "Speak naturally, don't memorize",
+                "Extend answers with examples",
+                "Practice daily for fluency",
+                "Record yourself and review",
+                "Use varied vocabulary",
+            ],
+        },
+    }
+
+    module_info = module_map.get(module)
+    if not module_info:
+        abort(404)
+
+    return render_template(f"ielts/{module}.html", module=module, info=module_info)
 
 
 # ================== BOOK DETAIL ==================
@@ -3093,6 +3287,7 @@ def admin():
         "Mobile Apps",
         "DevOps",
         "Others",
+        "IELTS",
     ]
     for cat in DEFAULT_CATEGORIES:
         cur.execute("SELECT id FROM categories WHERE level = %s", (cat,))

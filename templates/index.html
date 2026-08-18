@@ -246,15 +246,7 @@
     margin-bottom: 10px;
   }
 
-  /* ====== BOOK COVER FIX ====== */
-  .book-cover-outer {
-    height: auto;
-    overflow: visible;
-  }
-  .book-3d-wrapper {
-    height: auto;
-    max-height: 220px;
-  }
+  /* ====== BOOK FALLBACK COVER ====== */
   .book-fallback-icon {
     width: 40px;
     height: 40px;
@@ -264,28 +256,32 @@
     font-size: 0.7rem;
   }
 
-  @media (max-width: 768px) {
-    .book-3d-wrapper {
-      max-height: 170px;
-    }
+  /* ===== FLAT BOOK COVER ===== */
+  .book-cover-outer {
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  .flat-book-cover {
+    width: 100%;
+    max-width: 160px;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
   }
   @media (max-width: 576px) {
-    .book-3d-wrapper {
-      max-height: 130px;
+    .flat-book-cover {
+      max-width: 110px;
     }
   }
-
-  .books-grid-card .book-3d-wrapper {
-    max-height: 160px;
-  }
-  @media (max-width: 768px) {
-    .books-grid-card .book-3d-wrapper {
-      max-height: 140px;
-    }
-  }
-  @media (max-width: 576px) {
-    .books-grid-card .book-3d-wrapper {
-      max-height: 100px;
+  @media (min-width: 576px) and (max-width: 992px) {
+    .flat-book-cover {
+      max-width: 140px;
     }
   }
 
@@ -497,20 +493,6 @@
   .modal-backdrop {
     backdrop-filter: blur(8px);
     background: rgba(0, 0, 0, 0.4) !important;
-  }
-
-  .carousel-fade .carousel-item {
-    opacity: 0;
-    transition: opacity 0.5s ease-in-out;
-    display: block;
-    will-change: opacity;
-    transform: translateZ(0);
-  }
-  .carousel-fade .carousel-item.active {
-    opacity: 1;
-  }
-  .carousel-fade .carousel-item {
-    transform: translateX(0);
   }
 
   body {
@@ -831,216 +813,119 @@
       right: -4px;
     }
   }
-  /* ========== FINAL 3D BOOK — NO HOVER MOVE, CLEAR FULL COVER ========== */
+  /* ===== CAROUSEL CENTER + DESKTOP WHITE SPACE FIX ===== */
+  @media (min-width: 992px) {
+    #recommendedCarousel .carousel-item .row,
+    #newArrivalsCarousel .carousel-item .row {
+      justify-content: center !important;
+    }
+
+    #recommendedCarousel .book-cover-outer,
+    #newArrivalsCarousel .book-cover-outer {
+      padding: 10px 10px 0 !important;
+    }
+
+    #recommendedCarousel .book-card-inner .card-body,
+    #newArrivalsCarousel .book-card-inner .card-body {
+      padding: 0.5rem !important;
+    }
+
+    #recommendedCarousel
+      .product-card
+      .d-flex.align-items-center.justify-content-center,
+    #newArrivalsCarousel
+      .product-card
+      .d-flex.align-items-center.justify-content-center {
+      height: auto !important;
+      min-height: 0 !important;
+    }
+
+    #recommendedCarousel .carousel-inner,
+    #newArrivalsCarousel .carousel-inner {
+      min-height: 0 !important;
+    }
+  }
+  /* ===== BOOK COVER SIZE + CENTER + RESPONSIVE FIX ===== */
   .book-cover-outer {
-    height: auto !important;
     min-height: 0 !important;
-    overflow: visible !important;
-    padding: 14px 16px 24px !important;
+    height: auto !important;
+    padding: 0.5rem !important;
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  .book-3d-wrapper {
-    width: 100%;
-    max-width: 170px;
-    aspect-ratio: 2 / 3;
-    height: auto !important;
-    max-height: none !important;
-    margin: 0 auto;
-    perspective: 900px;
-    transition: none !important;
-  }
-
-  .book-3d {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transform-style: preserve-3d;
-    transform: rotateY(-22deg) rotateX(3deg);
-    transition: none !important;
-  }
-
-  /* Front cover */
-  .book-front {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
     overflow: hidden;
-    border-radius: 6px 10px 10px 6px;
-    background: #f8fafc;
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
   }
 
-  .book-front img.book-cover {
-    width: 100% !important;
-    height: 100% !important;
-    max-height: none !important;
-    object-fit: cover !important;
-    object-position: center !important;
+  .flat-book-cover {
+    width: auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 210px;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8px;
     display: block;
-    border-radius: 6px 10px 10px 6px;
-    opacity: 1 !important;
-    visibility: visible !important;
+    margin: 0 auto;
   }
 
-  /* Spine */
-  .book-spine {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 15px;
-    height: 100%;
-    background: linear-gradient(90deg, #dbeafe, #93c5fd);
-    transform-origin: left center;
-    transform: rotateY(90deg);
-    border-radius: 0 2px 2px 0;
+  /* Card ka body bhi compact ho */
+  .book-card-inner .card-body {
+    padding: 0.5rem 0.4rem !important;
   }
 
-  /* Pages */
-  .book-pages {
-    position: absolute;
-    top: 4px;
-    right: 0;
-    width: 10px;
-    height: calc(100% - 8px);
-    background: repeating-linear-gradient(
-      90deg,
-      #f8fafc 0 2px,
-      #e2e8f0 2px 4px
-    );
-    transform-origin: right center;
-    transform: rotateY(-90deg);
-    border-radius: 2px 0 0 2px;
-  }
-
-  /* Soft ground shadow */
-  .book-shadow {
-    position: absolute;
-    bottom: -14px;
-    left: 8%;
-    width: 84%;
-    height: 18px;
-    background: rgba(0, 0, 0, 0.14);
-    filter: blur(7px);
-    border-radius: 50%;
-    transform: translateZ(-20px);
-  }
-
-  /* Hover par koi move/scale nahi */
-  .product-card:hover,
-  .books-grid-card:hover,
-  .slider-card:hover {
-    transform: none !important;
-  }
-
-  .product-card:hover .book-3d-wrapper,
-  .books-grid-card:hover .book-3d-wrapper,
-  .slider-card:hover .book-3d-wrapper {
-    transform: none !important;
-    transition: none !important;
-  }
-
-  .product-card:hover .book-3d,
-  .books-grid-card:hover .book-3d,
-  .slider-card:hover .book-3d {
-    transform: rotateY(-22deg) rotateX(3deg) !important;
-    transition: none !important;
-  }
-
-  /* ========== RESPONSIVE ========== */
-  @media (max-width: 1200px) {
-    .book-3d-wrapper {
-      max-width: 150px;
-    }
-    .book-spine {
-      width: 13px;
-    }
-    .book-pages {
-      width: 9px;
-    }
-  }
-
-  @media (max-width: 992px) {
-    .book-3d-wrapper {
-      max-width: 140px;
+  /* Desktop par aur chhota + center */
+  @media (min-width: 992px) {
+    .flat-book-cover {
+      max-height: 170px;
     }
     .book-cover-outer {
-      padding: 12px 12px 20px !important;
-    }
-    .book-spine {
-      width: 12px;
-    }
-    .book-pages {
-      width: 8px;
+      padding: 0.4rem !important;
     }
   }
 
-  @media (max-width: 768px) {
-    .book-3d-wrapper {
-      max-width: 120px;
-    }
-    .book-cover-outer {
-      padding: 10px 10px 16px !important;
-    }
-    .book-spine {
-      width: 10px;
-    }
-    .book-pages {
-      width: 7px;
-    }
-    .product-card .d-flex.align-items-center.justify-content-center {
-      min-height: 140px;
-    }
-  }
-
+  /* Mobile par responsive */
   @media (max-width: 576px) {
-    .book-3d-wrapper {
-      max-width: 100px;
-    }
-    .book-cover-outer {
-      padding: 8px 8px 14px !important;
-    }
-    .book-spine {
-      width: 8px;
-    }
-    .book-pages {
-      width: 5px;
-    }
-    .book-shadow {
-      height: 12px;
-      bottom: -10px;
-    }
-    .product-card .d-flex.align-items-center.justify-content-center {
-      min-height: 120px;
+    .flat-book-cover {
+      max-height: 140px;
     }
   }
+  /* ===== CAROUSEL CARDS SAME SIZE AS ALL BOOKS ===== */
+  @media (min-width: 992px) {
+    #recommendedCarousel .carousel-item .col-4,
+    #newArrivalsCarousel .carousel-item .col-4 {
+      flex: 0 0 16.6667%;
+      max-width: 16.6667%;
+    }
 
-  @media (max-width: 480px) {
-    .book-3d-wrapper {
-      max-width: 85px;
-    }
-    .book-spine {
-      width: 6px;
-    }
-    .book-pages {
-      width: 4px;
+    #recommendedCarousel .carousel-item .row,
+    #newArrivalsCarousel .carousel-item .row {
+      justify-content: center !important;
+      gap: 0;
     }
   }
+  /* ===== CAROUSEL FIX: ARROWS HIDE + BLINK/JUMP FIX ===== */
+  #recommendedCarousel .carousel-control-prev,
+  #recommendedCarousel .carousel-control-next,
+  #newArrivalsCarousel .carousel-control-prev,
+  #newArrivalsCarousel .carousel-control-next {
+    display: none !important;
+  }
 
-  @media (max-width: 360px) {
-    .book-3d-wrapper {
-      max-width: 70px;
-    }
-    .book-spine {
-      width: 5px;
-    }
-    .book-pages {
-      width: 3px;
-    }
+  #recommendedCarousel .carousel-item,
+  #newArrivalsCarousel .carousel-item {
+    transition: transform 0.45s ease-in-out !important;
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+
+  #recommendedCarousel .carousel-item[data-aos],
+  #recommendedCarousel .carousel-item [data-aos],
+  #newArrivalsCarousel .carousel-item[data-aos],
+  #newArrivalsCarousel .carousel-item [data-aos] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
 </style>
 {% endblock %} {% block content %}
@@ -1206,21 +1091,12 @@
           >
             {% if pdf.image_url and pdf.image_url != 'None' and
             pdf.image_url.strip() != '' %}
-            <div class="book-3d-wrapper">
-              <div class="book-3d">
-                <div class="book-front">
-                  <img
-                    src="{{ pdf.image_url }}"
-                    alt="Cover"
-                    class="book-cover"
-                    loading="lazy"
-                  />
-                </div>
-                <div class="book-spine"></div>
-                <div class="book-pages"></div>
-                <div class="book-shadow"></div>
-              </div>
-            </div>
+            <img
+              src="{{ pdf.image_url }}"
+              alt="Cover"
+              class="flat-book-cover"
+              loading="lazy"
+            />
             {% else %} {% set title_safe = pdf.title | default('Book', true) |
             replace('_', ' ') %} {% set words = title_safe.split() %} {% set
             short_name = (words[0][:2])|upper if words|length == 1 else
@@ -1363,21 +1239,12 @@
         >
           {% if pdf.image_url and pdf.image_url != 'None' and
           pdf.image_url.strip() != '' %}
-          <div class="book-3d-wrapper">
-            <div class="book-3d">
-              <div class="book-front">
-                <img
-                  src="{{ pdf.image_url }}"
-                  alt="Cover"
-                  class="book-cover"
-                  loading="lazy"
-                />
-              </div>
-              <div class="book-spine"></div>
-              <div class="book-pages"></div>
-              <div class="book-shadow"></div>
-            </div>
-          </div>
+          <img
+            src="{{ pdf.image_url }}"
+            alt="Cover"
+            class="flat-book-cover"
+            loading="lazy"
+          />
           {% else %} {% set title_safe = pdf.title | default('Book', true) |
           replace('_', ' ') %} {% set words = title_safe.split() %} {% set
           short_name = (words[0][:2])|upper if words|length == 1 else
@@ -1685,6 +1552,9 @@
             {% elif cat.level == 'DevOps' %}<i
               class="bi bi-gear text-secondary"
             ></i>
+            {% elif cat.level == 'IELTS' %}<i
+              class="bi bi-globe2 text-info"
+            ></i>
             {% else %}<i class="bi bi-collection text-dark"></i>{% endif %}
           </div>
           <h6 class="fw-bold mb-1" style="font-size: 0.9rem; color: #1e1b4b">
@@ -1709,7 +1579,7 @@
   <h2 class="section-title mb-4">✨ Recommended for You</h2>
   <div
     id="recommendedCarousel"
-    class="carousel slide carousel-fade"
+    class="carousel slide"
     data-bs-ride="carousel"
     data-bs-interval="3000"
   >
@@ -1731,21 +1601,12 @@
               >
                 {% if book.image_url and book.image_url != 'None' and
                 book.image_url.strip() != '' %}
-                <div class="book-3d-wrapper">
-                  <div class="book-3d">
-                    <div class="book-front">
-                      <img
-                        src="{{ book.image_url }}"
-                        alt="Cover"
-                        class="book-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div class="book-spine"></div>
-                    <div class="book-pages"></div>
-                    <div class="book-shadow"></div>
-                  </div>
-                </div>
+                <img
+                  src="{{ book.image_url }}"
+                  alt="Cover"
+                  class="flat-book-cover"
+                  loading="lazy"
+                />
                 {% else %} {% set title_safe = book.title | default('Book',
                 true) | replace('_', ' ') %} {% set words = title_safe.split()
                 %} {% set short_name = (words[0][:2])|upper if words|length == 1
@@ -1868,28 +1729,6 @@
       </div>
       {% endfor %}
     </div>
-    <button
-      class="carousel-control-prev"
-      type="button"
-      data-bs-target="#recommendedCarousel"
-      data-bs-slide="prev"
-    >
-      <span
-        class="carousel-control-prev-icon bg-dark rounded-circle"
-        aria-hidden="true"
-      ></span>
-    </button>
-    <button
-      class="carousel-control-next"
-      type="button"
-      data-bs-target="#recommendedCarousel"
-      data-bs-slide="next"
-    >
-      <span
-        class="carousel-control-next-icon bg-dark rounded-circle"
-        aria-hidden="true"
-      ></span>
-    </button>
   </div>
 </section>
 {% endif %}
@@ -1914,7 +1753,7 @@
   {% if pdfs %}
   <div
     id="newArrivalsCarousel"
-    class="carousel slide carousel-fade"
+    class="carousel slide"
     data-bs-ride="carousel"
     data-bs-interval="4000"
   >
@@ -1935,21 +1774,12 @@
               >
                 {% if pdf.image_url and pdf.image_url != 'None' and
                 pdf.image_url.strip() != '' %}
-                <div class="book-3d-wrapper">
-                  <div class="book-3d">
-                    <div class="book-front">
-                      <img
-                        src="{{ pdf.image_url }}"
-                        alt="Cover"
-                        class="book-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div class="book-spine"></div>
-                    <div class="book-pages"></div>
-                    <div class="book-shadow"></div>
-                  </div>
-                </div>
+                <img
+                  src="{{ pdf.image_url }}"
+                  alt="Cover"
+                  class="flat-book-cover"
+                  loading="lazy"
+                />
                 {% else %} {% set title_safe = pdf.title | default('Book', true)
                 | replace('_', ' ') %} {% set words = title_safe.split() %} {%
                 set short_name = (words[0][:2])|upper if words|length == 1 else
@@ -2072,28 +1902,6 @@
       </div>
       {% endfor %}
     </div>
-    <button
-      class="carousel-control-prev"
-      type="button"
-      data-bs-target="#newArrivalsCarousel"
-      data-bs-slide="prev"
-    >
-      <span
-        class="carousel-control-prev-icon bg-dark rounded-circle"
-        aria-hidden="true"
-      ></span>
-    </button>
-    <button
-      class="carousel-control-next"
-      type="button"
-      data-bs-target="#newArrivalsCarousel"
-      data-bs-slide="next"
-    >
-      <span
-        class="carousel-control-next-icon bg-dark rounded-circle"
-        aria-hidden="true"
-      ></span>
-    </button>
   </div>
   {% else %}
   <div class="text-center py-5">
@@ -2127,21 +1935,12 @@
         >
           {% if pdf.image_url and pdf.image_url != 'None' and
           pdf.image_url.strip() != '' %}
-          <div class="book-3d-wrapper">
-            <div class="book-3d">
-              <div class="book-front">
-                <img
-                  src="{{ pdf.image_url }}"
-                  alt="Cover"
-                  class="book-cover"
-                  loading="lazy"
-                />
-              </div>
-              <div class="book-spine"></div>
-              <div class="book-pages"></div>
-              <div class="book-shadow"></div>
-            </div>
-          </div>
+          <img
+            src="{{ pdf.image_url }}"
+            alt="Cover"
+            class="flat-book-cover"
+            loading="lazy"
+          />
           {% else %} {% set title_safe = pdf.title | default('Book', true) |
           replace('_', ' ') %} {% set words = title_safe.split() %} {% set
           short_name = (words[0][:2])|upper if words|length == 1 else
