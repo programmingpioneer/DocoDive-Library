@@ -2038,6 +2038,33 @@ def category_to_slug(category):
     return slug
 
 
+def ensure_default_categories():
+    """Ensure all default categories exist in DB (idempotent)."""
+    defaults = [
+        "Python",
+        "JavaScript",
+        "Java",
+        "C / C++",
+        "Web Development",
+        "Data Science",
+        "Machine Learning",
+        "Algorithms",
+        "Databases",
+        "Cyber Security",
+        "Mobile Apps",
+        "DevOps",
+        "Others",
+        "IELTS",
+    ]
+    cur = mysql.connection.cursor()
+    for cat in defaults:
+        cur.execute("SELECT id FROM categories WHERE level = %s", (cat,))
+        if not cur.fetchone():
+            cur.execute("INSERT INTO categories (level) VALUES (%s)", (cat,))
+    mysql.connection.commit()
+    cur.close()
+
+
 def slug_to_category_name(slug, cursor):
     cursor.execute("SELECT level FROM categories ORDER BY level")
     rows = cursor.fetchall()
@@ -2215,6 +2242,7 @@ def home():
 # ================== LEARNING HUBS (Category Pages) ==================
 @app.route("/learn/<category_slug>")
 def learning_hub(category_slug):
+    ensure_default_categories()
     page = max(1, request.args.get("page", 1, type=int))
     per_page = 24
     offset = (page - 1) * per_page
