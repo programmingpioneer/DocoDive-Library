@@ -3469,8 +3469,11 @@ def approve_all_books():
 def admin_books_list():
     cur = mysql.connection.cursor()
     cur.execute("""
-        SELECT d.id, d.title, d.category_id, d.telegram_link, d.author, d.description, d.image_url, d.language, c.level
-        FROM documents d JOIN categories c ON d.category_id = c.id WHERE d.status = 'pending' ORDER BY d.id DESC
+        SELECT d.id, d.title, d.category_id, d.telegram_link, d.author,
+               d.description, d.image_url, d.language, c.level
+        FROM documents d
+        JOIN categories c ON d.category_id = c.id
+        ORDER BY d.id DESC
     """)
     books = cur.fetchall()
     cur.close()
