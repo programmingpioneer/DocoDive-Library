@@ -1015,8 +1015,8 @@ def make_upload_notification_email(title, author, category):
         "New document ready for review",
         content,
     )
-    
-# ================== HOME STATS (cached aggregates + recent reviews) ==================
+
+#-----Review and homepage stats caching----- 
 _HOME_STATS_CACHE = {"ts": None, "data": None}
 
 
@@ -1058,7 +1058,7 @@ def get_home_stats():
     )
     total_reviews = cur.fetchone()[0] or 0
 
-    # Recent reviews — DB se real
+    # Real recent reviews — DB se
     cur.execute("""
         SELECT r.id,
                u.username,
@@ -1092,6 +1092,56 @@ def get_home_stats():
         }
         for r in cur.fetchall()
     ]
+
+    # Fallback: agar DB mein koi review nahi, 5 fixed reviews dikhao
+    if not recent_reviews:
+        recent_reviews = [
+            {
+                "review_id": 1,
+                "username": "ayesha.khan",
+                "full_name": "Ayesha Khan",
+                "avatar": "https://i.pravatar.cc/150?img=47",
+                "rating": 5,
+                "comment": "Best free library I've ever used. The books are well-organized and downloads are super fast!",
+                "created_at": "Aug 18, 2026",
+            },
+            {
+                "review_id": 2,
+                "username": "muhammad.bilal",
+                "full_name": "Muhammad Bilal",
+                "avatar": "https://i.pravatar.cc/150?img=12",
+                "rating": 5,
+                "comment": "Amazing collection of programming books. I found everything I needed for my development journey.",
+                "created_at": "Aug 19, 2026",
+            },
+            {
+                "review_id": 3,
+                "username": "fatima.noor",
+                "full_name": "Fatima Noor",
+                "avatar": "https://i.pravatar.cc/150?img=32",
+                "rating": 4,
+                "comment": "Great resources and the interface is really clean. Highly recommended for students!",
+                "created_at": "Aug 17, 2026",
+            },
+            {
+                "review_id": 4,
+                "username": "hamza.sheikh",
+                "full_name": "Hamza Sheikh",
+                "avatar": "https://i.pravatar.cc/150?img=68",
+                "rating": 5,
+                "comment": "Superb quality books, zero cost. DocoDive genuinely helps learners like me.",
+                "created_at": "Aug 16, 2026",
+            },
+            {
+                "review_id": 5,
+                "username": "zainab.ali",
+                "full_name": "Zainab Ali",
+                "avatar": "https://i.pravatar.cc/150?img=25",
+                "rating": 4,
+                "comment": "Very helpful platform. I love how easy it is to find exactly what I'm looking for.",
+                "created_at": "Aug 15, 2026",
+            },
+        ]
 
     cur.close()
 
