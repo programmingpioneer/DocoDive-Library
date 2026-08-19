@@ -1126,6 +1126,91 @@
       #discussion {
         contain: layout style;
       }
+      /* ========== FOOTER ========== */
+      .site-footer {
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+        color: #1e1b4b;
+      }
+      .footer-heading {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #1e1b4b;
+        cursor: pointer;
+        padding-bottom: 8px;
+      }
+      .footer-heading .bi-chevron-down {
+        font-size: 0.8rem;
+        color: #6b7280;
+      }
+      .footer-text {
+        color: #6b7280;
+      }
+      .footer-links li {
+        margin-bottom: 6px;
+      }
+      .footer-links a {
+        color: #4b5563;
+        text-decoration: none;
+        font-size: 0.85rem;
+        transition:
+          color 0.2s,
+          padding-left 0.2s;
+      }
+      .footer-links a:hover {
+        color: #4338ca;
+        padding-left: 4px;
+      }
+      .footer-social-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #f3f4f6;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #4338ca;
+        font-size: 1rem;
+        text-decoration: none;
+        transition: all 0.25s ease;
+      }
+      .footer-social-icon:hover {
+        background: #4338ca;
+        color: #fff;
+        box-shadow: 0 0 14px rgba(67, 56, 202, 0.45);
+        transform: translateY(-2px);
+      }
+      .footer-newsletter {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .footer-bottom {
+        border-top: 1px solid #e5e7eb;
+        color: #6b7280;
+      }
+      .footer-bottom a {
+        color: #6b7280;
+        text-decoration: none;
+      }
+      .footer-bottom a:hover {
+        color: #4338ca;
+      }
+      @media (min-width: 992px) {
+        .footer-collapse.d-lg-block {
+          display: block !important;
+        }
+      }
+      #scrollProgressBar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #4338ca, #818cf8);
+        width: 0;
+        z-index: 9999;
+        transition: width 0.1s linear;
+      }
     </style>
 
     <!-- ================== GOOGLE ANALYTICS ================== -->
@@ -1597,6 +1682,15 @@
                       ><span class="mega-sub">More resources</span></span
                     >
                   </a>
+                  <a class="mega-item" href="/reviews">
+                    <span class="mega-icon"
+                      ><i class="bi bi-star-fill text-warning"></i
+                    ></span>
+                    <span class="mega-text">
+                      <span class="mega-title">Reviews</span>
+                      <span class="mega-sub">Reader feedback</span>
+                    </span>
+                  </a>
                 </div>
                 <div class="mega-footer">
                   <a href="/#categories"
@@ -1691,44 +1785,169 @@
     <main class="flex-grow-1">{% block content %}{% endblock %}</main>
 
     <!-- ================== FOOTER ================== -->
-    <footer
-      class="text-center py-4 py-md-5 text-muted bg-white border-top mt-auto"
-      data-aos="fade-up"
-    >
+    <footer class="site-footer mt-auto" data-aos="fade-up">
       <div class="container">
-        <div class="row justify-content-center mb-4">
-          <div class="col-12 col-md-8 col-lg-6">
-            <h6 class="fw-bold text-dark mb-2">📬 Stay Updated</h6>
-            <p class="small mb-3">
-              Get notified about new books and resources — no spam, unsubscribe
-              anytime.
-            </p>
-            <form
-              action="/newsletter/subscribe"
-              method="POST"
-              class="d-flex flex-column flex-sm-row gap-2 justify-content-center"
+        <div class="row footer-grid g-4 py-5">
+          <!-- COLUMN 1: Brand -->
+          <div class="col-lg-3">
+            <h6
+              class="footer-heading d-flex justify-content-between align-items-center"
+              data-bs-toggle="collapse"
+              data-bs-target="#fBrand"
             >
-              <input
-                type="hidden"
-                name="_csrf_token"
-                value="{{ session['_csrf_token'] }}"
-              />
-              <input
-                type="email"
-                name="email"
-                class="form-control rounded-pill"
-                placeholder="you@example.com"
-                required
-              />
-              <button type="submit" class="btn btn-primary rounded-pill px-4">
-                Subscribe
-              </button>
-            </form>
+              <span>DocoDive</span>
+              <i class="bi bi-chevron-down d-lg-none"></i>
+            </h6>
+            <div id="fBrand" class="footer-collapse collapse d-lg-block">
+              <p class="footer-text small">
+                Free digital library for programming books, research papers, and
+                learning resources. Knowledge should be free.
+              </p>
+              <div class="footer-social d-flex gap-2 flex-wrap">
+                <a
+                  href="https://github.com/programmingpioneer"
+                  target="_blank"
+                  class="footer-social-icon"
+                  ><i class="bi bi-github"></i
+                ></a>
+                <a
+                  href="https://www.linkedin.com/in/sufyan-khans/"
+                  target="_blank"
+                  class="footer-social-icon"
+                  ><i class="bi bi-linkedin"></i
+                ></a>
+                <a
+                  href="https://x.com/programerPioner"
+                  target="_blank"
+                  class="footer-social-icon"
+                  ><i class="bi bi-twitter-x"></i
+                ></a>
+                <a
+                  href="https://www.instagram.com/programmingpioneer/"
+                  target="_blank"
+                  class="footer-social-icon"
+                  ><i class="bi bi-instagram"></i
+                ></a>
+                <a
+                  href="https://www.facebook.com/Programmingpioneer"
+                  target="_blank"
+                  class="footer-social-icon"
+                  ><i class="bi bi-facebook"></i
+                ></a>
+                <a
+                  href="https://t.me/Programmingpioneers"
+                  target="_blank"
+                  class="footer-social-icon"
+                  ><i class="bi bi-telegram"></i
+                ></a>
+              </div>
+            </div>
+          </div>
+
+          <!-- COLUMN 2: Learning Hubs -->
+          <div class="col-lg-3">
+            <h6
+              class="footer-heading d-flex justify-content-between align-items-center"
+              data-bs-toggle="collapse"
+              data-bs-target="#fHubs"
+            >
+              <span>Learning Hubs</span>
+              <i class="bi bi-chevron-down d-lg-none"></i>
+            </h6>
+            <div id="fHubs" class="footer-collapse collapse d-lg-block">
+              <ul class="footer-links list-unstyled mb-0">
+                <li><a href="/learn/python">Python</a></li>
+                <li><a href="/learn/javascript">JavaScript</a></li>
+                <li><a href="/learn/java">Java</a></li>
+                <li><a href="/learn/c-c">C / C++</a></li>
+                <li><a href="/learn/web-development">Web Development</a></li>
+                <li><a href="/learn/data-science">Data Science</a></li>
+                <li><a href="/learn/machine-learning">Machine Learning</a></li>
+                <li><a href="/learn/algorithms">Algorithms</a></li>
+                <li><a href="/learn/databases">Databases</a></li>
+                <li><a href="/learn/cyber-security">Cyber Security</a></li>
+                <li><a href="/learn/mobile-apps">Mobile Apps</a></li>
+                <li><a href="/learn/devops">DevOps</a></li>
+                <li><a href="/learn/ielts">IELTS</a></li>
+                <li><a href="/learn/others">Others</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- COLUMN 3: Community -->
+          <div class="col-lg-3">
+            <h6
+              class="footer-heading d-flex justify-content-between align-items-center"
+              data-bs-toggle="collapse"
+              data-bs-target="#fCommunity"
+            >
+              <span>Community</span>
+              <i class="bi bi-chevron-down d-lg-none"></i>
+            </h6>
+            <div id="fCommunity" class="footer-collapse collapse d-lg-block">
+              <ul class="footer-links list-unstyled mb-0">
+                <li><a href="/leaderboard">Leaderboard</a></li>
+                <li><a href="/#about">About Us</a></li>
+                <li><a href="/feedback">Feedback</a></li>
+                <li><a href="/privacy">Privacy Policy</a></li>
+                <li><a href="/terms">Terms of Service</a></li>
+                <li><a href="/data-deletion">Data Deletion</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- COLUMN 4: Stay Updated -->
+          <div class="col-lg-3">
+            <h6
+              class="footer-heading d-flex justify-content-between align-items-center"
+              data-bs-toggle="collapse"
+              data-bs-target="#fNews"
+            >
+              <span>Stay Updated</span>
+              <i class="bi bi-chevron-down d-lg-none"></i>
+            </h6>
+            <div id="fNews" class="footer-collapse collapse d-lg-block">
+              <p class="footer-text small">
+                Get notified about new books — no spam.
+              </p>
+              <form
+                action="/newsletter/subscribe"
+                method="POST"
+                class="footer-newsletter"
+              >
+                <input
+                  type="hidden"
+                  name="_csrf_token"
+                  value="{{ session['_csrf_token'] }}"
+                />
+                <input
+                  type="email"
+                  name="email"
+                  class="form-control rounded-pill"
+                  placeholder="you@example.com"
+                  required
+                />
+                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                  Subscribe
+                </button>
+              </form>
+            </div>
           </div>
         </div>
-        <p class="mb-0 small fw-semibold">
-          © 2026 DocoDive – Free Knowledge, Pure Discipline.
-        </p>
+
+        <!-- Quick links + dark bottom bar -->
+        <div
+          class="footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 py-3"
+        >
+          <div class="small">
+            <a href="/privacy" class="me-3">Privacy</a>
+            <a href="/terms" class="me-3">Terms</a>
+            <a href="/data-deletion">Data Deletion</a>
+          </div>
+          <div class="small text-center">
+            © 2026 DocoDive – Free Knowledge, Pure Discipline. · Made with ❤️
+          </div>
+        </div>
       </div>
     </footer>
 

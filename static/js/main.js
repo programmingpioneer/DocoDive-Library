@@ -377,4 +377,206 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   } catch (e) { console.warn('Scroll reveal failed:', e); }
 
+    // ================== SCROLL PROGRESS BAR ==================
+  try {
+    var progressBar = document.createElement('div');
+    progressBar.id = 'scrollProgressBar';
+    document.body.appendChild(progressBar);
+    window.addEventListener('scroll', function () {
+      var h = document.documentElement;
+      var max = h.scrollHeight - h.clientHeight;
+      var pct = max > 0 ? ((h.scrollTop || document.body.scrollTop) / max) * 100 : 0;
+      progressBar.style.width = pct + '%';
+    }, { passive: true });
+  } catch (e) { console.warn('Scroll progress failed:', e); }
+
+  // ================== BACK TO TOP ==================
+  try {
+    var backToTop = document.getElementById('backToTop');
+    if (!backToTop) {
+      backToTop = document.createElement('button');
+      backToTop.id = 'backToTop';
+      backToTop.innerHTML = '<i class="bi bi-arrow-up"></i>';
+      backToTop.className = 'btn btn-primary rounded-circle position-fixed shadow-lg';
+      backToTop.setAttribute('aria-label', 'Back to top');
+      backToTop.style.cssText = 'bottom:24px;right:24px;width:44px;height:44px;display:none;z-index:1050;align-items:center;justify-content:center;';
+      document.body.appendChild(backToTop);
+    }
+    window.addEventListener('scroll', function () {
+      backToTop.style.display = window.scrollY > 300 ? 'flex' : 'none';
+    }, { passive: true });
+    backToTop.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  } catch (e) { console.warn('Back-to-top failed:', e); }
+
+  // ================== COUNT-UP ANIMATION ==================
+  try {
+    var countEls = document.querySelectorAll('[data-count]');
+    if (countEls.length) {
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function animateCount(el) {
+        var target = parseInt(el.getAttribute('data-count'), 10) || 0;
+        if (reduceMotion) {
+          el.textContent = target.toLocaleString();
+          return;
+        }
+        var start = null, duration = 1200;
+        function step(ts) {
+          if (!start) start = ts;
+          var progress = Math.min((ts - start) / duration, 1);
+          var eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = Math.floor(eased * target).toLocaleString();
+          if (progress < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      }
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries, obs) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              animateCount(entry.target);
+              obs.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.3 });
+        countEls.forEach(function (el) { io.observe(el); });
+      } else {
+        countEls.forEach(animateCount);
+      }
+    }
+  } catch (e) { console.warn('Count-up failed:', e); }
+
+  // ================== ACTIVE NAV LINK ==================
+  try {
+    var path = window.location.pathname;
+    document.querySelectorAll('.navbar .nav-link').forEach(function (link) {
+      var href = link.getAttribute('href');
+      if (!href || href === '#') return;
+      if (path === href) link.classList.add('active');
+    });
+  } catch (e) { console.warn('Active nav failed:', e); }
+
+  // ================== IMAGE ERROR FALLBACK ==================
+  try {
+    document.addEventListener('error', function (e) {
+      var img = e.target;
+      if (!img || img.tagName !== 'IMG') return;
+      var isCover = img.classList.contains('flat-book-cover') ||
+                    img.classList.contains('book-cover') ||
+                    img.alt === 'Cover';
+      if (!isCover || img.dataset.fallbackHandled) return;
+      img.dataset.fallbackHandled = '1';
+      img.style.display = 'none';
+      var wrapper = img.parentElement;
+      if (wrapper) {
+        var initials = (img.alt || 'Book').trim().substring(0, 2).toUpperCase() || '📚';
+        var ph = document.createElement('div');
+        ph.className = 'd-flex align-items-center justify-content-center';
+        ph.style.cssText = 'width:100%;height:100%;min-height:120px;background:linear-gradient(135deg,#a5b4fc,#818cf8);color:#fff;border-radius:8px;font-weight:700;';
+        ph.textContent = initials;
+        wrapper.appendChild(ph);
+      }
+    }, true);
+  } catch (e) { console.warn('Image fallback failed:', e); }
+
+  // ================== TOAST HELPER ==================
+  window.showToast = function (message, type) {
+    try {
+      type = type || 'success';
+      var existing = document.getElementById('globalToast');
+      if (existing) existing.remove();
+      var toast = document.createElement('div');
+      toast.id = 'globalToast';
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' +
+        (type === 'error' ? '#dc3545' : '#198754') +
+        ';color:#fff;padding:12px 20px;border-radius:50px;z-index:99999;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:opacity .3s;';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(function () {
+        toast.style.opacity = '0';
+        setTimeout(function () { toast.remove(); }, 300);
+      }, 3500);
+    } catch (e) { console.warn('Toast failed:', e); }
+  };
+
+    // ================== SCROLL PROGRESS BAR ==================
+  try {
+    var progressBar = document.createElement('div');
+    progressBar.id = 'scrollProgressBar';
+    progressBar.style.cssText = 'position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,#4338ca,#818cf8);width:0;z-index:9999;transition:width .1s linear;';
+    document.body.appendChild(progressBar);
+    window.addEventListener('scroll', function () {
+      var h = document.documentElement;
+      var max = h.scrollHeight - h.clientHeight;
+      var pct = max > 0 ? ((h.scrollTop || document.body.scrollTop) / max) * 100 : 0;
+      progressBar.style.width = pct + '%';
+    }, { passive: true });
+  } catch (e) { console.warn('Scroll progress failed:', e); }
+
+  // ================== BACK TO TOP ==================
+  try {
+    var backToTop = document.getElementById('backToTop');
+    if (!backToTop) {
+      backToTop = document.createElement('button');
+      backToTop.id = 'backToTop';
+      backToTop.innerHTML = '<i class="bi bi-arrow-up"></i>';
+      backToTop.setAttribute('aria-label', 'Back to top');
+      backToTop.style.cssText = 'position:fixed;bottom:24px;right:24px;width:44px;height:44px;display:none;align-items:center;justify-content:center;z-index:1050;border:none;border-radius:50%;background:#1e1b4b;color:#fff;box-shadow:0 8px 24px rgba(30,27,75,.35);cursor:pointer;';
+      document.body.appendChild(backToTop);
+    }
+    window.addEventListener('scroll', function () {
+      backToTop.style.display = window.scrollY > 300 ? 'flex' : 'none';
+    }, { passive: true });
+    backToTop.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  } catch (e) { console.warn('Back-to-top failed:', e); }
+
+  // ================== COUNT-UP ANIMATION ==================
+  try {
+    var countEls = document.querySelectorAll('[data-count]');
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function animateCount(el) {
+      var target = parseInt(el.getAttribute('data-count'), 10) || 0;
+      if (reduceMotion) { el.textContent = target.toLocaleString(); return; }
+      var start = null, duration = 1400;
+      function step(ts) {
+        if (!start) start = ts;
+        var progress = Math.min((ts - start) / duration, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.floor(eased * target).toLocaleString();
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+    if (countEls.length) {
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries, obs) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) { animateCount(entry.target); obs.unobserve(entry.target); }
+          });
+        }, { threshold: 0.3 });
+        countEls.forEach(function (el) { io.observe(el); });
+      } else {
+        countEls.forEach(animateCount);
+      }
+    }
+  } catch (e) { console.warn('Count-up failed:', e); }
+
+  // ================== TOAST HELPER ==================
+  window.showToast = function (message, type) {
+    try {
+      type = type || 'success';
+      var existing = document.getElementById('globalToast');
+      if (existing) existing.remove();
+      var toast = document.createElement('div');
+      toast.id = 'globalToast';
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' + (type === 'error' ? '#dc3545' : '#198754') + ';color:#fff;padding:12px 20px;border-radius:50px;z-index:99999;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:opacity .3s;';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(function () { toast.style.opacity = '0'; setTimeout(function () { toast.remove(); }, 300); }, 3500);
+    } catch (e) { console.warn('Toast failed:', e); }
+  };
+
 });

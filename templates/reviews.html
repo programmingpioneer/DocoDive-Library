@@ -1,0 +1,671 @@
+{% extends 'base.html' %} {% block title %}Reviews | DocoDive{% endblock %} {%
+block extra_css %}
+<style>
+  :root {
+    --rv-purple: #4338ca;
+    --rv-green: #198754;
+    --rv-border: #e5e7eb;
+    --rv-dark: #1e1b4b;
+    --rv-muted: #6b7280;
+    --rv-bg: #f8faff;
+  }
+
+  .rv-page {
+    background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
+    color: var(--rv-dark);
+    min-height: 100vh;
+  }
+
+  .rv-header-title {
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: -0.5px;
+  }
+  .rv-header-sub {
+    color: var(--rv-muted);
+    font-size: 0.95rem;
+  }
+
+  .rv-card {
+    background: #fff;
+    border: 1px solid var(--rv-border);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 24px rgba(30, 27, 75, 0.05);
+  }
+
+  .rv-rating-big {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--rv-dark);
+  }
+  .rv-stars {
+    color: var(--rv-purple);
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+  }
+  .rv-total-badge {
+    background: rgba(67, 56, 202, 0.08);
+    color: var(--rv-purple);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 6px 14px;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .rv-progress {
+    height: 8px;
+    background: #f3f4f6;
+    border-radius: 50px;
+    overflow: hidden;
+  }
+  .rv-progress .progress-bar {
+    background: var(--rv-purple);
+    border-radius: 50px;
+  }
+  .rv-star-label {
+    min-width: 40px;
+    font-weight: 600;
+    color: var(--rv-dark);
+    white-space: nowrap;
+  }
+  .rv-count-label {
+    min-width: 85px;
+    font-size: 0.8rem;
+    color: var(--rv-muted);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* Category metrics */
+  .rv-cat {
+    background: var(--rv-bg);
+    border: 1px solid var(--rv-border);
+    border-radius: 16px;
+    padding: 1rem;
+    text-align: center;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+  }
+  .rv-cat:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(67, 56, 202, 0.08);
+  }
+  .rv-cat-icon {
+    font-size: 1.6rem;
+    color: var(--rv-purple);
+    margin-bottom: 6px;
+  }
+  .rv-cat-num {
+    color: var(--rv-green);
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+  .rv-cat-name {
+    color: var(--rv-muted);
+    font-size: 0.78rem;
+    margin-top: 4px;
+  }
+
+  /* Review card */
+  .rv-item {
+    background: #fff;
+    border: 1px solid var(--rv-border);
+    border-radius: 18px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 14px rgba(30, 27, 75, 0.04);
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+  }
+  .rv-item:last-child {
+    margin-bottom: 0;
+  }
+  .rv-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(30, 27, 75, 0.08);
+  }
+
+  .rv-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  .rv-avatar-fallback {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--rv-purple);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  .rv-name {
+    font-weight: 700;
+    color: var(--rv-dark);
+  }
+  .rv-time {
+    color: var(--rv-muted);
+    font-size: 0.8rem;
+  }
+  .rv-comment {
+    color: #374151;
+    line-height: 1.7;
+    margin-top: 10px;
+    margin-bottom: 0;
+  }
+  .rv-star-item {
+    color: var(--rv-purple);
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .rv-rating-badge {
+    background: var(--rv-purple);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Add review modal */
+  #reviewRatingStars .star-btn {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    color: #d1d5db;
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      transform 0.15s;
+    padding: 0 2px;
+  }
+  #reviewRatingStars .star-btn:hover {
+    transform: scale(1.15);
+  }
+  #reviewRatingStars .star-btn.active {
+    color: var(--rv-purple);
+  }
+
+  /* Page-load animation */
+  @keyframes rvFadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .rv-anim {
+    animation: rvFadeUp 0.5s ease both;
+  }
+  .rv-anim-delay-1 {
+    animation-delay: 0.1s;
+  }
+  .rv-anim-delay-2 {
+    animation-delay: 0.2s;
+  }
+  .rv-anim-delay-3 {
+    animation-delay: 0.3s;
+  }
+  .rv-anim-delay-4 {
+    animation-delay: 0.4s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rv-anim {
+      animation: none;
+    }
+    .rv-cat:hover,
+    .rv-item:hover {
+      transform: none;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .rv-cats-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+    }
+  }
+  @media (max-width: 767.98px) {
+    .rv-cats-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+    .rv-rating-big {
+      font-size: 2.8rem;
+    }
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="rv-page py-4 py-md-5">
+  <div class="container">
+    <!-- Header -->
+    <div
+      class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3 rv-anim"
+    >
+      <div>
+        <h1 class="rv-header-title mb-1">
+          <i class="bi bi-chat-square-quote text-primary me-2"></i>Reviews
+        </h1>
+        <p class="rv-header-sub mb-0">What our readers say about DocoDive</p>
+      </div>
+      <button
+        class="btn btn-primary rounded-pill px-4"
+        onclick="openReviewModal()"
+      >
+        <i class="bi bi-star-fill me-1"></i> Add Review
+      </button>
+    </div>
+
+    <!-- Overall rating + breakdown -->
+    <div class="row g-4 mb-4 rv-anim rv-anim-delay-1">
+      <div class="col-lg-4">
+        <div
+          class="rv-card text-center h-100 d-flex flex-column justify-content-center"
+        >
+          <div class="rv-rating-big">{{ avg_rating }}</div>
+          <div class="rv-stars mt-2" aria-label="{{ avg_rating }} out of 5">
+            {% set full_stars = avg_rating|int %} {% set has_half = (avg_rating
+            - full_stars) >= 0.5 %} {% for i in range(5) %} {% if i < full_stars
+            %}
+            <i class="bi bi-star-fill"></i>
+            {% elif has_half and i == full_stars %}
+            <i class="bi bi-star-half"></i>
+            {% else %}
+            <i class="bi bi-star"></i>
+            {% endif %} {% endfor %}
+          </div>
+          <div class="mt-3">
+            <span class="rv-total-badge">
+              <i class="bi bi-people"></i> {{ total_reviews }} total reviews
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-8">
+        <div class="rv-card h-100">
+          {# real_total ko loop se pehle ek baar define karo #} {% set
+          real_total = breakdown[5] + breakdown[4] + breakdown[3] + breakdown[2]
+          + breakdown[1] %} {% for star in [5, 4, 3, 2, 1] %}
+          <div class="d-flex align-items-center gap-3 mb-2">
+            <span class="rv-star-label d-inline-flex align-items-center">
+              <i class="bi bi-star-fill text-primary me-1"></i>{{ star }}
+            </span>
+            <div class="progress rv-progress flex-grow-1">
+              {% set pct = (breakdown[star] / real_total * 100) if real_total
+              else 0 %}
+              <div class="progress-bar" style="width: {{ pct }}%"></div>
+            </div>
+            <span class="rv-count-label">{{ breakdown[star] }} reviews</span>
+          </div>
+          {% endfor %}
+
+          <div class="text-muted small mt-3 text-center">
+            <i class="bi bi-info-circle me-1"></i>
+            {{ real_total }} written reviews · {{ total_reviews }} total
+            community ratings
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category metrics -->
+    <div class="mb-4 rv-anim rv-anim-delay-2">
+      <h6
+        class="fw-bold mb-3 text-uppercase"
+        style="letter-spacing: 1px; color: var(--rv-muted)"
+      >
+        <i class="bi bi-bar-chart me-2"></i>What Readers Value
+      </h6>
+      <div class="rv-cats-row">
+        <div class="rv-cat">
+          <i class="bi bi-patch-check-fill rv-cat-icon"></i>
+          <div class="rv-cat-num">4.8</div>
+          <div class="rv-cat-name">Content Quality</div>
+        </div>
+        <div class="rv-cat">
+          <i class="bi bi-download rv-cat-icon"></i>
+          <div class="rv-cat-num">4.7</div>
+          <div class="rv-cat-name">Download Speed</div>
+        </div>
+        <div class="rv-cat">
+          <i class="bi bi-hand-index-thumb rv-cat-icon"></i>
+          <div class="rv-cat-num">4.9</div>
+          <div class="rv-cat-name">Ease of Use</div>
+        </div>
+        <div class="rv-cat">
+          <i class="bi bi-people rv-cat-icon"></i>
+          <div class="rv-cat-num">4.6</div>
+          <div class="rv-cat-name">Community &amp; Support</div>
+        </div>
+        <div class="rv-cat">
+          <i class="bi bi-gift rv-cat-icon"></i>
+          <div class="rv-cat-num">5.0</div>
+          <div class="rv-cat-name">Free Access</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews list -->
+    <div class="rv-anim rv-anim-delay-3">
+      {% if reviews %} {% for r in reviews %}
+      <div class="rv-item">
+        <div class="d-flex align-items-start justify-content-between gap-3">
+          <div class="d-flex gap-3 flex-grow-1">
+            {% if r.avatar %}
+            <img
+              src="{{ r.avatar }}"
+              alt="{{ r.full_name }}"
+              class="rv-avatar"
+            />
+            {% else %}
+            <span class="rv-avatar-fallback">{{ r.full_name[:1]|upper }}</span>
+            {% endif %}
+            <div>
+              <div class="rv-name">{{ r.full_name }}</div>
+              <div class="rv-time">
+                <i class="bi bi-clock me-1"></i>{{ r.created_at }}
+              </div>
+            </div>
+          </div>
+          <div class="rv-star-item d-flex align-items-center gap-2">
+            <span
+              class="fw-bold"
+              style="font-size: 1rem; color: var(--rv-purple)"
+            >
+              {{ r.rating }}
+            </span>
+            <span>
+              {% for i in range(r.rating|int) %}<i class="bi bi-star-fill"></i
+              >{% endfor %} {% for i in range(5 - (r.rating|int)) %}<i
+                class="bi bi-star"
+              ></i
+              >{% endfor %}
+            </span>
+          </div>
+        </div>
+        <p class="rv-comment">"{{ r.comment }}"</p>
+      </div>
+      {% endfor %} {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-chat-square-dots display-4 text-muted"></i>
+        <p class="text-muted mt-3 mb-0">
+          No reviews yet — be the first to share your feedback!
+        </p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- See More Button -->
+    {% set real_total = breakdown[5] + breakdown[4] + breakdown[3] +
+    breakdown[2] + breakdown[1] %} {% set shown = reviews|length %} {% if shown
+    < real_total %}
+    <div class="text-center mt-4 rv-anim rv-anim-delay-4">
+      <a
+        href="?offset={{ shown + 5 }}"
+        class="btn btn-outline-primary rounded-pill px-5 py-2"
+      >
+        <i class="bi bi-plus-circle me-2"></i>See more
+        <span class="badge bg-primary rounded-pill ms-2">
+          {{ real_total - shown }}
+        </span>
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Add Review Modal -->
+    <div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div
+          class="modal-content border-0 shadow-lg"
+          style="border-radius: 24px; overflow: hidden"
+        >
+          <button
+            type="button"
+            class="btn-close position-absolute top-0 end-0 m-3 z-3"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+          <div class="modal-body p-4 p-lg-5">
+            <h5 class="fw-bold mb-1" style="color: var(--rv-dark)">
+              <i class="bi bi-pencil-square text-primary me-2"></i>Share Your
+              Review
+            </h5>
+            <p class="text-muted small mb-4">
+              Your feedback helps other readers find the best resources.
+            </p>
+
+            <form id="reviewForm">
+              <!-- Book select hata diya — server pehli approved book use karega -->
+
+              <div class="text-center mb-3">
+                <div
+                  class="d-inline-flex align-items-center justify-content-center rounded-4 mb-2"
+                  style="
+                    width: 56px;
+                    height: 56px;
+                    background: rgba(67, 56, 202, 0.08);
+                  "
+                >
+                  <i class="bi bi-star-fill text-primary fs-3"></i>
+                </div>
+                <h5 class="fw-bold mb-0" style="color: #1e1b4b">
+                  Leave a Review
+                </h5>
+                <p class="text-muted small mb-0">
+                  Share your experience with DocoDive
+                </p>
+              </div>
+
+              <div class="mb-3 text-center">
+                <label class="form-label small fw-semibold d-block mb-2"
+                  >Your Rating</label
+                >
+                <div id="reviewRatingStars">
+                  {% for i in range(1, 6) %}
+                  <button type="button" class="star-btn" data-rating="{{ i }}">
+                    <i class="bi bi-star-fill"></i>
+                  </button>
+                  {% endfor %}
+                </div>
+                <input type="hidden" id="reviewRatingValue" value="5" />
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label small fw-semibold">Your Review</label>
+                <textarea
+                  id="reviewComment"
+                  class="form-control rounded-4"
+                  rows="4"
+                  placeholder="What did you like about DocoDive? Was it easy to find books? How was the download experience?"
+                  required
+                ></textarea>
+              </div>
+
+              <button
+                type="submit"
+                id="submitReviewBtn"
+                class="btn btn-primary rounded-pill w-100"
+              >
+                <span class="btn-normal">
+                  <i class="bi bi-send me-1"></i> Submit Review
+                </span>
+                <span class="btn-loading d-none">
+                  <span class="spinner-border spinner-border-sm me-1"></span>
+                  Posting...
+                </span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endblock %} {% block scripts %}
+    <script>
+        var USER_LOGGED_IN = document.body.dataset.userLoggedIn === "true";
+
+      // Agar form mein book select hai to usse use karo, warna pehli approved book auto-select
+      var defaultBookId = {{ (books[0].id if books and books|length > 0 else 1) }};
+
+      function openReviewModal() {
+        if (!USER_LOGGED_IN) {
+          if (typeof showAuthModal === "function") {
+            showAuthModal(window.location.href);
+          } else {
+            window.location.href = "/auth";
+          }
+          return;
+        }
+
+        // Modal khulne se pehle form reset
+        var commentBox = document.getElementById("reviewComment");
+        if (commentBox) commentBox.value = "";
+        updateStars(5);
+
+        var modalEl = document.getElementById("reviewModal");
+        if (modalEl) {
+          var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+          modal.show();
+        }
+      }
+
+      // ================== STAR RATING ==================
+      var starBtns = document.querySelectorAll("#reviewRatingStars .star-btn");
+      var ratingValue = document.getElementById("reviewRatingValue");
+
+      function updateStars(selected) {
+        starBtns.forEach(function (btn) {
+          var val = parseInt(btn.dataset.rating, 10);
+          btn.classList.toggle("active", val <= selected);
+        });
+        if (ratingValue) ratingValue.value = selected;
+      }
+
+      starBtns.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          updateStars(parseInt(this.dataset.rating, 10));
+        });
+      });
+
+      // Default 5 stars
+      updateStars(5);
+
+      // ================== SUBMIT REVIEW ==================
+      var reviewForm = document.getElementById("reviewForm");
+      if (reviewForm) {
+        reviewForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          if (!USER_LOGGED_IN) {
+            showAuthModal(window.location.href);
+            return;
+          }
+
+          // Book selection (optional fallback)
+          var bookId = defaultBookId;
+          var bookSelect = document.getElementById("reviewBookSelect");
+          if (bookSelect && bookSelect.value) {
+            bookId = bookSelect.value;
+          }
+
+          var rating = ratingValue ? ratingValue.value : "5";
+          var comment = document.getElementById("reviewComment").value.trim();
+
+          if (!comment) {
+            showToast("Please write a review.", "error");
+            return;
+          }
+
+          var btn = this.querySelector("button[type='submit']");
+          if (!btn) return;
+
+          // Original button HTML save karo taake baad mein restore kar saken
+          var originalHTML = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML =
+            '<span class="spinner-border spinner-border-sm me-2"></span>Posting...';
+
+          fetch("/book/" + bookId + "/review", {
+            method: "POST",
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body:
+              "rating=" +
+              encodeURIComponent(rating) +
+              "&comment=" +
+              encodeURIComponent(comment)
+          })
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (d) {
+              if (d.error) {
+                // Error — button wapas normal
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+                showToast(d.error, "error");
+                return;
+              }
+
+              // Success — modal band, form reset, toast
+              showToast("Review posted successfully!", "success");
+
+              var modalEl = document.getElementById("reviewModal");
+              var modal = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+              if (modal) modal.hide();
+
+              // Form reset
+              var commentBox = document.getElementById("reviewComment");
+              if (commentBox) commentBox.value = "";
+              updateStars(5);
+
+              // 1 second baad smooth reload
+              setTimeout(function () {
+                location.reload();
+              }, 1000);
+            })
+            .catch(function () {
+              btn.disabled = false;
+              btn.innerHTML = originalHTML;
+              showToast("Something went wrong. Please try again.", "error");
+            });
+        });
+      }
+
+      // ================== TOAST FALLBACK ==================
+      function showToast(message, type) {
+        if (typeof window.showToast === "function") {
+          window.showToast(message, type);
+          return;
+        }
+        alert(message);
+      }
+    </script>
+    {% endblock %}
+  </div>
+</div>

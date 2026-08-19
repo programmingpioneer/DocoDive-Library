@@ -1017,6 +1017,153 @@ def make_upload_notification_email(title, author, category):
     )
 
 
+@app.route("/reviews")
+def reviews_page():
+    """Public reviews page with rating breakdown, category metrics, and paginated reviews."""
+    cur = mysql.connection.cursor()
+
+    # Seed base (homepage jaisa hi)
+    review_seed_base = int(get_site_setting("reviews_seed_base", 1500) or 1500)
+
+    # Real review count (sirf non-empty comments)
+    cur.execute(
+        "SELECT COUNT(*) FROM reviews WHERE comment IS NOT NULL AND TRIM(comment) != ''"
+    )
+    real_review_count = cur.fetchone()[0] or 0
+
+    # Real breakdown (5 → 1)
+    cur.execute("""
+        SELECT rating, COUNT(*)
+        FROM reviews
+        WHERE comment IS NOT NULL AND TRIM(comment) != ''
+        GROUP BY rating
+        """)
+    real_breakdown = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0}
+    for row in cur.fetchall():
+        if row[0] in real_breakdown:
+            real_breakdown[row[0]] = row[1]
+
+    # ===== Seed distribution (fixed percentages — 65/20/8/4/3) =====
+    seed_percent = {5: 0.65, 4: 0.20, 3: 0.08, 2: 0.04, 1: 0.03}
+    seed_breakdown = {
+        star: int(review_seed_base * pct) for star, pct in seed_percent.items()
+    }
+    # Rounding adjustment → total seed exactly review_seed_base
+    seed_breakdown[1] = review_seed_base - sum(
+        seed_breakdown[star] for star in [5, 4, 3, 2]
+    )
+
+    # ===== Combined breakdown (seed + real) =====
+    breakdown = {
+        star: seed_breakdown.get(star, 0) + real_breakdown.get(star, 0)
+        for star in [5, 4, 3, 2, 1]
+    }
+
+    # Combined average rating
+    weighted_sum = sum(star * count for star, count in breakdown.items())
+    total_count = sum(breakdown.values()) or 1
+    avg_rating = round(weighted_sum / total_count, 1)
+
+    total_reviews = review_seed_base + real_review_count
+
+    # "See More" offset: pehle 4, har click pe 5 aur
+    try:
+        offset = int(request.args.get("offset", 4))
+    except (TypeError, ValueError):
+        offset = 4
+    if offset < 1:
+        offset = 1
+
+    # Recent reviews list (full name + avatar)
+    cur.execute(
+        """
+        SELECT r.id,
+               u.username,
+               COALESCE(
+                   NULLIF(
+                       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')),
+                       ' '
+                   ),
+                   u.username
+               ) AS display_name,
+               u.avatar_url,
+               r.rating,
+               r.comment,
+               r.created_at
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.comment IS NOT NULL AND TRIM(r.comment) != ''
+        ORDER BY r.created_at DESC
+        LIMIT %s
+        """,
+        (offset,),
+    )
+    reviews = [
+        {
+            "review_id": r[0],
+            "username": r[1],
+            "full_name": r[2],
+            "avatar": r[3],
+            "rating": r[4] or 0,
+            "comment": r[5],
+            "created_at": r[6].strftime("%b %d, %Y") if r[6] else "",
+        }
+        for r in cur.fetchall()
+    ]
+
+    # Books list for Add Review dropdown
+    cur.execute(
+        "SELECT id, title FROM documents WHERE approved = 1 ORDER BY title LIMIT 100"
+    )
+    books = [{"id": b[0], "title": b[1]} for b in cur.fetchall()]
+
+    cur.close()
+
+    return render_template(
+        "reviews.html",
+        avg_rating=avg_rating,
+        breakdown=breakdown,
+        total_reviews=total_reviews,
+        reviews=reviews,
+        books=books,
+    )
+
+
+# _================== REVIEW LIKE TOGGLE API ==================
+@app.route("/api/review/<int:review_id>/like", methods=["POST"])
+def toggle_review_like(review_id):
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+    user_id = session["user_id"]
+    cur = mysql.connection.cursor()
+    cur.execute(
+        "SELECT id FROM review_likes WHERE user_id = %s AND review_id = %s",
+        (user_id, review_id),
+    )
+    existing = cur.fetchone()
+    if existing:
+        cur.execute(
+            "DELETE FROM review_likes WHERE user_id = %s AND review_id = %s",
+            (user_id, review_id),
+        )
+        liked = False
+    else:
+        cur.execute(
+            "INSERT INTO review_likes (user_id, review_id) VALUES (%s, %s)",
+            (user_id, review_id),
+        )
+        liked = True
+    mysql.connection.commit()
+    cur.execute("SELECT COUNT(*) FROM review_likes WHERE review_id = %s", (review_id,))
+    like_count = cur.fetchone()[0]
+    cur.execute(
+        "UPDATE reviews SET like_count = %s WHERE id = %s", (like_count, review_id)
+    )
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"liked": liked, "like_count": like_count})
+
+
 def make_code_email(code):
     content = f"""
         <p style="margin:0;">Enter this code in DocoDive to continue resetting your password:</p>
@@ -1089,6 +1236,92 @@ def set_site_setting(key, value):
     )
     mysql.connection.commit()
     cur.close()
+
+
+# ================== HOME STATS (cached aggregates + recent reviews) ==================
+_HOME_STATS_CACHE = {"ts": None, "data": None}
+
+
+def get_home_stats():
+    """Cached homepage aggregates + recent reviews (5 min TTL)."""
+    now = datetime.now()
+    cache = _HOME_STATS_CACHE
+    if cache["ts"] and (now - cache["ts"]).total_seconds() < 300:
+        return cache["data"]
+
+    books_seed = int(get_site_setting("books_seed_base", 0) or 0)
+    users_seed = int(get_site_setting("users_seed_base", 0) or 0)
+    review_seed_base = int(get_site_setting("reviews_seed_base", 1500) or 1500)
+
+    cur = mysql.connection.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM documents WHERE approved = 1")
+    real_books = cur.fetchone()[0] or 0
+
+    cur.execute(
+        "SELECT COALESCE(SUM(download_count), 0) FROM documents WHERE approved = 1"
+    )
+    total_downloads = cur.fetchone()[0] or 0
+
+    cur.execute("SELECT COUNT(*) FROM users")
+    real_users = cur.fetchone()[0] or 0
+
+    cur.execute("SELECT COUNT(*) FROM categories")
+    total_categories = cur.fetchone()[0] or 0
+
+    # Real reviews count (cursor close hone se PEHLE)
+    cur.execute(
+        "SELECT COUNT(*) FROM reviews WHERE comment IS NOT NULL AND TRIM(comment) != ''"
+    )
+    real_review_count = cur.fetchone()[0] or 0
+
+    # Recent reviews — full name ke saath
+    cur.execute("""
+        SELECT r.id,
+               u.username,
+               COALESCE(
+                   NULLIF(
+                       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')),
+                       ' '
+                   ),
+                   u.username
+               ) AS display_name,
+               u.avatar_url,
+               r.rating,
+               r.comment,
+               r.created_at
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.comment IS NOT NULL AND TRIM(r.comment) != ''
+        ORDER BY r.created_at DESC
+        LIMIT 4
+        """)
+    recent_reviews = [
+        {
+            "review_id": r[0],
+            "username": r[1],
+            "full_name": r[2],
+            "avatar": r[3],
+            "rating": r[4] or 0,
+            "comment": r[5],
+            "created_at": r[6].strftime("%b %d, %Y") if r[6] else "",
+        }
+        for r in cur.fetchall()
+    ]
+
+    cur.close()
+
+    data = {
+        "total_books": books_seed + real_books,
+        "total_downloads": total_downloads,
+        "total_users": users_seed + real_users,
+        "total_categories": total_categories,
+        "total_reviews": review_seed_base + real_review_count,
+        "recent_reviews": recent_reviews,
+    }
+    cache["ts"] = now
+    cache["data"] = data
+    return data
 
 
 def is_official_user(user_id):
@@ -2158,6 +2391,8 @@ def home():
     ]
     categories = [{"id": r[0], "level": r[1], "count": r[2]} for r in cat_data]
 
+    home_stats = get_home_stats()
+
     featured_book = get_book_of_the_day()
 
     streak = longest = 0
@@ -2236,6 +2471,12 @@ def home():
         streak=streak,
         longest=longest,
         recommended_books=recommended_books,
+        total_books=home_stats["total_books"],
+        total_downloads=home_stats["total_downloads"],
+        total_users=home_stats["total_users"],
+        total_categories=home_stats["total_categories"],
+        recent_reviews=home_stats["recent_reviews"],
+        total_reviews=home_stats["total_reviews"],
     )
 
 

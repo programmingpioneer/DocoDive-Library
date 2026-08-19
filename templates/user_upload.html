@@ -1,24 +1,35 @@
 {% extends 'base.html' %} {% block extra_css %}
 <style>
+  :root {
+    --primary: #4338ca;
+    --primary-dark: #3730a3;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --muted: #64748b;
+  }
+
   .upload-card {
-    max-width: 700px;
+    max-width: 720px;
     margin: 0 auto;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.6);
     border-radius: 28px;
     box-shadow: 0 20px 50px rgba(30, 27, 75, 0.1);
     padding: 2rem;
   }
+
   .disclaimer {
-    background: #fff3cd;
+    background: #fff8e6;
     border-left: 4px solid #ffb703;
-    padding: 15px;
-    border-radius: 10px;
+    padding: 15px 18px;
+    border-radius: 12px;
     margin: 20px 0;
     font-size: 0.9rem;
+    color: #5c4a00;
   }
+
   .pending-item {
     display: flex;
     justify-content: space-between;
@@ -45,12 +56,12 @@
     flex-wrap: wrap;
   }
 
-  /* ========== PREMIUM PROGRESS GLASSMORPHISM ========== */
+  /* Progress card */
   .progress-glass-card {
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.35);
     border-radius: 24px;
     padding: 25px;
     text-align: center;
@@ -58,6 +69,7 @@
     margin: 20px 0;
     overflow: hidden;
   }
+
   .progress-top-icons {
     display: flex;
     justify-content: center;
@@ -107,7 +119,12 @@
   .connection-lines {
     width: 60px;
     height: 2px;
-    background: linear-gradient(90deg, transparent, #4338ca, transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--primary),
+      transparent
+    );
     animation: pulseLine 1s infinite;
     flex-shrink: 0;
   }
@@ -144,7 +161,6 @@
     }
   }
 
-  /* ========== CIRCULAR PROGRESS ========== */
   .circular-progress-container {
     position: relative;
     width: 120px;
@@ -166,7 +182,7 @@
   }
   .progress-ring .ring-fg {
     fill: none;
-    stroke: #4338ca;
+    stroke: var(--primary);
     stroke-width: 8;
     stroke-linecap: round;
     transition: stroke-dashoffset 0.2s ease;
@@ -182,7 +198,6 @@
     pointer-events: none;
   }
 
-  /* ========== PROGRESS STATS - ALWAYS SINGLE ROW ========== */
   .progress-stats {
     display: flex;
     justify-content: space-between;
@@ -201,7 +216,7 @@
     text-align: center;
   }
   .stat-label {
-    color: #6b7280;
+    color: var(--muted);
     font-size: 0.75rem;
   }
   .stat-value {
@@ -210,12 +225,12 @@
   }
   .progress-status-text {
     font-weight: 600;
-    color: #4338ca;
+    color: var(--primary);
     min-height: 20px;
     font-size: 0.95rem;
   }
 
-  /* ========== RESPONSIVE IMPROVEMENTS ========== */
+  /* Responsive */
   @media (max-width: 768px) {
     .upload-card {
       padding: 1.5rem 1.2rem;
@@ -302,16 +317,17 @@
       width: 24px;
     }
     .circular-progress-container {
-      width: 80px;
-      height: 80px;
-      margin-bottom: 12px;
+      width: 110px;
+      height: 110px;
+      margin: 0 auto 14px;
     }
     .progress-ring .ring-bg,
     .progress-ring .ring-fg {
-      stroke-width: 6;
+      stroke-width: 8;
     }
     .progress-text {
-      font-size: 16px;
+      font-size: 20px;
+      font-weight: 800;
     }
     .progress-stats {
       gap: 3px;
@@ -341,8 +357,8 @@
 {% endblock %} {% block content %}
 <div class="container py-4 py-md-5">
   <div class="upload-card">
-    <h2 class="mb-3">
-      <i class="bi bi-cloud-upload-fill me-2" style="color: #4338ca"></i> Upload
+    <h2 class="mb-3 fw-bold" style="color: #1e1b4b">
+      <i class="bi bi-cloud-upload-fill me-2" style="color: #4338ca"></i>Upload
       a Book
     </h2>
     <p class="text-muted">
@@ -350,7 +366,6 @@
       reviewed by admins before it goes public.
     </p>
 
-    <!-- Disclaimer -->
     <div class="disclaimer">
       <strong><i class="bi bi-info-circle-fill me-1"></i> Disclaimer:</strong
       ><br />
@@ -363,11 +378,10 @@
       • You will receive an email when your book is approved or rejected.
     </div>
 
-    <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %} {% if
     messages %} {% for category, message in messages %}
     <div
-      class="alert alert-{{ category }} alert-dismissible fade show"
+      class="alert alert-{{ category }} alert-dismissible fade show rounded-3"
       role="alert"
     >
       {{ message }}
@@ -381,30 +395,35 @@
         name="_csrf_token"
         value="{{ session._csrf_token }}"
       />
-      <!-- PDF Upload -->
+
       <div class="mb-3">
         <label for="pdf_file" class="form-label fw-semibold"
           >Select PDF File <span class="text-danger">*</span></label
         >
         <input
-          class="form-control"
+          class="form-control rounded-3"
           type="file"
           id="pdf_file"
           name="pdf_file"
           accept=".pdf"
           required
+          style="border: 1px solid #e2e8f0; background: #f8fafc"
         />
         <div class="form-text">
           Choose a programming book, tutorial, or research paper in PDF format.
         </div>
       </div>
 
-      <!-- Category Dropdown -->
       <div class="mb-3">
         <label for="categorySelect" class="form-label fw-semibold">
           <i class="bi bi-tag me-1"></i> Category
         </label>
-        <select class="form-select" id="categorySelect" name="category">
+        <select
+          class="form-select rounded-3"
+          id="categorySelect"
+          name="category"
+          style="border: 1px solid #e2e8f0; background: #f8fafc"
+        >
           <option value="">🤖 Auto‑Detect from PDF</option>
           {% for cat in categories %}
           <option value="{{ cat }}">{{ cat }}</option>
@@ -415,18 +434,18 @@
         </div>
       </div>
 
-      <!-- Cover Image Upload (optional) -->
       <div class="mb-3">
         <label for="cover_image" class="form-label fw-semibold">
           Cover Image <span class="text-muted fw-normal small">(optional)</span>
         </label>
         <input
-          class="form-control"
+          class="form-control rounded-3"
           type="file"
           id="cover_image"
           name="cover_image"
           accept="image/*"
           onchange="previewCoverImage(this)"
+          style="border: 1px solid #e2e8f0; background: #f8fafc"
         />
         <div class="form-text">
           Square image recommended · Max 2 MB · JPG, PNG, GIF, WEBP.
@@ -450,7 +469,6 @@
         </div>
       </div>
 
-      <!-- ========== PREMIUM PROGRESS CARD (GLASSMORPHISM) ========== -->
       <div id="progressCard" class="d-none">
         <div class="progress-glass-card">
           <div class="progress-top-icons">
@@ -564,8 +582,13 @@
       <button
         type="submit"
         id="uploadBtn"
-        class="btn btn-primary w-100 py-2 py-md-3"
-        style="background: #4338ca; border: none; border-radius: 12px"
+        class="btn btn-primary w-100 py-2 py-md-3 fw-bold"
+        style="
+          background: #4338ca;
+          border: none;
+          border-radius: 12px;
+          transition: 0.2s ease;
+        "
       >
         <i class="bi bi-upload me-1"></i> Upload for Review
       </button>
@@ -577,9 +600,8 @@
       >
     </p>
 
-    <!-- Uploads History -->
     <hr class="my-4" />
-    <h5 class="mb-3">
+    <h5 class="mb-3 fw-bold" style="color: #1e1b4b">
       <i class="bi bi-hourglass-split me-2"></i> Your Uploads
     </h5>
     <p class="text-muted small">
@@ -596,7 +618,6 @@
   const MAX_FILE_SIZE = 500 * 1024 * 1024;
   const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
 
-  // Cover image preview
   function previewCoverImage(input) {
     const preview = document.getElementById("coverPreview");
     const thumb = document.getElementById("coverThumb");
@@ -622,7 +643,6 @@
     document.getElementById("coverPreview").style.display = "none";
   }
 
-  // Fetch user uploads list
   document.addEventListener("DOMContentLoaded", function () {
     fetchUserUploads();
   });
@@ -673,7 +693,6 @@
       });
   }
 
-  // AJAX form submission with premium progress
   document
     .getElementById("uploadForm")
     .addEventListener("submit", function (e) {
@@ -714,7 +733,6 @@
       xhr.upload.onprogress = function (e) {
         if (e.lengthComputable) {
           let percent = Math.round((e.loaded / e.total) * 100);
-          // Update ring
           let offset =
             RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * percent) / 100;
           ringFg.style.strokeDashoffset = offset;

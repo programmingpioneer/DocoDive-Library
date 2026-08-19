@@ -135,27 +135,40 @@ learners on DocoDive. {% endblock %} {% block canonical %}{{ request.base_url
     color: #4338ca;
   }
 
-  /* ===== BOOK CARD FIX (match index) ===== */
+  /* ===== BOOK COVER FLAT (match index) ===== */
   .book-cover-outer {
-    height: auto;
-    overflow: visible;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: hidden;
+    padding: 8px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .book-3d-wrapper {
-    height: auto;
-    max-height: 220px;
+
+  .flat-book-cover {
+    width: 100% !important;
+    max-width: 150px !important;
+    height: auto !important;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 10px;
+    display: block;
+    margin: 0 auto;
   }
-  .books-grid-card .book-3d-wrapper {
-    max-height: 160px;
+
+  /* Hover card pe ho, cover pe nahi */
+  .books-grid-card .product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
   }
-  @media (max-width: 768px) {
-    .books-grid-card .book-3d-wrapper {
-      max-height: 140px;
-    }
+  .books-grid-card .flat-book-cover {
+    transform: none !important;
+    transition: none;
   }
-  @media (max-width: 576px) {
-    .books-grid-card .book-3d-wrapper {
-      max-height: 100px;
-    }
+  .books-grid-card:hover .flat-book-cover {
+    transform: none !important;
   }
 
   .book-fallback-icon {
@@ -405,21 +418,12 @@ learners on DocoDive. {% endblock %} {% block canonical %}{{ request.base_url
         >
           {% if book.image_url and book.image_url != 'None' and
           book.image_url.strip() != '' %}
-          <div class="book-3d-wrapper">
-            <div class="book-3d">
-              <div class="book-front">
-                <img
-                  src="{{ book.image_url }}"
-                  alt="Cover"
-                  class="book-cover"
-                  loading="lazy"
-                />
-              </div>
-              <div class="book-spine"></div>
-              <div class="book-pages"></div>
-              <div class="book-shadow"></div>
-            </div>
-          </div>
+          <img
+            src="{{ book.image_url }}"
+            alt="Cover"
+            class="flat-book-cover"
+            loading="lazy"
+          />
           {% else %} {% set title_safe = book.title | default('Book', true) |
           replace('_', ' ') %} {% set words = title_safe.split() %} {% set
           short_name = (words[0][:2])|upper if words|length == 1 else

@@ -869,12 +869,10 @@
     margin: 0 auto;
   }
 
-  /* Card ka body bhi compact ho */
   .book-card-inner .card-body {
     padding: 0.5rem 0.4rem !important;
   }
 
-  /* Desktop par aur chhota + center */
   @media (min-width: 992px) {
     .flat-book-cover {
       max-height: 170px;
@@ -884,7 +882,6 @@
     }
   }
 
-  /* Mobile par responsive */
   @media (max-width: 576px) {
     .flat-book-cover {
       max-height: 140px;
@@ -911,12 +908,10 @@
   #newArrivalsCarousel .carousel-control-next {
     display: none !important;
   }
-
-  #recommendedCarousel .carousel-item,
-  #newArrivalsCarousel .carousel-item {
-    transition: transform 0.45s ease-in-out !important;
-    will-change: transform;
-    backface-visibility: hidden;
+  #recommendedCarousel,
+  #newArrivalsCarousel {
+    contain: content;
+    transform: translateZ(0);
   }
 
   #recommendedCarousel .carousel-item[data-aos],
@@ -926,6 +921,192 @@
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
+  }
+
+  /* ===== CAROUSEL CARDS: ONLY FADE — NO SLIDE MOVEMENT ===== */
+  @keyframes fadeCardIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  #recommendedCarousel .carousel-item.active .col-4,
+  #newArrivalsCarousel .carousel-item.active .col-4 {
+    animation: fadeCardIn 1.5s ease both;
+  }
+
+  #recommendedCarousel .carousel-item.active .col-4:nth-child(1),
+  #newArrivalsCarousel .carousel-item.active .col-4:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+  #recommendedCarousel .carousel-item.active .col-4:nth-child(2),
+  #newArrivalsCarousel .carousel-item.active .col-4:nth-child(2) {
+    animation-delay: 0.25s;
+  }
+  #recommendedCarousel .carousel-item.active .col-4:nth-child(3),
+  #newArrivalsCarousel .carousel-item.active .col-4:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  /* Reduced motion walon ke liye off */
+  @media (prefers-reduced-motion: reduce) {
+    #recommendedCarousel .carousel-item.active .col-4,
+    #newArrivalsCarousel .carousel-item.active .col-4 {
+      animation: none;
+    }
+  }
+  /* ===== CAROUSEL FADE (NO HORIZONTAL SLIDE) ===== */
+  #recommendedCarousel .carousel-item,
+  #newArrivalsCarousel .carousel-item {
+    transition: opacity 1.5s ease-in-out !important;
+    transform: none !important;
+  }
+
+  #recommendedCarousel .carousel-item {
+    opacity: 0;
+    display: block;
+  }
+  #recommendedCarousel .carousel-item.active {
+    opacity: 1;
+  }
+
+  #newArrivalsCarousel .carousel-item {
+    opacity: 0;
+    display: block;
+  }
+  #newArrivalsCarousel .carousel-item.active {
+    opacity: 1;
+  }
+
+  /* Cards ka entrance fade */
+  @keyframes fadeCardIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  #recommendedCarousel .carousel-item.active .col-4,
+  #newArrivalsCarousel .carousel-item.active .col-4 {
+    animation: fadeCardIn 1.5s ease both;
+  }
+  /* ===== ABOUT MODERN ===== */
+  .founder-card {
+    background: #fff;
+  }
+  .founder-avatar {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 5px solid rgba(67, 56, 202, 0.2);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  }
+  .stat-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 1.5rem 1rem;
+    box-shadow: 0 8px 24px rgba(30, 27, 75, 0.06);
+    height: 100%;
+  }
+  .stat-icon {
+    font-size: 1.8rem;
+    color: #4338ca;
+  }
+  .stat-number {
+    font-weight: 800;
+    color: #1e1b4b;
+    margin: 0.5rem 0 0.25rem;
+  }
+  .stat-label {
+    color: #6b7280;
+    font-size: 0.85rem;
+    margin: 0;
+  }
+  .mini-card,
+  .feature-item {
+    background: #fff;
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: 0 5px 18px rgba(30, 27, 75, 0.05);
+  }
+  .mini-icon {
+    font-size: 1.6rem;
+    color: #4338ca;
+    margin-bottom: 0.5rem;
+  }
+  .feature-icon {
+    font-size: 1.6rem;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  .trust-badge {
+    background: #fff;
+    border: 1px solid #e0e7ff;
+    color: #1e1b4b;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 8px 16px;
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(30, 27, 75, 0.05);
+  }
+  .testimonial-card {
+    max-width: 560px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 28px rgba(30, 27, 75, 0.08);
+  }
+  .testimonial-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 0.75rem;
+  }
+  .avatar-initials {
+    background: #4338ca;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .testimonial-comment {
+    color: #4b5563;
+    font-style: italic;
+  }
+  .testimonial-name {
+    color: #1e1b4b;
+  }
+  /* ===== STABLE TESTIMONIAL FADER (no blink, no page jump) ===== */
+  .testimonial-fader {
+    position: relative;
+    min-height: 280px;
+    overflow: hidden;
+  }
+  .testimonial-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.7s ease;
+    pointer-events: none;
+  }
+  .testimonial-slide.active {
+    opacity: 1;
+    pointer-events: auto;
+    position: relative;
+  }
+  @media (max-width: 576px) {
+    .testimonial-fader {
+      min-height: 320px;
+    }
   }
 </style>
 {% endblock %} {% block content %}
@@ -1063,12 +1244,11 @@
   ></div>
 </section>
 
-<!-- ========== SEARCH RESULTS (SEARCH BOX KE NEECHE) ========== -->
+<!-- ========== SEARCH RESULTS ========== -->
 {% if search_query %}
 <section id="search-results" class="container my-4 py-3" data-aos="fade-up">
   <h2 class="section-title mb-4">🔍 Search Results</h2>
   {% if pdfs %} {% if pdfs|length > 5 %}
-  <!-- ===== 5+ BOOKS: HORIZONTAL SLIDER ===== -->
   <div class="search-slider-wrapper">
     <button
       type="button"
@@ -1223,7 +1403,6 @@
     </button>
   </div>
   {% else %}
-  <!-- ===== 5 YA KAM: NORMAL GRID ===== -->
   <div class="row g-2 g-sm-3">
     {% for pdf in pdfs %}
     <div
@@ -1575,7 +1754,7 @@
 
 <!-- ==================== RECOMMENDED FOR YOU ==================== -->
 {% if not search_query and recommended_books %}
-<section class="container my-5" data-aos="fade-up">
+<section class="container my-5">
   <h2 class="section-title mb-4">✨ Recommended for You</h2>
   <div
     id="recommendedCarousel"
@@ -1735,11 +1914,7 @@
 
 <!-- ========== NEW ARRIVALS ========== -->
 {% if not search_query %}
-<section
-  id="new-arrivals"
-  class="container my-5 py-4 border-top"
-  data-aos="fade-up"
->
+<section id="new-arrivals" class="container my-5 py-4 border-top">
   <div class="row align-items-end mb-4">
     <div class="col-12 col-md-6">
       <h2 class="section-title">New Arrivals</h2>
@@ -2124,7 +2299,7 @@
   data-aos="fade-left"
 >
   <div class="container py-3 py-md-4">
-    <div class="row align-items-center g-4 g-lg-5">
+    <div class="row align-items-center g-4 g-lg-5 mb-5">
       <div class="col-lg-7">
         <span
           class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-3 border border-primary border-opacity-25"
@@ -2138,31 +2313,15 @@
           Empowering Learners <br />
           <span style="color: #ffb703">One Book at a Time</span>
         </h2>
-        <p class="lead text-muted mb-4" style="max-width: 550px">
+        <p class="lead text-muted mb-3" style="max-width: 550px">
           DocoDive is more than a library. It's a community‑driven collection of
           handpicked programming books, research papers, and learning resources
           – all completely free.
         </p>
-        <div class="d-flex flex-wrap gap-2 gap-md-3 mb-4 mb-md-5">
-          <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-check-circle-fill text-success fs-5"></i
-            ><span class="fw-semibold" style="color: #1e1b4b"
-              >5M+ Curated Books</span
-            >
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-check-circle-fill text-success fs-5"></i
-            ><span class="fw-semibold" style="color: #1e1b4b"
-              >12 Programming Categories</span
-            >
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-check-circle-fill text-success fs-5"></i
-            ><span class="fw-semibold" style="color: #1e1b4b"
-              >Free Forever</span
-            >
-          </div>
-        </div>
+        <p class="fw-semibold mb-4" style="color: #4338ca">
+          Our full collection exceeds 5M+ resources — uploading in progress.
+          Join now and never miss a new free book.
+        </p>
         <h6
           class="text-uppercase fw-semibold mb-3 text-muted"
           style="letter-spacing: 1px"
@@ -2214,76 +2373,202 @@
           ></a>
         </div>
       </div>
-      <div class="col-lg-5 text-center">
-        <div class="position-relative d-inline-block">
-          <div
-            class="position-absolute top-50 start-50 translate-middle rounded-circle"
-            style="
-              width: 260px;
-              height: 260px;
-              background: rgba(67, 56, 202, 0.08);
-              backdrop-filter: blur(8px);
-              z-index: 0;
-            "
-          ></div>
-          <div
-            class="position-relative z-1 mx-auto"
-            style="
-              width: 180px;
-              height: 180px;
-              max-width: 100%;
-              border-radius: 50%;
-              overflow: hidden;
-              border: 5px solid rgba(67, 56, 202, 0.2);
-              box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            "
+
+      <!-- Founder Card -->
+      <div class="col-lg-5">
+        <div
+          class="card border-0 shadow-sm rounded-4 p-4 text-center founder-card"
+        >
+          <img
+            src="static/images/Creator.jpg"
+            alt="Founder"
+            class="founder-avatar mx-auto"
+            style="object-fit: cover"
+          />
+          <h5 class="fw-bold mt-3 mb-1" style="color: #1e1b4b">Sufyan Khan</h5>
+          <span class="badge bg-warning text-dark px-3 py-1 rounded-pill mb-2"
+            >⭐ Founder & Creator</span
           >
-            <img
-              src="static/images/Creator.jpg"
-              alt="Founder"
-              class="w-100 h-100"
-              style="object-fit: cover"
-            />
-          </div>
-          <span
-            class="position-absolute bottom-0 start-0 bg-white text-dark px-3 py-1 rounded-pill shadow-sm small fw-semibold"
-            style="z-index: 2; border: 1px solid #e0e7ff"
-            >📚 5M+ Books</span
-          >
-          <span
-            class="position-absolute top-0 end-0 text-dark px-3 py-1 rounded-pill shadow-sm small fw-semibold"
-            style="z-index: 2; background: #ffb703"
-            >⭐ Creator</span
-          >
+          <p class="small text-muted mb-0">
+            Building a free, honest library where anyone can learn without
+            paywalls.
+          </p>
         </div>
       </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 g-md-4 text-center mb-5">
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <i class="bi bi-book-half stat-icon"></i>
+          <h3 class="stat-number" data-count="{{ total_books }}">
+            {{ total_books }}
+          </h3>
+          <p class="stat-label">Books</p>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <i class="bi bi-download stat-icon"></i>
+          <h3 class="stat-number" data-count="{{ total_downloads }}">
+            {{ total_downloads }}
+          </h3>
+          <p class="stat-label">Downloads</p>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <i class="bi bi-people stat-icon"></i>
+          <h3 class="stat-number" data-count="{{ total_users }}">
+            {{ total_users }}
+          </h3>
+          <p class="stat-label">Users</p>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <i class="bi bi-grid stat-icon"></i>
+          <h3 class="stat-number" data-count="{{ total_categories }}">
+            {{ total_categories }}
+          </h3>
+          <p class="stat-label">Categories</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mission / Vision / Values -->
+    <div class="row g-3 g-md-4 mb-5">
+      <div class="col-md-4">
+        <div class="mini-card h-100">
+          <i class="bi bi-rocket-takeoff mini-icon"></i>
+          <h6 class="fw-bold">Mission</h6>
+          <p class="small text-muted mb-0">
+            Make high-quality learning resources free and accessible to
+            everyone.
+          </p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="mini-card h-100">
+          <i class="bi bi-eye mini-icon"></i>
+          <h6 class="fw-bold">Vision</h6>
+          <p class="small text-muted mb-0">
+            A world where no learner is stopped by a paywall or a missing book.
+          </p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="mini-card h-100">
+          <i class="bi bi-heart mini-icon"></i>
+          <h6 class="fw-bold">Values</h6>
+          <p class="small text-muted mb-0">
+            Honesty, community, and respect for authors and their work.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Why DocoDive -->
+    <div class="row g-3 g-md-4 mb-5">
+      <div class="col-6 col-md-3">
+        <div class="feature-item text-center">
+          <i class="bi bi-gift feature-icon text-success"></i>
+          <h6 class="fw-bold mb-1">100% Free</h6>
+          <p class="small text-muted mb-0">No hidden charges, ever.</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="feature-item text-center">
+          <i class="bi bi-patch-check feature-icon text-primary"></i>
+          <h6 class="fw-bold mb-1">Curated Quality</h6>
+          <p class="small text-muted mb-0">Handpicked, not scraped.</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="feature-item text-center">
+          <i class="bi bi-people feature-icon text-info"></i>
+          <h6 class="fw-bold mb-1">Community Driven</h6>
+          <p class="small text-muted mb-0">Built with reader feedback.</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="feature-item text-center">
+          <i class="bi bi-shield-check feature-icon text-warning"></i>
+          <h6 class="fw-bold mb-1">Copyright-Safe</h6>
+          <p class="small text-muted mb-0">Respectful and secure.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trust Badges -->
+    <div class="d-flex flex-wrap justify-content-center gap-2 gap-md-3 mb-5">
+      <span class="trust-badge"
+        ><i class="bi bi-lock-fill"></i> SSL Secure</span
+      >
+      <span class="trust-badge"
+        ><i class="bi bi-activity"></i> 99.9% Uptime</span
+      >
+      <span class="trust-badge"
+        ><i class="bi bi-shield-check"></i> Copyright-Safe</span
+      >
+      <span class="trust-badge"
+        ><i class="bi bi-download"></i> Easy Downloads</span
+      >
+    </div>
+
+    <!-- Top Reviews -->
+    {% if recent_reviews %}
+    <div class="text-center mb-3">
+      <h3 class="fw-bold mb-1" style="color: #1e1b4b">
+        <i class="bi bi-star-fill text-warning me-2"></i>Top Reviews
+        <span
+          class="badge bg-primary rounded-pill ms-2"
+          style="font-size: 0.8rem"
+          >{{ total_reviews }}+</span
+        >
+      </h3>
+    </div>
+    <div id="testimonialFader" class="testimonial-fader" data-interval="5000">
+      {% for r in recent_reviews %}
+      <div class="testimonial-slide {% if loop.first %}active{% endif %}">
+        <div class="testimonial-card text-center mx-auto">
+          {% if r.avatar %}
+          <img
+            src="{{ r.avatar }}"
+            alt="{{ r.full_name }}"
+            class="testimonial-avatar"
+          />
+          {% else %}
+          <div class="testimonial-avatar avatar-initials">
+            {{ r.username[:1]|upper }}
+          </div>
+          {% endif %}
+          <div class="text-warning mb-2">
+            {% for i in range(r.rating|int) %}<i class="bi bi-star-fill"></i>{%
+            endfor %} {% for i in range(5 - (r.rating|int)) %}<i
+              class="bi bi-star"
+            ></i
+            >{% endfor %}
+          </div>
+          <p class="testimonial-comment">"{{ r.comment }}"</p>
+          <h6 class="testimonial-name mb-0">{{ r.full_name }}</h6>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted text-center">No reviews yet — be the first!</p>
+    {% endif %}
+
+    <div class="text-center mt-4">
+      <a href="/reviews" class="btn btn-primary rounded-pill px-4">
+        <i class="bi bi-pencil-square me-1"></i> Add Review
+      </a>
     </div>
   </div>
 </section>
 {% endif %}
-
-<!-- ==================== BOOK DETAIL MODAL ==================== -->
-<div class="modal fade" id="bookDetailModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div
-      class="modal-content border-0 shadow-lg"
-      style="border-radius: 24px; overflow: hidden"
-    >
-      <button
-        type="button"
-        class="btn-close position-absolute top-0 end-0 m-3 z-3 bg-white rounded-circle shadow-sm p-2"
-        data-bs-dismiss="modal"
-        aria-label="Close"
-      ></button>
-      <div class="modal-body p-0" id="modalBookContent">
-        <div class="text-center p-5">
-          <div class="spinner-border text-primary"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ==================== QR CODE POPUP ==================== -->
 <div
   id="qrPopup"
@@ -2652,7 +2937,9 @@
   </div>
 </div>
 {% endblock %} {% block scripts %}
+
 <script>
+   var firstBookId = {{ (pdfs[0].id if pdfs and pdfs|length > 0 else 1) if not search_query else 1 }};
   document.addEventListener("DOMContentLoaded", function () {
     const USER_LOGGED_IN = document.body.dataset.userLoggedIn === "true";
 
@@ -2693,20 +2980,6 @@
       });
     });
 
-    const backBtn = document.createElement("button");
-    backBtn.innerHTML = '<i class="bi bi-arrow-up"></i>';
-    backBtn.className =
-      "btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-3 shadow-lg";
-    backBtn.style.cssText =
-      "width:40px;height:40px;display:none;z-index:1050;align-items:center;justify-content:center;";
-    document.body.appendChild(backBtn);
-    window.addEventListener("scroll", () => {
-      backBtn.style.display = window.scrollY > 300 ? "flex" : "none";
-    });
-    backBtn.addEventListener("click", () =>
-      window.scrollTo({ top: 0, behavior: "smooth" }),
-    );
-
     const carousel = document.getElementById("newArrivalsCarousel");
     if (carousel) {
       const items = carousel.querySelectorAll(".carousel-item");
@@ -2731,7 +3004,6 @@
       });
     }
 
-    // ===== SEARCH SLIDER ARROWS (5+ RESULTS) =====
     const searchSlider = document.getElementById("searchSlider");
     if (searchSlider) {
       const slideLeft = document.getElementById("slideLeft");
@@ -2766,7 +3038,6 @@
       const val = this.value.trim();
       clearBtn.style.display = val.length > 0 ? "block" : "none";
 
-      // Button typing pulse
       const findBtn = document.getElementById("findBookBtn");
       if (findBtn) {
         findBtn.classList.toggle("is-typing", val.length > 0);
@@ -2798,7 +3069,6 @@
         return;
       }
 
-      // Button mein loading, box chhupao
       showSearchLoading();
       suggestionsBox.classList.add("d-none");
 
@@ -3108,7 +3378,6 @@
         });
     };
 
-    // ================== LIVE COUNTERS ==================
     (function () {
       function refreshCounters() {
         const els = document.querySelectorAll(
@@ -3141,5 +3410,22 @@
       });
     })();
   });
+        // ================== STABLE TESTIMONIAL FADER ==================
+  try {
+    var testimonialFader = document.getElementById("testimonialFader");
+    if (testimonialFader) {
+      var testimonialSlides = testimonialFader.querySelectorAll(".testimonial-slide");
+      var testimonialIndex = 0;
+      if (testimonialSlides.length > 1) {
+        setInterval(function () {
+          testimonialSlides[testimonialIndex].classList.remove("active");
+          testimonialIndex = (testimonialIndex + 1) % testimonialSlides.length;
+          testimonialSlides[testimonialIndex].classList.add("active");
+        }, 5000);
+      }
+    }
+  } catch (e) {
+    console.warn("Testimonial fader failed:", e);
+  }
 </script>
 {% endblock %}

@@ -1,182 +1,187 @@
 {% extends 'base.html' %} {% block content %}
-<div class="container py-4 py-md-5">
-  <div
-    class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3"
-  >
-    <h2 class="fw-bold text-primary mb-0">
-      <i class="bi bi-pencil-square me-2"></i>Edit Book
-    </h2>
-    <a href="/admin/books" class="btn btn-outline-secondary rounded-pill px-4">
-      <i class="bi bi-arrow-left me-1"></i> Back to Manage Books
-    </a>
-  </div>
-  <div class="row justify-content-center">
-    <div class="col-12 col-md-10 col-lg-8">
-      <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-        <div class="card-body p-4 p-lg-5">
-          <form
-            method="POST"
-            action="/admin/edit/{{ book.id }}"
-            enctype="multipart/form-data"
+<div
+  class="edit-book-wrapper py-4 py-md-5"
+  style="
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8faff 0%, #eef2ff 100%);
+  "
+>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-10 col-lg-8">
+        <!-- Header -->
+        <div class="text-center mb-4">
+          <div
+            class="mx-auto d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+            style="
+              width: 72px;
+              height: 72px;
+              background: rgba(67, 56, 202, 0.08);
+            "
           >
-            <input
-              type="hidden"
-              name="_csrf_token"
-              value="{{ session._csrf_token }}"
-            />
-            <!-- Title -->
-            <div class="mb-4">
-              <label
-                class="form-label fw-bold small text-uppercase"
-                style="letter-spacing: 0.5px; color: #6b7280"
-                >Title</label
-              >
-              <input
-                type="text"
-                name="title"
-                class="form-control form-control-lg rounded-3"
-                value="{{ book.title }}"
-                required
-              />
-            </div>
+            <i class="bi bi-pencil-square" style="font-size: 2rem; color: #4338ca"></i>
+          </div>
+          <h2 class="fw-bold mb-1" style="color: #1e1b4b">Edit Book</h2>
+          <p class="text-muted mb-0">
+            Update book details and keep DocoDive library fresh.
+          </p>
+        </div>
 
-            <!-- Category & Author -->
-            <div class="row g-3 mb-4">
-              <div class="col-12 col-md-6">
-                <label
-                  class="form-label fw-bold small text-uppercase"
-                  style="letter-spacing: 0.5px; color: #6b7280"
-                  >Category</label
-                >
-                <select
-                  name="category"
-                  class="form-select form-select-lg rounded-3"
-                  required
-                >
-                  {% for cat in categories %}
-                  <option
-                    value="{{ cat.level }}"
-                    {%
-                    if
-                    cat.id=""
-                    ="book.category_id"
-                    %}selected{%
-                    endif
-                    %}
-                  >
-                    {{ cat.level }}
-                  </option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-12 col-md-6">
-                <label
-                  class="form-label fw-bold small text-uppercase"
-                  style="letter-spacing: 0.5px; color: #6b7280"
-                  >Author</label
+        <!-- Card -->
+        <div
+          class="card border-0 shadow-lg rounded-4 overflow-hidden edit-book-card"
+          style="background: #ffffff"
+        >
+          <div class="card-body p-4 p-lg-5">
+            <form
+              method="POST"
+              action="/admin/edit/{{ book.id }}"
+              enctype="multipart/form-data"
+            >
+              <input
+                type="hidden"
+                name="_csrf_token"
+                value="{{ session._csrf_token }}"
+              />
+
+              <!-- Title -->
+              <div class="mb-4">
+                <label class="form-label fw-semibold small text-uppercase edit-label"
+                  >Title</label
                 >
                 <input
                   type="text"
-                  name="author"
-                  class="form-control form-control-lg rounded-3"
-                  value="{{ book.author }}"
+                  name="title"
+                  class="form-control form-control-lg rounded-3 edit-input"
+                  value="{{ book.title }}"
                   required
                 />
               </div>
-            </div>
 
-            <!-- Language -->
-            <div class="mb-4">
-              <label
-                class="form-label fw-bold small text-uppercase"
-                style="letter-spacing: 0.5px; color: #6b7280"
-                >Language</label
-              >
-              <input
-                type="text"
-                name="language"
-                class="form-control form-control-lg rounded-3"
-                value="{{ book.language }}"
-              />
-            </div>
+              <!-- Category & Author -->
+              <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                  <label class="form-label fw-semibold small text-uppercase edit-label"
+                    >Category</label
+                  >
+                  <select
+                    name="category"
+                    class="form-select form-select-lg rounded-3 edit-input"
+                    required
+                  >
+                    {% for cat in categories %}
+                    <option
+                      value="{{ cat.level }}"
+                      {% if cat.id == book.category_id %}selected{% endif %}
+                    >
+                      {{ cat.level }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label fw-semibold small text-uppercase edit-label"
+                    >Author</label
+                  >
+                  <input
+                    type="text"
+                    name="author"
+                    class="form-control form-control-lg rounded-3 edit-input"
+                    value="{{ book.author }}"
+                    required
+                  />
+                </div>
+              </div>
 
-            <!-- Description -->
-            <div class="mb-4">
-              <label
-                class="form-label fw-bold small text-uppercase"
-                style="letter-spacing: 0.5px; color: #6b7280"
-                >Description</label
-              >
-              <textarea
-                name="desc"
-                class="form-control rounded-3"
-                rows="4"
-                style="resize: vertical"
-              >
-{{ book.description }}</textarea
-              >
-            </div>
+              <!-- Language -->
+              <div class="mb-4">
+                <label class="form-label fw-semibold small text-uppercase edit-label"
+                  >Language</label
+                >
+                <input
+                  type="text"
+                  name="language"
+                  class="form-control form-control-lg rounded-3 edit-input"
+                  value="{{ book.language }}"
+                />
+              </div>
 
-            <!-- Cover Image URL -->
-            <div class="mb-4">
-              <label
-                class="form-label fw-bold small text-uppercase"
-                style="letter-spacing: 0.5px; color: #6b7280"
-                >Cover Image URL</label
-              >
-              <input
-                type="url"
-                name="img"
-                class="form-control form-control-lg rounded-3"
-                value="{{ book.image_url }}"
-                placeholder="https://..."
-              />
-            </div>
+              <!-- Description -->
+              <div class="mb-4">
+                <label class="form-label fw-semibold small text-uppercase edit-label"
+                  >Description</label
+                >
+                <textarea
+                  name="desc"
+                  class="form-control rounded-3 edit-input"
+                  rows="4"
+                  style="resize: vertical"
+                >{{ book.description }}</textarea>
+              </div>
 
-            <!-- Upload New Cover Image -->
-            <div class="mb-4">
-              <label
-                class="form-label fw-bold small text-uppercase"
-                style="letter-spacing: 0.5px; color: #6b7280"
-                >Upload New Cover Image (JPG/PNG)</label
-              >
-              <input
-                type="file"
-                name="cover_image"
-                class="form-control form-control-lg rounded-3"
-                accept="image/*"
-              />
-              <small class="text-muted d-block mt-1"
-                >Current: {{ book.image_url or 'None' }}</small
-              >
-            </div>
+              <!-- Cover Image URL -->
+              <div class="mb-4">
+                <label class="form-label fw-semibold small text-uppercase edit-label"
+                  >Cover Image URL</label
+                >
+                <input
+                  type="url"
+                  name="img"
+                  class="form-control form-control-lg rounded-3 edit-input"
+                  value="{{ book.image_url }}"
+                  placeholder="https://..."
+                />
+              </div>
 
-            <!-- Replace PDF -->
-            <div class="mb-4">
-              <label
-                class="form-label fw-bold small text-uppercase"
-                style="letter-spacing: 0.5px; color: #6b7280"
-                >Replace PDF (optional)</label
-              >
-              <input
-                type="file"
-                name="pdf_file"
-                class="form-control form-control-lg rounded-3"
-                accept=".pdf"
-              />
-              <small class="text-muted d-block mt-1"
-                >Current: {{ book.link }}</small
-              >
-            </div>
+              <!-- Upload New Cover Image -->
+              <div class="mb-4">
+                <label class="form-label fw-semibold small text-uppercase edit-label"
+                  >Upload New Cover Image (JPG/PNG)</label
+                >
+                <input
+                  type="file"
+                  name="cover_image"
+                  class="form-control form-control-lg rounded-3 edit-input"
+                  accept="image/*"
+                />
+                <small class="text-muted d-block mt-1"
+                  >Current: {{ book.image_url or 'None' }}</small
+                >
+              </div>
 
-            <!-- Submit -->
-            <button
-              type="submit"
-              class="btn btn-success w-100 py-3 fw-bold rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2"
-            >
-              <i class="bi bi-check-circle fs-5"></i> Update Book
-            </button>
-          </form>
+              <!-- Replace PDF -->
+              <div class="mb-5">
+                <label class="form-label fw-semibold small text-uppercase edit-label"
+                  >Replace PDF (optional)</label
+                >
+                <input
+                  type="file"
+                  name="pdf_file"
+                  class="form-control form-control-lg rounded-3 edit-input"
+                  accept=".pdf"
+                />
+                <small class="text-muted d-block mt-1"
+                  >Current: {{ book.link }}</small
+                >
+              </div>
+
+              <!-- Actions -->
+              <div class="d-grid gap-2">
+                <button
+                  type="submit"
+                  class="btn btn-lg fw-bold rounded-3 shadow-sm edit-submit-btn"
+                >
+                  <i class="bi bi-check-circle me-2"></i> Update Book
+                </button>
+                <a
+                  href="/admin/books"
+                  class="btn btn-outline-secondary rounded-3 text-center"
+                >
+                  <i class="bi bi-arrow-left me-1"></i> Cancel
+                </a>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -184,41 +189,74 @@
 </div>
 
 <style>
-  /* Keep existing dark mode support */
-  [data-bs-theme="dark"] .card {
-    background-color: #2a2a3d !important;
+  .edit-book-card {
+    border-top: 5px solid #4338ca;
+  }
+
+  .edit-label {
+    letter-spacing: 0.5px;
+    color: #64748b;
+  }
+
+  .edit-input {
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  .edit-input:focus {
+    border-color: #4338ca;
+    box-shadow: 0 0 0 0.2rem rgba(67, 56, 202, 0.12);
+    background: #ffffff;
+  }
+
+  .edit-submit-btn {
+    background: #4338ca;
+    border: none;
+    color: #ffffff;
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .edit-submit-btn:hover {
+    background: #3730a3;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(67, 56, 202, 0.3);
+  }
+
+  /* Dark mode */
+  [data-bs-theme="dark"] .edit-book-wrapper {
+    background: linear-gradient(135deg, #1e1b2e 0%, #18152a 100%) !important;
+  }
+  [data-bs-theme="dark"] .edit-book-card {
+    background: #2a2a3d !important;
     color: #e0e0e0;
   }
-  [data-bs-theme="dark"] label {
-    color: #e0e0e0 !important;
+  [data-bs-theme="dark"] .edit-label {
+    color: #b0b0b0 !important;
   }
-  [data-bs-theme="dark"] .form-control,
-  [data-bs-theme="dark"] .form-select,
-  [data-bs-theme="dark"] textarea {
-    background-color: #3a3a4d !important;
-    color: #fff !important;
+  [data-bs-theme="dark"] .edit-input {
+    background: #3a3a4d !important;
+    color: #ffffff !important;
     border-color: #555 !important;
+  }
+  [data-bs-theme="dark"] .edit-input:focus {
+    background: #3f3f55 !important;
+    border-color: #7c6ff2 !important;
+  }
+  [data-bs-theme="dark"] .edit-submit-btn {
+    background: #5b51d8;
   }
   [data-bs-theme="dark"] .text-muted {
     color: #b0b0b0 !important;
   }
 
-  /* Responsive hover effect for button */
-  .btn-success:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3) !important;
-  }
-
-  /* Additional mobile optimizations */
+  /* Responsive */
   @media (max-width: 576px) {
     .card-body {
       padding: 1.5rem !important;
     }
     h2.fw-bold {
       font-size: 1.4rem;
-    }
-    .btn-outline-secondary {
-      width: 100%;
     }
   }
 </style>
