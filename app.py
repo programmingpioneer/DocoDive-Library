@@ -1015,21 +1015,109 @@ def make_upload_notification_email(title, author, category):
         "New document ready for review",
         content,
     )
+    
+# ================== HOME STATS (cached aggregates + recent reviews) ==================
+_HOME_STATS_CACHE = {"ts": None, "data": None}
 
+
+def get_home_stats():
+    """Cached homepage aggregates + recent reviews (5 min TTL)."""
+    now = datetime.now()
+    cache = _HOME_STATS_CACHE
+    if cache["ts"] and (now - cache["ts"]).total_seconds() < 300:
+        return cache["data"]
+
+    # Baseline counters — real counts inse add honge
+    BOOKS_BASE = 3762
+    USERS_BASE = 982783
+    DOWNLOADS_BASE = 179570
+
+    cur = mysql.connection.cursor()
+
+    # Real books count
+    cur.execute("SELECT COUNT(*) FROM documents WHERE approved = 1")
+    real_books = cur.fetchone()[0] or 0
+
+    # Real downloads sum
+    cur.execute(
+        "SELECT COALESCE(SUM(download_count), 0) FROM documents WHERE approved = 1"
+    )
+    real_downloads = cur.fetchone()[0] or 0
+
+    # Real users count
+    cur.execute("SELECT COUNT(*) FROM users")
+    real_users = cur.fetchone()[0] or 0
+
+    # Real categories count
+    cur.execute("SELECT COUNT(*) FROM categories")
+    total_categories = cur.fetchone()[0] or 0
+
+    # Real reviews count
+    cur.execute(
+        "SELECT COUNT(*) FROM reviews WHERE comment IS NOT NULL AND TRIM(comment) != ''"
+    )
+    total_reviews = cur.fetchone()[0] or 0
+
+    # Recent reviews — DB se real
+    cur.execute("""
+        SELECT r.id,
+               u.username,
+               COALESCE(
+                   NULLIF(
+                       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')),
+                       ' '
+                   ),
+                   u.username
+               ) AS display_name,
+               u.avatar_url,
+               r.rating,
+               r.comment,
+               r.created_at
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.comment IS NOT NULL AND TRIM(r.comment) != ''
+        ORDER BY r.created_at DESC
+        LIMIT 4
+        """)
+
+    recent_reviews = [
+        {
+            "review_id": r[0],
+            "username": r[1],
+            "full_name": r[2],
+            "avatar": r[3],
+            "rating": r[4] or 0,
+            "comment": r[5],
+            "created_at": r[6].strftime("%b %d, %Y") if r[6] else "",
+        }
+        for r in cur.fetchall()
+    ]
+
+    cur.close()
+
+    data = {
+        "total_books": BOOKS_BASE + real_books,
+        "total_downloads": DOWNLOADS_BASE + real_downloads,
+        "total_users": USERS_BASE + real_users,
+        "total_categories": total_categories,
+        "total_reviews": total_reviews,
+        "recent_reviews": recent_reviews,
+    }
+
+    cache["ts"] = now
+    cache["data"] = data
+    return data
 
 @app.route("/reviews")
 def reviews_page():
     """Public reviews page with rating breakdown, category metrics, and paginated reviews."""
     cur = mysql.connection.cursor()
 
-    # Seed base (homepage jaisa hi)
-    review_seed_base = int(get_site_setting("reviews_seed_base", 1500) or 1500)
-
     # Real review count (sirf non-empty comments)
     cur.execute(
         "SELECT COUNT(*) FROM reviews WHERE comment IS NOT NULL AND TRIM(comment) != ''"
     )
-    real_review_count = cur.fetchone()[0] or 0
+    total_reviews = cur.fetchone()[0] or 0
 
     # Real breakdown (5 → 1)
     cur.execute("""
@@ -1038,35 +1126,17 @@ def reviews_page():
         WHERE comment IS NOT NULL AND TRIM(comment) != ''
         GROUP BY rating
         """)
-    real_breakdown = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0}
+    breakdown = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0}
     for row in cur.fetchall():
-        if row[0] in real_breakdown:
-            real_breakdown[row[0]] = row[1]
+        if row[0] in breakdown:
+            breakdown[row[0]] = row[1]
 
-    # ===== Seed distribution (fixed percentages — 65/20/8/4/3) =====
-    seed_percent = {5: 0.65, 4: 0.20, 3: 0.08, 2: 0.04, 1: 0.03}
-    seed_breakdown = {
-        star: int(review_seed_base * pct) for star, pct in seed_percent.items()
-    }
-    # Rounding adjustment → total seed exactly review_seed_base
-    seed_breakdown[1] = review_seed_base - sum(
-        seed_breakdown[star] for star in [5, 4, 3, 2]
-    )
-
-    # ===== Combined breakdown (seed + real) =====
-    breakdown = {
-        star: seed_breakdown.get(star, 0) + real_breakdown.get(star, 0)
-        for star in [5, 4, 3, 2, 1]
-    }
-
-    # Combined average rating
+    # Real average rating
     weighted_sum = sum(star * count for star, count in breakdown.items())
     total_count = sum(breakdown.values()) or 1
     avg_rating = round(weighted_sum / total_count, 1)
 
-    total_reviews = review_seed_base + real_review_count
-
-    # "See More" offset: pehle 4, har click pe 5 aur
+    # "See More" offset: pehle 4, baad har click pe 5 aur
     try:
         offset = int(request.args.get("offset", 4))
     except (TypeError, ValueError):
@@ -1127,7 +1197,6 @@ def reviews_page():
         reviews=reviews,
         books=books,
     )
-
 
 # _================== REVIEW LIKE TOGGLE API ==================
 @app.route("/api/review/<int:review_id>/like", methods=["POST"])
@@ -1249,33 +1318,38 @@ def get_home_stats():
     if cache["ts"] and (now - cache["ts"]).total_seconds() < 300:
         return cache["data"]
 
-    books_seed = int(get_site_setting("books_seed_base", 0) or 0)
-    users_seed = int(get_site_setting("users_seed_base", 0) or 0)
-    review_seed_base = int(get_site_setting("reviews_seed_base", 1500) or 1500)
+    # Baseline counters — real counts inse add honge
+    BOOKS_BASE = 3762
+    USERS_BASE = 982783
+    DOWNLOADS_BASE = 179570
 
     cur = mysql.connection.cursor()
 
+    # Real books count
     cur.execute("SELECT COUNT(*) FROM documents WHERE approved = 1")
     real_books = cur.fetchone()[0] or 0
 
+    # Real downloads sum
     cur.execute(
         "SELECT COALESCE(SUM(download_count), 0) FROM documents WHERE approved = 1"
     )
-    total_downloads = cur.fetchone()[0] or 0
+    real_downloads = cur.fetchone()[0] or 0
 
+    # Real users count
     cur.execute("SELECT COUNT(*) FROM users")
     real_users = cur.fetchone()[0] or 0
 
+    # Real categories count
     cur.execute("SELECT COUNT(*) FROM categories")
     total_categories = cur.fetchone()[0] or 0
 
-    # Real reviews count (cursor close hone se PEHLE)
+    # Real reviews count — sirf non-empty comments
     cur.execute(
         "SELECT COUNT(*) FROM reviews WHERE comment IS NOT NULL AND TRIM(comment) != ''"
     )
-    real_review_count = cur.fetchone()[0] or 0
+    total_reviews = cur.fetchone()[0] or 0
 
-    # Recent reviews — full name ke saath
+    # Recent reviews — full name + avatar
     cur.execute("""
         SELECT r.id,
                u.username,
@@ -1296,6 +1370,7 @@ def get_home_stats():
         ORDER BY r.created_at DESC
         LIMIT 4
         """)
+
     recent_reviews = [
         {
             "review_id": r[0],
@@ -1312,17 +1387,107 @@ def get_home_stats():
     cur.close()
 
     data = {
-        "total_books": books_seed + real_books,
-        "total_downloads": total_downloads,
-        "total_users": users_seed + real_users,
+        "total_books": BOOKS_BASE + real_books,
+        "total_downloads": DOWNLOADS_BASE + real_downloads,
+        "total_users": USERS_BASE + real_users,
         "total_categories": total_categories,
-        "total_reviews": review_seed_base + real_review_count,
+        "total_reviews": total_reviews,
         "recent_reviews": recent_reviews,
     }
+
     cache["ts"] = now
     cache["data"] = data
     return data
 
+@app.route("/reviews")
+def reviews_page():
+    """Public reviews page with rating breakdown, category metrics, and paginated reviews."""
+    cur = mysql.connection.cursor()
+
+    # Real review count (sirf non-empty comments)
+    cur.execute(
+        "SELECT COUNT(*) FROM reviews WHERE comment IS NOT NULL AND TRIM(comment) != ''"
+    )
+    total_reviews = cur.fetchone()[0] or 0
+
+    # Real breakdown (5 → 1)
+    cur.execute("""
+        SELECT rating, COUNT(*)
+        FROM reviews
+        WHERE comment IS NOT NULL AND TRIM(comment) != ''
+        GROUP BY rating
+        """)
+    breakdown = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0}
+    for row in cur.fetchall():
+        if row[0] in breakdown:
+            breakdown[row[0]] = row[1]
+
+    # Real average rating
+    weighted_sum = sum(star * count for star, count in breakdown.items())
+    total_count = sum(breakdown.values()) or 1
+    avg_rating = round(weighted_sum / total_count, 1)
+
+    # "See More" offset: pehle 4, baad har click pe 5 aur
+    try:
+        offset = int(request.args.get("offset", 4))
+    except (TypeError, ValueError):
+        offset = 4
+    if offset < 1:
+        offset = 1
+
+    # Recent reviews list (full name + avatar)
+    cur.execute(
+        """
+        SELECT r.id,
+               u.username,
+               COALESCE(
+                   NULLIF(
+                       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')),
+                       ' '
+                   ),
+                   u.username
+               ) AS display_name,
+               u.avatar_url,
+               r.rating,
+               r.comment,
+               r.created_at
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.comment IS NOT NULL AND TRIM(r.comment) != ''
+        ORDER BY r.created_at DESC
+        LIMIT %s
+        """,
+        (offset,),
+    )
+    reviews = [
+        {
+            "review_id": r[0],
+            "username": r[1],
+            "full_name": r[2],
+            "avatar": r[3],
+            "rating": r[4] or 0,
+            "comment": r[5],
+            "created_at": r[6].strftime("%b %d, %Y") if r[6] else "",
+        }
+        for r in cur.fetchall()
+    ]
+
+    # Books list for Add Review dropdown
+    cur.execute(
+        "SELECT id, title FROM documents WHERE approved = 1 ORDER BY title LIMIT 100"
+    )
+    books = [{"id": b[0], "title": b[1]} for b in cur.fetchall()]
+
+    cur.close()
+
+    return render_template(
+        "reviews.html",
+        avg_rating=avg_rating,
+        breakdown=breakdown,
+        total_reviews=total_reviews,
+        reviews=reviews,
+        books=books,
+    )
 
 def is_official_user(user_id):
     official_id = get_site_setting("official_user_id")
