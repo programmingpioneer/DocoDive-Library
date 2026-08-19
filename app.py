@@ -1197,7 +1197,6 @@ def reviews_page():
         reviews=reviews,
         books=books,
     )
-
 # _================== REVIEW LIKE TOGGLE API ==================
 @app.route("/api/review/<int:review_id>/like", methods=["POST"])
 def toggle_review_like(review_id):
@@ -1398,96 +1397,6 @@ def get_home_stats():
     cache["ts"] = now
     cache["data"] = data
     return data
-
-@app.route("/reviews")
-def reviews_page():
-    """Public reviews page with rating breakdown, category metrics, and paginated reviews."""
-    cur = mysql.connection.cursor()
-
-    # Real review count (sirf non-empty comments)
-    cur.execute(
-        "SELECT COUNT(*) FROM reviews WHERE comment IS NOT NULL AND TRIM(comment) != ''"
-    )
-    total_reviews = cur.fetchone()[0] or 0
-
-    # Real breakdown (5 → 1)
-    cur.execute("""
-        SELECT rating, COUNT(*)
-        FROM reviews
-        WHERE comment IS NOT NULL AND TRIM(comment) != ''
-        GROUP BY rating
-        """)
-    breakdown = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0}
-    for row in cur.fetchall():
-        if row[0] in breakdown:
-            breakdown[row[0]] = row[1]
-
-    # Real average rating
-    weighted_sum = sum(star * count for star, count in breakdown.items())
-    total_count = sum(breakdown.values()) or 1
-    avg_rating = round(weighted_sum / total_count, 1)
-
-    # "See More" offset: pehle 4, baad har click pe 5 aur
-    try:
-        offset = int(request.args.get("offset", 4))
-    except (TypeError, ValueError):
-        offset = 4
-    if offset < 1:
-        offset = 1
-
-    # Recent reviews list (full name + avatar)
-    cur.execute(
-        """
-        SELECT r.id,
-               u.username,
-               COALESCE(
-                   NULLIF(
-                       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')),
-                       ' '
-                   ),
-                   u.username
-               ) AS display_name,
-               u.avatar_url,
-               r.rating,
-               r.comment,
-               r.created_at
-        FROM reviews r
-        JOIN users u ON r.user_id = u.id
-        WHERE r.comment IS NOT NULL AND TRIM(r.comment) != ''
-        ORDER BY r.created_at DESC
-        LIMIT %s
-        """,
-        (offset,),
-    )
-    reviews = [
-        {
-            "review_id": r[0],
-            "username": r[1],
-            "full_name": r[2],
-            "avatar": r[3],
-            "rating": r[4] or 0,
-            "comment": r[5],
-            "created_at": r[6].strftime("%b %d, %Y") if r[6] else "",
-        }
-        for r in cur.fetchall()
-    ]
-
-    # Books list for Add Review dropdown
-    cur.execute(
-        "SELECT id, title FROM documents WHERE approved = 1 ORDER BY title LIMIT 100"
-    )
-    books = [{"id": b[0], "title": b[1]} for b in cur.fetchall()]
-
-    cur.close()
-
-    return render_template(
-        "reviews.html",
-        avg_rating=avg_rating,
-        breakdown=breakdown,
-        total_reviews=total_reviews,
-        reviews=reviews,
-        books=books,
-    )
 
 def is_official_user(user_id):
     official_id = get_site_setting("official_user_id")
