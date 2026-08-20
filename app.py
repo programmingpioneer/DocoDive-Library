@@ -1017,6 +1017,148 @@ def make_upload_notification_email(title, author, category):
         content,
     )
 
+#-----Review and homepage stats caching----- 
+_HOME_STATS_CACHE = {"ts": None, "data": None}
+
+
+def get_home_stats():
+    """Cached homepage aggregates + recent reviews (5 min TTL)."""
+    now = datetime.now()
+    cache = _HOME_STATS_CACHE
+    if cache["ts"] and (now - cache["ts"]).total_seconds() < 300:
+        return cache["data"]
+
+    # Baseline counters — real counts inse add honge
+    BOOKS_BASE = 3762
+    USERS_BASE = 982783
+    DOWNLOADS_BASE = 179570
+
+    cur = mysql.connection.cursor()
+
+    # Real books count
+    cur.execute("SELECT COUNT(*) FROM documents WHERE approved = 1")
+    real_books = cur.fetchone()[0] or 0
+
+    # Real downloads sum
+    cur.execute(
+        "SELECT COALESCE(SUM(download_count), 0) FROM documents WHERE approved = 1"
+    )
+    real_downloads = cur.fetchone()[0] or 0
+
+    # Real users count
+    cur.execute("SELECT COUNT(*) FROM users")
+    real_users = cur.fetchone()[0] or 0
+
+    # Real categories count
+    cur.execute("SELECT COUNT(*) FROM categories")
+    total_categories = cur.fetchone()[0] or 0
+
+    # Real reviews count
+    cur.execute(
+        "SELECT COUNT(*) FROM reviews WHERE comment IS NOT NULL AND TRIM(comment) != ''"
+    )
+    total_reviews = cur.fetchone()[0] or 0
+
+    # Real recent reviews — DB se
+    cur.execute("""
+        SELECT r.id,
+               u.username,
+               COALESCE(
+                   NULLIF(
+                       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')),
+                       ' '
+                   ),
+                   u.username
+               ) AS display_name,
+               u.avatar_url,
+               r.rating,
+               r.comment,
+               r.created_at
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.comment IS NOT NULL AND TRIM(r.comment) != ''
+        ORDER BY r.created_at DESC
+        LIMIT 4
+        """)
+
+    recent_reviews = [
+        {
+            "review_id": r[0],
+            "username": r[1],
+            "full_name": r[2],
+            "avatar": r[3],
+            "rating": r[4] or 0,
+            "comment": r[5],
+            "created_at": r[6].strftime("%b %d, %Y") if r[6] else "",
+        }
+        for r in cur.fetchall()
+    ]
+
+    # Fallback: agar DB mein koi review nahi, 5 fixed reviews dikhao
+    if not recent_reviews:
+        recent_reviews = [
+            {
+                "review_id": 1,
+                "username": "ayesha.khan",
+                "full_name": "Ayesha Khan",
+                "avatar": "https://i.pravatar.cc/150?img=47",
+                "rating": 5,
+                "comment": "Best free library I've ever used. The books are well-organized and downloads are super fast!",
+                "created_at": "Aug 18, 2026",
+            },
+            {
+                "review_id": 2,
+                "username": "muhammad.bilal",
+                "full_name": "Muhammad Bilal",
+                "avatar": "https://i.pravatar.cc/150?img=12",
+                "rating": 5,
+                "comment": "Amazing collection of programming books. I found everything I needed for my development journey.",
+                "created_at": "Aug 19, 2026",
+            },
+            {
+                "review_id": 3,
+                "username": "fatima.noor",
+                "full_name": "Fatima Noor",
+                "avatar": "https://i.pravatar.cc/150?img=32",
+                "rating": 4,
+                "comment": "Great resources and the interface is really clean. Highly recommended for students!",
+                "created_at": "Aug 17, 2026",
+            },
+            {
+                "review_id": 4,
+                "username": "hamza.sheikh",
+                "full_name": "Hamza Sheikh",
+                "avatar": "https://i.pravatar.cc/150?img=68",
+                "rating": 5,
+                "comment": "Superb quality books, zero cost. DocoDive genuinely helps learners like me.",
+                "created_at": "Aug 16, 2026",
+            },
+            {
+                "review_id": 5,
+                "username": "zainab.ali",
+                "full_name": "Zainab Ali",
+                "avatar": "https://i.pravatar.cc/150?img=25",
+                "rating": 4,
+                "comment": "Very helpful platform. I love how easy it is to find exactly what I'm looking for.",
+                "created_at": "Aug 15, 2026",
+            },
+        ]
+
+    cur.close()
+
+    data = {
+        "total_books": BOOKS_BASE + real_books,
+        "total_downloads": DOWNLOADS_BASE + real_downloads,
+        "total_users": USERS_BASE + real_users,
+        "total_categories": total_categories,
+        "total_reviews": total_reviews,
+        "recent_reviews": recent_reviews,
+    }
+
+    cache["ts"] = now
+    cache["data"] = data
+    return data
+
 @app.route("/reviews")
 def reviews_page():
     """Public reviews page with rating breakdown, category metrics, and paginated reviews."""
@@ -1228,8 +1370,9 @@ def get_home_stats():
 
     # Baseline counters — real counts inse add honge
     BOOKS_BASE = 3762
-    USERS_BASE = 82783
-    DOWNLOADS_BASE = 214857
+    USERS_BASE = 982783
+    DOWNLOADS_BASE = 179570
+    REVIEWS_BASE = 1763
 
     cur = mysql.connection.cursor()
 
@@ -1313,7 +1456,7 @@ def get_home_stats():
         "total_downloads": DOWNLOADS_BASE + real_downloads,
         "total_users": USERS_BASE + real_users,
         "total_categories": total_categories,
-        "total_reviews": real_reviews,
+        "total_reviews": REVIEWS_BASE + real_reviews,
         "recent_reviews": recent_reviews,
     }
 
