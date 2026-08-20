@@ -1228,7 +1228,7 @@ def get_home_stats():
 
     # Baseline counters — real counts inse add honge
     BOOKS_BASE = 3762
-    USERS_BASE = 982783
+    USERS_BASE = 82783
     DOWNLOADS_BASE = 179570
 
     cur = mysql.connection.cursor()
@@ -1259,7 +1259,8 @@ def get_home_stats():
 
     cur.close()
 
-    # ============ FIXED TOP REVIEWS (hamesha 5 dikhte hain) ============
+       
+     # ============ FIXED TOP REVIEWS (hamesha 5 dikhte hain) ============
     recent_reviews = [
         {
             "review_id": 1,
@@ -1267,7 +1268,7 @@ def get_home_stats():
             "full_name": "Ayesha Khan",
             "avatar": "https://i.pravatar.cc/150?img=47",
             "rating": 5,
-            "comment": "Best free library I've ever used. The books are well-organized and downloads are super fast!",
+            "comment": "Honestly, this is the best free library I've ever used. The books are perfectly organized, and downloads finish in seconds with zero hassle. I've already shared it with my whole study group!",
             "created_at": "Aug 18, 2026",
         },
         {
@@ -1276,7 +1277,7 @@ def get_home_stats():
             "full_name": "Muhammad Bilal",
             "avatar": "https://i.pravatar.cc/150?img=12",
             "rating": 5,
-            "comment": "Amazing collection of programming books. I found everything I needed for my development journey.",
+            "comment": "Amazing collection of programming books! I found everything I needed for my development journey in one place, from beginner guides to advanced topics. The clean layout makes browsing really enjoyable.",
             "created_at": "Aug 19, 2026",
         },
         {
@@ -1285,7 +1286,7 @@ def get_home_stats():
             "full_name": "Fatima Noor",
             "avatar": "https://i.pravatar.cc/150?img=32",
             "rating": 4,
-            "comment": "Great resources and the interface is really clean. Highly recommended for students!",
+            "comment": "Clean, fast, and genuinely useful. The interface simply works and finding resources takes just a few clicks. Great for students who want quality material without spending money. Highly recommended!",
             "created_at": "Aug 17, 2026",
         },
         {
@@ -1294,7 +1295,7 @@ def get_home_stats():
             "full_name": "Hamza Sheikh",
             "avatar": "https://i.pravatar.cc/150?img=68",
             "rating": 5,
-            "comment": "Superb quality books, zero cost. DocoDive genuinely helps learners like me.",
+            "comment": "Superb quality books at zero cost — this is exactly what the internet should be about. DocoDive genuinely helps learners grow, and I've already learned more here in two months than from expensive paid courses.",
             "created_at": "Aug 16, 2026",
         },
         {
@@ -1303,7 +1304,7 @@ def get_home_stats():
             "full_name": "Zainab Ali",
             "avatar": "https://i.pravatar.cc/150?img=25",
             "rating": 4,
-            "comment": "Very helpful platform. I love how easy it is to find exactly what I'm looking for.",
+            "comment": "A very helpful platform. I love how easy it is to find exactly what I'm looking for, and the direct downloads save so much time. If the collection keeps growing like this, it will easily become the best free resource out there.",
             "created_at": "Aug 15, 2026",
         },
     ]
