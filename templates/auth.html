@@ -422,9 +422,11 @@
         padding: 0.5rem 0.75rem;
         border-left: 3px solid #4338ca;
       }
-      .username-hint i {
-        color: #4338ca;
-        font-size: 0.85rem;
+      .username-hint {
+        display: none;
+      }
+      #username:focus + .username-hint {
+        display: flex;
       }
 
       @media (max-width: 576px) {
