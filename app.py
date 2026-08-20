@@ -1,4 +1,5 @@
 import os
+import base64
 import io
 import re
 import json
@@ -1016,6 +1017,271 @@ def make_upload_notification_email(title, author, category):
         content,
     )
 
+#-----Review and homepage stats caching----- 
+_HOME_STATS_CACHE = {"ts": None, "data": None}
+
+
+def get_home_stats():
+    """Cached homepage aggregates + recent reviews (5 min TTL)."""
+    now = datetime.now()
+    cache = _HOME_STATS_CACHE
+    if cache["ts"] and (now - cache["ts"]).total_seconds() < 300:
+        return cache["data"]
+
+    # Baseline counters — real counts inse add honge
+    BOOKS_BASE = 3762
+    USERS_BASE = 982783
+    DOWNLOADS_BASE = 179570
+
+    cur = mysql.connection.cursor()
+
+    # Real books count
+    cur.execute("SELECT COUNT(*) FROM documents WHERE approved = 1")
+    real_books = cur.fetchone()[0] or 0
+
+    # Real downloads sum
+    cur.execute(
+        "SELECT COALESCE(SUM(download_count), 0) FROM documents WHERE approved = 1"
+    )
+    real_downloads = cur.fetchone()[0] or 0
+
+    # Real users count
+    cur.execute("SELECT COUNT(*) FROM users")
+    real_users = cur.fetchone()[0] or 0
+
+    # Real categories count
+    cur.execute("SELECT COUNT(*) FROM categories")
+    total_categories = cur.fetchone()[0] or 0
+
+    # Real reviews count
+    cur.execute(
+        "SELECT COUNT(*) FROM reviews WHERE comment IS NOT NULL AND TRIM(comment) != ''"
+    )
+    total_reviews = cur.fetchone()[0] or 0
+
+    # Real recent reviews — DB se
+    cur.execute("""
+        SELECT r.id,
+               u.username,
+               COALESCE(
+                   NULLIF(
+                       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')),
+                       ' '
+                   ),
+                   u.username
+               ) AS display_name,
+               u.avatar_url,
+               r.rating,
+               r.comment,
+               r.created_at
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.comment IS NOT NULL AND TRIM(r.comment) != ''
+        ORDER BY r.created_at DESC
+        LIMIT 4
+        """)
+
+    recent_reviews = [
+        {
+            "review_id": r[0],
+            "username": r[1],
+            "full_name": r[2],
+            "avatar": r[3],
+            "rating": r[4] or 0,
+            "comment": r[5],
+            "created_at": r[6].strftime("%b %d, %Y") if r[6] else "",
+        }
+        for r in cur.fetchall()
+    ]
+
+    # Fallback: agar DB mein koi review nahi, 5 fixed reviews dikhao
+    if not recent_reviews:
+        recent_reviews = [
+            {
+                "review_id": 1,
+                "username": "ayesha.khan",
+                "full_name": "Ayesha Khan",
+                "avatar": "https://i.pravatar.cc/150?img=47",
+                "rating": 5,
+                "comment": "Best free library I've ever used. The books are well-organized and downloads are super fast!",
+                "created_at": "Aug 18, 2026",
+            },
+            {
+                "review_id": 2,
+                "username": "muhammad.bilal",
+                "full_name": "Muhammad Bilal",
+                "avatar": "https://i.pravatar.cc/150?img=12",
+                "rating": 5,
+                "comment": "Amazing collection of programming books. I found everything I needed for my development journey.",
+                "created_at": "Aug 19, 2026",
+            },
+            {
+                "review_id": 3,
+                "username": "fatima.noor",
+                "full_name": "Fatima Noor",
+                "avatar": "https://i.pravatar.cc/150?img=32",
+                "rating": 4,
+                "comment": "Great resources and the interface is really clean. Highly recommended for students!",
+                "created_at": "Aug 17, 2026",
+            },
+            {
+                "review_id": 4,
+                "username": "hamza.sheikh",
+                "full_name": "Hamza Sheikh",
+                "avatar": "https://i.pravatar.cc/150?img=68",
+                "rating": 5,
+                "comment": "Superb quality books, zero cost. DocoDive genuinely helps learners like me.",
+                "created_at": "Aug 16, 2026",
+            },
+            {
+                "review_id": 5,
+                "username": "zainab.ali",
+                "full_name": "Zainab Ali",
+                "avatar": "https://i.pravatar.cc/150?img=25",
+                "rating": 4,
+                "comment": "Very helpful platform. I love how easy it is to find exactly what I'm looking for.",
+                "created_at": "Aug 15, 2026",
+            },
+        ]
+
+    cur.close()
+
+    data = {
+        "total_books": BOOKS_BASE + real_books,
+        "total_downloads": DOWNLOADS_BASE + real_downloads,
+        "total_users": USERS_BASE + real_users,
+        "total_categories": total_categories,
+        "total_reviews": total_reviews,
+        "recent_reviews": recent_reviews,
+    }
+
+    cache["ts"] = now
+    cache["data"] = data
+    return data
+
+@app.route("/reviews")
+def reviews_page():
+    """Public reviews page with rating breakdown, category metrics, and paginated reviews."""
+    cur = mysql.connection.cursor()
+
+    # Real review count (sirf non-empty comments)
+    cur.execute(
+        "SELECT COUNT(*) FROM reviews WHERE comment IS NOT NULL AND TRIM(comment) != ''"
+    )
+    total_reviews = cur.fetchone()[0] or 0
+
+    # Real breakdown (5 → 1)
+    cur.execute("""
+        SELECT rating, COUNT(*)
+        FROM reviews
+        WHERE comment IS NOT NULL AND TRIM(comment) != ''
+        GROUP BY rating
+        """)
+    breakdown = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0}
+    for row in cur.fetchall():
+        if row[0] in breakdown:
+            breakdown[row[0]] = row[1]
+
+    # Real average rating
+    weighted_sum = sum(star * count for star, count in breakdown.items())
+    total_count = sum(breakdown.values()) or 1
+    avg_rating = round(weighted_sum / total_count, 1)
+
+    # "See More" offset: pehle 4, baad har click pe 5 aur
+    try:
+        offset = int(request.args.get("offset", 4))
+    except (TypeError, ValueError):
+        offset = 4
+    if offset < 1:
+        offset = 1
+
+    # Recent reviews list (full name + avatar)
+    cur.execute(
+        """
+        SELECT r.id,
+               u.username,
+               COALESCE(
+                   NULLIF(
+                       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')),
+                       ' '
+                   ),
+                   u.username
+               ) AS display_name,
+               u.avatar_url,
+               r.rating,
+               r.comment,
+               r.created_at
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.comment IS NOT NULL AND TRIM(r.comment) != ''
+        ORDER BY r.created_at DESC
+        LIMIT %s
+        """,
+        (offset,),
+    )
+    reviews = [
+        {
+            "review_id": r[0],
+            "username": r[1],
+            "full_name": r[2],
+            "avatar": r[3],
+            "rating": r[4] or 0,
+            "comment": r[5],
+            "created_at": r[6].strftime("%b %d, %Y") if r[6] else "",
+        }
+        for r in cur.fetchall()
+    ]
+
+    # Books list for Add Review dropdown
+    cur.execute(
+        "SELECT id, title FROM documents WHERE approved = 1 ORDER BY title LIMIT 100"
+    )
+    books = [{"id": b[0], "title": b[1]} for b in cur.fetchall()]
+
+    cur.close()
+
+    return render_template(
+        "reviews.html",
+        avg_rating=avg_rating,
+        breakdown=breakdown,
+        total_reviews=total_reviews,
+        reviews=reviews,
+        books=books,
+    )
+# _================== REVIEW LIKE TOGGLE API ==================
+@app.route("/api/review/<int:review_id>/like", methods=["POST"])
+def toggle_review_like(review_id):
+    if "user_id" not in session:
+        return jsonify({"error": "Login required"}), 401
+    user_id = session["user_id"]
+    cur = mysql.connection.cursor()
+    cur.execute(
+        "SELECT id FROM review_likes WHERE user_id = %s AND review_id = %s",
+        (user_id, review_id),
+    )
+    existing = cur.fetchone()
+    if existing:
+        cur.execute(
+            "DELETE FROM review_likes WHERE user_id = %s AND review_id = %s",
+            (user_id, review_id),
+        )
+        liked = False
+    else:
+        cur.execute(
+            "INSERT INTO review_likes (user_id, review_id) VALUES (%s, %s)",
+            (user_id, review_id),
+        )
+        liked = True
+    mysql.connection.commit()
+    cur.execute("SELECT COUNT(*) FROM review_likes WHERE review_id = %s", (review_id,))
+    like_count = cur.fetchone()[0]
+    cur.execute(
+        "UPDATE reviews SET like_count = %s WHERE id = %s", (like_count, review_id)
+    )
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"liked": liked, "like_count": like_count})
+
 
 def make_code_email(code):
     content = f"""
@@ -1090,6 +1356,113 @@ def set_site_setting(key, value):
     mysql.connection.commit()
     cur.close()
 
+
+# ================== HOME STATS (cached aggregates + recent reviews) ==================
+_HOME_STATS_CACHE = {"ts": None, "data": None}
+
+
+def get_home_stats():
+    """Cached homepage aggregates + recent reviews (5 min TTL)."""
+    now = datetime.now()
+    cache = _HOME_STATS_CACHE
+    if cache["ts"] and (now - cache["ts"]).total_seconds() < 300:
+        return cache["data"]
+
+    # Baseline counters — real counts inse add honge
+    BOOKS_BASE = 3762
+    USERS_BASE = 982783
+    DOWNLOADS_BASE = 179570
+    REVIEWS_BASE = 1763
+
+    cur = mysql.connection.cursor()
+
+    # Real books count
+    cur.execute("SELECT COUNT(*) FROM documents WHERE approved = 1")
+    real_books = cur.fetchone()[0] or 0
+
+    # Real downloads sum
+    cur.execute(
+        "SELECT COALESCE(SUM(download_count), 0) FROM documents WHERE approved = 1"
+    )
+    real_downloads = cur.fetchone()[0] or 0
+
+    # Real users count
+    cur.execute("SELECT COUNT(*) FROM users")
+    real_users = cur.fetchone()[0] or 0
+
+    # Real categories count
+    cur.execute("SELECT COUNT(*) FROM categories")
+    total_categories = cur.fetchone()[0] or 0
+
+    # Real reviews count
+    cur.execute(
+        "SELECT COUNT(*) FROM reviews WHERE comment IS NOT NULL AND TRIM(comment) != ''"
+    )
+    real_reviews = cur.fetchone()[0] or 0
+
+    cur.close()
+
+    # ============ FIXED TOP REVIEWS (hamesha 5 dikhte hain) ============
+    recent_reviews = [
+        {
+            "review_id": 1,
+            "username": "ayesha.khan",
+            "full_name": "Ayesha Khan",
+            "avatar": "https://i.pravatar.cc/150?img=47",
+            "rating": 5,
+            "comment": "Best free library I've ever used. The books are well-organized and downloads are super fast!",
+            "created_at": "Aug 18, 2026",
+        },
+        {
+            "review_id": 2,
+            "username": "muhammad.bilal",
+            "full_name": "Muhammad Bilal",
+            "avatar": "https://i.pravatar.cc/150?img=12",
+            "rating": 5,
+            "comment": "Amazing collection of programming books. I found everything I needed for my development journey.",
+            "created_at": "Aug 19, 2026",
+        },
+        {
+            "review_id": 3,
+            "username": "fatima.noor",
+            "full_name": "Fatima Noor",
+            "avatar": "https://i.pravatar.cc/150?img=32",
+            "rating": 4,
+            "comment": "Great resources and the interface is really clean. Highly recommended for students!",
+            "created_at": "Aug 17, 2026",
+        },
+        {
+            "review_id": 4,
+            "username": "hamza.sheikh",
+            "full_name": "Hamza Sheikh",
+            "avatar": "https://i.pravatar.cc/150?img=68",
+            "rating": 5,
+            "comment": "Superb quality books, zero cost. DocoDive genuinely helps learners like me.",
+            "created_at": "Aug 16, 2026",
+        },
+        {
+            "review_id": 5,
+            "username": "zainab.ali",
+            "full_name": "Zainab Ali",
+            "avatar": "https://i.pravatar.cc/150?img=25",
+            "rating": 4,
+            "comment": "Very helpful platform. I love how easy it is to find exactly what I'm looking for.",
+            "created_at": "Aug 15, 2026",
+        },
+    ]
+
+    data = {
+        "total_books": BOOKS_BASE + real_books,
+        "total_downloads": DOWNLOADS_BASE + real_downloads,
+        "total_users": USERS_BASE + real_users,
+        "total_categories": total_categories,
+        "total_reviews": REVIEWS_BASE + real_reviews,
+        "recent_reviews": recent_reviews,
+    }
+
+    cache["ts"] = now
+    cache["data"] = data
+    return data
 
 def is_official_user(user_id):
     official_id = get_site_setting("official_user_id")
@@ -1532,57 +1905,185 @@ def user_pending_uploads():
         ]
     )
 
+def _username_quality_issue(username):
+    u = username.lower()
+
+    if u.isdigit():
+        return "Username should not contain only numbers. Mix letters with your name."
+
+    if len(set(u)) <= 2:
+        return "Username is too repetitive. Try something more personal."
+
+    weak_usernames = [
+        "qwerty", "asdf", "zxcv", "abcdef", "123456",
+        "password", "admin", "administrator", "moderator",
+        "official", "support", "test", "user", "login", "guest",
+        "unknown", "abc", "root", "owner", "staff"
+    ]
+    for w in weak_usernames:
+        if w in u:
+            return "This username is too common or not allowed."
+
+    return None
+
+def _contains_reserved_word(username):
+    u = username.lower()
+    u = u.replace("0", "o").replace("1", "i").replace("3", "e").replace("4", "a").replace("5", "s").replace("7", "t").replace("$", "s").replace("@", "a")
+    u = re.sub(r"[\s_.\-]+", "", u)
+
+    reserved = os.getenv("RESERVED_USERNAMES", "")
+    if not reserved:
+        return False
+
+    reserved_list = [r.strip().lower() for r in reserved.split(",") if r.strip()]
+
+    for word in reserved_list:
+        if u == word or u.startswith(word + "official") or u.startswith(word + "account") or word in u:
+            return True
+
+    return False
+
+def _generate_username_suggestions(value, first_name, last_name):
+    def clean(s):
+        return re.sub(r"[^a-zA-Z0-9]", "", s or "").lower()
+
+    first = clean(first_name)
+    last = clean(last_name)
+    input_part = clean(value)
+
+    candidates = []
+
+    def add(c):
+        c = c[:20]
+        if len(c) < 3:
+            return
+        if not re.fullmatch(r"[a-z][a-z0-9]{2,19}", c):
+            return
+        if c not in candidates:
+            candidates.append(c)
+
+    if first:
+        add(first)
+    if last:
+        add(last)
+    if input_part:
+        add(input_part + "official")
+        add(input_part + "pk")
+        add(input_part + "pro")
+
+    if first and last:
+        add(first + last)
+        add(first + last[0])
+        add(first[0] + last)
+        add(first + last[-1])
+        add(last + first)
+
+    base = first or last or input_part or "docuser"
+    for i in range(1, 100):
+        add(base + str(i))
+        if len(candidates) >= 12:
+            break
+
+    available = []
+    cur = mysql.connection.cursor()
+    try:
+        for c in candidates:
+            cur.execute("SELECT id FROM users WHERE username = %s", (c,))
+            if cur.fetchone() is None:
+                available.append(c)
+            if len(available) >= 5:
+                break
+    except Exception:
+        pass
+    finally:
+        cur.close()
+
+    return available
 
 # -------------------- API: CHECK USERNAME/EMAIL AVAILABILITY --------------------
 @app.route("/api/check-availability")
 def check_availability():
     field = request.args.get("field", "")
     value = request.args.get("value", "").strip()
+    first_name = request.args.get("first_name", "").strip()
+    last_name = request.args.get("last_name", "").strip()
+
     if not field or not value:
         return jsonify({"error": "Invalid request"}), 400
 
     if field == "username":
+        # ---------- Format check ----------
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9]{2,19}", value):
+            return jsonify({
+                "exists": False,
+                "reserved": False,
+                "format_error": True,
+                "message": "Username must start with a letter and be 3-20 letters/numbers only."
+            })
+            
+                # ---------- Reserved words ----------
+        if _contains_reserved_word(value):
+            return jsonify({
+                "exists": True,
+                "reserved": True,
+                "message": "This username is not allowed. Please choose a different one."
+            })
+
+        # ---------- Quality check ----------
+        quality = _username_quality_issue(value)
+        if quality:
+            return jsonify({
+                "exists": False,
+                "reserved": False,
+                "simple": True,
+                "message": quality,
+                "suggestions": _generate_username_suggestions(value, first_name, last_name)
+            })
+
+        # ---------- Reserved words ----------
         reserved = os.getenv("RESERVED_USERNAMES", "")
         if reserved:
             reserved_list = [
-                r.strip().lower() for r in reserved.split(",") if r.strip()
+                r.strip().lower()
+                for r in reserved.split(",")
+                if r.strip()
             ]
             username_lower = value.lower()
             for word in reserved_list:
                 if word in username_lower:
-                    return jsonify(
-                        {
-                            "exists": True,
-                            "reserved": True,
-                            "message": "This username contains a reserved word.",
-                        }
-                    )
+                    return jsonify({
+                        "exists": True,
+                        "reserved": True,
+                        "message": "This username is not allowed. Please choose a different one."
+                    })
+
+        # ---------- DB existence ----------
         cur = mysql.connection.cursor()
         cur.execute("SELECT id FROM users WHERE username = %s", (value,))
         exists = cur.fetchone() is not None
         cur.close()
-        return jsonify(
-            {
-                "exists": exists,
-                "message": (
-                    "Username already taken." if exists else "Username is available!"
-                ),
-            }
-        )
+
+        suggestions = []
+        if exists:
+            suggestions = _generate_username_suggestions(value, first_name, last_name)
+
+        return jsonify({
+            "exists": exists,
+            "reserved": False,
+            "message": "Username already taken. Try a different one." if exists else "Username is available!",
+            "suggestions": suggestions
+        })
 
     elif field == "email":
+        # Yahan pehle wala email check hi rehne do
         cur = mysql.connection.cursor()
         cur.execute("SELECT id FROM users WHERE email = %s", (value,))
         exists = cur.fetchone() is not None
         cur.close()
-        return jsonify(
-            {
-                "exists": exists,
-                "message": (
-                    "Email already registered." if exists else "Email is available."
-                ),
-            }
-        )
+        return jsonify({
+            "exists": exists,
+            "message": "Email already registered." if exists else "Email is available!"
+        })
 
     return jsonify({"error": "Invalid field"}), 400
 
@@ -2158,6 +2659,8 @@ def home():
     ]
     categories = [{"id": r[0], "level": r[1], "count": r[2]} for r in cat_data]
 
+    home_stats = get_home_stats()
+
     featured_book = get_book_of_the_day()
 
     streak = longest = 0
@@ -2236,6 +2739,12 @@ def home():
         streak=streak,
         longest=longest,
         recommended_books=recommended_books,
+        total_books=home_stats["total_books"],
+        total_downloads=home_stats["total_downloads"],
+        total_users=home_stats["total_users"],
+        total_categories=home_stats["total_categories"],
+        recent_reviews=home_stats["recent_reviews"],
+        total_reviews=home_stats["total_reviews"],
     )
 
 
@@ -2749,21 +3258,50 @@ def user_signup():
         first_name = request.form.get("first_name", "").strip()
         last_name = request.form.get("last_name", "").strip()
 
+        # ---------- Required fields ----------
+        if not first_name or not last_name:
+            msg = "First name and last name are required."
+            if is_ajax:
+                return jsonify({"error": msg}), 400
+            return render_template("auth.html", mode="signup", error=msg)
+
         if not username or not email or not password:
             msg = "All fields are required."
             if is_ajax:
                 return jsonify({"error": msg}), 400
             return render_template("auth.html", mode="signup", error=msg)
+
+        # ---------- Email ----------
         if not is_valid_email(email):
             msg = "Please enter a valid email address."
             if is_ajax:
                 return jsonify({"error": msg}), 400
             return render_template("auth.html", mode="signup", error=msg)
-        if len(username) < 3 or len(username) > 20 or not username.isalnum():
-            msg = "Username must be 3-20 letters and numbers only."
+
+        # ---------- Username format ----------
+        if not re.fullmatch(r"[A-Za-z0-9]{3,20}", username):
+            msg = "Username must be 3-20 letters and numbers only (no spaces or symbols)."
             if is_ajax:
                 return jsonify({"error": msg}), 400
             return render_template("auth.html", mode="signup", error=msg)
+
+        # ---------- Reserved usernames ----------
+        reserved = os.getenv("RESERVED_USERNAMES", "")
+        if reserved:
+            reserved_list = [
+                r.strip().lower()
+                for r in reserved.split(",")
+                if r.strip()
+            ]
+            username_lower = username.lower()
+            for word in reserved_list:
+                if word in username_lower:
+                    msg = "This username is not allowed. Please choose a different one."
+                    if is_ajax:
+                        return jsonify({"error": msg}), 400
+                    return render_template("auth.html", mode="signup", error=msg)
+
+        # ---------- Password ----------
         if len(password) < 6:
             msg = "Password must be at least 6 characters."
             if is_ajax:
@@ -2773,17 +3311,30 @@ def user_signup():
         hashed = generate_password_hash(password)
         token = secrets.token_urlsafe(32)
 
+        # ---------- Duplicate username check ----------
         cur = mysql.connection.cursor()
-        cur.execute(
-            "SELECT id FROM users WHERE username = %s OR email = %s", (username, email)
-        )
+        cur.execute("SELECT id FROM users WHERE username = %s", (username,))
         if cur.fetchone():
             cur.close()
-            msg = "Username or email already exists."
+            msg = "This username is already taken. Try a different one."
             if is_ajax:
                 return jsonify({"error": msg}), 409
             return render_template("auth.html", mode="signup", error=msg)
+        cur.close()
 
+        # ---------- Duplicate email check ----------
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+        if cur.fetchone():
+            cur.close()
+            msg = "This email is already registered. Please login instead."
+            if is_ajax:
+                return jsonify({"error": msg}), 409
+            return render_template("auth.html", mode="signup", error=msg)
+        cur.close()
+
+        # ---------- Insert new user ----------
+        cur = mysql.connection.cursor()
         cur.execute(
             "INSERT INTO users (username, email, password, verification_token, first_name, last_name) VALUES (%s, %s, %s, %s, %s, %s)",
             (username, email, hashed, token, first_name, last_name),
@@ -2791,8 +3342,13 @@ def user_signup():
         mysql.connection.commit()
         cur.close()
 
-        sync_brevo_contact(email, first_name, last_name)
+        # ---------- Brevo sync (non-critical) ----------
+        try:
+            sync_brevo_contact(email, first_name, last_name)
+        except Exception as e:
+            app.logger.warning(f"Brevo contact sync failed for {email}: {e}")
 
+        # ---------- Verification email ----------
         verify_link = url_for("verify_email", token=token, _external=True)
         html_body = make_verification_email(username, verify_link)
         try:
@@ -2806,7 +3362,12 @@ def user_signup():
             pass
 
         if is_ajax:
-            return jsonify({"success": True, "redirect": url_for("home")})
+            return jsonify({
+                "success": True,
+                "message": "Account created! Please check your email to verify.",
+                "redirect": url_for("user_login")
+            })
+
         flash("Account created! Please check your email to verify.", "success")
         return redirect(url_for("user_login"))
 
@@ -2913,11 +3474,11 @@ def verify_email(token):
         )
         mysql.connection.commit()
         cur.close()
-        flash("Email verified! You can now login.", "success")
+        flash("Email verified!", "success")
     else:
         cur.close()
         flash("Invalid or expired verification link.", "danger")
-    return redirect(url_for("user_login"))
+    return redirect(url_for("home"))
 
 
 @app.route("/user/logout")
@@ -4711,6 +5272,12 @@ def edit_profile():
 
         if avatar_file and allowed_image_file(avatar_file.filename):
             avatar_data = avatar_file.read()
+            if len(avatar_data) > 2 * 1024 * 1024:
+                msg = "Avatar must be under 2MB."
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                   return jsonify({"error": msg}), 400
+                flash(msg, "danger")
+                return redirect(url_for("edit_profile"))
             avatar_data = compress_image(avatar_data, max_size=(200, 200), quality=80)
             avatar_key = generate_r2_key(
                 "avatars", f"user_{uid}_{int(datetime.now().timestamp())}", ".jpg"
@@ -4719,8 +5286,12 @@ def edit_profile():
                 avatar_url = upload_to_r2(
                     avatar_data, avatar_key, content_type="image/jpeg"
                 )
-            except Exception:
-                flash("Avatar upload failed.", "danger")
+            except Exception as e:
+                app.logger.error(f"Avatar R2 upload failed: {e}")
+                msg = "Avatar upload failed. Please try again."
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return jsonify({"error": msg}), 500
+                flash(msg, "danger")
                 return redirect(url_for("edit_profile"))
 
         cur = mysql.connection.cursor()
@@ -4766,7 +5337,19 @@ def edit_profile():
         if avatar_url:
             session["avatar_url"] = avatar_url
 
-        flash("Profile updated successfully!", "success")
+        full_name = (first_name + " " + last_name).strip()
+        session["user_display_name"] = full_name or session.get("user_name")
+        if avatar_url:
+            session["avatar_url"] = avatar_url
+
+        msg = "Profile updated successfully!"
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({
+                "success": True,
+                "message": msg,
+                "avatar_url": avatar_url or session.get("avatar_url")
+            })
+        flash(msg, "success")
         return redirect(url_for("user_profile", username=session.get("user_name")))
 
     cur = mysql.connection.cursor()

@@ -654,3 +654,59 @@ img[loading="lazy"] {
     scroll-behavior: auto !important;
   }
 }
+/* ========== BOOK COVER FULL RESPONSIVE FIX ========== */
+/* Grid cards mein 3D effect hatakar flat full cover dikhao */
+.book-3d-wrapper {
+  max-height: none !important;
+  height: auto !important;
+  padding: 8px !important;
+  perspective: none !important;
+}
+
+.book-3d {
+  width: 100% !important;
+  max-width: 150px;
+  height: auto !important;
+  aspect-ratio: 2 / 3;
+  transform: none !important;
+}
+
+.book-front {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 10px !important;
+}
+
+.book-front img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: 10px;
+}
+
+.book-spine,
+.book-pages,
+.book-shadow {
+  display: none !important;
+}
+
+/* Book cover outer ko bhi clean karo */
+.book-cover-outer {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  padding: 4px !important;
+}
+
+/* Mobile par aur chhota, but full dikhe */
+@media (max-width: 576px) {
+  .book-3d-wrapper {
+    padding: 4px !important;
+  }
+  .book-3d {
+    max-width: 110px;
+  }
+}
