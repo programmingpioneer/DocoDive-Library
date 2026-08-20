@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
             // ================== SMART USERNAME LIVE CHECKER ==================
-      var modalUsername = document.getElementById('modalUsername');
+            var modalUsername = document.getElementById('modalUsername');
       if (modalUsername) {
         var modalFirstName = document.getElementById('modalFirstName');
         var modalLastName = document.getElementById('modalLastName');
@@ -207,6 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
           : null;
 
         var usernameTimer;
+        var lastAutoProposed = '';
 
         function clearUsernameFeedback() {
           if (usernameFeedback) usernameFeedback.textContent = '';
@@ -217,19 +218,58 @@ document.addEventListener('DOMContentLoaded', function () {
         function renderUsernameSuggestions(list) {
           if (!usernameSuggestions) return;
           usernameSuggestions.innerHTML = '';
-
           (list || []).forEach(function (suggestion) {
             var chip = document.createElement('button');
             chip.type = 'button';
             chip.className = 'btn btn-sm btn-outline-primary rounded-pill px-2 py-1';
             chip.textContent = suggestion;
             chip.addEventListener('click', function () {
+              lastAutoProposed = suggestion;
               modalUsername.value = suggestion;
-              modalUsername.dispatchEvent(new Event('input'));
+              modalUsername.dispatchEvent(new Event('input', { bubbles: true }));
             });
             usernameSuggestions.appendChild(chip);
           });
         }
+
+        function proposeUsernameFromName() {
+          var fn = modalFirstName ? modalFirstName.value.trim() : '';
+          var ln = modalLastName ? modalLastName.value.trim() : '';
+          if (!fn && !ln) return;
+
+          var current = modalUsername.value.trim();
+          if (current && current !== lastAutoProposed) return;
+
+          var candidate = (fn + ln).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+          if (!candidate || candidate.length < 3) return;
+
+          fetch('/api/check-availability?field=username&value=' + encodeURIComponent(candidate) +
+                '&first_name=' + encodeURIComponent(fn) +
+                '&last_name=' + encodeURIComponent(ln))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (data.error) return;
+              var chosen = candidate;
+
+              if (data.exists || data.reserved) {
+                if (data.suggestions && data.suggestions.length) {
+                  chosen = data.suggestions[0];
+                } else {
+                  chosen = candidate + Math.floor(100 + Math.random() * 900);
+                }
+              }
+
+              lastAutoProposed = chosen;
+              modalUsername.value = chosen;
+              modalUsername.dispatchEvent(new Event('input', { bubbles: true }));
+            })
+            .catch(function () {});
+        }
+
+        [modalFirstName, modalLastName].forEach(function (el) {
+          if (!el) return;
+          el.addEventListener('input', proposeUsernameFromName);
+        });
 
         modalUsername.addEventListener('input', function () {
           clearTimeout(usernameTimer);
@@ -244,12 +284,9 @@ document.addEventListener('DOMContentLoaded', function () {
             var fn = modalFirstName ? modalFirstName.value.trim() : '';
             var ln = modalLastName ? modalLastName.value.trim() : '';
 
-            fetch(
-              '/api/check-availability?field=username&value=' +
-              encodeURIComponent(val) +
-              '&first_name=' + encodeURIComponent(fn) +
-              '&last_name=' + encodeURIComponent(ln)
-            )
+            fetch('/api/check-availability?field=username&value=' + encodeURIComponent(val) +
+                  '&first_name=' + encodeURIComponent(fn) +
+                  '&last_name=' + encodeURIComponent(ln))
               .then(function (r) { return r.json(); })
               .then(function (data) {
                 if (data.error) {
@@ -299,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function () {
               .catch(function () {
                 clearUsernameFeedback();
               });
-          }, 500);
+          }, 250);
         });
 
         // First/last name badalne par bhi recheck ho

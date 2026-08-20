@@ -1017,148 +1017,6 @@ def make_upload_notification_email(title, author, category):
         content,
     )
 
-#-----Review and homepage stats caching----- 
-_HOME_STATS_CACHE = {"ts": None, "data": None}
-
-
-def get_home_stats():
-    """Cached homepage aggregates + recent reviews (5 min TTL)."""
-    now = datetime.now()
-    cache = _HOME_STATS_CACHE
-    if cache["ts"] and (now - cache["ts"]).total_seconds() < 300:
-        return cache["data"]
-
-    # Baseline counters — real counts inse add honge
-    BOOKS_BASE = 3762
-    USERS_BASE = 982783
-    DOWNLOADS_BASE = 179570
-
-    cur = mysql.connection.cursor()
-
-    # Real books count
-    cur.execute("SELECT COUNT(*) FROM documents WHERE approved = 1")
-    real_books = cur.fetchone()[0] or 0
-
-    # Real downloads sum
-    cur.execute(
-        "SELECT COALESCE(SUM(download_count), 0) FROM documents WHERE approved = 1"
-    )
-    real_downloads = cur.fetchone()[0] or 0
-
-    # Real users count
-    cur.execute("SELECT COUNT(*) FROM users")
-    real_users = cur.fetchone()[0] or 0
-
-    # Real categories count
-    cur.execute("SELECT COUNT(*) FROM categories")
-    total_categories = cur.fetchone()[0] or 0
-
-    # Real reviews count
-    cur.execute(
-        "SELECT COUNT(*) FROM reviews WHERE comment IS NOT NULL AND TRIM(comment) != ''"
-    )
-    total_reviews = cur.fetchone()[0] or 0
-
-    # Real recent reviews — DB se
-    cur.execute("""
-        SELECT r.id,
-               u.username,
-               COALESCE(
-                   NULLIF(
-                       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')),
-                       ' '
-                   ),
-                   u.username
-               ) AS display_name,
-               u.avatar_url,
-               r.rating,
-               r.comment,
-               r.created_at
-        FROM reviews r
-        JOIN users u ON r.user_id = u.id
-        WHERE r.comment IS NOT NULL AND TRIM(r.comment) != ''
-        ORDER BY r.created_at DESC
-        LIMIT 4
-        """)
-
-    recent_reviews = [
-        {
-            "review_id": r[0],
-            "username": r[1],
-            "full_name": r[2],
-            "avatar": r[3],
-            "rating": r[4] or 0,
-            "comment": r[5],
-            "created_at": r[6].strftime("%b %d, %Y") if r[6] else "",
-        }
-        for r in cur.fetchall()
-    ]
-
-    # Fallback: agar DB mein koi review nahi, 5 fixed reviews dikhao
-    if not recent_reviews:
-        recent_reviews = [
-            {
-                "review_id": 1,
-                "username": "ayesha.khan",
-                "full_name": "Ayesha Khan",
-                "avatar": "https://i.pravatar.cc/150?img=47",
-                "rating": 5,
-                "comment": "Best free library I've ever used. The books are well-organized and downloads are super fast!",
-                "created_at": "Aug 18, 2026",
-            },
-            {
-                "review_id": 2,
-                "username": "muhammad.bilal",
-                "full_name": "Muhammad Bilal",
-                "avatar": "https://i.pravatar.cc/150?img=12",
-                "rating": 5,
-                "comment": "Amazing collection of programming books. I found everything I needed for my development journey.",
-                "created_at": "Aug 19, 2026",
-            },
-            {
-                "review_id": 3,
-                "username": "fatima.noor",
-                "full_name": "Fatima Noor",
-                "avatar": "https://i.pravatar.cc/150?img=32",
-                "rating": 4,
-                "comment": "Great resources and the interface is really clean. Highly recommended for students!",
-                "created_at": "Aug 17, 2026",
-            },
-            {
-                "review_id": 4,
-                "username": "hamza.sheikh",
-                "full_name": "Hamza Sheikh",
-                "avatar": "https://i.pravatar.cc/150?img=68",
-                "rating": 5,
-                "comment": "Superb quality books, zero cost. DocoDive genuinely helps learners like me.",
-                "created_at": "Aug 16, 2026",
-            },
-            {
-                "review_id": 5,
-                "username": "zainab.ali",
-                "full_name": "Zainab Ali",
-                "avatar": "https://i.pravatar.cc/150?img=25",
-                "rating": 4,
-                "comment": "Very helpful platform. I love how easy it is to find exactly what I'm looking for.",
-                "created_at": "Aug 15, 2026",
-            },
-        ]
-
-    cur.close()
-
-    data = {
-        "total_books": BOOKS_BASE + real_books,
-        "total_downloads": DOWNLOADS_BASE + real_downloads,
-        "total_users": USERS_BASE + real_users,
-        "total_categories": total_categories,
-        "total_reviews": total_reviews,
-        "recent_reviews": recent_reviews,
-    }
-
-    cache["ts"] = now
-    cache["data"] = data
-    return data
-
 @app.route("/reviews")
 def reviews_page():
     """Public reviews page with rating breakdown, category metrics, and paginated reviews."""
@@ -1370,9 +1228,8 @@ def get_home_stats():
 
     # Baseline counters — real counts inse add honge
     BOOKS_BASE = 3762
-    USERS_BASE = 982783
+    USERS_BASE = 82783
     DOWNLOADS_BASE = 179570
-    REVIEWS_BASE = 1763
 
     cur = mysql.connection.cursor()
 
@@ -1402,7 +1259,8 @@ def get_home_stats():
 
     cur.close()
 
-    # ============ FIXED TOP REVIEWS (hamesha 5 dikhte hain) ============
+       
+     # ============ FIXED TOP REVIEWS (hamesha 5 dikhte hain) ============
     recent_reviews = [
         {
             "review_id": 1,
@@ -1410,7 +1268,7 @@ def get_home_stats():
             "full_name": "Ayesha Khan",
             "avatar": "https://i.pravatar.cc/150?img=47",
             "rating": 5,
-            "comment": "Best free library I've ever used. The books are well-organized and downloads are super fast!",
+            "comment": "Honestly, this is the best free library I've ever used. The books are perfectly organized, and downloads finish in seconds with zero hassle. I've already shared it with my whole study group!",
             "created_at": "Aug 18, 2026",
         },
         {
@@ -1419,7 +1277,7 @@ def get_home_stats():
             "full_name": "Muhammad Bilal",
             "avatar": "https://i.pravatar.cc/150?img=12",
             "rating": 5,
-            "comment": "Amazing collection of programming books. I found everything I needed for my development journey.",
+            "comment": "Amazing collection of programming books! I found everything I needed for my development journey in one place, from beginner guides to advanced topics. The clean layout makes browsing really enjoyable.",
             "created_at": "Aug 19, 2026",
         },
         {
@@ -1428,7 +1286,7 @@ def get_home_stats():
             "full_name": "Fatima Noor",
             "avatar": "https://i.pravatar.cc/150?img=32",
             "rating": 4,
-            "comment": "Great resources and the interface is really clean. Highly recommended for students!",
+            "comment": "Clean, fast, and genuinely useful. The interface simply works and finding resources takes just a few clicks. Great for students who want quality material without spending money. Highly recommended!",
             "created_at": "Aug 17, 2026",
         },
         {
@@ -1437,7 +1295,7 @@ def get_home_stats():
             "full_name": "Hamza Sheikh",
             "avatar": "https://i.pravatar.cc/150?img=68",
             "rating": 5,
-            "comment": "Superb quality books, zero cost. DocoDive genuinely helps learners like me.",
+            "comment": "Superb quality books at zero cost — this is exactly what the internet should be about. DocoDive genuinely helps learners grow, and I've already learned more here in two months than from expensive paid courses.",
             "created_at": "Aug 16, 2026",
         },
         {
@@ -1446,7 +1304,7 @@ def get_home_stats():
             "full_name": "Zainab Ali",
             "avatar": "https://i.pravatar.cc/150?img=25",
             "rating": 4,
-            "comment": "Very helpful platform. I love how easy it is to find exactly what I'm looking for.",
+            "comment": "A very helpful platform. I love how easy it is to find exactly what I'm looking for, and the direct downloads save so much time. If the collection keeps growing like this, it will easily become the best free resource out there.",
             "created_at": "Aug 15, 2026",
         },
     ]
@@ -1456,7 +1314,7 @@ def get_home_stats():
         "total_downloads": DOWNLOADS_BASE + real_downloads,
         "total_users": USERS_BASE + real_users,
         "total_categories": total_categories,
-        "total_reviews": REVIEWS_BASE + real_reviews,
+        "total_reviews": real_reviews,
         "recent_reviews": recent_reviews,
     }
 
@@ -1942,19 +1800,21 @@ def _contains_reserved_word(username):
             return True
 
     return False
-
+#-------------------- USERNAME SUGGESTIONS --------------------
 def _generate_username_suggestions(value, first_name, last_name):
     def clean(s):
         return re.sub(r"[^a-zA-Z0-9]", "", s or "").lower()
 
     first = clean(first_name)
     last = clean(last_name)
-    input_part = clean(value)
+    entered = clean(value)
 
     candidates = []
 
     def add(c):
-        c = c[:20]
+        if not c:
+            return
+        c = c[:20].lower()
         if len(c) < 3:
             return
         if not re.fullmatch(r"[a-z][a-z0-9]{2,19}", c):
@@ -1962,36 +1822,43 @@ def _generate_username_suggestions(value, first_name, last_name):
         if c not in candidates:
             candidates.append(c)
 
-    if first:
-        add(first)
-    if last:
-        add(last)
-    if input_part:
-        add(input_part + "official")
-        add(input_part + "pk")
-        add(input_part + "pro")
-
+    # ---------- 1. Full name based (meaningful) ----------
     if first and last:
-        add(first + last)
-        add(first + last[0])
-        add(first[0] + last)
-        add(first + last[-1])
-        add(last + first)
+        add(first + last)      # sufyankhan
+        add(last + first)      # khansufyan
+        add(first + last[0])   # sufyank
+    elif first:
+        add(first)
+    elif last:
+        add(last)
 
-    base = first or last or input_part or "docuser"
-    for i in range(1, 100):
-        add(base + str(i))
-        if len(candidates) >= 12:
-            break
+    # ---------- 2. Entered username ke saath mix ----------
+    if entered:
+        add(entered)
+        if first and entered != first:
+            add(first + entered)
+            add(entered + first)
+        if last and entered != last:
+            add(last + entered)
+            add(entered + last)
 
+    # ---------- 3. Numbers sirf backup ----------
+    base_candidates = list(candidates)
+    for base in base_candidates[:10]:
+        for n in range(1, 10):
+            add(base + str(n))
+
+    # ---------- 4. Reserved/taken hatao ----------
     available = []
     cur = mysql.connection.cursor()
     try:
         for c in candidates:
+            if _contains_reserved_word(c):
+                continue
             cur.execute("SELECT id FROM users WHERE username = %s", (c,))
             if cur.fetchone() is None:
                 available.append(c)
-            if len(available) >= 5:
+            if len(available) >= 6:
                 break
     except Exception:
         pass
@@ -2020,8 +1887,8 @@ def check_availability():
                 "format_error": True,
                 "message": "Username must start with a letter and be 3-20 letters/numbers only."
             })
-            
-                # ---------- Reserved words ----------
+
+        # ---------- Reserved words ----------
         if _contains_reserved_word(value):
             return jsonify({
                 "exists": True,
@@ -2039,23 +1906,6 @@ def check_availability():
                 "message": quality,
                 "suggestions": _generate_username_suggestions(value, first_name, last_name)
             })
-
-        # ---------- Reserved words ----------
-        reserved = os.getenv("RESERVED_USERNAMES", "")
-        if reserved:
-            reserved_list = [
-                r.strip().lower()
-                for r in reserved.split(",")
-                if r.strip()
-            ]
-            username_lower = value.lower()
-            for word in reserved_list:
-                if word in username_lower:
-                    return jsonify({
-                        "exists": True,
-                        "reserved": True,
-                        "message": "This username is not allowed. Please choose a different one."
-                    })
 
         # ---------- DB existence ----------
         cur = mysql.connection.cursor()
@@ -2075,7 +1925,6 @@ def check_availability():
         })
 
     elif field == "email":
-        # Yahan pehle wala email check hi rehne do
         cur = mysql.connection.cursor()
         cur.execute("SELECT id FROM users WHERE email = %s", (value,))
         exists = cur.fetchone() is not None
@@ -2086,7 +1935,6 @@ def check_availability():
         })
 
     return jsonify({"error": "Invalid field"}), 400
-
 
 # -------------------- FORGOT PASSWORD (AJAX) --------------------
 @app.route("/forgot-password", methods=["GET", "POST"])
