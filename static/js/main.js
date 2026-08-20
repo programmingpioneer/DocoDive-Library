@@ -336,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function () {
               .catch(function () {
                 clearUsernameFeedback();
               });
-          }, 200);
+          }, 100);
         });
 
         // First/last name badalne par bhi recheck ho
