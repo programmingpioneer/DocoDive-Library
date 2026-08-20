@@ -30,24 +30,24 @@ document.addEventListener('DOMContentLoaded', function () {
   // ================== AOS INIT (Modern, Smooth & Responsive) ==================
   try {
     if (typeof AOS !== 'undefined') {
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       AOS.init({
-        duration: 400,                      // smooth 400ms for all devices
-        once: true,                         // animate once only
-        mirror: false,                      // no re‑animation on scroll up
-        offset: 100,                        // trigger 100px before element enters viewport
-        easing: 'ease-out-cubic',           // more natural deceleration
-        throttleDelay: 50,                  // low delay = responsive scroll feel
+        duration: 400,
+        once: true,
+        mirror: false,
+        offset: 100,
+        easing: 'ease-out-cubic',
+        throttleDelay: 50,
         anchorPlacement: 'top-bottom',
-        disable: prefersReducedMotion,      // respect accessibility
+        disable: prefersReducedMotion,
         startEvent: 'DOMContentLoaded',
         disableMutationObserver: true
       });
     }
   } catch (e) { console.warn('AOS init failed:', e); }
 
-  // ================== AUTH MODAL (only if modal exists) ==================
+  // ================== AUTH MODAL ==================
   window.authModal = null;
   window.pendingRedirectUrl = null;
 
@@ -127,6 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
       });
 
+      // ================== LOGIN ==================
       var loginForm = document.getElementById('modalLoginForm');
       if (loginForm) {
         loginForm.addEventListener('submit', async function (e) {
@@ -136,24 +137,28 @@ document.addEventListener('DOMContentLoaded', function () {
           var fd = new FormData(this);
           try {
             var res = await fetch('/user/login', {
-              method: 'POST', body: fd,
+              method: 'POST',
+              body: fd,
               headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
             var data = await res.json();
+
             if (data.success) {
               window.authModal.hide();
               window.location.href = window.pendingRedirectUrl || data.redirect || '/';
             } else {
-              showModalFlash(data.error || 'Login failed', 'danger');
+              showModalFlash(data.error || 'Login failed. Please check your email and password.', 'danger');
               window.resetButton(btn);
             }
           } catch (err) {
-            showModalFlash('Something went wrong', 'danger');
+            showModalFlash('Server error. Please try again in a moment.', 'danger');
             window.resetButton(btn);
+            console.error('Login error:', err);
           }
         });
       }
 
+      // ================== SIGNUP ==================
       var signupForm = document.getElementById('modalSignupForm');
       if (signupForm) {
         signupForm.addEventListener('submit', async function (e) {
@@ -161,23 +166,150 @@ document.addEventListener('DOMContentLoaded', function () {
           var btn = this.querySelector('button[type="submit"]');
           window.setButtonLoading(btn);
           var fd = new FormData(this);
+
           try {
             var res = await fetch('/user/signup', {
-              method: 'POST', body: fd,
+              method: 'POST',
+              body: fd,
               headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
             var data = await res.json();
+
             if (data.success) {
-              window.authModal.hide();
-              window.location.href = window.pendingRedirectUrl || data.redirect || '/';
+              window.resetButton(btn);
+              var msg = data.message || 'Account created! Please check your email to verify.';
+              showModalFlash(msg, 'success');
+              // Modal hide mat karo — user ko success dikhe
             } else {
-              showModalFlash(data.error || 'Signup failed', 'danger');
+              showModalFlash(data.error || 'Signup failed. Please try again.', 'danger');
               window.resetButton(btn);
             }
           } catch (err) {
-            showModalFlash('Something went wrong', 'danger');
+            showModalFlash('Server error. Please try again in a moment.', 'danger');
             window.resetButton(btn);
+            console.error('Signup error:', err);
           }
+        });
+      }
+
+            // ================== SMART USERNAME LIVE CHECKER ==================
+      var modalUsername = document.getElementById('modalUsername');
+      if (modalUsername) {
+        var modalFirstName = document.getElementById('modalFirstName');
+        var modalLastName = document.getElementById('modalLastName');
+
+        var usernameFeedback = modalUsername.closest('.mb-3')
+          ? modalUsername.closest('.mb-3').querySelector('.feedback')
+          : null;
+
+        var usernameSuggestions = modalUsername.closest('.mb-3')
+          ? modalUsername.closest('.mb-3').querySelector('.username-suggestions')
+          : null;
+
+        var usernameTimer;
+
+        function clearUsernameFeedback() {
+          if (usernameFeedback) usernameFeedback.textContent = '';
+          if (usernameSuggestions) usernameSuggestions.innerHTML = '';
+          modalUsername.classList.remove('is-valid', 'is-invalid');
+        }
+
+        function renderUsernameSuggestions(list) {
+          if (!usernameSuggestions) return;
+          usernameSuggestions.innerHTML = '';
+
+          (list || []).forEach(function (suggestion) {
+            var chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'btn btn-sm btn-outline-primary rounded-pill px-2 py-1';
+            chip.textContent = suggestion;
+            chip.addEventListener('click', function () {
+              modalUsername.value = suggestion;
+              modalUsername.dispatchEvent(new Event('input'));
+            });
+            usernameSuggestions.appendChild(chip);
+          });
+        }
+
+        modalUsername.addEventListener('input', function () {
+          clearTimeout(usernameTimer);
+          var val = this.value.trim();
+
+          if (val.length < 3) {
+            clearUsernameFeedback();
+            return;
+          }
+
+          usernameTimer = setTimeout(function () {
+            var fn = modalFirstName ? modalFirstName.value.trim() : '';
+            var ln = modalLastName ? modalLastName.value.trim() : '';
+
+            fetch(
+              '/api/check-availability?field=username&value=' +
+              encodeURIComponent(val) +
+              '&first_name=' + encodeURIComponent(fn) +
+              '&last_name=' + encodeURIComponent(ln)
+            )
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                if (data.error) {
+                  clearUsernameFeedback();
+                  return;
+                }
+
+                modalUsername.classList.remove('is-valid', 'is-invalid');
+                if (usernameFeedback) usernameFeedback.textContent = '';
+                if (usernameSuggestions) usernameSuggestions.innerHTML = '';
+
+                if (data.format_error) {
+                  modalUsername.classList.add('is-invalid');
+                  if (usernameFeedback) {
+                    usernameFeedback.textContent = data.message || 'Invalid username format.';
+                    usernameFeedback.className = 'feedback small mt-1 text-danger';
+                  }
+                  return;
+                }
+
+                if (data.simple) {
+                  modalUsername.classList.add('is-invalid');
+                  if (usernameFeedback) {
+                    usernameFeedback.textContent = data.message || 'Username is too simple.';
+                    usernameFeedback.className = 'feedback small mt-1 text-danger';
+                  }
+                  renderUsernameSuggestions(data.suggestions);
+                  return;
+                }
+
+                if (data.reserved || data.exists) {
+                  modalUsername.classList.add('is-invalid');
+                  if (usernameFeedback) {
+                    usernameFeedback.textContent = data.message || 'Username is not available.';
+                    usernameFeedback.className = 'feedback small mt-1 text-danger';
+                  }
+                  renderUsernameSuggestions(data.suggestions);
+                  return;
+                }
+
+                modalUsername.classList.add('is-valid');
+                if (usernameFeedback) {
+                  usernameFeedback.textContent = '✓ Username is available!';
+                  usernameFeedback.className = 'feedback small mt-1 text-success';
+                }
+              })
+              .catch(function () {
+                clearUsernameFeedback();
+              });
+          }, 500);
+        });
+
+        // First/last name badalne par bhi recheck ho
+        [modalFirstName, modalLastName].forEach(function (el) {
+          if (!el) return;
+          el.addEventListener('input', function () {
+            if (modalUsername.value.trim().length >= 3) {
+              modalUsername.dispatchEvent(new Event('input'));
+            }
+          });
         });
       }
     }
@@ -199,8 +331,8 @@ document.addEventListener('DOMContentLoaded', function () {
   } catch (e) { }
 
   // ================== NOTIFICATIONS ==================
-  window.updateNotifications = function () { /* will be defined below */ };
-  window.markAllRead = function () { /* will be defined below */ };
+  window.updateNotifications = function () { };
+  window.markAllRead = function () { };
 
   try {
     window.timeAgo = function (dateString) {
@@ -222,9 +354,6 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     window.goToNotif = function (url) { window.location = url; };
-
-    window.markNotifRead = async function (id, el) { /* placeholder */ };
-    window.deleteNotif = async function (id, el) { /* placeholder */ };
 
     window.updateNotifications = function () {
       try {
@@ -250,7 +379,6 @@ document.addEventListener('DOMContentLoaded', function () {
             var html = '';
             list.forEach(function (n) {
               var ago = window.timeAgo(n.created_at);
-              var avatarUrl = n.image_url || n.actor_avatar || '/static/default-avatar.png';
               var heading = 'Notification', snippet = n.message || '';
               if (n.type === 'approval') heading = '📗 Book Approved';
               else if (n.type === 'rejection') heading = '📕 Book Rejected';
@@ -293,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   } catch (e) { }
 
-  // ================== HIDE LOADER (robust) ==================
+  // ================== HIDE LOADER ==================
   (function () {
     var loader = document.getElementById('page-loader');
     if (!loader) return;
@@ -304,12 +432,11 @@ document.addEventListener('DOMContentLoaded', function () {
       loader.classList.add('hidden');
       setTimeout(function () {
         if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
-      }, 500);
+      }, 300);
     }
     function tryHide() { if (pageLoaded && timerDone) doHide(); }
     window.addEventListener('load', function () { pageLoaded = true; tryHide(); });
     setTimeout(function () { timerDone = true; tryHide(); }, MIN_DISPLAY_TIME);
-    // Failsafe: hide after 8 seconds no matter what
     setTimeout(function () {
       if (loader && !loader.classList.contains('hidden')) doHide();
     }, 8000);
@@ -324,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   } catch (e) { }
 
-  // ================== PREVIEW MODAL + DOWNLOAD (safe) ==================
+  // ================== PREVIEW MODAL + DOWNLOAD ==================
   try {
     var previewBtns = document.querySelectorAll('.preview-btn');
     previewBtns.forEach(function (btn) {
@@ -335,7 +462,6 @@ document.addEventListener('DOMContentLoaded', function () {
           var author = this.getAttribute('data-author');
           var desc = this.getAttribute('data-desc');
           var img = this.getAttribute('data-img');
-          var lang = this.getAttribute('data-lang');
           var modalTitle = document.getElementById('modalTitle');
           if (modalTitle) modalTitle.textContent = title;
           var modalAuthor = document.getElementById('modalAuthor');
@@ -377,10 +503,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   } catch (e) { console.warn('Scroll reveal failed:', e); }
 
-    // ================== SCROLL PROGRESS BAR ==================
+  // ================== SCROLL PROGRESS BAR ==================
   try {
     var progressBar = document.createElement('div');
     progressBar.id = 'scrollProgressBar';
+    progressBar.style.cssText = 'position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,#4338ca,#818cf8);width:0;z-index:9999;transition:width .1s linear;';
     document.body.appendChild(progressBar);
     window.addEventListener('scroll', function () {
       var h = document.documentElement;
@@ -397,9 +524,8 @@ document.addEventListener('DOMContentLoaded', function () {
       backToTop = document.createElement('button');
       backToTop.id = 'backToTop';
       backToTop.innerHTML = '<i class="bi bi-arrow-up"></i>';
-      backToTop.className = 'btn btn-primary rounded-circle position-fixed shadow-lg';
       backToTop.setAttribute('aria-label', 'Back to top');
-      backToTop.style.cssText = 'bottom:24px;right:24px;width:44px;height:44px;display:none;z-index:1050;align-items:center;justify-content:center;';
+      backToTop.style.cssText = 'position:fixed;bottom:24px;right:24px;width:44px;height:44px;display:none;align-items:center;justify-content:center;z-index:1050;border:none;border-radius:50%;background:#1e1b4b;color:#fff;box-shadow:0 8px 24px rgba(30,27,75,.35);cursor:pointer;';
       document.body.appendChild(backToTop);
     }
     window.addEventListener('scroll', function () {
@@ -421,7 +547,7 @@ document.addEventListener('DOMContentLoaded', function () {
           el.textContent = target.toLocaleString();
           return;
         }
-        var start = null, duration = 1200;
+        var start = null, duration = 1400;
         function step(ts) {
           if (!start) start = ts;
           var progress = Math.min((ts - start) / duration, 1);
@@ -463,8 +589,8 @@ document.addEventListener('DOMContentLoaded', function () {
       var img = e.target;
       if (!img || img.tagName !== 'IMG') return;
       var isCover = img.classList.contains('flat-book-cover') ||
-                    img.classList.contains('book-cover') ||
-                    img.alt === 'Cover';
+        img.classList.contains('book-cover') ||
+        img.alt === 'Cover';
       if (!isCover || img.dataset.fallbackHandled) return;
       img.dataset.fallbackHandled = '1';
       img.style.display = 'none';
@@ -489,7 +615,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var toast = document.createElement('div');
       toast.id = 'globalToast';
       toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' +
-        (type === 'error' ? '#dc3545' : '#198754') +
+        (type === 'error' || type === 'danger' ? '#dc3545' : '#198754') +
         ';color:#fff;padding:12px 20px;border-radius:50px;z-index:99999;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:opacity .3s;';
       toast.textContent = message;
       document.body.appendChild(toast);
@@ -497,85 +623,6 @@ document.addEventListener('DOMContentLoaded', function () {
         toast.style.opacity = '0';
         setTimeout(function () { toast.remove(); }, 300);
       }, 3500);
-    } catch (e) { console.warn('Toast failed:', e); }
-  };
-
-    // ================== SCROLL PROGRESS BAR ==================
-  try {
-    var progressBar = document.createElement('div');
-    progressBar.id = 'scrollProgressBar';
-    progressBar.style.cssText = 'position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,#4338ca,#818cf8);width:0;z-index:9999;transition:width .1s linear;';
-    document.body.appendChild(progressBar);
-    window.addEventListener('scroll', function () {
-      var h = document.documentElement;
-      var max = h.scrollHeight - h.clientHeight;
-      var pct = max > 0 ? ((h.scrollTop || document.body.scrollTop) / max) * 100 : 0;
-      progressBar.style.width = pct + '%';
-    }, { passive: true });
-  } catch (e) { console.warn('Scroll progress failed:', e); }
-
-  // ================== BACK TO TOP ==================
-  try {
-    var backToTop = document.getElementById('backToTop');
-    if (!backToTop) {
-      backToTop = document.createElement('button');
-      backToTop.id = 'backToTop';
-      backToTop.innerHTML = '<i class="bi bi-arrow-up"></i>';
-      backToTop.setAttribute('aria-label', 'Back to top');
-      backToTop.style.cssText = 'position:fixed;bottom:24px;right:24px;width:44px;height:44px;display:none;align-items:center;justify-content:center;z-index:1050;border:none;border-radius:50%;background:#1e1b4b;color:#fff;box-shadow:0 8px 24px rgba(30,27,75,.35);cursor:pointer;';
-      document.body.appendChild(backToTop);
-    }
-    window.addEventListener('scroll', function () {
-      backToTop.style.display = window.scrollY > 300 ? 'flex' : 'none';
-    }, { passive: true });
-    backToTop.addEventListener('click', function () {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  } catch (e) { console.warn('Back-to-top failed:', e); }
-
-  // ================== COUNT-UP ANIMATION ==================
-  try {
-    var countEls = document.querySelectorAll('[data-count]');
-    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    function animateCount(el) {
-      var target = parseInt(el.getAttribute('data-count'), 10) || 0;
-      if (reduceMotion) { el.textContent = target.toLocaleString(); return; }
-      var start = null, duration = 1400;
-      function step(ts) {
-        if (!start) start = ts;
-        var progress = Math.min((ts - start) / duration, 1);
-        var eased = 1 - Math.pow(1 - progress, 3);
-        el.textContent = Math.floor(eased * target).toLocaleString();
-        if (progress < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    }
-    if (countEls.length) {
-      if ('IntersectionObserver' in window) {
-        var io = new IntersectionObserver(function (entries, obs) {
-          entries.forEach(function (entry) {
-            if (entry.isIntersecting) { animateCount(entry.target); obs.unobserve(entry.target); }
-          });
-        }, { threshold: 0.3 });
-        countEls.forEach(function (el) { io.observe(el); });
-      } else {
-        countEls.forEach(animateCount);
-      }
-    }
-  } catch (e) { console.warn('Count-up failed:', e); }
-
-  // ================== TOAST HELPER ==================
-  window.showToast = function (message, type) {
-    try {
-      type = type || 'success';
-      var existing = document.getElementById('globalToast');
-      if (existing) existing.remove();
-      var toast = document.createElement('div');
-      toast.id = 'globalToast';
-      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' + (type === 'error' ? '#dc3545' : '#198754') + ';color:#fff;padding:12px 20px;border-radius:50px;z-index:99999;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:opacity .3s;';
-      toast.textContent = message;
-      document.body.appendChild(toast);
-      setTimeout(function () { toast.style.opacity = '0'; setTimeout(function () { toast.remove(); }, 300); }, 3500);
     } catch (e) { console.warn('Toast failed:', e); }
   };
 

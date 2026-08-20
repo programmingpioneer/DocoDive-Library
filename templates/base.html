@@ -281,6 +281,24 @@
       .community-mega {
         min-width: 640px;
       }
+      /* Navbar dropdown caret (arrow) hamesha hide — profile icon ke saath blink/extra icon nahi */
+      .navbar .dropdown-toggle::after {
+        display: none !important;
+      }
+
+      /* Navbar dropdown menus — bina animation, seedha khulein (no small thing appearing) */
+      .navbar .dropdown-menu {
+        animation: none !important;
+        transform: none !important;
+        opacity: 1 !important;
+      }
+
+      /* Notification dropdown ka special slide animation bhi band */
+      .navbar .animate.slideIn {
+        animation: none !important;
+        transform: none !important;
+        opacity: 1 !important;
+      }
 
       /* ===== MOBILE / TABLET RESPONSIVE ===== */
       @media (max-width: 991.98px) {
@@ -1420,7 +1438,8 @@
                 padding: 4px 12px;
               "
             >
-              {% if session.get('avatar_url') %}
+              {% if session.get('avatar_url') and
+              session.get('avatar_url').startswith('http') %}
               <img
                 src="{{ session.get('avatar_url') }}"
                 class="rounded-circle"
@@ -1428,14 +1447,8 @@
                 height="30"
                 alt="Profile"
                 style="object-fit: cover"
-                onerror="
-                  this.style.display = 'none';
-                  this.nextElementSibling.style.display = 'flex';
-                "
+                loading="lazy"
               />
-              <span class="avatar-fallback" style="display: none"
-                ><i class="bi bi-person-fill"></i
-              ></span>
               {% else %}
               <span class="avatar-fallback"
                 ><i class="bi bi-person-fill"></i
@@ -1957,7 +1970,10 @@
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
     ></script>
     <script defer src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script
+      defer
+      src="{{ url_for('static', filename='js/main.js') }}?v=2"
+    ></script>
     {% block scripts %}{% endblock %}
 
     <!-- ================== AUTH MODAL ================== -->
@@ -2094,6 +2110,7 @@
                   <input
                     type="text"
                     name="first_name"
+                    id="modalFirstName"
                     class="form-control rounded-3"
                     placeholder="John"
                     required
@@ -2106,6 +2123,7 @@
                   <input
                     type="text"
                     name="last_name"
+                    id="modalLastName"
                     class="form-control rounded-3"
                     placeholder="Doe"
                     required
@@ -2130,6 +2148,9 @@
                   >
                 </div>
                 <div class="feedback small mt-1"></div>
+                <div
+                  class="username-suggestions d-flex flex-wrap gap-1 mt-2"
+                ></div>
               </div>
               <div class="mb-3">
                 <label class="form-label small fw-semibold">Email</label>
@@ -2297,6 +2318,71 @@
           document.documentElement.style.setProperty("--aos-delay", "50ms");
         }
       })();
+    </script>
+
+    <!-- Verified Popup -->
+    <div
+      id="verifiedModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #fff;
+        padding: 30px 24px;
+        border-radius: 24px;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+        z-index: 99999;
+        text-align: center;
+        max-width: 380px;
+        width: 90%;
+      "
+    >
+      <div style="font-size: 3rem; margin-bottom: 10px" id="verifiedIcon">
+        ✅
+      </div>
+      <h4 class="fw-bold mb-2" id="verifiedTitle" style="color: #1e1b4b">
+        Account Verified!
+      </h4>
+      <p class="text-muted mb-3" id="verifiedText">
+        Your email has been verified successfully.
+      </p>
+      <button
+        class="btn btn-primary rounded-pill px-4"
+        onclick="
+          document.getElementById('verifiedModal').style.display = 'none'
+        "
+      >
+        Continue
+      </button>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const params = new URLSearchParams(window.location.search);
+        const verified = params.get("verified");
+        if (verified === "1") {
+          document.getElementById("verifiedIcon").textContent = "✅";
+          document.getElementById("verifiedTitle").textContent =
+            "Account Verified!";
+          document.getElementById("verifiedText").textContent =
+            "Your email has been verified successfully.";
+          document.getElementById("verifiedModal").style.display = "block";
+        } else if (verified === "0") {
+          document.getElementById("verifiedIcon").textContent = "❌";
+          document.getElementById("verifiedTitle").textContent =
+            "Verification Failed";
+          document.getElementById("verifiedText").textContent =
+            "Invalid or expired verification link.";
+          document.getElementById("verifiedModal").style.display = "block";
+        }
+        const url = new URL(window.location.href);
+        url.searchParams.delete("verified");
+        if (window.location.search && verified) {
+          history.replaceState(null, "", url.pathname);
+        }
+      });
     </script>
   </body>
 </html>
