@@ -49,30 +49,42 @@
       .bg-blob {
         position: absolute;
         border-radius: 50%;
-        filter: blur(60px);
-        opacity: 0.2;
+        filter: blur(70px);
+        opacity: 0.25;
         z-index: 0;
+        animation: blobFloat 8s ease-in-out infinite alternate;
       }
       .blob-1 {
-        width: 300px;
-        height: 300px;
+        width: 340px;
+        height: 340px;
         background: var(--primary);
         top: -100px;
         left: -100px;
       }
       .blob-2 {
-        width: 250px;
-        height: 250px;
+        width: 280px;
+        height: 280px;
         background: var(--accent);
         bottom: -80px;
         right: -80px;
+        animation-delay: 2s;
       }
       .blob-3 {
-        width: 180px;
-        height: 180px;
+        width: 190px;
+        height: 190px;
         background: #818cf8;
-        top: 30%;
-        right: 10%;
+        top: 35%;
+        right: 12%;
+        animation-delay: 4s;
+      }
+
+      @keyframes blobFloat {
+        from {
+          transform: translateY(0) scale(1);
+        }
+        to {
+          transform: translateY(-25px) scale(1.05);
+        }
       }
 
       .container-main {
@@ -80,7 +92,7 @@
         z-index: 1;
         text-align: center;
         width: 100%;
-        max-width: 900px;
+        max-width: 920px;
         animation: fadeInUp 0.6s ease-out;
       }
 
@@ -99,45 +111,92 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 80px;
-        height: 80px;
+        width: 84px;
+        height: 84px;
         background: linear-gradient(135deg, var(--primary), #818cf8);
-        border-radius: 24px;
-        margin-bottom: 20px;
-        box-shadow: 0 12px 24px rgba(67, 56, 202, 0.2);
+        border-radius: 26px;
+        margin-bottom: 22px;
+        box-shadow: 0 14px 28px rgba(67, 56, 202, 0.25);
         color: white;
-        font-size: 2.5rem;
+        font-size: 2.6rem;
+        animation: floatIcon 3s ease-in-out infinite;
+      }
+
+      @keyframes floatIcon {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-8px);
+        }
       }
 
       .error-card {
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.82);
         backdrop-filter: blur(25px);
         -webkit-backdrop-filter: blur(25px);
-        border: 1px solid rgba(255, 255, 255, 0.5);
-        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 30px;
         box-shadow: var(--shadow);
-        padding: 40px 30px 35px;
-        max-width: 500px;
+        padding: 38px 28px 32px;
+        max-width: 540px;
         width: 100%;
         margin: 0 auto;
       }
 
       .error-code {
-        font-size: 6rem;
+        font-size: 6.5rem;
         font-weight: 800;
         background: linear-gradient(135deg, var(--primary), var(--accent));
         -webkit-background-clip: text;
         background-clip: text;
         -webkit-text-fill-color: transparent;
         line-height: 1;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
+        letter-spacing: -2px;
       }
 
       .message {
-        font-size: 1.2rem;
+        font-size: 1.15rem;
         color: #6b7280;
-        margin: 0 0 25px;
-        line-height: 1.4;
+        margin: 0 0 20px;
+        line-height: 1.5;
+      }
+
+      .search-box {
+        display: flex;
+        margin-bottom: 20px;
+        border: 1px solid var(--border);
+        border-radius: 50px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(30, 27, 75, 0.06);
+        background: #fff;
+      }
+
+      .search-box input {
+        flex: 1;
+        border: none;
+        padding: 12px 18px;
+        font-size: 0.9rem;
+        color: var(--dark);
+        outline: none;
+        min-width: 0;
+      }
+
+      .search-box button {
+        background: var(--dark);
+        border: none;
+        color: #fff;
+        padding: 0 22px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        white-space: nowrap;
+      }
+
+      .search-box button:hover {
+        background: #312e81;
       }
 
       .btn-primary-custom {
@@ -164,17 +223,33 @@
         color: #fff;
       }
 
-      .btn-primary-custom i {
-        font-size: 1.2rem;
+      .quick-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px 18px;
+        margin-top: 20px;
+      }
+
+      .quick-links a {
+        color: #6b7280;
+        text-decoration: none;
+        font-size: 0.82rem;
+        font-weight: 500;
+        transition: color 0.2s;
+      }
+
+      .quick-links a:hover {
+        color: var(--primary);
       }
 
       /* ========== TRENDING BOOKS ========== */
       .trending-section {
-        margin-top: 40px;
+        margin-top: 45px;
       }
 
       .trending-title {
-        font-size: 1.4rem;
+        font-size: 1.45rem;
         font-weight: 700;
         color: var(--dark);
         margin-bottom: 25px;
@@ -188,17 +263,17 @@
 
       .trending-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
         gap: 16px;
       }
 
       .trending-card {
-        background: rgba(255, 255, 255, 0.85);
+        background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.5);
-        border-radius: 16px;
-        padding: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 18px;
+        padding: 12px;
         text-decoration: none;
         color: var(--dark);
         box-shadow: 0 8px 20px rgba(30, 27, 75, 0.08);
@@ -208,24 +283,25 @@
       }
 
       .trending-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 15px 30px rgba(30, 27, 75, 0.15);
+        transform: translateY(-6px);
+        box-shadow: 0 18px 35px rgba(30, 27, 75, 0.18);
         color: var(--dark);
       }
 
       .trending-cover {
         width: 100%;
-        height: 160px;
+        height: 170px;
         object-fit: cover;
-        border-radius: 10px;
+        object-position: center;
+        border-radius: 12px;
         margin-bottom: 10px;
         background: linear-gradient(135deg, #a5b4fc, #818cf8);
       }
 
       .trending-fallback {
         width: 100%;
-        height: 160px;
-        border-radius: 10px;
+        height: 170px;
+        border-radius: 12px;
         margin-bottom: 10px;
         background: linear-gradient(135deg, #a5b4fc, #818cf8);
         display: flex;
@@ -233,7 +309,8 @@
         justify-content: center;
         color: white;
         font-weight: 700;
-        font-size: 1.5rem;
+        font-size: 1.6rem;
+        letter-spacing: 1px;
       }
 
       .trending-book-title {
@@ -255,6 +332,9 @@
         color: #6b7280;
         text-align: left;
         margin-bottom: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .trending-stats {
@@ -267,10 +347,11 @@
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        font-size: 0.65rem;
+        font-size: 0.62rem;
         font-weight: 600;
         padding: 2px 8px;
         border-radius: 20px;
+        white-space: nowrap;
       }
 
       .trending-stat.downloads {
@@ -283,24 +364,45 @@
         color: #b8860b;
       }
 
+      .view-all-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 28px;
+        padding: 10px 24px;
+        background: rgba(67, 56, 202, 0.08);
+        color: var(--primary);
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: all var(--transition);
+      }
+
+      .view-all-btn:hover {
+        background: var(--primary);
+        color: #fff;
+        transform: translateY(-2px);
+      }
+
       @media (max-width: 500px) {
         body {
           padding: 20px 12px;
         }
         .error-card {
-          padding: 30px 20px 25px;
+          padding: 28px 18px 24px;
         }
         .error-code {
-          font-size: 4rem;
+          font-size: 4.5rem;
         }
         .message {
           font-size: 1rem;
         }
         .brand-icon {
-          width: 60px;
-          height: 60px;
+          width: 64px;
+          height: 64px;
           font-size: 2rem;
-          border-radius: 18px;
+          border-radius: 20px;
         }
         .bg-blob {
           display: none;
@@ -311,7 +413,7 @@
         }
         .trending-cover,
         .trending-fallback {
-          height: 120px;
+          height: 130px;
         }
       }
     </style>
@@ -331,9 +433,27 @@
           Oops! The page you're looking for doesn't exist.<br />It may have been
           moved or deleted.
         </p>
+
+        <form class="search-box" action="/" method="GET">
+          <input
+            type="text"
+            name="search_query"
+            placeholder="Search books by title or author..."
+            required
+          />
+          <button type="submit"><i class="bi bi-search"></i> Search</button>
+        </form>
+
         <a href="/" class="btn-primary-custom">
           <i class="bi bi-house-door me-2"></i> Back to Home
         </a>
+
+        <div class="quick-links">
+          <a href="/#categories"><i class="bi bi-grid me-1"></i>Categories</a>
+          <a href="/#all-books"><i class="bi bi-book me-1"></i>All Books</a>
+          <a href="/reviews"><i class="bi bi-star me-1"></i>Reviews</a>
+          <a href="/feedback"><i class="bi bi-lightbulb me-1"></i>Feedback</a>
+        </div>
       </div>
 
       {% if trending_books %}
@@ -373,6 +493,9 @@
           </a>
           {% endfor %}
         </div>
+        <a href="/#all-books" class="view-all-btn">
+          <i class="bi bi-arrow-right-circle"></i> View All Books
+        </a>
       </section>
       {% endif %}
     </div>
