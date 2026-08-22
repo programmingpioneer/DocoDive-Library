@@ -30,17 +30,15 @@ document.addEventListener('DOMContentLoaded', function () {
   // ================== AOS INIT (Modern, Smooth & Responsive) ==================
   try {
     if (typeof AOS !== 'undefined') {
-      var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
       AOS.init({
-        duration: 400,
+        duration: 600,
         once: true,
         mirror: false,
-        offset: 100,
+        offset: 80,
         easing: 'ease-out-cubic',
         throttleDelay: 50,
         anchorPlacement: 'top-bottom',
-        disable: prefersReducedMotion,
+        disable: false,
         startEvent: 'DOMContentLoaded',
         disableMutationObserver: true
       });
@@ -577,7 +575,7 @@ document.addEventListener('DOMContentLoaded', function () {
   try {
     var countEls = document.querySelectorAll('[data-count]');
     if (countEls.length) {
-      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var reduceMotion = false;
       function animateCount(el) {
         var target = parseInt(el.getAttribute('data-count'), 10) || 0;
         if (reduceMotion) {

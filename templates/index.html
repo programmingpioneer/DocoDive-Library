@@ -84,99 +84,6 @@
     background: rgba(30, 27, 75, 0.06) !important;
     color: #1e1b4b !important;
   }
-
-  .suggestion-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 18px;
-    cursor: pointer;
-    transition: background 0.15s;
-    animation: suggestionIn 0.25s ease both;
-  }
-  .suggestion-item:hover {
-    background: #f0f0ff;
-  }
-  .suggestion-img {
-    width: 40px;
-    height: 55px;
-    object-fit: cover;
-    border-radius: 6px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  }
-  .suggestion-info {
-    flex: 1;
-    min-width: 0;
-  }
-  .suggestion-title {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: #1e1b4b;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .suggestion-meta {
-    font-size: 0.75rem;
-    color: #6b7280;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 2px;
-  }
-  .suggestion-meta .badge {
-    font-size: 0.65rem;
-    font-weight: 500;
-  }
-  .no-cover-placeholder {
-    width: 40px;
-    height: 55px;
-    background: linear-gradient(135deg, #a5b4fc, #818cf8);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 700;
-    font-size: 0.8rem;
-  }
-
-  @keyframes suggestionIn {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* ===== SEARCH SUGGESTIONS BOX ===== */
-  .search-suggestions {
-    border-radius: 0 0 16px 16px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    max-height: 380px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #4338ca #e0e7ff;
-    position: relative;
-    z-index: 10;
-  }
-
-  .search-suggestions::-webkit-scrollbar {
-    width: 6px;
-  }
-  .search-suggestions::-webkit-scrollbar-track {
-    background: #e0e7ff;
-  }
-  .search-suggestions::-webkit-scrollbar-thumb {
-    background: #4338ca;
-    border-radius: 10px;
-  }
-
   /* ===== FIND BOOK BUTTON LOADING & PULSE ===== */
   #findBookBtn .btn-normal {
     display: inline-flex;
@@ -951,36 +858,6 @@
     animation-delay: 0.4s;
   }
 
-  /* Reduced motion walon ke liye off */
-  @media (prefers-reduced-motion: reduce) {
-    #recommendedCarousel .carousel-item.active .col-4,
-    #newArrivalsCarousel .carousel-item.active .col-4 {
-      animation: none;
-    }
-  }
-  /* ===== CAROUSEL FADE (NO HORIZONTAL SLIDE) ===== */
-  #recommendedCarousel .carousel-item,
-  #newArrivalsCarousel .carousel-item {
-    transition: opacity 1.5s ease-in-out !important;
-    transform: none !important;
-  }
-
-  #recommendedCarousel .carousel-item {
-    opacity: 0;
-    display: block;
-  }
-  #recommendedCarousel .carousel-item.active {
-    opacity: 1;
-  }
-
-  #newArrivalsCarousel .carousel-item {
-    opacity: 0;
-    display: block;
-  }
-  #newArrivalsCarousel .carousel-item.active {
-    opacity: 1;
-  }
-
   /* Cards ka entrance fade */
   @keyframes fadeCardIn {
     from {
@@ -1108,6 +985,214 @@
       min-height: 320px;
     }
   }
+       /* ===== ABOUT CARDS: ANIMATED HOVER + RESPONSIVE ===== */
+  .stat-card,
+  .mini-card,
+  .feature-item,
+  .trust-badge {
+    transition:
+      transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .stat-card:hover,
+  .mini-card:hover,
+  .feature-item:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 18px 38px rgba(30, 27, 75, 0.14);
+  }
+
+  .trust-badge {
+    display: inline-block;
+  }
+
+  .trust-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 18px rgba(30, 27, 75, 0.12);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stat-card,
+    .mini-card,
+    .feature-item,
+    .trust-badge {
+      transition: none;
+      animation: none;
+      will-change: auto;
+      transform: none;
+    }
+  }
+
+  /* ===== SEARCH SUGGESTIONS — FINAL CONSOLIDATED ===== */
+  #searchSuggestions.search-suggestions {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 500px !important;
+    margin-top: 8px !important;
+    max-height: 300px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
+    box-shadow: 0 18px 40px rgba(30, 27, 75, 0.16);
+    padding: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #4338ca #e0e7ff;
+  }
+
+  #searchSuggestions.search-suggestions.d-none {
+    display: none !important;
+  }
+
+  #searchSuggestions [style*="min-height"] {
+    display: none !important;
+  }
+
+  #searchSuggestions .suggestion-item {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-height: 60px !important;
+    padding: 6px 8px !important;
+    border-radius: 10px !important;
+    background: #fff !important;
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    margin-bottom: 5px !important;
+    animation: none !important;
+    transition: background 0.15s ease !important;
+    position: relative !important;
+    overflow: hidden !important;
+    cursor: pointer !important;
+  }
+
+  #searchSuggestions .suggestion-item:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  #searchSuggestions .suggestion-item:hover {
+    background: #f5f6ff !important;
+  }
+
+  #searchSuggestions .suggestion-img,
+  #searchSuggestions .no-cover-placeholder {
+    order: 1 !important;
+    flex: 0 0 42px !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    height: 60px !important;
+    min-height: 60px !important;
+    max-height: 60px !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    border-radius: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #f1f5f9 !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+    font-size: 0.7rem !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+  }
+
+  #searchSuggestions .no-cover-placeholder {
+    background: linear-gradient(135deg, #a5b4fc, #818cf8) !important;
+  }
+
+  #searchSuggestions .suggestion-info {
+    order: 2 !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    text-align: left !important;
+  }
+
+  #searchSuggestions .suggestion-title,
+  #searchSuggestions .suggestion-desc,
+  #searchSuggestions .suggestion-author {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin: 0 !important;
+  }
+
+  #searchSuggestions .suggestion-title {
+    font-size: 0.78rem !important;
+    line-height: 1.25 !important;
+    color: #1e1b4b !important;
+    font-weight: 600 !important;
+  }
+
+  #searchSuggestions .suggestion-desc {
+    font-size: 0.66rem !important;
+    line-height: 1.25 !important;
+    color: #6b7280 !important;
+  }
+
+  #searchSuggestions .suggestion-meta {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+  }
+
+  #searchSuggestions .suggestion-meta .badge {
+    font-size: 0.55rem !important;
+    font-weight: 500 !important;
+    padding: 2px 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  #searchSuggestions .suggestion-author {
+    font-size: 0.68rem !important;
+    color: #6b7280 !important;
+  }
+
+  #searchSuggestions::-webkit-scrollbar {
+    width: 5px;
+  }
+  #searchSuggestions::-webkit-scrollbar-track {
+    background: #e0e7ff;
+    border-radius: 10px;
+  }
+  #searchSuggestions::-webkit-scrollbar-thumb {
+    background: #4338ca;
+    border-radius: 10px;
+  }
+    /* ===== BOOK CARD COUNTS: FIXED BOTTOM-LEFT ===== */
+  .book-card-inner {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .book-card-inner .card-body {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .book-card-inner .card-body .d-flex.align-items-center.gap-2.mt-1 {
+    margin-top: auto !important;
+    justify-content: flex-start !important;
+  }
 </style>
 {% endblock %} {% block content %}
 <!-- ========== HERO ========== -->
@@ -1115,6 +1200,7 @@
   class="hero-section py-4 py-md-5 mb-4 border-bottom position-relative"
   style="min-height: auto"
   data-aos="fade-up"
+  data-aos-duration="700"
 >
   <div class="container py-3 py-md-5">
     <div class="row align-items-center g-4 g-lg-5">
@@ -1687,7 +1773,8 @@
     <div
       class="col-4 col-sm-3 col-md-2 col-lg-2"
       data-aos="zoom-in"
-      data-aos-delay="{{ loop.index0 * 100 }}"
+      data-aos-duration="400"
+      data-aos-delay="{{ loop.index0 * 50 }}"
     >
       <a href="/learn/{{ cat.level|slugify }}" class="text-decoration-none">
         <div
@@ -1758,7 +1845,7 @@
   <h2 class="section-title mb-4">✨ Recommended for You</h2>
   <div
     id="recommendedCarousel"
-    class="carousel slide"
+    class="carousel slide carousel-fade"
     data-bs-ride="carousel"
     data-bs-interval="3000"
   >
@@ -1928,7 +2015,7 @@
   {% if pdfs %}
   <div
     id="newArrivalsCarousel"
-    class="carousel slide"
+    class="carousel slide carousel-fade"
     data-bs-ride="carousel"
     data-bs-interval="4000"
   >
@@ -2296,7 +2383,6 @@
   id="about"
   class="py-4 py-md-5 mt-4 mt-md-5"
   style="background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%)"
-  data-aos="fade-left"
 >
   <div class="container py-3 py-md-4">
     <div class="row align-items-center g-4 g-lg-5 mb-5">
@@ -2399,7 +2485,7 @@
 
     <!-- Stats Row -->
     <div class="row g-3 g-md-4 text-center mb-5">
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-lg-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="0">
         <div class="stat-card">
           <i class="bi bi-book-half stat-icon"></i>
           <h3 class="stat-number" data-count="{{ total_books }}">
@@ -2408,7 +2494,7 @@
           <p class="stat-label">Books</p>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-lg-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
         <div class="stat-card">
           <i class="bi bi-download stat-icon"></i>
           <h3 class="stat-number" data-count="{{ total_downloads }}">
@@ -2417,7 +2503,7 @@
           <p class="stat-label">Downloads</p>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-lg-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
         <div class="stat-card">
           <i class="bi bi-people stat-icon"></i>
           <h3 class="stat-number" data-count="{{ total_users }}">
@@ -2426,7 +2512,7 @@
           <p class="stat-label">Users</p>
         </div>
       </div>
-      <div class="col-6 col-lg-3">
+      <div class="col-6 col-lg-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="300">
         <div class="stat-card">
           <i class="bi bi-grid stat-icon"></i>
           <h3 class="stat-number" data-count="{{ total_categories }}">
@@ -2439,7 +2525,7 @@
 
     <!-- Mission / Vision / Values -->
     <div class="row g-3 g-md-4 mb-5">
-      <div class="col-md-4">
+      <div class="col-md-4" data-aos="fade-up" data-aos-duration="600" data-aos-delay="0">
         <div class="mini-card h-100">
           <i class="bi bi-rocket-takeoff mini-icon"></i>
           <h6 class="fw-bold">Mission</h6>
@@ -2449,7 +2535,7 @@
           </p>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-4" data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
         <div class="mini-card h-100">
           <i class="bi bi-eye mini-icon"></i>
           <h6 class="fw-bold">Vision</h6>
@@ -2458,7 +2544,7 @@
           </p>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-4" data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
         <div class="mini-card h-100">
           <i class="bi bi-heart mini-icon"></i>
           <h6 class="fw-bold">Values</h6>
@@ -2469,30 +2555,30 @@
       </div>
     </div>
 
-    <!-- Why DocoDive -->
+        <!-- Why DocoDive -->
     <div class="row g-3 g-md-4 mb-5">
-      <div class="col-6 col-md-3">
+      <div class="col-6 col-md-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="0">
         <div class="feature-item text-center">
           <i class="bi bi-gift feature-icon text-success"></i>
           <h6 class="fw-bold mb-1">100% Free</h6>
           <p class="small text-muted mb-0">No hidden charges, ever.</p>
         </div>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col-6 col-md-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
         <div class="feature-item text-center">
           <i class="bi bi-patch-check feature-icon text-primary"></i>
           <h6 class="fw-bold mb-1">Curated Quality</h6>
           <p class="small text-muted mb-0">Handpicked, not scraped.</p>
         </div>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col-6 col-md-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
         <div class="feature-item text-center">
           <i class="bi bi-people feature-icon text-info"></i>
           <h6 class="fw-bold mb-1">Community Driven</h6>
           <p class="small text-muted mb-0">Built with reader feedback.</p>
         </div>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col-6 col-md-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="300">
         <div class="feature-item text-center">
           <i class="bi bi-shield-check feature-icon text-warning"></i>
           <h6 class="fw-bold mb-1">Copyright-Safe</h6>
@@ -2501,18 +2587,18 @@
       </div>
     </div>
 
-    <!-- Trust Badges -->
+        <!-- Trust Badges -->
     <div class="d-flex flex-wrap justify-content-center gap-2 gap-md-3 mb-5">
-      <span class="trust-badge"
+      <span class="trust-badge" data-aos="zoom-in" data-aos-duration="500" data-aos-delay="0"
         ><i class="bi bi-lock-fill"></i> SSL Secure</span
       >
-      <span class="trust-badge"
+      <span class="trust-badge" data-aos="zoom-in" data-aos-duration="500" data-aos-delay="100"
         ><i class="bi bi-activity"></i> 99.9% Uptime</span
       >
-      <span class="trust-badge"
+      <span class="trust-badge" data-aos="zoom-in" data-aos-duration="500" data-aos-delay="200"
         ><i class="bi bi-shield-check"></i> Copyright-Safe</span
       >
-      <span class="trust-badge"
+      <span class="trust-badge" data-aos="zoom-in" data-aos-duration="500" data-aos-delay="300"
         ><i class="bi bi-download"></i> Easy Downloads</span
       >
     </div>
@@ -2522,11 +2608,6 @@
     <div class="text-center mb-3">
       <h3 class="fw-bold mb-1" style="color: #1e1b4b">
         <i class="bi bi-star-fill text-warning me-2"></i>Top Reviews
-        <span
-          class="badge bg-primary rounded-pill ms-2"
-          style="font-size: 0.8rem"
-          >{{ total_reviews }}+</span
-        >
       </h3>
     </div>
     <div id="testimonialFader" class="testimonial-fader" data-interval="5000">
@@ -3022,9 +3103,8 @@
     const suggestionsBox = document.getElementById("searchSuggestions");
     const searchForm = document.getElementById("searchForm");
     const clearBtn = document.getElementById("clearSearchBtn");
-    const bookModal = new bootstrap.Modal(
-      document.getElementById("bookDetailModal"),
-    );
+    const bookModalEl = document.getElementById("bookDetailModal");
+    const bookModal = bookModalEl ? new bootstrap.Modal(bookModalEl) : null;
     let debounceTimer;
 
     clearBtn.addEventListener("click", () => {
@@ -3063,7 +3143,7 @@
         }
       }
 
-      if (query.length < 2) {
+      if (query.length < 1) {
         hideSearchLoading();
         suggestionsBox.classList.add("d-none");
         return;
@@ -3094,50 +3174,46 @@
         });
     }
 
-    function renderSuggestions(books) {
+      function renderSuggestions(books) {
       suggestionsBox.innerHTML = books
         .map((book) => {
-          let coverHTML;
-          if (book.image_url && book.image_url !== "None") {
-            coverHTML = `<img src="${book.image_url}" alt="Cover" class="suggestion-img">`;
-          } else {
-            const initials = (book.title || "Book")
-              .substring(0, 2)
-              .toUpperCase();
-            coverHTML = `<div class="no-cover-placeholder">${initials}</div>`;
-          }
+          const initials = (book.title || "Book").substring(0, 2).toUpperCase();
+          const rawCover = (book.image_url || "").trim();
+          const hasRealCover =
+            rawCover &&
+            rawCover !== "None" &&
+            !/placeholder|no-?cover|default|generated|auto|letter|fallback|initial/i.test(rawCover);
+
+          const coverHTML = hasRealCover
+            ? `<img src="${rawCover}" alt="Cover" class="suggestion-img" onerror="this.outerHTML='<div class=\'no-cover-placeholder\'>${initials}</div>'">`
+            : `<div class="no-cover-placeholder">${initials}</div>`;
+
+          const desc = book.description
+            ? `<div class="suggestion-desc">${book.description}</div>`
+            : "";
+
           return `
-                <div class="suggestion-item" data-id="${book.id}">
-                    ${coverHTML}
-                    <div class="suggestion-info">
-                        <div class="suggestion-title">${book.title}</div>
-                        <div class="suggestion-meta">
-                            <span>${book.author || "Unknown"}</span>
-                            <span class="badge bg-primary">${book.level}</span>
-                        </div>
-                        <div class="suggestion-meta mt-1">
-                            <span class="d-inline-flex align-items-center gap-1" style="background:rgba(67,56,202,0.08); border-radius:20px; padding:1px 8px; font-size:0.65rem; color:#4338ca; font-weight:600;">
-                                <i class="bi bi-download" style="font-size:0.7rem;"></i>
-                                ${Number(book.download_count || 0).toLocaleString()}
-                            </span>
-                            <span class="d-inline-flex align-items-center gap-1" style="background:rgba(255,183,3,0.1); border-radius:20px; padding:1px 8px; font-size:0.65rem; color:#b8860b; font-weight:600;">
-                                <i class="bi bi-eye-fill" style="font-size:0.7rem;"></i>
-                                ${Number(book.view_count || 0).toLocaleString()}
-                            </span>
-                        </div>
-                    </div>
+            <div class="suggestion-item" data-id="${book.id}">
+              ${coverHTML}
+              <div class="suggestion-info">
+                <div class="suggestion-title">${book.title}</div>
+                ${desc}
+                <div class="suggestion-meta">
+                  <span class="badge bg-primary">${book.level || "General"}</span>
+                  <span class="suggestion-author">${book.author || "Unknown"}</span>
                 </div>
-            `;
+              </div>
+            </div>
+          `;
         })
         .join("");
+
       suggestionsBox.querySelectorAll(".suggestion-item").forEach((item) => {
         item.addEventListener("click", function () {
-          suggestionsBox.classList.add("d-none");
-          openBookModal(this.dataset.id);
+          window.location.href = "/book/" + this.dataset.id;
         });
       });
     }
-
     document.addEventListener("click", (e) => {
       if (
         !searchInput.contains(e.target) &&
@@ -3147,46 +3223,43 @@
       }
     });
 
-    searchForm.addEventListener("submit", function (e) {
+        searchForm.addEventListener("submit", function (e) {
+      e.preventDefault();
       const q = searchInput.value.trim();
-      if (!q) {
-        e.preventDefault();
-        return;
-      }
+      if (!q) return;
 
       const findBtn = document.getElementById("findBookBtn");
-
-      function showLoading() {
-        if (!findBtn) return;
+      if (findBtn) {
         findBtn.classList.add("loading");
         findBtn.disabled = true;
       }
-      function hideLoading() {
-        if (!findBtn) return;
-        findBtn.classList.remove("loading");
-        findBtn.disabled = false;
-      }
-
-      showLoading();
 
       fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`)
         .then((res) => res.json())
         .then((books) => {
-          const exact = books.find(
-            (b) => b.title.toLowerCase() === q.toLowerCase(),
-          );
-          if (exact) {
-            e.preventDefault();
-            hideLoading();
-            openBookModal(exact.id);
-          } else {
-            e.preventDefault();
-            window.location.href = "/?search_query=" + encodeURIComponent(q);
+          if (findBtn) {
+            findBtn.classList.remove("loading");
+            findBtn.disabled = false;
           }
+
+          if (!books || !books.length) {
+            suggestionsBox.innerHTML =
+              '<div class="p-3 text-center text-muted small">No books found for "' +
+              q +
+              '"</div>';
+          } else {
+            renderSuggestions(books);
+          }
+          suggestionsBox.classList.remove("d-none");
         })
         .catch(() => {
-          e.preventDefault();
-          window.location.href = "/?search_query=" + encodeURIComponent(q);
+          if (findBtn) {
+            findBtn.classList.remove("loading");
+            findBtn.disabled = false;
+          }
+          suggestionsBox.innerHTML =
+            '<div class="p-3 text-center text-muted small">Search failed. Try again.</div>';
+          suggestionsBox.classList.remove("d-none");
         });
     });
 
