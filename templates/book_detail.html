@@ -16,9 +16,9 @@ endblock %} {% block content %}
       {% if book.image_url and book.image_url != 'None' %}
       <img
         src="{{ book.image_url }}"
-        class="img-fluid rounded-4 shadow-sm w-100"
+        class="rounded-4 shadow-sm w-100"
         alt="{{ book.title }}"
-        style="object-fit: cover; max-height: 450px"
+        style="width: 100%; height: 420px; object-fit: cover"
         loading="lazy"
       />
       {% else %}
@@ -283,8 +283,20 @@ endblock %} {% block content %}
               {% endif %}
             </div>
             <div class="card-body p-2">
+              <div
+                class="d-flex justify-content-between align-items-center mb-1"
+              >
+                <span
+                  class="badge bg-light text-muted"
+                  style="font-size: 0.6rem"
+                  >{{ related.level }}</span
+                >
+                <span class="fw-bold text-warning" style="font-size: 0.7rem"
+                  >FREE</span
+                >
+              </div>
               <h6
-                class="fw-bold text-truncate mb-1"
+                class="fw-bold mb-1"
                 style="font-size: 0.8rem; color: #1e1b4b"
               >
                 {{ related.title | replace('_', ' ') }}
@@ -292,7 +304,7 @@ endblock %} {% block content %}
               <p class="text-muted small mb-2" style="font-size: 0.65rem">
                 By {{ related.author }}
               </p>
-              <div class="d-flex align-items-center gap-2">
+              <div class="d-flex align-items-center gap-2 counts-row">
                 <span
                   class="d-inline-flex align-items-center gap-1"
                   style="
@@ -768,41 +780,99 @@ endblock %} {% block content %}
 {% endblock %} {% block scripts %}
 <meta name="is-moderator" content="{{ is_moderator|default(false)|tojson }}" />
 <style>
-  /* ========== RELATED BOOKS ========== */
+     /* ========== RELATED BOOKS — FINAL COVER FIX ========== */
   .related-book-card {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
     border-radius: 16px !important;
-    overflow: hidden;
+    overflow: hidden !important;
     transition:
       transform 0.3s ease,
-      box-shadow 0.3s ease;
+      box-shadow 0.3s ease !important;
   }
   .related-book-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-4px) !important;
     box-shadow: 0 15px 30px rgba(30, 27, 75, 0.15) !important;
   }
-  .related-book-cover {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
-    border-radius: 12px 12px 0 0;
+
+  /* Cover area — fixed height pakka */
+  .related-book-card .book-cover-outer {
+    height: 165px !important;
+    min-height: 165px !important;
+    max-height: 165px !important;
+    padding: 0.4rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
   }
-  .related-book-fallback {
-    width: 100%;
-    height: 180px;
-    background: linear-gradient(135deg, #a5b4fc, #818cf8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 700;
-    font-size: 1.5rem;
-    border-radius: 12px 12px 0 0;
+
+  .related-book-card .related-book-cover {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: #f1f5f9 !important;
+    border-radius: 8px !important;
+    display: block !important;
   }
+
+  /* Letter fallback — same full box */
+  .related-book-card .related-book-fallback {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: linear-gradient(135deg, #a5b4fc, #818cf8) !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+    font-size: 1.5rem !important;
+    border-radius: 8px !important;
+  }
+
+  .related-book-card .card-body {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0.5rem 0.4rem !important;
+  }
+
+  .related-book-card .card-body .badge {
+    font-size: 0.6rem !important;
+  }
+
+  .related-book-card .card-body h6 {
+    min-height: 34px !important;
+    line-height: 1.25 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    white-space: normal !important;
+  }
+
+  .related-book-card .card-body p.small {
+    min-height: 16px !important;
+  }
+
+  .related-book-card .counts-row {
+    margin-top: auto !important;
+    justify-content: flex-start !important;
+  }
+
   @media (max-width: 576px) {
-    .related-book-cover,
-    .related-book-fallback {
-      height: 130px;
+    .related-book-card .book-cover-outer {
+      height: 130px !important;
+      min-height: 130px !important;
+      max-height: 130px !important;
     }
+  }
     .book-cover-fallback {
       min-height: 200px !important;
     }

@@ -1,5 +1,5 @@
 // ================== DOCODIVE SERVICE WORKER (FIXED) ==================
-const CACHE_VERSION = 'v1.0.2';  // ⬆️ Version badha di
+const CACHE_VERSION = 'v1.0.7';  // ⬆️ Version badha di
 const STATIC_CACHE = `docodive-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `docodive-images-${CACHE_VERSION}`;
 

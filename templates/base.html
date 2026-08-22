@@ -1145,7 +1145,6 @@
 
       /* ========== LAZY RENDERING (safe) ========== */
       section,
-      footer,
       #reviews,
       #discussion {
         contain: layout style;
@@ -1234,6 +1233,27 @@
         width: 0;
         z-index: 9999;
         transition: width 0.1s linear;
+      }
+            /* ========== PAGE ENTER ANIMATION ========== */
+      .page-enter {
+        animation: pageFade .5s ease-out;
+      }
+
+      @keyframes pageFade {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .page-enter {
+          animation: none;
+        }
       }
     </style>
 
@@ -1801,14 +1821,14 @@
     </nav>
 
     <!-- ================== MAIN CONTENT ================== -->
-    <main class="flex-grow-1">{% block content %}{% endblock %}</main>
+    <main class="flex-grow-1 page-enter">{% block content %}{% endblock %}</main>
 
     <!-- ================== FOOTER ================== -->
-    <footer class="site-footer mt-auto" data-aos="fade-up">
-      <div class="container">
+    <footer class="site-footer mt-auto">
+      <div class="container" data-aos="fade-up">
         <div class="row footer-grid g-4 py-5">
-          <!-- COLUMN 1: Brand -->
-          <div class="col-lg-3">
+                        <!-- COLUMN 1: Brand -->
+          <div class="col-lg-3" data-aos="fade-right" data-aos-delay="0">
             <h6
               class="footer-heading d-flex justify-content-between align-items-center"
               data-bs-toggle="collapse"
@@ -1822,49 +1842,19 @@
                 Free digital library for programming books, research papers, and
                 learning resources. Knowledge should be free.
               </p>
-              <div class="footer-social d-flex gap-2 flex-wrap">
-                <a
-                  href="https://github.com/programmingpioneer"
-                  target="_blank"
-                  class="footer-social-icon"
-                  ><i class="bi bi-github"></i
-                ></a>
-                <a
-                  href="https://www.linkedin.com/in/sufyan-khans/"
-                  target="_blank"
-                  class="footer-social-icon"
-                  ><i class="bi bi-linkedin"></i
-                ></a>
-                <a
-                  href="https://x.com/programerPioner"
-                  target="_blank"
-                  class="footer-social-icon"
-                  ><i class="bi bi-twitter-x"></i
-                ></a>
-                <a
-                  href="https://www.instagram.com/programmingpioneer/"
-                  target="_blank"
-                  class="footer-social-icon"
-                  ><i class="bi bi-instagram"></i
-                ></a>
-                <a
-                  href="https://www.facebook.com/Programmingpioneer"
-                  target="_blank"
-                  class="footer-social-icon"
-                  ><i class="bi bi-facebook"></i
-                ></a>
-                <a
-                  href="https://t.me/Programmingpioneers"
-                  target="_blank"
-                  class="footer-social-icon"
-                  ><i class="bi bi-telegram"></i
-                ></a>
+              <div class="d-flex flex-wrap gap-2">
+                <a href="https://github.com/programmingpioneer" target="_blank" class="footer-social-icon"><i class="bi bi-github"></i></a>
+                <a href="https://www.linkedin.com/in/sufyan-khans/" target="_blank" class="footer-social-icon"><i class="bi bi-linkedin"></i></a>
+                <a href="https://x.com/programerPioner" target="_blank" class="footer-social-icon"><i class="bi bi-twitter-x"></i></a>
+                <a href="https://www.instagram.com/programmingpioneer/" target="_blank" class="footer-social-icon"><i class="bi bi-instagram"></i></a>
+                <a href="https://www.facebook.com/Programmingpioneer" target="_blank" class="footer-social-icon"><i class="bi bi-facebook"></i></a>
+                <a href="https://t.me/Programmingpioneers" target="_blank" class="footer-social-icon"><i class="bi bi-telegram"></i></a>
               </div>
             </div>
           </div>
 
           <!-- COLUMN 2: Learning Hubs -->
-          <div class="col-lg-3">
+          <div class="col-lg-3" data-aos="fade-up" data-aos-delay="100">
             <h6
               class="footer-heading d-flex justify-content-between align-items-center"
               data-bs-toggle="collapse"
@@ -1894,7 +1884,7 @@
           </div>
 
           <!-- COLUMN 3: Community -->
-          <div class="col-lg-3">
+          <div class="col-lg-3" data-aos="fade-up" data-aos-delay="200">
             <h6
               class="footer-heading d-flex justify-content-between align-items-center"
               data-bs-toggle="collapse"
@@ -1916,7 +1906,7 @@
           </div>
 
           <!-- COLUMN 4: Stay Updated -->
-          <div class="col-lg-3">
+          <div class="col-lg-3" data-aos="fade-up" data-aos-delay="300">
             <h6
               class="footer-heading d-flex justify-content-between align-items-center"
               data-bs-toggle="collapse"
@@ -1957,6 +1947,8 @@
         <!-- Quick links + dark bottom bar -->
         <div
           class="footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 py-3"
+data-aos="fade-up"
+data-aos-delay="400"
         >
           <div class="small">
             <a href="/privacy" class="me-3">Privacy</a>
@@ -1978,7 +1970,7 @@
     <script defer src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script
       defer
-      src="{{ url_for('static', filename='js/main.js') }}?v=2"
+      src="{{ url_for('static', filename='js/main.js') }}?v=7"
     ></script>
     {% block scripts %}{% endblock %}
 

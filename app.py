@@ -2998,21 +2998,22 @@ def robots():
 @app.route("/api/search/suggest")
 def search_suggest():
     q = request.args.get("q", "").strip()
-    if len(q) < 2:
+    if len(q) < 1:
         return jsonify([])
     cur = mysql.connection.cursor()
     cur.execute(
         """
         SELECT d.id, d.title, d.author, c.level, d.image_url,
+               d.description,
                COALESCE(d.download_count, 0) as download_count,
                COALESCE(d.view_count, 0) as view_count
         FROM documents d
         JOIN categories c ON d.category_id = c.id
-        WHERE d.title LIKE %s AND d.approved = 1
+        WHERE (d.title LIKE %s OR d.author LIKE %s) AND d.approved = 1
         ORDER BY d.title
-        LIMIT 8
+        LIMIT 12
     """,
-        (f"%{q}%",),
+        (f"%{q}%", f"%{q}%"),
     )
     results = cur.fetchall()
     cur.close()
@@ -3024,8 +3025,9 @@ def search_suggest():
                 "author": r[2],
                 "level": r[3],
                 "image_url": r[4],
-                "download_count": r[5] or 0,
-                "view_count": r[6] or 0,
+                "description": r[5] or "",
+                "download_count": r[6] or 0,
+                "view_count": r[7] or 0,
             }
             for r in results
         ]

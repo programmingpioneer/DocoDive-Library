@@ -199,6 +199,23 @@ learners on DocoDive. {% endblock %} {% block canonical %}{{ request.base_url
     background: #e0e7ff;
     color: #1e1b4b;
   }
+    /* ===== LEARNING HUB BOOK CARD: COUNTS BOTTOM-LEFT ===== */
+  .book-card-inner {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+  }
+
+  .book-card-inner .card-body {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .book-card-inner .card-body .d-flex.align-items-center.gap-2.mt-1 {
+    margin-top: auto !important;
+    justify-content: flex-start !important;
+  }
 </style>
 {% endblock %} {% block content %}
 <script type="application/ld+json">

@@ -30,17 +30,15 @@ document.addEventListener('DOMContentLoaded', function () {
   // ================== AOS INIT (Modern, Smooth & Responsive) ==================
   try {
     if (typeof AOS !== 'undefined') {
-      var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
       AOS.init({
-        duration: 400,
+        duration: 600,
         once: true,
         mirror: false,
-        offset: 100,
+        offset: 80,
         easing: 'ease-out-cubic',
         throttleDelay: 50,
         anchorPlacement: 'top-bottom',
-        disable: prefersReducedMotion,
+        disable: false,
         startEvent: 'DOMContentLoaded',
         disableMutationObserver: true
       });
@@ -191,9 +189,8 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         });
       }
-
-            // ================== SMART USERNAME LIVE CHECKER ==================
-            var modalUsername = document.getElementById('modalUsername');
+      
+      var modalUsername = document.getElementById('modalUsername');
       if (modalUsername) {
         var modalFirstName = document.getElementById('modalFirstName');
         var modalLastName = document.getElementById('modalLastName');
@@ -249,14 +246,12 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (r) { return r.json(); })
             .then(function (data) {
               if (data.error) return;
-              var chosen = candidate;
 
+              var chosen = candidate;
               if (data.exists || data.reserved) {
-                if (data.suggestions && data.suggestions.length) {
-                  chosen = data.suggestions[0];
-                } else {
-                  chosen = candidate + Math.floor(100 + Math.random() * 900);
-                }
+                chosen = (data.suggestions && data.suggestions.length)
+                  ? data.suggestions[0]
+                  : candidate + Math.floor(100 + Math.random() * 900);
               }
 
               lastAutoProposed = chosen;
@@ -284,9 +279,12 @@ document.addEventListener('DOMContentLoaded', function () {
             var fn = modalFirstName ? modalFirstName.value.trim() : '';
             var ln = modalLastName ? modalLastName.value.trim() : '';
 
-            fetch('/api/check-availability?field=username&value=' + encodeURIComponent(val) +
-                  '&first_name=' + encodeURIComponent(fn) +
-                  '&last_name=' + encodeURIComponent(ln))
+            fetch(
+              '/api/check-availability?field=username&value=' +
+              encodeURIComponent(val) +
+              '&first_name=' + encodeURIComponent(fn) +
+              '&last_name=' + encodeURIComponent(ln)
+            )
               .then(function (r) { return r.json(); })
               .then(function (data) {
                 if (data.error) {
@@ -336,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function () {
               .catch(function () {
                 clearUsernameFeedback();
               });
-          }, 250);
+          }, 100);
         });
 
         // First/last name badalne par bhi recheck ho
@@ -577,7 +575,7 @@ document.addEventListener('DOMContentLoaded', function () {
   try {
     var countEls = document.querySelectorAll('[data-count]');
     if (countEls.length) {
-      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var reduceMotion = false;
       function animateCount(el) {
         var target = parseInt(el.getAttribute('data-count'), 10) || 0;
         if (reduceMotion) {
