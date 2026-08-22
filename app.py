@@ -2989,7 +2989,7 @@ def sitemap():
 @app.route("/robots.txt")
 def robots():
     content = (
-        f"User-agent: *\nAllow: /\nSitemap: {url_for('sitemap', _external=True)}\n"
+        f"User-agent: *\nAllow: /\nDisallow: /*?*\nSitemap: {url_for('sitemap', _external=True)}\n"
     )
     return Response(content, mimetype="text/plain")
 
