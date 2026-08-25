@@ -3,14 +3,27 @@ import csv
 import re
 import shutil
 import mysql.connector
+from dotenv import load_dotenv
 
-# ========== CONFIGURATION (same as app.py) ==========
+load_dotenv()
+
+# ========== CONFIGURATION (env vars se — TiDB SSL + port included) ==========
 DB_CONFIG = {
-    "host": "localhost",
-    "user": "root",
-    "password": "Root123",
-    "database": "docodive_db",
+    "host": os.getenv("DB_HOST"),
+    "port": int(os.getenv("DB_PORT", "4000")),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "database": os.getenv("DB_NAME"),
+    "ssl_ca": os.getenv("MYSQL_SSL_CA", "ssl/isrgrootx.pem"),
+    "ssl_verify_cert": os.getenv("MYSQL_SSL_VERIFY_CERT", "false").lower() == "true",
+    "ssl_verify_identity": os.getenv("MYSQL_SSL_VERIFY_IDENTITY", "false").lower() == "true",
 }
+
+# Fail fast: critical values missing to turant clear error do
+required = ["host", "user", "password", "database"]
+for key in required:
+    if not DB_CONFIG[key]:
+        raise RuntimeError(f"{key.upper()} environment variable is required.")
 
 UPLOAD_FOLDER = "static/uploads"
 CSV_FILE = "bulk_upload/metadata.csv"

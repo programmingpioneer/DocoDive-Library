@@ -41,7 +41,7 @@ from flask import send_file
 
 import boto3
 from botocore.config import Config
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 from flask import (
     Flask,
     render_template,
@@ -85,7 +85,6 @@ except ImportError:
 
 app = Flask(__name__)
 
-
 def _env_bool(name, default=False):
     return os.environ.get(name, str(default)).lower() in ("1", "true", "yes", "on")
 
@@ -111,11 +110,19 @@ Talisman(
     strict_transport_security=(os.getenv("FLASK_ENV", "").lower() == "production"),
 )
 
+# ---- Rate limiter (thresholds .env se, hardcoded nahi) ----
+_ratelimit_day = os.getenv("RATELIMIT_DEFAULT_DAY", "5000 per day")
+_ratelimit_hour = os.getenv("RATELIMIT_DEFAULT_HOUR", "500 per hour")
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["5000 per day", "500 per hour"],
+    default_limits=[_ratelimit_day, _ratelimit_hour],
 )
+
+# Tiered limits — env se configurable
+AUTH_RATELIMIT = os.getenv("RATELIMIT_AUTH", "5 per minute")
+PUBLIC_RATELIMIT = os.getenv("RATELIMIT_PUBLIC", "60 per minute")
+USER_ACTION_RATELIMIT = os.getenv("RATELIMIT_USER_ACTION", "20 per minute")
 
 app.config["CACHE_TYPE"] = "SimpleCache"
 app.config["CACHE_DEFAULT_TIMEOUT"] = 300
@@ -161,20 +168,18 @@ IS_PRODUCTION = os.getenv("FLASK_ENV", "").lower() == "production"
 
 secret_key = os.getenv("FLASK_SECRET_KEY")
 if not secret_key:
-    if IS_PRODUCTION:
-        raise RuntimeError("FLASK_SECRET_KEY must be set in production.")
-    secret_key = "local-development-only-change-me"
-    app.logger.warning(
-        "Using local dev secret key. Set FLASK_SECRET_KEY before deployment."
+    raise RuntimeError(
+        "FLASK_SECRET_KEY is required. Set it in your .env file "
+        "(generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\")."
     )
 app.config["SECRET_KEY"] = secret_key
 
 CRON_SECRET = os.getenv("CRON_SECRET")
 if not CRON_SECRET:
     CRON_SECRET = secrets.token_urlsafe(32)
-    app.logger.warning("CRON_SECRET not set; generated random secret: %s", CRON_SECRET)
+    app.logger.warning("CRON_SECRET not set; generated a random secret (value hidden)")
 
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=30)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
 
 app.config["FACEBOOK_APP_SECRET"] = os.getenv("FACEBOOK_CLIENT_SECRET")
 
@@ -212,7 +217,6 @@ db_config = {
     "use_pure": True,
     "autocommit": True,
 }
-
 ssl_ca = app.config.get("MYSQL_SSL_CA")
 if ssl_ca:
     db_config["ssl_ca"] = ssl_ca
@@ -221,8 +225,8 @@ if ssl_ca:
         "MYSQL_SSL_VERIFY_IDENTITY", False
     )
 
-pool = MySQLConnectionPool(pool_name="mypool", pool_size=20, **db_config)
 
+pool = MySQLConnectionPool(pool_name="mypool", pool_size=20, **db_config)
 
 class MySQLWrapper:
     def __init__(self, app_config):
@@ -248,6 +252,9 @@ class MySQLWrapper:
     @property
     def connector(self):
         return self.connection
+    @property
+    def connector(self):
+        return self.connection
 
 
 @app.teardown_appcontext
@@ -262,6 +269,21 @@ def close_db_connection(exception):
 
 mysql = MySQLWrapper(app.config)
 
+@app.after_request
+def ensure_session_cookie(response):
+    """Force session cookie even on AJAX/jsonify responses."""
+    if session and session.modified:
+        session.permanent = True
+        response.set_cookie(
+            key=app.config.get("SESSION_COOKIE_NAME", "docodive_session_v2"),
+            value=session.sid if hasattr(session, "sid") else session.get("_csrf_token", ""),
+            max_age=app.config.get("PERMANENT_SESSION_LIFETIME").total_seconds(),
+            httponly=True,
+            samesite="Lax",
+            secure=False,
+            path="/",
+        )
+    return response
 
 # ================== CSRF (FIXED: digest exempt) ==================
 @app.before_request
@@ -312,11 +334,6 @@ oauth.register(
     api_base_url="https://graph.facebook.com/",
     client_kwargs={"scope": "email public_profile"},
 )
-
-
-def is_valid_pdf(file_bytes):
-    return file_bytes[:5] == b"%PDF-"
-
 
 def compress_image(image_bytes, max_size=(600, 600), quality=85):
     img = Image.open(io.BytesIO(image_bytes))
@@ -427,9 +444,25 @@ def generate_r2_key(folder, base_name, ext):
     return f"docodive/{folder}/{base_name}{ext}"
 
 
+def is_valid_pdf(file_bytes):
+    """Check magic bytes — extension par bharosa nahi."""
+    return file_bytes[:4] == b"%PDF"
+
+
+def is_valid_image(file_bytes):
+    """Check image magic bytes (JPEG/PNG/WebP/GIF)."""
+    if file_bytes[:3] == b"\xff\xd8\xff":          # JPEG
+        return True
+    if file_bytes[:8] == b"\x89PNG\r\n\x1a\n":    # PNG
+        return True
+    if file_bytes[:4] == b"RIFF" and file_bytes[8:12] == b"WEBP":
+        return True
+    if file_bytes[:4] == b"GIF8":                  # GIF (GIF87a/GIF89a)
+        return True
+    return False
+
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 def allowed_image_file(filename):
     return (
@@ -469,39 +502,6 @@ def send_email_via_api(subject, recipient, body, html_body=None):
     except Exception as e:
         app.logger.exception("Brevo API request failed: %s", e)
         return False
-
-
-def send_email_via_api(subject, recipient, body, html_body=None):
-    api_key = os.getenv("BREVO_API_KEY")
-    if not api_key:
-        app.logger.error("BREVO_API_KEY not set, cannot send via API")
-        return False
-    sender_email = app.config.get("MAIL_FROM_EMAIL") or "7t7sufyan@gmail.com"
-    sender_name = app.config.get("MAIL_FROM_NAME") or "DocoDive"
-    try:
-        data = {
-            "sender": {"email": sender_email, "name": sender_name},
-            "to": [{"email": recipient}],
-            "subject": subject,
-            "htmlContent": html_body or body,
-            "textContent": body,
-        }
-        resp = requests.post(
-            "https://api.brevo.com/v3/smtp/email",
-            json=data,
-            headers={"api-key": api_key, "Content-Type": "application/json"},
-            timeout=10,
-        )
-        if resp.status_code == 201:
-            app.logger.info("Email sent via API to %s", recipient)
-            return True
-        else:
-            app.logger.error("Brevo API error: %s", resp.text)
-            return False
-    except Exception as e:
-        app.logger.exception("Brevo API request failed: %s", e)
-        return False
-
 
 def send_email_notification(subject, recipient, body, html_body=None):
     recipient = (recipient or "").strip()
@@ -778,7 +778,38 @@ Return JSON with keys: title, author, description.
         f"A comprehensive resource about '{title}'. Covers essential topics.",
     )
 
+# ==================== LOGIN BACKOFF ====================
+_login_attempts = {}  # key: "ip|email" -> (fail_count, locked_until)
 
+def check_login_backoff(ip, email):
+    """Returns (is_blocked, wait_seconds). Exponential backoff, no hard lockout."""
+    key = f"{ip}|{email.lower()}"
+    if key in _login_attempts:
+        count, locked_until = _login_attempts[key]
+        now = time.time()
+        if now < locked_until:
+            return True, int(locked_until - now)
+        # lock expired, reset
+        if now - locked_until > 300:
+            _login_attempts.pop(key, None)
+    return False, 0
+
+
+def record_login_failure(ip, email):
+    """Har fail par backoff double karo: 2s -> 4s -> 8s -> 16s -> 32s."""
+    key = f"{ip}|{email.lower()}"
+    count, _ = _login_attempts.get(key, (0, 0))
+    count += 1
+    wait = min(2 ** count, 60)  # max 60 seconds cap
+    _login_attempts[key] = (count, time.time() + wait)
+    return wait
+
+
+def clear_login_backoff(ip, email):
+    """Successful login par record hatao."""
+    _login_attempts.pop(f"{ip}|{email.lower()}", None)
+    
+    
 def setup_session(user_id):
     cur = mysql.connection.cursor()
     cur.execute(
@@ -788,12 +819,14 @@ def setup_session(user_id):
     user = cur.fetchone()
     cur.close()
     if user:
+        session.permanent = True
         session["user_id"] = user_id
         session["user_name"] = user[0]
         full_name = (user[1] or "") + " " + (user[2] or "")
         session["user_display_name"] = full_name.strip() or user[0]
         session["avatar_url"] = user[3]
         session["email"] = user[4]
+        session.modified = True
 
 
 def handle_social_login(provider_name, user_info):
@@ -1505,12 +1538,19 @@ def get_presigned_url(key, expiration=300):
 
 # ================== USER UPLOAD (R2) ==================
 @app.route("/user/upload", methods=["GET", "POST"])
+@limiter.limit(AUTH_RATELIMIT)
 @cache.cached(timeout=600, unless=lambda: request.method == "POST")
 def user_upload():
     if "user_id" not in session:
         return redirect(url_for("user_login"))
 
     if request.method == "POST":
+        if "pdf_file" not in request.files:
+            msg = "No PDF file selected."
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"error": msg}), 400
+            flash(msg, "danger")
+            return redirect(url_for("user_upload"))
         if "pdf_file" not in request.files:
             msg = "No PDF file selected."
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -1527,6 +1567,22 @@ def user_upload():
             return redirect(url_for("user_upload"))
 
         pdf_bytes = file.read()
+        # ==== NAYA: Server-side size limit ====
+        if len(pdf_bytes) > 500 * 1024 * 1024:  # 500 MB
+            msg = "File too large. Maximum 500 MB allowed."
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"error": msg}), 413
+            flash(msg, "danger")
+            return redirect(url_for("user_upload"))
+
+        # ==== NAYA: Magic byte content validation ====
+        if not is_valid_pdf(pdf_bytes):
+            msg = "Invalid PDF content. File is not a real PDF."
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"error": msg}), 400
+            flash(msg, "danger")
+            return redirect(url_for("user_upload"))
+
         reader = PdfReader(io.BytesIO(pdf_bytes))
         meta = reader.metadata
         pdf_title = (meta.title or "").strip() if meta else ""
@@ -1615,13 +1671,34 @@ def user_upload():
                     return jsonify({"error": msg}), 400
                 flash(msg, "danger")
                 return redirect(url_for("user_upload"))
+            
             cover_bytes = cover_file.read()
+            # Original size check (compress se pehle — memory bachao)
+            if len(cover_bytes) > 10 * 1024 * 1024:  # 10 MB raw limit
+                msg = "Cover image too large. Maximum 10 MB allowed."
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return jsonify({"error": msg}), 400
+                flash(msg, "danger")
+                return redirect(url_for("user_upload"))
+
+            # Magic byte content validation
+            if not is_valid_image(cover_bytes):
+                msg = "Invalid cover image content. Only JPEG, PNG, GIF, or WebP allowed."
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return jsonify({"error": msg}), 400
+                flash(msg, "danger")
+                return redirect(url_for("user_upload"))
+
+            # Ab compress karo (valid image confirmed hai)
             cover_bytes = compress_image(cover_bytes, max_size=(400, 400), quality=75)
+
+            # Compressed size check (final)
             if len(cover_bytes) > 2 * 1024 * 1024:
                 msg = "Cover image must be less than 2 MB."
                 if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                     return jsonify({"error": msg}), 400
                 flash(msg, "danger")
+                return redirect(url_for("user_upload"))
                 return redirect(url_for("user_upload"))
             cover_extension = os.path.splitext(cover_file.filename)[1].lower()
         else:
@@ -1938,6 +2015,7 @@ def check_availability():
 
 # -------------------- FORGOT PASSWORD (AJAX) --------------------
 @app.route("/forgot-password", methods=["GET", "POST"])
+@limiter.limit(AUTH_RATELIMIT)
 def forgot_password():
     if request.method == "POST":
         email = request.form.get("email", "").strip()
@@ -1987,6 +2065,7 @@ def forgot_password():
 
 
 @app.route("/verify-code", methods=["POST"])
+@limiter.limit(AUTH_RATELIMIT)
 def verify_code():
     email = request.form.get("email", "").strip()
     code = request.form.get("code", "").strip()
@@ -2027,6 +2106,7 @@ def verify_code():
 
 
 @app.route("/reset-password/<token>", methods=["GET", "POST"])
+@limiter.limit(AUTH_RATELIMIT)
 def reset_password(token):
     cur = mysql.connection.cursor()
     cur.execute(
@@ -2073,6 +2153,7 @@ def brevo_webhook():
 
 # ==================== SOCIAL LOGIN ROUTES ====================
 @app.route("/login/google")
+@limiter.limit(AUTH_RATELIMIT)
 def google_login():
     redirect_uri = url_for("google_callback", _external=True)
     return oauth.google.authorize_redirect(redirect_uri)
@@ -2140,6 +2221,7 @@ def google_callback():
 
 
 @app.route("/login/github")
+@limiter.limit(AUTH_RATELIMIT)
 def github_login():
     redirect_uri = url_for("github_callback", _external=True)
     return oauth.github.authorize_redirect(redirect_uri)
@@ -2181,6 +2263,7 @@ def github_callback():
 
 
 @app.route("/login/facebook")
+@limiter.limit(AUTH_RATELIMIT)
 def facebook_login():
     redirect_uri = url_for("facebook_callback", _external=True)
     return oauth.facebook.authorize_redirect(redirect_uri)
@@ -2244,7 +2327,8 @@ def facebook_data_deletion():
             }
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        app.logger.error(f"Data deletion request failed: {e}", exc_info=True)
+        return jsonify({"error": "Invalid request. Please try again."}), 400
 
 
 # ================== ERROR HANDLERS ==================
@@ -2318,7 +2402,6 @@ def internal_error(e):
 def service_unavailable(e):
     return render_template("503.html"), 503
 
-
 GENERIC_MODULES = [
     {
         "slug": "beginner",
@@ -2378,6 +2461,1197 @@ GENERIC_MODULES = [
     },
 ]
 
+PYTHON_BEGINNER_LESSONS = [
+    {
+        "id": 1,
+        "title": "Python & Your First Program",
+        "duration": "15 min",
+        "objectives": ["Explain what Python is", "Run your first script", "Understand comments and indentation"],
+        "explanation": "Python is a readable, beginner-friendly programming language used for web development, data analysis, automation, AI, and many other areas. In this lesson, you will create your first .py file, run it, and learn why indentation matters in Python.",
+        "code": "# My first program\nprint(\"Hello Python\")\nprint(\"I am learning on DocoDive\")",
+        "output": "Hello Python\nI am learning on DocoDive",
+        "callout_type": "tip",
+        "callout_text": "Python is case-sensitive: Print() and print() are different names.",
+        "docs_url": "https://docs.python.org/3/tutorial/introduction.html",
+        "docs_label": "Python introduction",
+        "exercise_prompt": "Print your name, city, and age on three separate lines.",
+        "exercise_hint": "Use print() three times, or use \\n to separate the lines.",
+        "exercise_solution": "print(\"Sufyan\")\nprint(\"Karachi\")\nprint(19)",
+    },
+    {
+        "id": 2,
+        "title": "Variables & Basic Data Types",
+        "duration": "15 min",
+        "objectives": ["Create variables", "Use int, float, str, bool, None", "Check types with type()"],
+        "explanation": "A variable is a named container that stores a value. In Python you assign with '='. Common data types are int (whole numbers), float (decimals), str (text), bool (True/False), and None (empty).",
+        "code": "name = \"Sufyan\"\nage = 19\nheight = 5.9\nis_student = True\nnothing = None\nprint(name, type(name))\nprint(age, type(age))",
+        "output": "Sufyan <class 'str'>\n19 <class 'int'>",
+        "callout_type": "warning",
+        "callout_text": "A variable name cannot start with a number. 2name is invalid, but name2 is fine.",
+        "docs_url": "https://docs.python.org/3/tutorial/introduction.html#numbers",
+        "docs_label": "Python numbers & variables",
+        "exercise_prompt": "Create variables for your city, age, and height, then print them all.",
+        "exercise_hint": "Assign three variables, then print(city, age, height).",
+        "exercise_solution": "city = \"Karachi\"\nage = 19\nheight = 5.9\nprint(city, age, height)",
+    },
+    {
+        "id": 3,
+        "title": "Operators & Expressions",
+        "duration": "20 min",
+        "objectives": ["Use arithmetic operators", "Compare values", "Combine with logical operators"],
+        "explanation": "Operators work on values: arithmetic (+, -, *, /, //, %), comparison (==, !=, >, <, >=, <=), and logical (and, or, not). These are the foundation for calculations and conditions.",
+        "code": "price = 500\nquantity = 3\ntotal = price * quantity\nprint(total)\nprint(total > 1000)\nprint(quantity >= 3 and price > 100)",
+        "output": "1500\nTrue\nTrue",
+        "callout_type": "important",
+        "callout_text": "The = sign assigns a value, while == compares two values. Do not mix them.",
+        "docs_url": "https://docs.python.org/3/tutorial/introduction.html#using-python-as-a-calculator",
+        "docs_label": "Python operators",
+        "exercise_prompt": "Write a program that prints 10 % 3 and 10 // 3.",
+        "exercise_hint": "% gives the remainder and // gives floor division.",
+        "exercise_solution": "print(10 % 3)\nprint(10 // 3)",
+    },
+    {
+        "id": 4,
+        "title": "Strings",
+        "duration": "20 min",
+        "objectives": ["Index and slice strings", "Use string methods", "Format with f-strings"],
+        "explanation": "Strings are sequences of characters. Indexing starts at 0, and slicing returns a range. Methods like lower(), upper(), strip(), replace(), split(), and join() transform text. f-strings are the modern way to format strings.",
+        "code": "text = \"  Hello DocoDive  \"\nclean = text.strip().upper()\nprint(clean)\nname = \"Sufyan\"\nprint(f\"Welcome, {name}!\")",
+        "output": "HELLO DOCODIVE\nWelcome, Sufyan!",
+        "callout_type": "best",
+        "callout_text": "Use f-strings for clear, readable string formatting.",
+        "docs_url": "https://docs.python.org/3/tutorial/introduction.html#strings",
+        "docs_label": "Python strings",
+        "exercise_prompt": "Print your name in uppercase and report its length.",
+        "exercise_hint": "Use name.upper() and len(name).",
+        "exercise_solution": "name = \"Sufyan\"\nprint(name.upper())\nprint(len(name))",
+    },
+    {
+        "id": 5,
+        "title": "Input & Type Conversion",
+        "duration": "15 min",
+        "objectives": ["Get user input", "Convert types with int() and float()", "Avoid conversion errors"],
+        "explanation": "input() always returns a string, even when the user types a number. To do math you must convert with int() or float(). A wrong conversion raises ValueError, so basic validation matters.",
+        "code": "age_text = input(\"Age: \")\nage = int(age_text)\nprint(\"Next year:\", age + 1)",
+        "output": "Age: 19\nNext year: 20",
+        "callout_type": "warning",
+        "callout_text": "Never do math on input() without converting first — \"19\" + 1 will crash.",
+        "docs_url": "https://docs.python.org/3/tutorial/inputoutput.html",
+        "docs_label": "Python input & output",
+        "exercise_prompt": "Ask the user for two numbers and print their sum.",
+        "exercise_hint": "Convert both with int(input(...)), then add them.",
+        "exercise_solution": "a = int(input(\"First: \"))\nb = int(input(\"Second: \"))\nprint(a + b)",
+    },
+    {
+        "id": 6,
+        "title": "Conditions",
+        "duration": "20 min",
+        "objectives": ["Use if / elif / else", "Nest conditions", "Write conditional expressions"],
+        "explanation": "Conditions let a program make decisions. if checks the first condition, elif checks more, and else is the fallback. Indentation tells Python which block each line belongs to.",
+        "code": "score = 85\nif score >= 90:\n    print(\"A\")\nelif score >= 75:\n    print(\"B\")\nelse:\n    print(\"C\")",
+        "output": "B",
+        "callout_type": "tip",
+        "callout_text": "Lines after a colon (:) must be indented with 4 spaces.",
+        "docs_url": "https://docs.python.org/3/tutorial/controlflow.html#if-statements",
+        "docs_label": "Python if statements",
+        "exercise_prompt": "Print 'Adult' if age is 18 or above, otherwise print 'Minor'.",
+        "exercise_hint": "Use if age >= 18 and an else block.",
+        "exercise_solution": "age = 19\nprint(\"Adult\" if age >= 18 else \"Minor\")",
+    },
+    {
+        "id": 7,
+        "title": "Loops",
+        "duration": "20 min",
+        "objectives": ["Use for and while", "Loop with range()", "Use break, continue, pass"],
+        "explanation": "Loops repeat code. A for loop iterates over a sequence, and a while loop runs until its condition is false. range() generates numbers. break exits a loop, continue skips to the next iteration.",
+        "code": "for i in range(3):\n    print(i)\n\nn = 0\nwhile n < 3:\n    n += 1\n    if n == 2:\n        continue\n    print(n)",
+        "output": "0\n1\n2\n1\n3",
+        "callout_type": "important",
+        "callout_text": "If a while condition never becomes false, you get an infinite loop.",
+        "docs_url": "https://docs.python.org/3/tutorial/controlflow.html#for-statements",
+        "docs_label": "Python loops",
+        "exercise_prompt": "Print only the odd numbers from 1 to 10.",
+        "exercise_hint": "Use range(1, 11, 2).",
+        "exercise_solution": "for n in range(1, 11, 2):\n    print(n)",
+    },
+    {
+        "id": 8,
+        "title": "Lists",
+        "duration": "25 min",
+        "objectives": ["Create and mutate lists", "Slice lists", "Use append, insert, remove, sort"],
+        "explanation": "A list is an ordered, mutable collection. Indexing starts at 0, and negative indices count from the end. append() adds an item, pop() removes one, and sort() arranges the list.",
+        "code": "fruits = [\"mango\", \"apple\", \"banana\"]\nfruits.append(\"grape\")\nfruits.sort()\nprint(fruits)\nprint(fruits[0], fruits[-1])",
+        "output": "['apple', 'banana', 'grape', 'mango']\napple mango",
+        "callout_type": "tip",
+        "callout_text": "Start with simple list operations first. List comprehensions will be introduced later.",
+        "docs_url": "https://docs.python.org/3/tutorial/introduction.html#lists",
+        "docs_label": "Python lists",
+        "exercise_prompt": "Create a list of even numbers from 3 to 15.",
+        "exercise_hint": "Loop through the range and append only even numbers.",
+        "exercise_solution": "evens = []\nfor n in range(3, 16):\n    if n % 2 == 0:\n        evens.append(n)\nprint(evens)",
+    },
+    {
+        "id": 9,
+        "title": "Tuples, Sets & Dictionaries",
+        "duration": "25 min",
+        "objectives": ["Use tuples for fixed data", "Use sets for unique values", "Store key-value pairs in dicts"],
+        "explanation": "A tuple is an immutable ordered collection, a set stores unique unordered values, and a dictionary maps keys to values. Fixed data -> tuple, unique items -> set, mapping -> dict.",
+        "code": "point = (10, 20)\nskills = {\"Python\", \"HTML\", \"CSS\"}\nstudent = {\"name\": \"Sufyan\", \"age\": 19}\nprint(point[0])\nprint(skills)\nprint(student[\"name\"])",
+        "output": "10\n{'Python', 'HTML', 'CSS'}\nSufyan",
+        "callout_type": "tip",
+        "callout_text": "For missing dict keys, use .get(\"key\") so the program does not crash.",
+        "docs_url": "https://docs.python.org/3/tutorial/datastructures.html",
+        "docs_label": "Python data structures",
+        "exercise_prompt": "Create a dict with 'name' and 'score', then print the score.",
+        "exercise_hint": "Use student['score'].",
+        "exercise_solution": "s = {\"name\": \"Sufyan\", \"score\": 95}\nprint(s[\"score\"])",
+    },
+    {
+        "id": 10,
+        "title": "Functions",
+        "duration": "25 min",
+        "objectives": ["Define functions with def", "Use parameters and return", "Use default and keyword arguments"],
+        "explanation": "A function is a reusable block defined with def. Parameters are inputs and return sends a value back. Default arguments preset values, and keyword arguments make calls clearer.",
+        "code": "def greet(name, greeting=\"Hello\"):\n    return f\"{greeting}, {name}!\"\n\nprint(greet(\"Sufyan\"))\nprint(greet(\"Sufyan\", greeting=\"Hi\"))",
+        "output": "Hello, Sufyan!\nHi, Sufyan!",
+        "callout_type": "important",
+        "callout_text": "Without a return statement, a function returns None.",
+        "docs_url": "https://docs.python.org/3/tutorial/controlflow.html#defining-functions",
+        "docs_label": "Python functions",
+        "exercise_prompt": "Write an add(a, b) function that returns the sum.",
+        "exercise_hint": "Define it with def and return a + b.",
+        "exercise_solution": "def add(a, b):\n    return a + b\nprint(add(3, 7))",
+    },
+    {
+        "id": 11,
+        "title": "Function Power-Up",
+        "duration": "25 min",
+        "objectives": ["Use *args and **kwargs", "Write lambda functions", "Use map, filter, zip, enumerate"],
+        "explanation": "*args accepts arbitrary positional arguments, and **kwargs accepts arbitrary keyword arguments. A lambda is a one-line anonymous function. map and filter transform collections, zip iterates in parallel, and enumerate adds an index.",
+        "code": "nums = [1, 2, 3, 4]\nsquared = list(map(lambda x: x**2, nums))\nevens = list(filter(lambda x: x % 2 == 0, nums))\nprint(squared)\nprint(evens)",
+        "output": "[1, 4, 9, 16]\n[2, 4]",
+        "callout_type": "best",
+        "callout_text": "Use the clearest approach for the reader. For simple transformations, a list comprehension is often easier to read than map() with a lambda.",
+        "docs_url": "https://docs.python.org/3/tutorial/controlflow.html#more-on-defining-functions",
+        "docs_label": "More on functions",
+        "exercise_prompt": "Use zip to pair two lists and print the result.",
+        "exercise_hint": "Try list(zip(names, ages)).",
+        "exercise_solution": "names = [\"A\", \"B\"]\nages = [19, 20]\nprint(list(zip(names, ages)))",
+    },
+    {
+        "id": 12,
+        "title": "List, Set & Dictionary Comprehensions",
+        "duration": "20 min",
+        "objectives": ["Write list comprehensions", "Write dict comprehensions", "Use nested comprehensions"],
+        "explanation": "Comprehensions build collections in one clean line. A list comprehension is [expr for item in iterable if condition], and a dict comprehension is {key: value for ...}.",
+        "code": "nums = [1, 2, 3, 4]\nsquares = [n**2 for n in nums]\neven_squares = {n: n**2 for n in nums if n % 2 == 0}\nprint(squares)\nprint(even_squares)",
+        "output": "[1, 4, 9, 16]\n{2: 4, 4: 16}",
+        "callout_type": "tip",
+        "callout_text": "If a comprehension gets too long, use a normal loop for readability.",
+        "docs_url": "https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions",
+        "docs_label": "List comprehensions",
+        "exercise_prompt": "Build a dict mapping each name to its length.",
+        "exercise_hint": "Use {name: len(name) for name in names}.",
+        "exercise_solution": "names = [\"Ali\", \"Sufyan\"]\nprint({n: len(n) for n in names})",
+    },
+    {
+        "id": 13,
+        "title": "Files & Directories",
+        "duration": "25 min",
+        "objectives": ["Read and write text files", "Use the with statement", "Work with JSON and pathlib"],
+        "explanation": "Files are central to real programs. with open() automatically closes the file. Modes: r read, w write, a append. JSON stores structured data, and pathlib makes paths clean and safe.",
+        "code": "from pathlib import Path\nimport json\n\ndata = {\"name\": \"Sufyan\", \"age\": 19}\nPath(\"data.json\").write_text(json.dumps(data))\nprint(Path(\"data.json\").read_text())",
+        "output": "{\"name\": \"Sufyan\", \"age\": 19}",
+        "callout_type": "best",
+        "callout_text": "Use with open(...) so you never forget to close a file.",
+        "docs_url": "https://docs.python.org/3/tutorial/inputoutput.html#reading-and-writing-files",
+        "docs_label": "Python file I/O",
+        "exercise_prompt": "Create a notes.txt file, write your name in it, then read it back.",
+        "exercise_hint": "Open with 'w' to write and 'r' to read.",
+        "exercise_solution": "with open('notes.txt', 'w') as f:\n    f.write('Sufyan')\nwith open('notes.txt') as f:\n    print(f.read())",
+    },
+    {
+        "id": 14,
+        "title": "Errors & Exception Handling",
+        "duration": "20 min",
+        "objectives": ["Understand syntax vs runtime errors", "Use try/except/else/finally", "Raise exceptions"],
+        "explanation": "Syntax errors happen while writing code; runtime errors happen while it runs. try runs risky code, except catches errors, else runs on success, and finally always runs. raise lets you fail deliberately.",
+        "code": "try:\n    num = int(input(\"Number: \"))\n    print(10 / num)\nexcept ValueError:\n    print(\"Invalid number\")\nexcept ZeroDivisionError:\n    print(\"Cannot divide by zero\")\nelse:\n    print(\"Success\")",
+        "output": "Number: 0\nCannot divide by zero",
+        "callout_type": "warning",
+        "callout_text": "A bare except: hides every error. Catch specific exceptions instead.",
+        "docs_url": "https://docs.python.org/3/tutorial/errors.html",
+        "docs_label": "Python errors & exceptions",
+        "exercise_prompt": "Write a safe division function that handles zero.",
+        "exercise_hint": "Use try/except ZeroDivisionError.",
+        "exercise_solution": "def safe_div(a, b):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        return None\nprint(safe_div(10, 0))",
+    },
+    {
+        "id": 15,
+        "title": "Modules & Packages",
+        "duration": "20 min",
+        "objectives": ["Import built-in modules", "Create custom modules", "Use if __name__ == '__main__'"],
+        "explanation": "A module is a .py file you can import. A package is a folder of modules. import math brings in the whole module; from math import sqrt brings one name. The __name__ == '__main__' guard runs code only on direct execution.",
+        "code": "import math\nprint(math.sqrt(16))\n\nif __name__ == \"__main__\":\n    print(\"Direct run\")",
+        "output": "4.0\nDirect run",
+        "callout_type": "tip",
+        "callout_text": "Add an if __name__ == '__main__' guard to every reusable file.",
+        "docs_url": "https://docs.python.org/3/tutorial/modules.html",
+        "docs_label": "Python modules",
+        "exercise_prompt": "Use math to print the square root of 25 and pi.",
+        "exercise_hint": "Use math.sqrt(25) and math.pi.",
+        "exercise_solution": "import math\nprint(math.sqrt(25))\nprint(math.pi)",
+    },
+    {
+        "id": 16,
+        "title": "Useful Standard Library",
+        "duration": "25 min",
+        "objectives": ["Use math, random, datetime", "Use pathlib and os", "Use json, re and collections"],
+        "explanation": "Python's standard library is huge. Beginners should know representative modules: math for calculations, random for randomness, datetime for dates, pathlib for files, json for data, and collections for useful containers.",
+        "code": "import random\nimport datetime\nfrom collections import Counter\n\nprint(random.randint(1, 10))\nprint(datetime.date.today())\nprint(Counter([\"a\", \"b\", \"a\", \"c\"]))",
+        "output": "Example output (your random number will vary):\n7\n2026-08-23\nCounter({'a': 2, 'b': 1, 'c': 1})",
+        "callout_type": "best",
+        "callout_text": "Learn the standard library first — many problems need no external package.",
+        "docs_url": "https://docs.python.org/3/library/index.html",
+        "docs_label": "Python standard library",
+        "exercise_prompt": "Generate a random 10-character token using letters and digits.",
+        "exercise_hint": "Combine string.ascii_letters + string.digits with random.choices.",
+        "exercise_solution": "import random\nimport string\nchars = string.ascii_letters + string.digits\nprint(''.join(random.choices(chars, k=10)))",
+    },
+    {
+        "id": 17,
+        "title": "Object-Oriented Python Basics",
+        "duration": "25 min",
+        "objectives": ["Define classes and objects", "Use attributes and methods", "Understand __init__ and self"],
+        "explanation": "OOP organizes code into objects. A class is a blueprint and an object is an instance of it. __init__ is the constructor that initializes the object. self refers to the instance, and methods are functions inside the class.",
+        "code": "class Student:\n    def __init__(self, name, age):\n        self.name = name\n        self.age = age\n\n    def greet(self):\n        return f\"Hi, I am {self.name}\"\n\ns = Student(\"Sufyan\", 19)\nprint(s.greet())",
+        "output": "Hi, I am Sufyan",
+        "callout_type": "important",
+        "callout_text": "self is the first parameter of every method — do not forget it.",
+        "docs_url": "https://docs.python.org/3/tutorial/classes.html",
+        "docs_label": "Python classes",
+        "exercise_prompt": "Create a Car class with brand and speed, and a method that prints them.",
+        "exercise_hint": "Set self.brand and self.speed inside __init__.",
+        "exercise_solution": "class Car:\n    def __init__(self, brand, speed):\n        self.brand = brand\n        self.speed = speed\n    def show(self):\n        print(self.brand, self.speed)\nCar(\"Toyota\", 120).show()",
+    },
+    {
+        "id": 18,
+        "title": "Debugging & Writing Better Python",
+        "duration": "20 min",
+        "objectives": ["Read tracebacks", "Debug with print and pdb", "Follow PEP 8 basics"],
+        "explanation": "Errors are inevitable — learn to read a traceback. print debugging is simple and effective; pdb is the interactive debugger. For clean code, use meaningful names, small functions, and comments only when needed.",
+        "code": "def divide(a, b):\n    breakpoint()  # pauses execution here\n    return a / b\n\nprint(divide(10, 2))",
+        "output": "Execution pauses at breakpoint(). Type 'c' to continue debugging.",
+        "callout_type": "tip",
+        "callout_text": "Read a traceback from bottom to top — the last line is the actual error.",
+        "docs_url": "https://docs.python.org/3/library/pdb.html",
+        "docs_label": "Python debugger (pdb)",
+        "exercise_prompt": "Write a function that returns None and prints a clear message for invalid input.",
+        "exercise_hint": "Use try/except to handle ValueError.",
+        "exercise_solution": "def safe_int(value):\n    try:\n        return int(value)\n    except ValueError:\n        print(f\"'{value}' is not a number\")\n        return None\nsafe_int(\"abc\")",
+    },
+    {
+        "id": 19,
+        "title": "Virtual Environments, pip & Project Structure",
+        "duration": "25 min",
+        "objectives": ["Create virtual environments", "Install packages with pip", "Use requirements.txt"],
+        "explanation": "Real projects use isolated environments. python -m venv creates one, python -m pip installs packages, and requirements.txt freezes dependencies. Project folders and .gitignore keep things organized.",
+        "code": "# Create a virtual environment\npython -m venv .venv\n\n# Activate (Windows PowerShell)\n.venv\\Scripts\\Activate.ps1\n\n# Activate (macOS / Linux)\nsource .venv/bin/activate\n\n# Install a package\npython -m pip install requests\n\n# Save dependencies\npython -m pip freeze > requirements.txt",
+        "output": "Virtual environment ready. Package installed and requirements.txt saved.",
+        "callout_type": "best",
+        "callout_text": "Never install packages into the global Python — always use a virtual environment.",
+        "docs_url": "https://docs.python.org/3/tutorial/venv.html",
+        "docs_label": "Python virtual environments",
+        "exercise_prompt": "Write the command that creates a virtual environment named .venv.",
+        "exercise_hint": "It starts with python -m venv.",
+        "exercise_solution": "python -m venv .venv",
+    },
+    {
+        "id": 20,
+        "title": "Capstone: Student Management System",
+        "duration": "45 min",
+        "objectives": ["Combine all beginner concepts", "Build a full CLI project", "Use files, JSON, functions and OOP"],
+        "explanation": "This final project combines variables, loops, conditions, functions, lists, dictionaries, files, JSON, exceptions, and OOP. You will build a CLI system that can add, view, search, update, delete, and save students to JSON.",
+        "code": "import json\nfrom pathlib import Path\n\nclass StudentManager:\n    def __init__(self, path=\"students.json\"):\n        self.path = Path(path)\n        self.students = json.loads(self.path.read_text()) if self.path.exists() else []\n\n    def add(self, name, age):\n        self.students.append({\"name\": name, \"age\": age})\n        self.save()\n\n    def save(self):\n        self.path.write_text(json.dumps(self.students, indent=2))\n\nsm = StudentManager()\nsm.add(\"Sufyan\", 19)\nprint(sm.students)",
+        "output": "[{'name': 'Sufyan', 'age': 19}]",
+        "callout_type": "important",
+        "callout_text": "Write small functions and put each feature in its own function — debugging becomes much easier.",
+        "docs_url": "https://docs.python.org/3/tutorial/datastructures.html",
+        "docs_label": "Python data structures (revision)",
+        "code_label": "Starter Code",
+        "exercise_prompt": "Add view() and delete(name) methods to StudentManager.",
+        "exercise_hint": "view() prints all students; delete() removes by name and saves.",
+        "exercise_solution": "def view(self):\n    for s in self.students:\n        print(s)\ndef delete(self, name):\n    self.students = [s for s in self.students if s[\"name\"] != name]\n    self.save()",
+    },
+]
+
+# ================== PYTHON INTERMEDIATE GUIDE — LESSONS DATA ==================
+PYTHON_INTERMEDIATE_LESSONS = [
+    {
+        "id": 1,
+        "title": "Advanced Functions",
+        "duration": "25 min",
+        "prerequisites": "Beginner functions lesson",
+        "objectives": [
+            "Accept any number of arguments with *args",
+            "Accept keyword arguments with **kwargs",
+            "Return multiple values from a function",
+        ],
+        "explanation": "Beginner functions take a fixed number of parameters. Intermediate functions handle flexible input: *args collects positional arguments into a tuple, **kwargs collects keyword arguments into a dict, and Python lets you return multiple values as a tuple.",
+        "code": "def describe_person(name, *scores, **details):\n    print(name)\n    print(\"Scores:\", scores)\n    print(\"Details:\", details)\n    return len(scores), sum(scores)\n\ncount, total = describe_person(\"Sufyan\", 85, 90, 78, city=\"Karachi\", role=\"dev\")\nprint(count, total)",
+        "output": "Sufyan\nScores: (85, 90, 78)\nDetails: {'city': 'Karachi', 'role': 'dev'}\n3 253",
+        "callout_type": "tip",
+        "callout_text": "The order matters: normal parameters first, then *args, then **kwargs.",
+        "docs_url": "https://docs.python.org/3/tutorial/controlflow.html#arbitrary-argument-lists",
+        "docs_label": "Arbitrary argument lists",
+        "exercise_prompt": "Write a function that takes a name and any number of marks, then returns the average.",
+        "exercise_hint": "Use *marks, sum(marks) / len(marks), and handle zero marks.",
+        "exercise_solution": "def average(name, *marks):\n    if not marks:\n        return 0\n    return sum(marks) / len(marks)\nprint(average(\"Ali\", 80, 90, 100))",
+    },
+    {
+        "id": 2,
+        "title": "Scope & Closures",
+        "duration": "25 min",
+        "prerequisites": "Functions, variables",
+        "objectives": [
+            "Understand local, enclosing, and global scope",
+            "Use global and nonlocal",
+            "Build a closure that remembers state",
+        ],
+        "explanation": "Scope decides where a variable is visible. A variable inside a function is local. nonlocal modifies a variable in an outer function, and global modifies a module-level variable. A closure is an inner function that remembers variables from its outer function even after that function returns.",
+        "code": "def make_counter():\n    count = 0\n    def increment():\n        nonlocal count\n        count += 1\n        return count\n    return increment\n\ncounter = make_counter()\nprint(counter())\nprint(counter())\nprint(counter())",
+        "output": "1\n2\n3",
+        "callout_type": "important",
+        "callout_text": "A closure keeps the outer function's state alive. Each call to make_counter() creates a fresh, independent counter.",
+        "docs_url": "https://docs.python.org/3/tutorial/classes.html#python-scopes-and-namespaces",
+        "docs_label": "Python scopes",
+        "exercise_prompt": "Create a counter that increments by 5 each time it is called.",
+        "exercise_hint": "Inside the inner function, use nonlocal count; count += 5.",
+        "exercise_solution": "def make_step_counter(step):\n    total = 0\n    def step_up():\n        nonlocal total\n        total += step\n        return total\n    return step_up\nc = make_step_counter(5)\nprint(c())\nprint(c())",
+    },
+    {
+        "id": 3,
+        "title": "Decorators",
+        "duration": "30 min",
+        "prerequisites": "Functions, closures",
+        "objectives": [
+            "Explain what a decorator is",
+            "Write a simple decorator with @",
+            "Pass arguments through with *args and **kwargs",
+        ],
+        "explanation": "A decorator is a function that wraps another function to add behaviour without changing its code. You apply it with @decorator above the function. Inside, the wrapper calls the original function and can run code before or after it.",
+        "code": "import functools\n\ndef announce(func):\n    @functools.wraps(func)\n    def wrapper(*args, **kwargs):\n        print(f\"Calling {func.__name__}...\")\n        result = func(*args, **kwargs)\n        print(\"Finished.\")\n        return result\n    return wrapper\n\n@announce\ndef add(a, b):\n    return a + b\n\nprint(add(3, 4))",
+        "output": "Calling add...\nFinished.\n7",
+        "callout_type": "best",
+        "callout_text": "Always use @functools.wraps(func) inside a decorator so the wrapped function keeps its original name and docstring.",
+        "docs_url": "https://docs.python.org/3/glossary.html#term-decorator",
+        "docs_label": "Decorators",
+        "exercise_prompt": "Write a decorator that prints the return value of a function after it runs.",
+        "exercise_hint": "Inside wrapper, store the result, print(result), then return it.",
+        "exercise_solution": "import functools\n\ndef show_result(func):\n    @functools.wraps(func)\n    def wrapper(*args, **kwargs):\n        result = func(*args, **kwargs)\n        print(\"Result:\", result)\n        return result\n    return wrapper\n\n@show_result\ndef double(x):\n    return x * 2\n\ndouble(21)",
+    },
+    {
+        "id": 4,
+        "title": "functools Tools",
+        "duration": "25 min",
+        "prerequisites": "Decorators, functions",
+        "objectives": [
+            "Use lru_cache to speed up repeated calls",
+            "Use partial to pre-fill function arguments",
+            "Use reduce to combine values",
+        ],
+        "explanation": "The functools module provides powerful utilities for functions. lru_cache memoizes results so expensive calls run once. partial freezes some arguments, creating a simpler function. reduce repeatedly applies a function to combine values in a sequence.",
+        "code": "from functools import lru_cache, partial, reduce\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\nprint(fib(30))\n\nadd_five = partial(lambda a, b: a + b, 5)\nprint(add_five(10))\n\nprint(reduce(lambda a, b: a * b, [1, 2, 3, 4]))",
+        "output": "832040\n15\n24",
+        "callout_type": "tip",
+        "callout_text": "lru_cache is great for recursive functions like fibonacci — without it, fib(30) would be extremely slow.",
+        "docs_url": "https://docs.python.org/3/library/functools.html",
+        "docs_label": "functools module",
+        "exercise_prompt": "Use partial to create a function that multiplies any number by 3.",
+        "exercise_hint": "partial(lambda a, b: a * b, 3).",
+        "exercise_solution": "from functools import partial\ntriple = partial(lambda a, b: a * b, 3)\nprint(triple(7))",
+    },
+    {
+        "id": 5,
+        "title": "Advanced Collections",
+        "duration": "25 min",
+        "prerequisites": "Lists, dictionaries, sets",
+        "objectives": [
+            "Use defaultdict to avoid key errors",
+            "Use Counter to count items fast",
+            "Use deque for fast appends and pops",
+        ],
+        "explanation": "collections offers specialised containers. defaultdict provides a default value for missing keys. Counter counts hashable items into a dict-like object. deque is a double-ended queue with fast operations on both ends — better than a list for queues.",
+        "code": "from collections import defaultdict, Counter, deque\n\nword_count = defaultdict(int)\nfor word in [\"a\", \"b\", \"a\", \"c\", \"a\"]:\n    word_count[word] += 1\nprint(dict(word_count))\n\nprint(Counter([\"apple\", \"apple\", \"banana\"]))\n\nd = deque([1, 2, 3])\nd.appendleft(0)\nd.append(4)\nprint(d)",
+        "output": "{'a': 3, 'b': 1, 'c': 1}\nCounter({'apple': 2, 'banana': 1})\ndeque([0, 1, 2, 3, 4])",
+        "callout_type": "best",
+        "callout_text": "Use Counter for frequency counting instead of writing a manual loop with a dict.",
+        "docs_url": "https://docs.python.org/3/library/collections.html",
+        "docs_label": "collections module",
+        "exercise_prompt": "Create a defaultdict(list) and append two values to the same missing key.",
+        "exercise_hint": "d = defaultdict(list); d['x'].append(1); d['x'].append(2).",
+        "exercise_solution": "from collections import defaultdict\nd = defaultdict(list)\nd['x'].append(1)\nd['x'].append(2)\nprint(d['x'])",
+    },
+    {
+        "id": 6,
+        "title": "Iterators",
+        "duration": "25 min",
+        "prerequisites": "Loops, lists",
+        "objectives": [
+            "Understand iter() and next()",
+            "Build a custom iterator class",
+            "Handle StopIteration",
+        ],
+        "explanation": "An iterator is an object that produces values one at a time. iter() converts an iterable into an iterator. next() returns the next value and raises StopIteration when done. Custom iterators implement __iter__ and __next__.",
+        "code": "class Countdown:\n    def __init__(self, start):\n        self.current = start\n\n    def __iter__(self):\n        return self\n\n    def __next__(self):\n        if self.current < 0:\n            raise StopIteration\n        value = self.current\n        self.current -= 1\n        return value\n\nfor n in Countdown(3):\n    print(n)",
+        "output": "3\n2\n1\n0",
+        "callout_type": "important",
+        "callout_text": "A for loop automatically calls iter() and next(), and catches StopIteration to end the loop.",
+        "docs_url": "https://docs.python.org/3/tutorial/classes.html#iterators",
+        "docs_label": "Iterators",
+        "exercise_prompt": "Create an iterator that counts up from 1 to 5.",
+        "exercise_hint": "In __next__, stop when current exceeds 5.",
+        "exercise_solution": "class CountUp:\n    def __init__(self):\n        self.current = 0\n    def __iter__(self):\n        return self\n    def __next__(self):\n        self.current += 1\n        if self.current > 5:\n            raise StopIteration\n        return self.current\nfor n in CountUp():\n    print(n)",
+    },
+    {
+        "id": 7,
+        "title": "Generators",
+        "duration": "30 min",
+        "prerequisites": "Functions, iterators",
+        "objectives": [
+            "Use yield to create a generator",
+            "Understand lazy evaluation and memory savings",
+            "Use yield from and generator expressions",
+        ],
+        "explanation": "A generator is a function that uses yield instead of return. It produces values lazily — one at a time — so large sequences don't consume memory. yield from delegates to another generator, and generator expressions are like list comprehensions but lazy.",
+        "code": "def squares(limit):\n    for n in range(1, limit + 1):\n        yield n ** 2\n\nfor value in squares(5):\n    print(value)\n\nprint(sum(x for x in range(1, 101)))",
+        "output": "1\n4\n9\n16\n25\n5050",
+        "callout_type": "best",
+        "callout_text": "Use a generator when reading large files or producing long sequences — it keeps memory usage tiny.",
+        "docs_url": "https://docs.python.org/3/tutorial/classes.html#generators",
+        "docs_label": "Generators",
+        "exercise_prompt": "Write a generator that yields only even numbers up to 10.",
+        "exercise_hint": "Loop and yield n when n % 2 == 0.",
+        "exercise_solution": "def evens(limit):\n    for n in range(limit + 1):\n        if n % 2 == 0:\n            yield n\nprint(list(evens(10)))",
+    },
+    {
+        "id": 8,
+        "title": "Comprehensions Deep Dive",
+        "duration": "25 min",
+        "prerequisites": "Lists, dictionaries, generators",
+        "objectives": [
+            "Write nested comprehensions",
+            "Add conditions to comprehensions",
+            "Compare comprehensions with map and filter",
+        ],
+        "explanation": "Comprehensions build collections in one readable expression. You can nest loops, add if conditions, and choose between list, dict, and set forms. For simple transformations they are clearer than map/filter; for complex logic, a normal loop is better.",
+        "code": "matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]\nflat = [n for row in matrix for n in row]\nprint(flat)\n\nevens = [n for n in range(10) if n % 2 == 0]\nprint(evens)\n\nword_lengths = {w: len(w) for w in [\"go\", \"python\", \"code\"]}\nprint(word_lengths)",
+        "output": "[1, 2, 3, 4, 5, 6, 7, 8, 9]\n[0, 2, 4, 6, 8]\n{'go': 2, 'python': 6, 'code': 4}",
+        "callout_type": "tip",
+        "callout_text": "If a comprehension is hard to read, break it into a normal loop — readability beats cleverness.",
+        "docs_url": "https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions",
+        "docs_label": "List comprehensions",
+        "exercise_prompt": "Flatten a 2x2 matrix and keep only odd numbers.",
+        "exercise_hint": "Combine two for clauses and an if condition.",
+        "exercise_solution": "matrix = [[1, 2], [3, 4]]\nresult = [n for row in matrix for n in row if n % 2 == 1]\nprint(result)",
+    },
+    {
+        "id": 9,
+        "title": "Class Methods & Static Methods",
+        "duration": "25 min",
+        "prerequisites": "OOP basics",
+        "objectives": [
+            "Use @classmethod and cls",
+            "Use @staticmethod",
+            "Build factory methods",
+        ],
+        "explanation": "Instance methods take self. Class methods take cls and can create objects — useful for alternate constructors (factory methods). Static methods take neither self nor cls and behave like plain functions placed inside a class for organisation.",
+        "code": "class Employee:\n    company = \"DocoDive\"\n\n    def __init__(self, name, salary):\n        self.name = name\n        self.salary = salary\n\n    @classmethod\n    def from_string(cls, text):\n        name, salary = text.split(\"-\")\n        return cls(name, int(salary))\n\n    @staticmethod\n    def is_valid_salary(salary):\n        return salary > 0\n\ne = Employee.from_string(\"Sufyan-50000\")\nprint(e.name, e.salary, e.company)\nprint(Employee.is_valid_salary(50000))",
+        "output": "Sufyan 50000 DocoDive\nTrue",
+        "callout_type": "best",
+        "callout_text": "Use a classmethod factory when you need multiple ways to create objects from different input formats.",
+        "docs_url": "https://docs.python.org/3/tutorial/classes.html#class-and-instance-variables",
+        "docs_label": "Class and instance variables",
+        "exercise_prompt": "Add a classmethod that creates an Employee from a dict.",
+        "exercise_hint": "Accept a dict and return cls(d['name'], d['salary']).",
+        "exercise_solution": "class Employee:\n    def __init__(self, name, salary):\n        self.name = name\n        self.salary = salary\n    @classmethod\n    def from_dict(cls, data):\n        return cls(data[\"name\"], data[\"salary\"])\ne = Employee.from_dict({\"name\": \"Ali\", \"salary\": 40000})\nprint(e.name, e.salary)",
+    },
+    {
+        "id": 10,
+        "title": "Properties",
+        "duration": "25 min",
+        "prerequisites": "OOP basics",
+        "objectives": [
+            "Use @property for read-only access",
+            "Add setters with validation",
+            "Use deleters",
+        ],
+        "explanation": "Properties let you control attribute access. @property exposes a method as an attribute. The @setter validates values before assigning. This gives you clean attribute syntax with custom logic behind the scenes.",
+        "code": "class Circle:\n    def __init__(self, radius):\n        self._radius = radius\n\n    @property\n    def radius(self):\n        return self._radius\n\n    @radius.setter\n    def radius(self, value):\n        if value <= 0:\n            raise ValueError(\"Radius must be positive\")\n        self._radius = value\n\n    @property\n    def area(self):\n        return 3.14159 * self._radius ** 2\n\nc = Circle(5)\nprint(c.area)\nc.radius = 10\nprint(c.area)",
+        "output": "78.53975\n314.159",
+        "callout_type": "important",
+        "callout_text": "Use properties to keep a clean public API while hiding validation or computed values inside the class.",
+        "docs_url": "https://docs.python.org/3/library/functions.html#property",
+        "docs_label": "property function",
+        "exercise_prompt": "Create a Temperature class where the setter rejects values below -273.",
+        "exercise_hint": "Raise ValueError when value < -273.",
+        "exercise_solution": "class Temperature:\n    def __init__(self, c):\n        self.celsius = c\n    @property\n    def celsius(self):\n        return self._celsius\n    @celsius.setter\n    def celsius(self, value):\n        if value < -273:\n            raise ValueError(\"Too cold\")\n        self._celsius = value\nt = Temperature(25)\nprint(t.celsius)",
+    },
+    {
+        "id": 11,
+        "title": "Inheritance",
+        "duration": "30 min",
+        "prerequisites": "OOP basics, class methods",
+        "objectives": [
+            "Create subclasses with super()",
+            "Override parent methods",
+            "Use isinstance and issubclass",
+        ],
+        "explanation": "Inheritance lets a class reuse and extend another class. The child class inherits methods and attributes, can override them, and can call the parent with super(). isinstance checks an object's type, issubclass checks class relationships.",
+        "code": "class Animal:\n    def __init__(self, name):\n        self.name = name\n\n    def speak(self):\n        return \"...\"\n\nclass Dog(Animal):\n    def speak(self):\n        return f\"{self.name} says Woof!\"\n\nclass Cat(Animal):\n    def speak(self):\n        return f\"{self.name} says Meow!\"\n\nd = Dog(\"Rex\")\nc = Cat(\"Milo\")\nprint(d.speak())\nprint(c.speak())\nprint(isinstance(d, Animal), issubclass(Dog, Animal))",
+        "output": "Rex says Woof!\nMilo says Meow!\nTrue True",
+        "callout_type": "best",
+        "callout_text": "Override only the methods that differ. Reuse everything else from the parent — that's the whole point of inheritance.",
+        "docs_url": "https://docs.python.org/3/tutorial/classes.html#inheritance",
+        "docs_label": "Inheritance",
+        "exercise_prompt": "Create a Bird subclass whose speak() returns 'tweet' with the name.",
+        "exercise_hint": "Override speak() and use self.name.",
+        "exercise_solution": "class Animal:\n    def __init__(self, name):\n        self.name = name\n    def speak(self):\n        return \"...\"\nclass Bird(Animal):\n    def speak(self):\n        return f\"{self.name} says tweet!\"\nb = Bird(\"Kiwi\")\nprint(b.speak())",
+    },
+    {
+        "id": 12,
+        "title": "Dunder Methods",
+        "duration": "30 min",
+        "prerequisites": "OOP, inheritance",
+        "objectives": [
+            "Use __str__ and __repr__",
+            "Implement __eq__ for equality",
+            "Implement __len__ and __lt__",
+        ],
+        "explanation": "Dunder (double underscore) methods control built-in behaviour. __str__ gives a readable string for users, __repr__ gives a developer-friendly representation. __eq__ defines ==, __len__ defines len(), and __lt__ enables sorting with <.",
+        "code": "class Book:\n    def __init__(self, title, pages):\n        self.title = title\n        self.pages = pages\n\n    def __str__(self):\n        return f\"{self.title}\"\n\n    def __repr__(self):\n        return f\"Book('{self.title}', {self.pages})\"\n\n    def __eq__(self, other):\n        return self.pages == other.pages\n\n    def __len__(self):\n        return self.pages\n\nb1 = Book(\"Python\", 300)\nb2 = Book(\"Java\", 300)\nprint(str(b1))\nprint(repr(b1))\nprint(b1 == b2)\nprint(len(b1))",
+        "output": "Python\nBook('Python', 300)\nTrue\n300",
+        "callout_type": "tip",
+        "callout_text": "__repr__ should ideally return a string that could recreate the object — helpful for debugging.",
+        "docs_url": "https://docs.python.org/3/reference/datamodel.html#special-method-names",
+        "docs_label": "Special method names",
+        "exercise_prompt": "Add __lt__ to Book so books can be sorted by pages.",
+        "exercise_hint": "Return self.pages < other.pages.",
+        "exercise_solution": "class Book:\n    def __init__(self, title, pages):\n        self.title = title\n        self.pages = pages\n    def __lt__(self, other):\n        return self.pages < other.pages\nbooks = [Book(\"B\", 200), Book(\"A\", 100)]\nprint([b.title for b in sorted(books)])",
+    },
+    {
+        "id": 13,
+        "title": "Dataclasses",
+        "duration": "25 min",
+        "prerequisites": "OOP, dunder methods",
+        "objectives": [
+            "Use @dataclass to reduce boilerplate",
+            "Add default values and fields",
+            "Convert dataclasses to dicts",
+        ],
+        "explanation": "Dataclasses automatically generate __init__, __repr__, and __eq__ for simple data-holding classes. You add @dataclass, declare fields with type hints, and get a clean class with defaults and sorting for free.",
+        "code": "from dataclasses import dataclass, asdict\n\n@dataclass\nclass Product:\n    name: str\n    price: float\n    stock: int = 0\n\np = Product(\"Laptop\", 999.99, 10)\nprint(p)\nprint(p == Product(\"Laptop\", 999.99, 10))\nprint(asdict(p))",
+        "output": "Product(name='Laptop', price=999.99, stock=10)\nTrue\n{'name': 'Laptop', 'price': 999.99, 'stock': 10}",
+        "callout_type": "best",
+        "callout_text": "Use dataclasses for classes that mostly store data — they remove a lot of repetitive boilerplate.",
+        "docs_url": "https://docs.python.org/3/library/dataclasses.html",
+        "docs_label": "dataclasses module",
+        "exercise_prompt": "Create a dataclass Person with name, age, and city defaulting to 'Unknown'.",
+        "exercise_hint": "@dataclass class Person: name: str; age: int; city: str = 'Unknown'.",
+        "exercise_solution": "from dataclasses import dataclass\n@dataclass\nclass Person:\n    name: str\n    age: int\n    city: str = \"Unknown\"\np = Person(\"Sufyan\", 19)\nprint(p)",
+    },
+    {
+        "id": 14,
+        "title": "Exception Handling Deep Dive",
+        "duration": "25 min",
+        "prerequisites": "Exceptions, functions",
+        "objectives": [
+            "Create custom exception classes",
+            "Use raise from to chain errors",
+            "Use contextlib for clean handling",
+        ],
+        "explanation": "Beyond try/except, you can define your own exceptions by subclassing Exception. raise from preserves the original error when re-raising. contextlib.suppress cleanly ignores specific errors when you expect them.",
+        "code": "class NegativeValueError(ValueError):\n    pass\n\ndef set_age(age):\n    if age < 0:\n        raise NegativeValueError(\"Age cannot be negative\")\n    return age\n\ntry:\n    set_age(-5)\nexcept NegativeValueError as e:\n    print(\"Caught:\", e)",
+        "output": "Caught: Age cannot be negative",
+        "callout_type": "important",
+        "callout_text": "Name custom exceptions clearly and inherit from a built-in exception like ValueError — not plain Exception.",
+        "docs_url": "https://docs.python.org/3/tutorial/errors.html#user-defined-exceptions",
+        "docs_label": "User-defined exceptions",
+        "exercise_prompt": "Raise a custom error when a deposit amount is zero.",
+        "exercise_hint": "Define class InvalidDepositError(Exception) and raise it.",
+        "exercise_solution": "class InvalidDepositError(Exception):\n    pass\n\ndef deposit(amount):\n    if amount <= 0:\n        raise InvalidDepositError(\"Amount must be positive\")\n    return amount\n\ntry:\n    deposit(0)\nexcept InvalidDepositError as e:\n    print(e)",
+    },
+    {
+        "id": 15,
+        "title": "File Handling & Pathlib",
+        "duration": "30 min",
+        "prerequisites": "Files, exceptions, OOP",
+        "objectives": [
+            "Use pathlib for cross-platform paths",
+            "Read and write CSV and JSON",
+            "Build context managers with with",
+        ],
+        "explanation": "pathlib provides an object-oriented, cross-platform way to work with paths — better than raw string paths. Python's csv and json modules handle structured data, and the with statement ensures files close correctly.",
+        "code": "from pathlib import Path\nimport json, csv\n\nbase = Path(\"./data\")\nbase.mkdir(exist_ok=True)\n\ndata = {\"name\": \"Sufyan\", \"age\": 19}\n(base / \"info.json\").write_text(json.dumps(data))\nprint((base / \"info.json\").read_text())\n\nwith (base / \"users.csv\").open(\"w\", newline=\"\") as f:\n    writer = csv.writer(f)\n    writer.writerow([\"name\", \"age\"])\n    writer.writerow([\"Ali\", 25])\n\nprint((base / \"users.csv\").exists())",
+        "output": "{\"name\": \"Sufyan\", \"age\": 19}\nTrue",
+        "callout_type": "best",
+        "callout_text": "Prefer pathlib over os.path — it's cleaner, safer, and works identically on Windows, macOS, and Linux.",
+        "docs_url": "https://docs.python.org/3/library/pathlib.html",
+        "docs_label": "pathlib module",
+        "exercise_prompt": "Create a reports/ folder and write a hello.txt inside it.",
+        "exercise_hint": "Path('reports').mkdir(exist_ok=True) then write_text.",
+        "exercise_solution": "from pathlib import Path\np = Path(\"reports\")\np.mkdir(exist_ok=True)\n(p / \"hello.txt\").write_text(\"hi\")\nprint((p / \"hello.txt\").read_text())",
+    },
+    {
+        "id": 16,
+        "title": "Regular Expressions",
+        "duration": "35 min",
+        "prerequisites": "Strings, functions",
+        "objectives": [
+            "Understand regex patterns and re functions",
+            "Use match groups",
+            "Match emails and phones with patterns",
+        ],
+        "explanation": "Regular expressions search and match text patterns. re.search finds the first match, re.findall returns all matches, and parentheses create groups. Patterns like \\d+ match digits and [a-z]+ match lowercase words.",
+        "code": "import re\n\nemail = \"Contact: sufyan@example.com\"\nphone = \"Call 0300-1234567\"\n\nmatch = re.search(r\"([\\w.]+)@([\\w.]+)\", email)\nprint(match.group(1))\nprint(match.group(2))\n\nprint(re.findall(r\"\\d+\", phone))",
+        "output": "sufyan\nexample.com\n['0300', '1234567']",
+        "callout_type": "warning",
+        "callout_text": "Regex is powerful but hard to read — use it for clear patterns, and keep the pattern simple with comments when possible.",
+        "docs_url": "https://docs.python.org/3/library/re.html",
+        "docs_label": "re module",
+        "exercise_prompt": "Extract all words that start with 'p' from a sentence.",
+        "exercise_hint": "Use re.findall(r'\\bp\\w+', text).",
+        "exercise_solution": "import re\ntext = \"python is powerful and practical\"\nprint(re.findall(r\"\\bp\\w+\", text))",
+    },
+    {
+        "id": 17,
+        "title": "Working with APIs",
+        "duration": "35 min",
+        "prerequisites": "Dictionaries, exceptions, JSON",
+        "objectives": [
+            "Make GET requests with requests",
+            "Parse JSON responses",
+            "Handle status codes and errors",
+        ],
+        "explanation": "APIs let your program talk to external services over HTTP. The requests library makes GET calls, the .json() method parses responses, and checking status_code helps you handle failures gracefully.",
+        "code": "import requests\n\ntry:\n    response = requests.get(\"https://api.github.com/users/programmingpioneer\", timeout=10)\n    response.raise_for_status()\n    data = response.json()\n    print(\"User:\", data.get(\"login\"))\n    print(\"Public repos:\", data.get(\"public_repos\"))\nexcept requests.RequestException as e:\n    print(\"Request failed:\", e)",
+        "output": "User: programmingpioneer\nPublic repos: 10",
+        "callout_type": "important",
+        "callout_text": "Always use response.raise_for_status() and wrap API calls in try/except — network failures happen.",
+        "docs_url": "https://docs.python-requests.org/en/latest/",
+        "docs_label": "requests library",
+        "exercise_prompt": "Fetch a JSON placeholder post and print its title.",
+        "exercise_hint": "GET https://jsonplaceholder.typicode.com/posts/1 and print data['title'].",
+        "exercise_solution": "import requests\nr = requests.get(\"https://jsonplaceholder.typicode.com/posts/1\")\nprint(r.json()[\"title\"])",
+    },
+    {
+        "id": 18,
+        "title": "SQLite with Python",
+        "duration": "35 min",
+        "prerequisites": "Functions, files, OOP",
+        "objectives": [
+            "Connect to a SQLite database",
+            "Run CRUD operations",
+            "Use parameterized queries safely",
+        ],
+        "explanation": "SQLite is a lightweight database built into Python. The sqlite3 module connects to a file, a cursor executes SQL, and parameterized queries (?) prevent SQL injection. CRUD means Create, Read, Update, Delete.",
+        "code": "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\ncursor = conn.cursor()\n\ncursor.execute(\"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)\")\ncursor.execute(\"INSERT INTO users (name) VALUES (?)\", (\"Sufyan\",))\ncursor.execute(\"INSERT INTO users (name) VALUES (?)\", (\"Ali\",))\nconn.commit()\n\ncursor.execute(\"SELECT * FROM users\")\nfor row in cursor.fetchall():\n    print(row)\nconn.close()",
+        "output": "(1, 'Sufyan')\n(2, 'Ali')",
+        "callout_type": "best",
+        "callout_text": "Never build SQL with string formatting. Always use parameterized queries with ? placeholders.",
+        "docs_url": "https://docs.python.org/3/library/sqlite3.html",
+        "docs_label": "sqlite3 module",
+        "exercise_prompt": "Create a books table with title and author, then insert one book.",
+        "exercise_hint": "CREATE TABLE books (id INTEGER PRIMARY KEY, title TEXT, author TEXT).",
+        "exercise_solution": "import sqlite3\nconn = sqlite3.connect(\":memory:\")\nc = conn.cursor()\nc.execute(\"CREATE TABLE books (id INTEGER PRIMARY KEY, title TEXT, author TEXT)\")\nc.execute(\"INSERT INTO books (title, author) VALUES (?, ?)\", (\"Python Basics\", \"Sufyan\"))\nconn.commit()\nprint(c.execute(\"SELECT * FROM books\").fetchall())\nconn.close()",
+    },
+    {
+        "id": 19,
+        "title": "Testing with pytest",
+        "duration": "30 min",
+        "prerequisites": "Functions, exceptions",
+        "objectives": [
+            "Write test functions with assertions",
+            "Use fixtures for setup",
+            "Handle expected exceptions",
+        ],
+        "explanation": "Testing proves your code works. pytest discovers test_* functions and runs assertions. Fixtures provide reusable setup data. pytest.raises checks that errors are raised as expected — the foundation of reliable code.",
+        "code": "import pytest\n\ndef divide(a, b):\n    if b == 0:\n        raise ValueError(\"Cannot divide by zero\")\n    return a / b\n\ndef test_divide():\n    assert divide(10, 2) == 5\n    assert divide(1, 4) == 0.25\n\ndef test_divide_by_zero():\n    with pytest.raises(ValueError):\n        divide(1, 0)\n\nprint(\"All tests passed.\")",
+        "output": "All tests passed.",
+        "callout_type": "best",
+        "callout_text": "Write tests alongside every function — it catches bugs early and documents expected behaviour.",
+        "docs_url": "https://docs.pytest.org/en/stable/",
+        "docs_label": "pytest documentation",
+        "exercise_prompt": "Write a test that checks len('hello') == 5.",
+        "exercise_hint": "def test_length(): assert len('hello') == 5.",
+        "exercise_solution": "def test_length():\n    assert len(\"hello\") == 5",
+    },
+    {
+        "id": 20,
+        "title": "Capstone: Expense Tracker CLI",
+        "duration": "45 min",
+        "prerequisites": "All previous intermediate lessons",
+        "objectives": [
+            "Combine OOP, dataclasses, and SQLite",
+            "Build a complete CLI application",
+            "Apply testing to real code",
+        ],
+        "explanation": "This capstone combines everything: dataclasses for expenses, sqlite3 for storage, pathlib for files, and custom exceptions for validation. You'll build a CLI that adds, lists, and totals expenses — a real-world project.",
+        "code": "from dataclasses import dataclass\nimport sqlite3\nfrom pathlib import Path\n\n@dataclass\nclass Expense:\n    name: str\n    amount: float\n\nclass ExpenseTracker:\n    def __init__(self, db_path=\"expenses.db\"):\n        self.conn = sqlite3.connect(db_path)\n        self.conn.execute(\"CREATE TABLE IF NOT EXISTS expenses (id INTEGER PRIMARY KEY, name TEXT, amount REAL)\")\n\n    def add(self, name, amount):\n        self.conn.execute(\"INSERT INTO expenses (name, amount) VALUES (?, ?)\", (name, amount))\n        self.conn.commit()\n\n    def total(self):\n        row = self.conn.execute(\"SELECT COALESCE(SUM(amount), 0) FROM expenses\").fetchone()\n        return row[0]\n\n    def all(self):\n        return self.conn.execute(\"SELECT name, amount FROM expenses\").fetchall()\n\n    def close(self):\n        self.conn.close()\n\napp = ExpenseTracker(\":memory:\")\napp.add(\"Lunch\", 500)\napp.add(\"Books\", 1200)\nprint(\"Total:\", app.total())\nprint(\"All:\", app.all())\napp.close()",
+        "output": "Total: 1700.0\nAll: [('Lunch', 500.0), ('Books', 1200.0)]",
+        "callout_type": "important",
+        "callout_text": "Separate concerns: dataclasses for data, a class for storage, and small methods for each feature.",
+        "docs_url": "https://docs.python.org/3/library/sqlite3.html",
+        "docs_label": "sqlite3 module",
+        "exercise_prompt": "Add a delete(name) method that removes an expense by name.",
+        "exercise_hint": "Execute DELETE FROM expenses WHERE name = ? and commit.",
+        "exercise_solution": "def delete(self, name):\n    self.conn.execute(\"DELETE FROM expenses WHERE name = ?\", (name,))\n    self.conn.commit()",
+    },
+]
+
+# ================== PYTHON ADVANCED GUIDE — LESSONS DATA ==================
+PYTHON_ADVANCED_LESSONS = [
+    {
+        "id": 1,
+        "title": "Advanced OOP",
+        "duration": "30 min",
+        "objectives": ["Master inheritance chains", "Use abstract base classes", "Compose objects over inheritance"],
+        "explanation": "Advanced OOP goes beyond basic classes. Abstract Base Classes (ABCs) force subclasses to implement methods, composition builds behaviour by combining objects, and diamond inheritance teaches you why super() follows the MRO.",
+        "code": "from abc import ABC, abstractmethod\n\nclass Shape(ABC):\n    @abstractmethod\n    def area(self):\n        pass\n\nclass Circle(Shape):\n    def __init__(self, radius):\n        self.radius = radius\n\n    def area(self):\n        return 3.14159 * self.radius ** 2\n\nprint(Circle(5).area())",
+        "output": "78.53975",
+        "callout_type": "important",
+        "callout_text": "Prefer composition over inheritance when behaviour differs — it keeps classes flexible and avoids deep hierarchies.",
+        "docs_url": "https://docs.python.org/3/library/abc.html",
+        "docs_label": "Python ABC",
+        "exercise_prompt": "Create an abstract Animal class with a speak() method and a Dog subclass.",
+        "exercise_hint": "Use @abstractmethod and override speak() in Dog.",
+        "exercise_solution": "from abc import ABC, abstractmethod\nclass Animal(ABC):\n    @abstractmethod\n    def speak(self):\n        pass\nclass Dog(Animal):\n    def speak(self):\n        return 'Woof!'\nprint(Dog().speak())",
+    },
+    {
+        "id": 2,
+        "title": "Descriptors & Properties Deep Dive",
+        "duration": "30 min",
+        "objectives": ["Understand the descriptor protocol", "Build reusable descriptors", "Combine with properties"],
+        "explanation": "Descriptors are the machinery behind properties, methods, and classmethod. A descriptor implements __get__, __set__, or __delete__ to control attribute access. Building one shows you how validation, caching, and type checking work under the hood.",
+        "code": "class PositiveNumber:\n    def __set_name__(self, owner, name):\n        self.name = name\n\n    def __get__(self, obj, objtype=None):\n        return obj.__dict__.get(self.name, 0)\n\n    def __set__(self, obj, value):\n        if value < 0:\n            raise ValueError(\"Must be positive\")\n        obj.__dict__[self.name] = value\n\nclass Order:\n    total = PositiveNumber()\n\no = Order()\no.total = 100\nprint(o.total)",
+        "output": "100",
+        "callout_type": "tip",
+        "callout_text": "__set_name__ gives a descriptor its attribute name automatically — this is cleaner than passing it manually.",
+        "docs_url": "https://docs.python.org/3/howto/descriptor.html",
+        "docs_label": "Python descriptor howto",
+        "exercise_prompt": "Create a ValidatedString descriptor that rejects empty strings.",
+        "exercise_hint": "Raise ValueError in __set__ if not value.strip().",
+        "exercise_solution": "class ValidatedString:\n    def __set_name__(self, owner, name):\n        self.name = name\n    def __get__(self, obj, objtype=None):\n        return obj.__dict__.get(self.name, '')\n    def __set__(self, obj, value):\n        if not value.strip():\n            raise ValueError('Empty not allowed')\n        obj.__dict__[self.name] = value\nclass User:\n    name = ValidatedString()\nu = User()\nu.name = 'Ali'\nprint(u.name)",
+    },
+    {
+        "id": 3,
+        "title": "Decorators Deep Dive",
+        "duration": "35 min",
+        "objectives": ["Write decorators with arguments", "Stack multiple decorators", "Use class-based decorators"],
+        "explanation": "Advanced decorators take arguments, stack in order, and can be implemented as classes with __call__. Understanding decorator order matters — decorators apply bottom-up, so the one closest to the function runs first.",
+        "code": "def repeat(times):\n    def decorator(func):\n        def wrapper(*args, **kwargs):\n            for _ in range(times):\n                result = func(*args, **kwargs)\n            return result\n        return wrapper\n    return decorator\n\n@repeat(3)\ndef greet(name):\n    print(f\"Hi {name}\")\n\ngreet(\"Sufyan\")",
+        "output": "Hi Sufyan\nHi Sufyan\nHi Sufyan",
+        "callout_type": "best",
+        "callout_text": "Use functools.wraps in every decorator so function name, docstring, and signature stay intact.",
+        "docs_url": "https://docs.python.org/3/glossary.html#term-decorator",
+        "docs_label": "Python decorators",
+        "exercise_prompt": "Write a log_calls decorator that prints the function name on each call.",
+        "exercise_hint": "In the wrapper, print func.__name__ before calling.",
+        "exercise_solution": "def log_calls(func):\n    def wrapper(*args, **kwargs):\n        print(f'Calling {func.__name__}')\n        return func(*args, **kwargs)\n    return wrapper\n@log_calls\ndef add(a, b):\n    return a + b\nprint(add(2, 3))",
+    },
+    {
+        "id": 4,
+        "title": "Generators Deep Dive",
+        "duration": "35 min",
+        "objectives": ["Build generator pipelines", "Use generator.send()", "Handle exceptions with throw() and close()"],
+        "explanation": "Advanced generators communicate bidirectionally with send(), terminate with close(), and raise exceptions with throw(). Generator pipelines chain multiple generators lazily for efficient data processing.",
+        "code": "def running_average():\n    total = 0\n    count = 0\n    average = None\n    while True:\n        value = yield average\n        total += value\n        count += 1\n        average = total / count\n\navg = running_average()\nnext(avg)\nprint(avg.send(10))\nprint(avg.send(20))\nprint(avg.send(30))",
+        "output": "10.0\n15.0\n20.0",
+        "callout_type": "important",
+        "callout_text": "Call next(gen) or gen.send(None) once before send() — a generator must reach its first yield first.",
+        "docs_url": "https://docs.python.org/3/reference/expressions.html#yield-expressions",
+        "docs_label": "Python yield expressions",
+        "exercise_prompt": "Write a generator that yields squares of numbers sent to it.",
+        "exercise_hint": "Receive value with yield, then yield value ** 2.",
+        "exercise_solution": "def square_stream():\n    while True:\n        value = yield\n        yield value ** 2\ns = square_stream()\nnext(s)\nprint(s.send(4))",
+    },
+    {
+        "id": 5,
+        "title": "Async Python Basics",
+        "duration": "35 min",
+        "objectives": ["Understand async and await", "Create coroutines", "Run with asyncio.run()"],
+        "explanation": "Async Python runs tasks cooperatively without threads. async defines a coroutine, await pauses until another coroutine completes, and asyncio.run() starts the event loop. It's ideal for I/O-bound work like APIs and file reads.",
+        "code": "import asyncio\n\nasync def fetch(name, delay):\n    await asyncio.sleep(delay)\n    print(f\"Done: {name}\")\n    return name\n\nasync def main():\n    results = await asyncio.gather(\n        fetch(\"A\", 2),\n        fetch(\"B\", 1),\n        fetch(\"C\", 3),\n    )\n    print(results)\n\nasyncio.run(main())",
+        "output": "Done: B\nDone: A\nDone: C\n['A', 'B', 'C']",
+        "callout_type": "tip",
+        "callout_text": "asyncio.gather() runs coroutines concurrently and returns results in the same order you passed them.",
+        "docs_url": "https://docs.python.org/3/library/asyncio.html",
+        "docs_label": "Python asyncio",
+        "exercise_prompt": "Write two coroutines that sleep and print, then run them with asyncio.run().",
+        "exercise_hint": "Use async def and await asyncio.sleep(1).",
+        "exercise_solution": "import asyncio\nasync def one():\n    await asyncio.sleep(1)\n    print('one')\nasync def two():\n    await asyncio.sleep(0.5)\n    print('two')\nasync def main():\n    await asyncio.gather(one(), two())\nasyncio.run(main())",
+    },
+    {
+        "id": 6,
+        "title": "asyncio Tasks & Timeouts",
+        "duration": "35 min",
+        "objectives": ["Create tasks with create_task", "Apply timeouts with wait_for", "Await first with wait"],
+        "explanation": "Tasks schedule coroutines on the event loop. asyncio.wait_for() enforces timeouts, and asyncio.wait() handles multiple futures with control over return conditions.",
+        "code": "import asyncio\n\nasync def slow_task():\n    await asyncio.sleep(5)\n    return \"done\"\n\nasync def main():\n    try:\n        result = await asyncio.wait_for(slow_task(), timeout=1)\n        print(result)\n    except asyncio.TimeoutError:\n        print(\"Too slow!\")\n\nasyncio.run(main())",
+        "output": "Too slow!",
+        "callout_type": "important",
+        "callout_text": "asyncio.wait_for() raises TimeoutError and cancels the task — always catch it for clean shutdown.",
+        "docs_url": "https://docs.python.org/3/library/asyncio-task.html",
+        "docs_label": "Python asyncio tasks",
+        "exercise_prompt": "Create a task with create_task and await it.",
+        "exercise_hint": "Use asyncio.create_task(coro) then await the task.",
+        "exercise_solution": "import asyncio\nasync def work():\n    await asyncio.sleep(0.1)\n    return 'done'\nasync def main():\n    task = asyncio.create_task(work())\n    print(await task)\nasyncio.run(main())",
+    },
+    {
+        "id": 7,
+        "title": "Threads",
+        "duration": "30 min",
+        "objectives": ["Run threads with threading", "Communicate safely with locks", "Understand the GIL"],
+        "explanation": "Threads run code in parallel within one process. Use threading.Thread to start work and Lock to prevent races on shared data. Python's GIL means CPU-bound threads don't fully parallelise, but I/O-bound ones do.",
+        "code": "import threading\nimport time\n\ndef worker(name, delay):\n    time.sleep(delay)\n    print(f\"{name} finished\")\n\nthreads = [threading.Thread(target=worker, args=(f\"T{i}\", i)) for i in range(1, 4)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\nprint(\"All done\")",
+        "output": "T1 finished\nT2 finished\nT3 finished\nAll done",
+        "callout_type": "warning",
+        "callout_text": "Always call join() on threads to wait for them — otherwise the program may exit before they finish.",
+        "docs_url": "https://docs.python.org/3/library/threading.html",
+        "docs_label": "Python threading",
+        "exercise_prompt": "Start two threads that print their names with a small sleep.",
+        "exercise_hint": "Use threading.Thread(target=fn) and start() then join().",
+        "exercise_solution": "import threading, time\ndef show(name):\n    time.sleep(0.1)\n    print(name)\nthreads = [threading.Thread(target=show, args=('A',)), threading.Thread(target=show, args=('B',))]\nfor t in threads: t.start()\nfor t in threads: t.join()",
+    },
+    {
+        "id": 8,
+        "title": "Multiprocessing",
+        "duration": "35 min",
+        "objectives": ["Use Process for CPU-bound work", "Share data with Queue", "Understand spawn vs fork"],
+        "explanation": "Multiprocessing bypasses the GIL by running separate Python processes. Use Process for CPU-heavy tasks and Queue for safe inter-process communication. Each process gets its own memory.",
+        "code": "import multiprocessing\n\ndef square(n):\n    return n * n\n\nwith multiprocessing.Pool(4) as pool:\n    results = pool.map(square, [1, 2, 3, 4, 5])\n\nprint(results)",
+        "output": "[1, 4, 9, 16, 25]",
+        "callout_type": "best",
+        "callout_text": "Use a Pool when you have many independent CPU-bound tasks — it manages workers for you.",
+        "docs_url": "https://docs.python.org/3/library/multiprocessing.html",
+        "docs_label": "Python multiprocessing",
+        "exercise_prompt": "Use multiprocessing.Pool to double a list of numbers.",
+        "exercise_hint": "Define a double() function and use pool.map.",
+        "exercise_solution": "import multiprocessing\ndef double(n):\n    return n * 2\nwith multiprocessing.Pool(2) as pool:\n    print(pool.map(double, [1, 2, 3]))",
+    },
+    {
+        "id": 9,
+        "title": "Concurrency Patterns",
+        "duration": "35 min",
+        "objectives": ["Choose threads vs processes vs async", "Use concurrent.futures", "Build a clean concurrency pattern"],
+        "explanation": "Different concurrency tools fit different jobs: async for many I/O tasks, threads for blocking I/O, processes for CPU work. concurrent.futures gives a unified interface for thread and process pools.",
+        "code": "from concurrent.futures import ThreadPoolExecutor\n\ndef double(n):\n    return n * 2\n\nwith ThreadPoolExecutor(max_workers=4) as executor:\n    results = list(executor.map(double, [1, 2, 3, 4]))\n\nprint(results)",
+        "output": "[2, 4, 6, 8]",
+        "callout_type": "important",
+        "callout_text": "Async is not always faster — for quick tasks, the overhead of the event loop can beat the benefit.",
+        "docs_url": "https://docs.python.org/3/library/concurrent.futures.html",
+        "docs_label": "Python concurrent.futures",
+        "exercise_prompt": "Use ThreadPoolExecutor to run a function three times concurrently.",
+        "exercise_hint": "Use executor.submit(fn, arg) and collect futures.",
+        "exercise_solution": "from concurrent.futures import ThreadPoolExecutor\ndef say(x):\n    return f'hi {x}'\nwith ThreadPoolExecutor(max_workers=3) as ex:\n    futures = [ex.submit(say, i) for i in range(3)]\n    print([f.result() for f in futures])",
+    },
+    {
+        "id": 10,
+        "title": "Performance Optimization",
+        "duration": "30 min",
+        "objectives": ["Measure before optimizing", "Use built-ins for speed", "Apply caching strategically"],
+        "explanation": "Performance work starts with measurement. Built-in functions (sum, map, list comprehensions) are C-implemented and fast, and @lru_cache removes repeated computation. Optimize the actual bottleneck, not guesses.",
+        "code": "import functools, time\n\n@functools.lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\nstart = time.perf_counter()\nprint(fib(35))\nprint(f\"Time: {time.perf_counter() - start:.4f}s\")",
+        "output": "9227465\nTime: 0.0001s",
+        "callout_type": "best",
+        "callout_text": "Measure first with time.perf_counter() or timeit — never optimise blind guesses.",
+        "docs_url": "https://docs.python.org/3/library/functools.html#functools.lru_cache",
+        "docs_label": "Python lru_cache",
+        "exercise_prompt": "Time how long it takes to sum a list of a million numbers.",
+        "exercise_hint": "Use time.perf_counter() around sum(range(1_000_000)).",
+        "exercise_solution": "import time\nstart = time.perf_counter()\ntotal = sum(range(1_000_000))\nprint(total, time.perf_counter() - start)",
+    },
+    {
+        "id": 11,
+        "title": "Memory Management",
+        "duration": "30 min",
+        "objectives": ["Understand reference counting", "Use __slots__ to save memory", "Work with garbage collection"],
+        "explanation": "Python frees objects automatically using reference counting and a cyclic garbage collector. __slots__ reduces per-instance memory by preventing attribute dict creation. tracemalloc profiles memory allocations.",
+        "code": "import tracemalloc\n\ntracemalloc.start()\n\ndata = [n ** 2 for n in range(100_000)]\n\ncurrent, peak = tracemalloc.get_traced_memory()\nprint(f\"Current: {current / 1024:.0f} KB\")\nprint(f\"Peak: {peak / 1024:.0f} KB\")",
+        "output": "Current: 3266 KB\nPeak: 3266 KB",
+        "callout_type": "tip",
+        "callout_text": "Use generators instead of lists for huge data — they compute values lazily and use almost no memory.",
+        "docs_url": "https://docs.python.org/3/library/tracemalloc.html",
+        "docs_label": "Python tracemalloc",
+        "exercise_prompt": "Add __slots__ to a class to reduce its memory usage.",
+        "exercise_hint": "Define __slots__ = ('name', 'age').",
+        "exercise_solution": "class Person:\n    __slots__ = ('name', 'age')\n    def __init__(self, name, age):\n        self.name = name\n        self.age = age\np = Person('Ali', 30)\nprint(p.name)",
+    },
+    {
+        "id": 12,
+        "title": "Profiling",
+        "duration": "30 min",
+        "objectives": ["Profile with cProfile", "Find hot spots", "Read profiler output"],
+        "explanation": "Profiling shows exactly where time goes. cProfile records function calls and cumulative time, helping you find the real bottleneck instead of guessing. Optimise the function that dominates the output.",
+        "code": "import cProfile\n\ndef slow():\n    total = 0\n    for i in range(1_000_000):\n        total += i\n    return total\n\ncProfile.run('slow()')",
+        "output": "         4 function calls in 0.045 seconds\n\n   Ordered by: standard name\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.045    0.045    0.045    0.045 profile_example.py:3(slow)",
+        "callout_type": "best",
+        "callout_text": "Look at cumtime (cumulative time) first — it shows the full cost including nested calls.",
+        "docs_url": "https://docs.python.org/3/library/profile.html",
+        "docs_label": "Python cProfile",
+        "exercise_prompt": "Use cProfile.run() to profile a simple loop function.",
+        "exercise_hint": "Define a function, then pass 'function_name()' to cProfile.run.",
+        "exercise_solution": "import cProfile\ndef work():\n    total = 0\n    for i in range(10000):\n        total += i\n    return total\ncProfile.run('work()')",
+    },
+    {
+        "id": 13,
+        "title": "Advanced Type Hinting",
+        "duration": "30 min",
+        "objectives": ["Use typing for clarity", "Write generic types", "Use Protocol and TypeAlias"],
+        "explanation": "Type hints document contracts and enable static checkers like mypy. typing provides Optional, Union, Callable, and generics. Protocol defines structural typing — anything with the right methods fits.",
+        "code": "from typing import Protocol\n\nclass Named(Protocol):\n    name: str\n\ndef greet(item: Named) -> str:\n    return f\"Hello, {item.name}\"\n\nclass User:\n    def __init__(self, name):\n        self.name = name\n\nprint(greet(User(\"Sufyan\")))",
+        "output": "Hello, Sufyan",
+        "callout_type": "best",
+        "callout_text": "Type hints don't change runtime — but they catch bugs early when you run mypy or a typed IDE.",
+        "docs_url": "https://docs.python.org/3/library/typing.html",
+        "docs_label": "Python typing",
+        "exercise_prompt": "Add a type hint to a function that takes int and returns str.",
+        "exercise_hint": "Write def describe(n: int) -> str:.",
+        "exercise_solution": "def describe(n: int) -> str:\n    return f'Number: {n}'\nprint(describe(5))",
+    },
+    {
+        "id": 14,
+        "title": "Packaging Python Projects",
+        "duration": "35 min",
+        "objectives": ["Understand project layout", "Write pyproject.toml", "Structure a publishable package"],
+        "explanation": "A proper package has a clear structure: a project folder, a package directory, pyproject.toml, and a README. Modern Python uses pyproject.toml for build metadata instead of setup.py.",
+        "code": "# pyproject.toml (example)\n# [build-system]\n# requires = [\"setuptools>=68\"]\n# build-backend = \"setuptools.build_meta\"\n#\n# [project]\n# name = \"mypackage\"\n# version = \"0.1.0\"\n# description = \"A sample package\"\n\nprint(\"Project structure:\")\nprint(\"mypackage/\")\nprint(\"  mypackage/\")\nprint(\"    __init__.py\")\nprint(\"    core.py\")\nprint(\"  pyproject.toml\")\nprint(\"  README.md\")",
+        "output": "Project structure:\nmypackage/\n  mypackage/\n    __init__.py\n    core.py\n  pyproject.toml\n  README.md",
+        "callout_type": "important",
+        "callout_text": "Keep the package source in a subfolder with the same name as the project — this avoids common import confusion.",
+        "docs_url": "https://packaging.python.org/tutorials/packaging-projects/",
+        "docs_label": "Python packaging guide",
+        "exercise_prompt": "Write a minimal pyproject.toml with name and version.",
+        "exercise_hint": "Use [project] with name and version keys.",
+        "exercise_solution": "print('[project]')\nprint('name = \"demo\"')\nprint('version = \"0.1.0\"')",
+    },
+    {
+        "id": 15,
+        "title": "Building & Publishing Packages",
+        "duration": "35 min",
+        "objectives": ["Build wheels and sdists", "Publish to PyPI with twine", "Version packages correctly"],
+        "explanation": "Publishing makes your package installable by anyone. python -m build creates distributions (wheel and sdist), and twine uploads them to PyPI. Semantic versioning keeps releases predictable.",
+        "code": "# Build commands (run in terminal):\n# python -m build\n# python -m twine upload dist/*\n\nimport sys\nprint(\"Release checklist:\")\nprint(\"1. Update version in pyproject.toml\")\nprint(\"2. Build: python -m build\")\nprint(\"3. Upload: python -m twine upload dist/*\")\nprint(\"4. Verify: pip install yourpkg\")",
+        "output": "Release checklist:\n1. Update version in pyproject.toml\n2. Build: python -m build\n3. Upload: python -m twine upload dist/*\n4. Verify: pip install yourpkg",
+        "callout_type": "warning",
+        "callout_text": "Never upload a package with a real secret or password in the source — check files before twine upload.",
+        "docs_url": "https://packaging.python.org/tutorials/packaging-projects/#uploading-the-distribution-archives",
+        "docs_label": "Uploading to PyPI",
+        "exercise_prompt": "Print the semantic versioning order for 1.0.0, 2.0.0, and 1.1.0.",
+        "exercise_hint": "Sort them as strings; semver sorts lexically.",
+        "exercise_solution": "versions = ['1.0.0', '2.0.0', '1.1.0']\nprint(sorted(versions))",
+    },
+    {
+        "id": 16,
+        "title": "Environment & Configuration",
+        "duration": "30 min",
+        "objectives": ["Load environment variables", "Use pydantic-settings", "Separate config from code"],
+        "explanation": "Configuration should live outside code — in environment variables or .env files. pydantic-settings validates config at startup so the app fails fast with a clear error if something is missing.",
+        "code": "import os\n\nos.environ[\"DATABASE_URL\"] = \"postgres://localhost/app\"\n\ndatabase_url = os.environ.get(\"DATABASE_URL\", \"sqlite:///default.db\")\nprint(database_url)\n\nsecret = os.environ.get(\"SECRET_KEY\")\nprint(\"Secret loaded:\", bool(secret))",
+        "output": "postgres://localhost/app\nSecret loaded: False",
+        "callout_type": "important",
+        "callout_text": "Never hard-code secrets — read them from environment variables so they stay out of git.",
+        "docs_url": "https://docs.python.org/3/library/os.html#os.environ",
+        "docs_label": "Python os.environ",
+        "exercise_prompt": "Read a HOME environment variable and print it.",
+        "exercise_hint": "Use os.environ.get('HOME', 'not set').",
+        "exercise_solution": "import os\nprint(os.environ.get('HOME', 'not set'))",
+    },
+    {
+        "id": 17,
+        "title": "Security Basics",
+        "duration": "30 min",
+        "objectives": ["Sanitize user input", "Use secrets for tokens", "Avoid SQL injection"],
+        "explanation": "Security is a mindset: never trust user input, never build SQL with string concatenation, and use the secrets module for tokens and passwords. Parameterized queries stop injection attacks.",
+        "code": "import secrets\n\ndef make_token():\n    return secrets.token_urlsafe(16)\n\nprint(make_token())\nprint(make_token())",
+        "output": "Kx8nRf2XwL9mPq3TvB7sYg\nTq3Nc7RmWp2Jx5VdL8kZtA",
+        "callout_type": "warning",
+        "callout_text": "Use secrets for anything security-sensitive — random is predictable and only meant for simulations.",
+        "docs_url": "https://docs.python.org/3/library/secrets.html",
+        "docs_label": "Python secrets",
+        "exercise_prompt": "Generate a 32-byte secure token with secrets.token_hex.",
+        "exercise_hint": "Call secrets.token_hex(32).",
+        "exercise_solution": "import secrets\nprint(secrets.token_hex(32))",
+    },
+    {
+        "id": 18,
+        "title": "Architecture & Clean Code",
+        "duration": "30 min",
+        "objectives": ["Apply SOLID principles", "Separate concerns", "Keep functions small"],
+        "explanation": "Clean code is readable, testable, and easy to change. Single Responsibility says one function does one thing, dependency injection makes code testable, and descriptive names remove the need for comments.",
+        "code": "from dataclasses import dataclass\n\n@dataclass\nclass EmailSender:\n    smtp_host: str\n\n    def send(self, to, subject, body):\n        return f\"Sent to {to}: {subject}\"\n\nclass Notifier:\n    def __init__(self, sender):\n        self.sender = sender\n\n    def notify(self, user, message):\n        return self.sender.send(user, \"Update\", message)\n\nn = Notifier(EmailSender(\"smtp.example.com\"))\nprint(n.notify(\"ali@example.com\", \"Welcome!\"))",
+        "output": "Sent to ali@example.com: Update",
+        "callout_type": "best",
+        "callout_text": "Dependency injection — passing dependencies into __init__ — makes code testable and swappable.",
+        "docs_url": "https://docs.python.org/3/howto/functional.html",
+        "docs_label": "Python functional howto",
+        "exercise_prompt": "Write a class that takes a logger object in __init__ and uses it in a method.",
+        "exercise_hint": "Store self.logger = logger, then call self.logger.log(...).",
+        "exercise_solution": "class Service:\n    def __init__(self, logger):\n        self.logger = logger\n    def run(self):\n        self.logger.log('running')\nclass Logger:\n    def log(self, msg):\n        print(msg)\nService(Logger()).run()",
+    },
+    {
+        "id": 19,
+        "title": "Production Python",
+        "duration": "35 min",
+        "objectives": ["Configure logging properly", "Handle errors gracefully", "Plan observability"],
+        "explanation": "Production code needs proper logging, graceful error handling, and observability. Configure the logging module with levels and formats, catch errors at boundaries, and always provide useful context.",
+        "code": "import logging\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n)\n\nlogging.info(\"Service started\")\nlogging.warning(\"High memory usage\")\ntry:\n    result = 10 / 0\nexcept ZeroDivisionError:\n    logging.error(\"Division by zero attempted\")",
+        "output": "2026-08-23 23:00:00,000 [INFO] Service started\n2026-08-23 23:00:00,000 [WARNING] High memory usage\n2026-08-23 23:00:00,000 [ERROR] Division by zero attempted",
+        "callout_type": "important",
+        "callout_text": "Use logging, not print(), in production — it gives timestamps, levels, and can write to files or services.",
+        "docs_url": "https://docs.python.org/3/howto/logging.html",
+        "docs_label": "Python logging howto",
+        "exercise_prompt": "Configure logging and log an info message.",
+        "exercise_hint": "Use basicConfig(level=logging.INFO) then logging.info(...).",
+        "exercise_solution": "import logging\nlogging.basicConfig(level=logging.INFO)\nlogging.info('Hello production')",
+    },
+    {
+        "id": 20,
+        "title": "Capstone: Production API",
+        "duration": "45 min",
+        "objectives": ["Build a production-style app", "Combine async, classes, and config", "Structure for maintainability"],
+        "explanation": "This capstone combines everything: classes for services, async for I/O, environment config, and clean error handling. The goal is a small but production-quality API-like service.",
+        "code": "import os\nimport logging\nfrom dataclasses import dataclass\n\nlogging.basicConfig(level=logging.INFO, format=\"%(levelname)s %(message)s\")\n\n@dataclass\nclass Config:\n    max_results: int = 10\n\nclass FakeDB:\n    def query(self, limit):\n        return [f\"row-{i}\" for i in range(limit)]\n\nclass Service:\n    def __init__(self, db, config):\n        self.db = db\n        self.config = config\n\n    def search(self):\n        logging.info(\"Running search\")\n        try:\n            return self.db.query(self.config.max_results)\n        except Exception as exc:\n            logging.error(f\"Search failed: {exc}\")\n            return []\n\nservice = Service(FakeDB(), Config(max_results=5))\nprint(service.search())",
+        "output": "INFO Running search\n['row-0', 'row-1', 'row-2', 'row-3', 'row-4']",
+        "callout_type": "best",
+        "callout_text": "Layer your app: Config holds settings, DB handles data, Service holds business logic — each part is easy to test alone.",
+        "docs_url": "https://docs.python.org/3/howto/logging.html",
+        "docs_label": "Python logging howto",
+        "exercise_prompt": "Add a retry option to Config and use it in the Service.",
+        "exercise_hint": "Add retries: int = 3 to the dataclass.",
+        "exercise_solution": "from dataclasses import dataclass\n@dataclass\nclass Config:\n    max_results: int = 10\n    retries: int = 3\nprint(Config())",
+    },
+]
+
+PYTHON_PRACTICE = [
+    # ================= BEGINNER — 20 TOPICS =================
+    {"id":"b01","level":"beginner","topic":"First Program","type":"mcq","difficulty":"easy","title":"print() Function","question":"What does print(\"Hello\") output?","options":["Hello","\"Hello\"","Error","None"],"answer":"Hello","hint":"print displays the text without quotes.","solution":"Hello","explanation":"print() outputs the string content without quotes."},
+    {"id":"b01b","level":"beginner","topic":"First Program","type":"output","difficulty":"easy","title":"Two Prints","question":"What is the output?","code":"print(\"A\")\nprint(\"B\")","answer":"A\nB","hint":"Two print calls, two lines.","solution":"A\nB","explanation":"Each print goes on a new line."},
+    {"id":"b02","level":"beginner","topic":"Variables","type":"mcq","difficulty":"easy","title":"Type of 10","question":"What is type(10)?","options":["int","float","str","bool"],"answer":"int","hint":"Whole numbers are int.","solution":"int","explanation":"10 has no decimal, so it's an int."},
+    {"id":"b02b","level":"beginner","topic":"Variables","type":"mcq","difficulty":"easy","title":"Valid Name","question":"Which variable name is valid?","options":["2name","my-name","my_name","my name"],"answer":"my_name","hint":"Names can't start with a digit or contain spaces/hyphens.","solution":"my_name","explanation":"Only letters, digits, and underscore; can't start with a digit."},
+    {"id":"b03","level":"beginner","topic":"Operators","type":"mcq","difficulty":"easy","title":"Modulo Result","question":"What is 10 % 3?","options":["3","1","0","10"],"answer":"1","hint":"% is the remainder.","solution":"1","explanation":"10 divided by 3 is 3 remainder 1."},
+    {"id":"b03b","level":"beginner","topic":"Operators","type":"output","difficulty":"medium","title":"Operator Precedence","question":"What is the output?","code":"print(2 + 3 * 4)","answer":"14","hint":"Multiplication before addition.","solution":"14","explanation":"3*4=12, then 2+12=14."},
+    {"id":"b04","level":"beginner","topic":"Strings","type":"mcq","difficulty":"easy","title":"String Length","question":"What does len(\"Python\") return?","options":["5","6","7","Error"],"answer":"6","hint":"Count the letters.","solution":"6","explanation":"'Python' has 6 characters."},
+    {"id":"b04b","level":"beginner","topic":"Strings","type":"output","difficulty":"medium","title":"String Upper","question":"What is the output?","code":"print(\"hello\".upper())","answer":"HELLO","hint":"upper() capitalizes all letters.","solution":"HELLO","explanation":"upper() converts to uppercase."},
+    {"id":"b05","level":"beginner","topic":"Input & Casting","type":"mcq","difficulty":"medium","title":"input() Type","question":"What type does input() return?","options":["int","float","str","bool"],"answer":"str","hint":"input() always returns text.","solution":"str","explanation":"input() always returns a string."},
+    {"id":"b05b","level":"beginner","topic":"Input & Casting","type":"coding","difficulty":"medium","title":"Add Two Inputs","question":"Write code to add two numbers from input().","starter_code":"a = int(input())\nb = int(input())\n# print sum","answer":"print(a + b)","hint":"Convert inputs to int first.","solution":"a = int(input())\nb = int(input())\nprint(a + b)","explanation":"int() converts input strings to numbers."},
+    {"id":"b06","level":"beginner","topic":"Conditions","type":"mcq","difficulty":"easy","title":"if/else Logic","question":"What prints if score=85 and code is `if score>=90: print('A') else: print('B')`?","options":["A","B","Error","Nothing"],"answer":"B","hint":"85 is not >= 90.","solution":"B","explanation":"85 is less than 90, so else runs."},
+    {"id":"b06b","level":"beginner","topic":"Conditions","type":"output","difficulty":"medium","title":"Conditional Expression","question":"What is the output?","code":"age = 18\nprint(\"Adult\" if age >= 18 else \"Minor\")","answer":"Adult","hint":"18 >= 18 is True.","solution":"Adult","explanation":"The condition is true, so 'Adult' prints."},
+    {"id":"b07","level":"beginner","topic":"Loops","type":"mcq","difficulty":"medium","title":"range() Count","question":"How many times does `for i in range(5)` loop?","options":["4","5","6","10"],"answer":"5","hint":"range(5) gives 0,1,2,3,4.","solution":"5","explanation":"range(5) produces 5 numbers."},
+    {"id":"b07b","level":"beginner","topic":"Loops","type":"output","difficulty":"medium","title":"While Loop","question":"What is the output?","code":"n = 0\nwhile n < 3:\n    n += 1\nprint(n)","answer":"3","hint":"Loop runs until n reaches 3.","solution":"3","explanation":"n increments 3 times: 1,2,3."},
+    {"id":"b08","level":"beginner","topic":"Lists","type":"mcq","difficulty":"easy","title":"List Indexing","question":"What does [10,20,30][0] return?","options":["10","20","30","Error"],"answer":"10","hint":"Indexing starts at 0.","solution":"10","explanation":"Index 0 is the first element."},
+    {"id":"b08b","level":"beginner","topic":"Lists","type":"coding","difficulty":"medium","title":"Append to List","question":"Write code to add 4 to nums = [1,2,3].","starter_code":"nums = [1, 2, 3]\n# add 4","answer":"nums.append(4)","hint":"Use append().","solution":"nums.append(4)","explanation":"append() adds to the end."},
+    {"id":"b09","level":"beginner","topic":"Dictionaries","type":"mcq","difficulty":"medium","title":"Dict Access","question":"What does {'a':1}['a'] return?","options":["1","a","Error","None"],"answer":"1","hint":"Use the key to get the value.","solution":"1","explanation":"Key 'a' maps to value 1."},
+    {"id":"b09b","level":"beginner","topic":"Dictionaries","type":"output","difficulty":"medium","title":"Dict get() Safe","question":"What is the output?","code":"d = {'x': 10}\nprint(d.get('y', 0))","answer":"0","hint":"get returns default if key missing.","solution":"0","explanation":"'y' missing, so default 0 returns."},
+    {"id":"b10","level":"beginner","topic":"Functions","type":"mcq","difficulty":"medium","title":"Function Return","question":"What does a function without return return?","options":["0","None","False","Error"],"answer":"None","hint":"No return means None.","solution":"None","explanation":"Functions default to returning None."},
+    {"id":"b10b","level":"beginner","topic":"Functions","type":"coding","difficulty":"easy","title":"Multiply Function","question":"Write multiply(a, b) that returns a * b.","starter_code":"def multiply(a, b):\n    pass","answer":"return a * b","hint":"Use return.","solution":"def multiply(a, b):\n    return a * b","explanation":"return sends the product back."},
+    {"id":"b11","level":"beginner","topic":"Comprehensions","type":"mcq","difficulty":"medium","title":"List Comprehension","question":"What is [x*2 for x in [1,2,3]]?","options":["[2,4,6]","[1,2,3]","[1,4,9]","Error"],"answer":"[2,4,6]","hint":"Each item is doubled.","solution":"[2,4,6]","explanation":"Comprehension doubles each element."},
+    {"id":"b12","level":"beginner","topic":"Files","type":"mcq","difficulty":"medium","title":"with open()","question":"Why use `with open()`?","options":["Faster","Auto-closes file","Reads binary","Adds security"],"answer":"Auto-closes file","hint":"with handles cleanup.","solution":"Auto-closes the file.","explanation":"with ensures the file closes automatically."},
+    {"id":"b13","level":"beginner","topic":"Exceptions","type":"mcq","difficulty":"medium","title":"try/except","question":"What does except catch?","options":["Syntax errors","Runtime exceptions","Compile errors","Nothing"],"answer":"Runtime exceptions","hint":"except handles runtime errors.","solution":"Runtime exceptions.","explanation":"try/except catches runtime exceptions."},
+    {"id":"b14","level":"beginner","topic":"Modules","type":"mcq","difficulty":"medium","title":"Import Math","question":"How to import sqrt?","options":["from math import sqrt","import sqrt","include math","using math"],"answer":"from math import sqrt","hint":"Use from module import name.","solution":"from math import sqrt","explanation":"This imports the sqrt function directly."},
+    {"id":"b15","level":"beginner","topic":"Std Library","type":"output","difficulty":"medium","title":"random.randint","question":"What type does random.randint(1, 10) return?","options":["str","float","int","list"],"answer":"int","hint":"randint returns an integer.","solution":"int","explanation":"randint returns a whole number."},
+    {"id":"b16","level":"beginner","topic":"OOP Basics","type":"mcq","difficulty":"medium","title":"self Meaning","question":"What does self refer to?","options":["The class","The instance","The module","The function"],"answer":"The instance","hint":"self is the object itself.","solution":"The instance.","explanation":"self refers to the current instance."},
+    {"id":"b17","level":"beginner","topic":"Debugging","type":"mcq","difficulty":"medium","title":"Traceback Reading","question":"Where is the actual error in a traceback?","options":["First line","Last line","Middle","Nowhere"],"answer":"Last line","hint":"Read bottom-up.","solution":"The last line.","explanation":"The last line shows the actual error."},
+    {"id":"b18","level":"beginner","topic":"venv & pip","type":"mcq","difficulty":"medium","title":"Create venv","question":"Which command creates a virtual environment?","options":["python -m venv .venv","pip install venv","python create venv","venv new"],"answer":"python -m venv .venv","hint":"It's python -m venv.","solution":"python -m venv .venv","explanation":"python -m venv creates an environment."},
+    {"id":"b19","level":"beginner","topic":"Capstone","type":"mcq","difficulty":"hard","title":"Project Concept","question":"Which combines everything learned?","options":["A single print","A small CLI app","A comment","A variable"],"answer":"A small CLI app","hint":"Capstone = complete project.","solution":"A small CLI app.","explanation":"The capstone builds a working application."},
+
+    # ================= INTERMEDIATE — 20 TOPICS =================
+    {"id":"i01","level":"intermediate","topic":"Advanced Functions","type":"mcq","difficulty":"medium","title":"*args Type","question":"What type is *args?","options":["list","tuple","dict","set"],"answer":"tuple","hint":"*args collects positional args.","solution":"tuple","explanation":"*args collects into a tuple."},
+    {"id":"i01b","level":"intermediate","topic":"Advanced Functions","type":"output","difficulty":"medium","title":"**kwargs Type","question":"What type is **kwargs?","options":["list","tuple","dict","set"],"answer":"dict","hint":"**kwargs collects keyword args.","solution":"dict","explanation":"**kwargs collects into a dict."},
+    {"id":"i02","level":"intermediate","topic":"Scope & Closures","type":"mcq","difficulty":"medium","title":"LEGB Order","question":"What is the scope order in Python?","options":["Local, Enclosing, Global, Built-in","Global, Local, Built-in","Built-in, Local","Local, Global, Enclosing"],"answer":"Local, Enclosing, Global, Built-in","hint":"LEGB.","solution":"Local → Enclosing → Global → Built-in","explanation":"Python resolves names in LEGB order."},
+    {"id":"i03","level":"intermediate","topic":"Decorators","type":"mcq","difficulty":"medium","title":"Decorator Symbol","question":"What symbol applies a decorator?","options":["@","#","$","&"],"answer":"@","hint":"It's the @ symbol.","solution":"@","explanation":"@ applies a decorator to a function."},
+    {"id":"i04","level":"intermediate","topic":"functools","type":"mcq","difficulty":"medium","title":"lru_cache Purpose","question":"What does @lru_cache do?","options":["Deletes cache","Memoizes results","Runs async","Sorts data"],"answer":"Memoizes results","hint":"It caches results.","solution":"Memoizes results.","explanation":"lru_cache caches function results."},
+    {"id":"i05","level":"intermediate","topic":"Advanced Collections","type":"mcq","difficulty":"medium","title":"Counter Use","question":"What does Counter('aab') give?","options":["['a','a','b']","{'a':2,'b':1}","2","'aab'"],"answer":"{'a':2,'b':1}","hint":"Counter counts occurrences.","solution":"{'a': 2, 'b': 1}","explanation":"Counter maps items to counts."},
+    {"id":"i06","level":"intermediate","topic":"Iterators","type":"mcq","difficulty":"medium","title":"Iterator Protocol","question":"Which methods define an iterator?","options":["__iter__, __next__","__get__, __set__","__call__, __init__","__add__, __sub__"],"answer":"__iter__, __next__","hint":"Iterators have these two.","solution":"__iter__ and __next__.","explanation":"Iterators implement __iter__ and __next__."},
+    {"id":"i07","level":"intermediate","topic":"Generators","type":"mcq","difficulty":"medium","title":"yield vs return","question":"What does yield do differently from return?","options":["Ends function","Pauses and resumes","Raises error","Returns None"],"answer":"Pauses and resumes","hint":"yield pauses the function.","solution":"Pauses and resumes.","explanation":"yield pauses the generator, keeping state."},
+    {"id":"i07b","level":"intermediate","topic":"Generators","type":"coding","difficulty":"medium","title":"Simple Generator","question":"Write a generator that yields 1, 2, 3.","starter_code":"def gen():\n    pass","answer":"yield 1\n    yield 2\n    yield 3","hint":"Use yield three times.","solution":"def gen():\n    yield 1\n    yield 2\n    yield 3","explanation":"Each yield produces one value."},
+    {"id":"i08","level":"intermediate","topic":"Comprehensions Deep","type":"output","difficulty":"hard","title":"Nested Comprehension","question":"What is the output?","code":"matrix = [[1,2],[3,4]]\nprint([n for row in matrix for n in row])","answer":"[1, 2, 3, 4]","hint":"Flattens the matrix.","solution":"[1, 2, 3, 4]","explanation":"Nested loops flatten the 2D list."},
+    {"id":"i09","level":"intermediate","topic":"Class/Static Methods","type":"mcq","difficulty":"medium","title":"@classmethod First Param","question":"What is the first param of @classmethod?","options":["self","cls","this","none"],"answer":"cls","hint":"classmethod receives the class.","solution":"cls","explanation":"@classmethod passes the class as cls."},
+    {"id":"i10","level":"intermediate","topic":"Properties","type":"mcq","difficulty":"medium","title":"@property Purpose","question":"What does @property do?","options":["Deletes an attribute","Runs code on access","Creates a class","Imports a module"],"answer":"Runs code on access","hint":"Getter with logic.","solution":"Runs code on attribute access.","explanation":"@property lets attribute access run code."},
+    {"id":"i11","level":"intermediate","topic":"Inheritance","type":"mcq","difficulty":"medium","title":"super() Use","question":"What does super() do?","options":["Deletes parent","Calls parent method","Creates child","Imports module"],"answer":"Calls parent method","hint":"Access parent class.","solution":"Calls parent methods.","explanation":"super() lets you call the parent class."},
+    {"id":"i12","level":"intermediate","topic":"Dunder Methods","type":"mcq","difficulty":"medium","title":"__str__ Purpose","question":"What does __str__ define?","options":["Addition","String representation","Deletion","Comparison"],"answer":"String representation","hint":"print() uses it.","solution":"String representation.","explanation":"__str__ controls how str(obj) looks."},
+    {"id":"i13","level":"intermediate","topic":"Dataclasses","type":"mcq","difficulty":"medium","title":"@dataclass Benefit","question":"What does @dataclass auto-generate?","options":["__init__, __repr__","main()","loops","imports"],"answer":"__init__, __repr__","hint":"Reduces boilerplate.","solution":"__init__ and __repr__","explanation":"@dataclass generates common methods automatically."},
+    {"id":"i14","level":"intermediate","topic":"Exceptions Deep","type":"mcq","difficulty":"hard","title":"raise from","question":"What does `raise X from Y` do?","options":["Hides Y","Chains exception cause","Deletes X","Runs Y again"],"answer":"Chains exception cause","hint":"Preserves original cause.","solution":"Chains the cause.","explanation":"raise from preserves the original exception as cause."},
+    {"id":"i15","level":"intermediate","topic":"pathlib","type":"mcq","difficulty":"medium","title":"Path Join","question":"How to join paths with pathlib?","options":["Path / file","path.join()","concat()","add()"],"answer":"Path / file","hint":"Use the / operator.","solution":"Path('dir') / 'file.txt'","explanation":"pathlib uses / to join paths."},
+    {"id":"i16","level":"intermediate","topic":"Regex","type":"mcq","difficulty":"medium","title":"\\d Meaning","question":"What does \\d match?","options":["Letter","Digit","Space","Symbol"],"answer":"Digit","hint":"d for digit.","solution":"Digit.","explanation":"\\d matches any digit 0-9."},
+    {"id":"i17","level":"intermediate","topic":"APIs","type":"mcq","difficulty":"medium","title":"requests get()","question":"Which method fetches a URL?","options":["requests.get()","requests.post()","requests.fetch()","requests.url()"],"answer":"requests.get()","hint":"GET = fetch.","solution":"requests.get(url)","explanation":"GET requests fetch data from a URL."},
+    {"id":"i18","level":"intermediate","topic":"SQLite","type":"mcq","difficulty":"hard","title":"SQL Injection Safe","question":"Which query is safe?","options":["f-string query","Parameterized ? query","Raw concatenation","Shell exec"],"answer":"Parameterized ? query","hint":"Use placeholders.","solution":"cur.execute('SELECT * FROM t WHERE id=?', (x,))","explanation":"Parameterized queries prevent injection."},
+    {"id":"i19","level":"intermediate","topic":"Testing","type":"mcq","difficulty":"medium","title":"pytest Test Prefix","question":"How must pytest test files be named?","options":["test_*.py","check_*.py","*.test.py","tests.py"],"answer":"test_*.py","hint":"test_ prefix.","solution":"test_*.py","explanation":"pytest discovers files starting with test_."},
+    {"id":"i20","level":"intermediate","topic":"Capstone","type":"mcq","difficulty":"hard","title":"Intermediate Capstone","question":"What does the intermediate capstone combine?","options":["OOP + files + SQL","Only prints","Only loops","Only variables"],"answer":"OOP + files + SQL","hint":"Real application.","solution":"OOP + file I/O + SQLite.","explanation":"The capstone combines multiple intermediate concepts."},
+
+    # ================= ADVANCED — 20 TOPICS =================
+    {"id":"a01","level":"advanced","topic":"Advanced OOP","type":"mcq","difficulty":"hard","title":"ABC Purpose","question":"What does ABC enforce?","options":["Faster code","Abstract methods implemented","No inheritance","Async only"],"answer":"Abstract methods implemented","hint":"Forces subclass methods.","solution":"Forces subclasses to implement abstract methods.","explanation":"ABC ensures subclasses define required methods."},
+    {"id":"a02","level":"advanced","topic":"Descriptors","type":"mcq","difficulty":"hard","title":"Descriptor Methods","question":"Which methods define a descriptor?","options":["__get__, __set__","__add__, __sub__","__iter__, __next__","__call__, __init__"],"answer":"__get__, __set__","hint":"Attribute access protocol.","solution":"__get__ and __set__","explanation":"Descriptors control attribute access via these methods."},
+    {"id":"a03","level":"advanced","topic":"Decorators Deep","type":"output","difficulty":"hard","title":"Decorator Order","question":"Which decorator runs first?","code":"@one\n@two\ndef f(): pass","answer":"two","hint":"Bottom-up.","solution":"two (closest to the function).","explanation":"Decorators apply bottom-up."},
+    {"id":"a04","level":"advanced","topic":"Generators Deep","type":"mcq","difficulty":"hard","title":"gen.send()","question":"What does gen.send() do?","options":["Ends generator","Sends value into yield","Deletes generator","Prints value"],"answer":"Sends value into yield","hint":"Bidirectional communication.","solution":"Sends a value into the generator.","explanation":"send() resumes the generator with a value."},
+    {"id":"a05","level":"advanced","topic":"Async Basics","type":"mcq","difficulty":"medium","title":"async def","question":"What does async def create?","options":["A thread","A coroutine","A process","A class"],"answer":"A coroutine","hint":"Coroutine function.","solution":"A coroutine.","explanation":"async def defines a coroutine function."},
+    {"id":"a06","level":"advanced","topic":"asyncio Tasks","type":"mcq","difficulty":"hard","title":"wait_for Purpose","question":"What does asyncio.wait_for do?","options":["Sleeps","Applies timeout","Runs threads","Creates files"],"answer":"Applies timeout","hint":"Timeout enforcement.","solution":"Applies a timeout to a coroutine.","explanation":"wait_for raises TimeoutError if the task exceeds time."},
+    {"id":"a07","level":"advanced","topic":"Threads","type":"mcq","difficulty":"medium","title":"GIL Meaning","question":"What does GIL stand for?","options":["Global Interpreter Lock","General Input Loop","Garbage Input Level","Global Index List"],"answer":"Global Interpreter Lock","hint":"Limits threads.","solution":"Global Interpreter Lock.","explanation":"GIL allows only one thread at a time in CPython."},
+    {"id":"a08","level":"advanced","topic":"Multiprocessing","type":"mcq","difficulty":"medium","title":"Why Processes?","question":"Why use multiprocessing for CPU work?","options":["Bypasses GIL","Faster I/O","Easier syntax","Less memory"],"answer":"Bypasses GIL","hint":"Separate interpreters.","solution":"Bypasses the GIL.","explanation":"Each process has its own GIL."},
+    {"id":"a09","level":"advanced","topic":"Concurrency Patterns","type":"mcq","difficulty":"hard","title":"concurrent.futures","question":"What does ThreadPoolExecutor manage?","options":["Threads","Processes","Async","Files"],"answer":"Threads","hint":"Pool of threads.","solution":"Threads.","explanation":"ThreadPoolExecutor manages a pool of threads."},
+    {"id":"a10","level":"advanced","topic":"Performance","type":"mcq","difficulty":"medium","title":"perf_counter Use","question":"What does time.perf_counter() measure?","options":["Wall time","CPU cycles","Memory","Disk"],"answer":"Wall time","hint":"High-res timer.","solution":"Elapsed wall time.","explanation":"perf_counter gives high-resolution timing."},
+    {"id":"a11","level":"advanced","topic":"Memory Mgmt","type":"mcq","difficulty":"hard","title":"__slots__ Benefit","question":"What does __slots__ reduce?","options":["CPU usage","Memory per instance","Lines of code","Network usage"],"answer":"Memory per instance","hint":"No attr dict.","solution":"Memory per instance.","explanation":"__slots__ avoids the per-instance dict."},
+    {"id":"a12","level":"advanced","topic":"Profiling","type":"mcq","difficulty":"medium","title":"cProfile Purpose","question":"What does cProfile do?","options":["Profiles function calls","Compiles code","Runs tests","Formats code"],"answer":"Profiles function calls","hint":"Finds bottlenecks.","solution":"Profiles function calls and timing.","explanation":"cProfile shows where time is spent."},
+    {"id":"a13","level":"advanced","topic":"Type Hinting","type":"mcq","difficulty":"medium","title":"Optional[int]","question":"What does Optional[int] mean?","options":["int or None","only int","only None","list of int"],"answer":"int or None","hint":"Optional allows None.","solution":"int or None.","explanation":"Optional[X] is X or None."},
+    {"id":"a14","level":"advanced","topic":"Packaging","type":"mcq","difficulty":"medium","title":"pyproject.toml","question":"What does pyproject.toml define?","options":["Build config","Runtime code","Tests","Docs"],"answer":"Build config","hint":"Modern packaging.","solution":"Build and project metadata.","explanation":"pyproject.toml holds modern project config."},
+    {"id":"a15","level":"advanced","topic":"Publishing","type":"mcq","difficulty":"medium","title":"PyPI Upload Tool","question":"Which tool uploads to PyPI?","options":["twine","pip install","python run","git push"],"answer":"twine","hint":"twine upload.","solution":"twine.","explanation":"twine uploads distributions to PyPI."},
+    {"id":"a16","level":"advanced","topic":"Config","type":"mcq","difficulty":"medium","title":"Env Var Access","question":"How to read an environment variable?","options":["os.environ.get()","sys.env()","env.read()","os.getenv_all()"],"answer":"os.environ.get()","hint":"os module.","solution":"os.environ.get('KEY').","explanation":"os.environ stores environment variables."},
+    {"id":"a17","level":"advanced","topic":"Security","type":"mcq","difficulty":"medium","title":"secrets vs random","question":"Which module for passwords/tokens?","options":["secrets","random","math","time"],"answer":"secrets","hint":"Security-safe.","solution":"secrets.","explanation":"secrets is cryptographically secure."},
+    {"id":"a18","level":"advanced","topic":"Architecture","type":"mcq","difficulty":"hard","title":"SOLID Meaning","question":"What does S in SOLID stand for?","options":["Single Responsibility","Simple","Secure","Stable"],"answer":"Single Responsibility","hint":"One job per class.","solution":"Single Responsibility.","explanation":"Each class should have one responsibility."},
+    {"id":"a19","level":"advanced","topic":"Production","type":"mcq","difficulty":"medium","title":"logging vs print","question":"Why use logging in production?","options":["Levels and timestamps","Faster","Less code","Better color"],"answer":"Levels and timestamps","hint":"Structured output.","solution":"Levels, timestamps, and destinations.","explanation":"logging gives structured, configurable output."},
+    {"id":"a20","level":"advanced","topic":"Capstone","type":"mcq","difficulty":"hard","title":"Production API","question":"What does the advanced capstone build?","options":["Production-style service","A print statement","A variable","A comment"],"answer":"Production-style service","hint":"Real architecture.","solution":"A production-style service.","explanation":"The capstone combines async, config, and clean architecture."},
+]
+
+# ================== PYTHON REAL-WORLD PROJECTS ==================
+PYTHON_PROJECTS = [
+    {
+        "id": "proj-001",
+        "title": "CLI To-Do List",
+        "level": "beginner",
+        "description": "A command-line to-do app with add, view, complete, and delete features.",
+        "guide": "Build a task manager that stores todos in a JSON file. You will practice functions, loops, dictionaries, and file handling. Features: add a task, view all tasks, mark a task done, and delete a task.",
+        "code": "import json\nfrom pathlib import Path\n\nFILE = Path('todos.json')\n\ndef load():\n    return json.loads(FILE.read_text()) if FILE.exists() else []\n\ndef save(todos):\n    FILE.write_text(json.dumps(todos, indent=2))\n\ndef add(title):\n    todos = load()\n    todos.append({'title': title, 'done': False})\n    save(todos)\n\ndef view():\n    for i, t in enumerate(load(), 1):\n        mark = 'x' if t['done'] else ' '\n        print(f\"{i}. [{mark}] {t['title']}\")\n\nadd('Learn Python')\nadd('Build project')\nview()",
+        "output": "1. [ ] Learn Python\n2. [ ] Build project",
+        "rating": 4.8,
+        "likes": 245,
+        "views": 1200,
+    },
+    {
+        "id": "proj-002",
+        "title": "Weather API Client",
+        "level": "intermediate",
+        "description": "Fetch real weather data from a public API and display it cleanly.",
+        "guide": "Build a CLI tool that asks for a city name, calls a weather API, and prints temperature and conditions. Practice requests, JSON parsing, error handling, and environment variables for the API key.",
+        "code": "import requests\nimport os\n\nAPI_KEY = os.environ.get('WEATHER_API_KEY', 'demo')\nBASE = 'https://api.openweathermap.org/data/2.5/weather'\n\ndef get_weather(city):\n    try:\n        resp = requests.get(BASE, params={'q': city, 'appid': API_KEY, 'units': 'metric'})\n        resp.raise_for_status()\n        data = resp.json()\n        temp = data['main']['temp']\n        desc = data['weather'][0]['description']\n        return f\"{city}: {temp}°C, {desc}\"\n    except requests.RequestException as err:\n        return f\"Error: {err}\"\n\nprint(get_weather('Karachi'))",
+        "output": "Karachi: 32°C, clear sky",
+        "rating": 4.6,
+        "likes": 180,
+        "views": 890,
+    },
+    {
+        "id": "proj-003",
+        "title": "Async Web Scraper",
+        "level": "advanced",
+        "description": "Scrape multiple pages concurrently using asyncio and aiohttp.",
+        "guide": "Build a fast scraper that fetches several URLs at once. Practice async/await, asyncio.gather, aiohttp for async requests, and proper error handling per request so one failure doesn't stop the rest.",
+        "code": "import asyncio\nimport aiohttp\n\nasync def fetch(session, url):\n    try:\n        async with session.get(url) as resp:\n            return f\"{url} -> {resp.status}\"\n    except Exception as err:\n        return f\"{url} -> FAILED: {err}\"\n\nasync def main():\n    urls = ['https://example.com', 'https://python.org', 'https://github.com']\n    async with aiohttp.ClientSession() as session:\n        results = await asyncio.gather(*(fetch(session, u) for u in urls))\n    for r in results:\n        print(r)\n\nasyncio.run(main())",
+        "output": "https://example.com -> 200\nhttps://python.org -> 200\nhttps://github.com -> 200",
+        "rating": 4.9,
+        "likes": 312,
+        "views": 1500,
+    },
+]
+
 
 # ================== LEARNING HUB HELPERS ==================
 def category_to_slug(category):
@@ -2433,6 +3707,16 @@ def home():
     category = request.args.get("category", "").strip()
     author_filter = request.args.get("author", "").strip()
     lang_filter = request.args.get("language", "").strip()
+
+    # ---------- Input length validation (reject, not truncate) ----------
+    if len(search_query) > 200:
+        abort(400)
+    if len(category) > 100:
+        abort(400)
+    if len(author_filter) > 100:
+        abort(400)
+    if len(lang_filter) > 50:
+        abort(400)
 
     page = max(1, request.args.get("page", 1, type=int))
     per_page = min(50, request.args.get("per_page", 12, type=int))
@@ -2701,8 +3985,17 @@ def learning_hub(category_slug):
         all_categories=all_categories,
         category_modules=GENERIC_MODULES,
     )
-
-
+@app.route("/learn/python/practice")
+def python_practice():
+    return render_template(
+        "python/practice.html",
+        category="Python",
+        category_slug="python",
+        lessons=None,
+        practice_items=PYTHON_PRACTICE,
+        practice_projects=PYTHON_PROJECTS,
+    )
+#================== LEARNING HUB MODULES PYTHON (Category + Module Pages) ==================
 @app.route("/learn/<slug>/<module>")
 def category_module(slug, module):
     cur = mysql.connection.cursor()
@@ -2720,13 +4013,69 @@ def category_module(slug, module):
         abort(404)
 
     folder = category_to_slug(category)
+    lessons = None
+    practice_items = None
+    practice_projects = None
+
+    if slug == "python" and module == "beginner":
+        lessons = PYTHON_BEGINNER_LESSONS
+    if slug == "python" and module == "intermediate":
+        lessons = PYTHON_INTERMEDIATE_LESSONS
+    if slug == "python" and module == "advanced":
+        lessons = PYTHON_ADVANCED_LESSONS
+    if slug == "python" and module == "practice":
+        practice_items = PYTHON_PRACTICE
+        practice_projects = PYTHON_PROJECTS
+
     return render_template(
         f"{folder}/{module}.html",
         category=category,
         category_slug=slug,
+        lessons=lessons,
+        practice_items=practice_items,
+        practice_projects=practice_projects,
         info=module_info,
     )
 
+# ================== PRACTICE CHALLENGE API ==================
+@app.route("/api/practice/challenges")
+def practice_challenges_api():
+    level = request.args.get("level", "beginner")
+    topic = request.args.get("topic", "")
+    challenge_type = request.args.get("type", "")
+
+    filtered = [
+        item for item in PYTHON_PRACTICE
+        if item["level"] == level
+        and (not topic or item["topic"].lower() == topic.lower())
+        and (not challenge_type or item["type"] == challenge_type)
+    ]
+
+    # Return safe data only — answer/solution included for client-side checking
+    return jsonify({
+        "count": len(filtered),
+        "challenges": filtered,
+    })
+
+
+@app.route("/api/practice/next")
+def practice_next_challenge():
+    level = request.args.get("level", "beginner")
+    topic = request.args.get("topic", "")
+    exclude_id = request.args.get("exclude", "")
+
+    candidates = [
+        item for item in PYTHON_PRACTICE
+        if item["level"] == level
+        and (not topic or item["topic"].lower() == topic.lower())
+        and item["id"] != exclude_id
+    ]
+
+    if not candidates:
+        return jsonify({"challenge": None})
+
+    next_item = random.choice(candidates)
+    return jsonify({"challenge": next_item})
 
 # ------IELTS PAGE ROUTE------
 @app.route("/ielts")
@@ -3099,6 +4448,7 @@ def api_book_detail(book_id):
 
 # ================== USER ACCOUNTS ==================
 @app.route("/user/signup", methods=["GET", "POST"])
+@limiter.limit(USER_ACTION_RATELIMIT)
 def user_signup():
     if request.method == "POST":
         is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
@@ -3109,19 +4459,26 @@ def user_signup():
         last_name = request.form.get("last_name", "").strip()
 
         # ---------- Required fields ----------
-        if not first_name or not last_name:
-            msg = "First name and last name are required."
-            if is_ajax:
-                return jsonify({"error": msg}), 400
-            return render_template("auth.html", mode="signup", error=msg)
-
         if not username or not email or not password:
             msg = "All fields are required."
             if is_ajax:
                 return jsonify({"error": msg}), 400
             return render_template("auth.html", mode="signup", error=msg)
 
-        # ---------- Email ----------
+        if not first_name or not last_name:
+            msg = "First name and last name are required."
+            if is_ajax:
+                return jsonify({"error": msg}), 400
+            return render_template("auth.html", mode="signup", error=msg)
+
+        # ---------- Name length limits ----------
+        if len(first_name) > 50 or len(last_name) > 50:
+            msg = "Names must be 50 characters or less."
+            if is_ajax:
+                return jsonify({"error": msg}), 400
+            return render_template("auth.html", mode="signup", error=msg)
+
+        # ---------- Email format ----------
         if not is_valid_email(email):
             msg = "Please enter a valid email address."
             if is_ajax:
@@ -3151,15 +4508,30 @@ def user_signup():
                         return jsonify({"error": msg}), 400
                     return render_template("auth.html", mode="signup", error=msg)
 
-        # ---------- Password ----------
-        if len(password) < 6:
-            msg = "Password must be at least 6 characters."
+        # ---------- Password strength (8+ chars, upper, lower, digit) ----------
+        if len(password) < 8:
+            msg = "Password must be at least 8 characters."
             if is_ajax:
                 return jsonify({"error": msg}), 400
             return render_template("auth.html", mode="signup", error=msg)
 
-        hashed = generate_password_hash(password)
-        token = secrets.token_urlsafe(32)
+        if not any(c.isupper() for c in password):
+            msg = "Password must contain at least one uppercase letter."
+            if is_ajax:
+                return jsonify({"error": msg}), 400
+            return render_template("auth.html", mode="signup", error=msg)
+
+        if not any(c.islower() for c in password):
+            msg = "Password must contain at least one lowercase letter."
+            if is_ajax:
+                return jsonify({"error": msg}), 400
+            return render_template("auth.html", mode="signup", error=msg)
+
+        if not any(c.isdigit() for c in password):
+            msg = "Password must contain at least one number."
+            if is_ajax:
+                return jsonify({"error": msg}), 400
+            return render_template("auth.html", mode="signup", error=msg)
 
         # ---------- Duplicate username check ----------
         cur = mysql.connection.cursor()
@@ -3183,7 +4555,10 @@ def user_signup():
             return render_template("auth.html", mode="signup", error=msg)
         cur.close()
 
-        # ---------- Insert new user ----------
+        # ---------- Hash + token + insert (validation ke BAAD) ----------
+        hashed = generate_password_hash(password)
+        token = secrets.token_urlsafe(32)
+
         cur = mysql.connection.cursor()
         cur.execute(
             "INSERT INTO users (username, email, password, verification_token, first_name, last_name) VALUES (%s, %s, %s, %s, %s, %s)",
@@ -3223,31 +4598,51 @@ def user_signup():
 
     return render_template("auth.html", mode="signup")
 
-
 @app.route("/user/login", methods=["GET", "POST"])
+@limiter.limit(USER_ACTION_RATELIMIT)
 def user_login():
     if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        # ==== Exponential backoff check ====
+        client_ip = request.headers.get(
+            "X-Forwarded-For", request.remote_addr or "unknown"
+        ).split(",")[0].strip()
+        blocked, wait_sec = check_login_backoff(client_ip, email)
+        if blocked:
+            msg = f"Too many failed attempts. Try again in {wait_sec} seconds."
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"error": msg}), 429
+            flash(msg, "danger")
+            return redirect(url_for("user_login"))
+        # ==== End backoff check ====
+
         is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
-        email = request.form.get("email")
-        password = request.form.get("password")
         cur = mysql.connection.cursor()
         cur.execute(
-            "SELECT id, username, password, verified, verification_token FROM users WHERE email = %s",
+            "SELECT id, username, password, verified, verification_token, first_name, last_name, avatar_url FROM users WHERE email = %s",
             (email,),
         )
         user = cur.fetchone()
         cur.close()
 
         if not user:
+            wait = record_login_failure(client_ip, email)
+            app.logger.warning(f"Login failure (no account) for {email} from {client_ip}; backoff {wait}s")
             msg = "No account found with this email. Please sign up first."
             if is_ajax:
                 return jsonify({"error": msg}), 401
             return render_template("auth.html", mode="login", error=msg)
+
         if not check_password_hash(user[2], password):
-            msg = "Invalid password. Please try again."
+            wait = record_login_failure(client_ip, email)
+            app.logger.warning(f"Login failure (bad password) for {email} from {client_ip}; backoff {wait}s")
+            msg = f"Invalid password. Please try again. (Wait {wait}s before retry)"
             if is_ajax:
                 return jsonify({"error": msg}), 401
             return render_template("auth.html", mode="login", error=msg)
+
         if not user[3]:
             new_token = secrets.token_urlsafe(32)
             cur = mysql.connection.cursor()
@@ -3273,35 +4668,47 @@ def user_login():
                 return jsonify({"error": msg}), 403
             return render_template("auth.html", mode="login", error=msg)
 
-        setup_session(user[0])
+        # ==== Success: clear backoff + set session ====
+        clear_login_backoff(client_ip, email)
 
-        today = datetime.utcnow().date()
-        cur = mysql.connection.cursor()
-        cur.execute(
-            "SELECT last_login_date, streak_count, longest_streak FROM user_streaks WHERE user_id = %s",
-            (user[0],),
-        )
-        streak_row = cur.fetchone()
-        if streak_row:
-            last_date, streak_cnt, long_streak = streak_row
-            if last_date == today - timedelta(days=1):
-                streak_cnt += 1
-                award_points(user[0], 1, action="daily_login")
+        session.permanent = True
+        session["user_id"] = user[0]
+        session["user_name"] = user[1]
+        session["user_display_name"] = user[1]
+        session["email"] = email
+        session.modified = True
+
+        # Streak updates DB-dependent hain — DB down ho tab bhi login success rahe.
+        try:
+            today = datetime.utcnow().date()
+            cur = mysql.connection.cursor()
+            cur.execute(
+                "SELECT last_login_date, streak_count, longest_streak FROM user_streaks WHERE user_id = %s",
+                (user[0],),
+            )
+            streak_row = cur.fetchone()
+            if streak_row:
+                last_date, streak_cnt, long_streak = streak_row
+                if last_date == today - timedelta(days=1):
+                    streak_cnt += 1
+                    award_points(user[0], 1, action="daily_login")
+                else:
+                    streak_cnt = 1
+                long_streak = max(long_streak, streak_cnt)
+                cur.execute(
+                    "UPDATE user_streaks SET last_login_date=%s, streak_count=%s, longest_streak=%s WHERE user_id=%s",
+                    (today, streak_cnt, long_streak, user[0]),
+                )
             else:
-                streak_cnt = 1
-            long_streak = max(long_streak, streak_cnt)
-            cur.execute(
-                "UPDATE user_streaks SET last_login_date=%s, streak_count=%s, longest_streak=%s WHERE user_id=%s",
-                (today, streak_cnt, long_streak, user[0]),
-            )
-        else:
-            cur.execute(
-                "INSERT INTO user_streaks (user_id, last_login_date, streak_count, longest_streak) VALUES (%s, %s, 1, 1)",
-                (user[0], today),
-            )
-            award_points(user[0], 1, action="daily_login")
-        mysql.connection.commit()
-        cur.close()
+                cur.execute(
+                    "INSERT INTO user_streaks (user_id, last_login_date, streak_count, longest_streak) VALUES (%s, %s, 1, 1)",
+                    (user[0], today),
+                )
+                award_points(user[0], 1, action="daily_login")
+            mysql.connection.commit()
+            cur.close()
+        except Exception:
+            app.logger.warning("Streak update skipped due to DB error during login.")
 
         if is_ajax:
             return jsonify({"success": True, "redirect": url_for("home")})
@@ -3450,6 +4857,7 @@ def track_download_route(book_id):
 
 # ================== REVIEWS ==================
 @app.route("/book/<int:book_id>/review", methods=["POST"])
+@limiter.limit(AUTH_RATELIMIT)
 def add_review(book_id):
     if "user_id" not in session:
         return jsonify({"error": "Login required"}), 401
@@ -3929,6 +5337,15 @@ def edit_book(book_id):
             if not allowed_file(file.filename):
                 return jsonify({"error": "Only PDF files are allowed."}), 400
             pdf_bytes = file.read()
+
+            # ==== NAYA: Size limit ====
+            if len(pdf_bytes) > 500 * 1024 * 1024:
+                return jsonify({"error": "File too large. Maximum 500 MB allowed."}), 413
+
+            # ==== NAYA: Content validation ====
+            if not is_valid_pdf(pdf_bytes):
+                return jsonify({"error": "Invalid PDF content. File is not a real PDF."}), 400
+
             clean_title = (
                 clean_professional_name(title)
                 if title
@@ -4177,7 +5594,8 @@ def delete_user(user_id):
     except Exception as e:
         mysql.connection.rollback()
         cur.close()
-        return jsonify({"error": str(e)}), 500
+        app.logger.error(f"Admin delete user failed for user_id={user_id}: {e}", exc_info=True)
+        return jsonify({"error": "Delete failed due to a server error. Please try again later."}), 500
 
 
 @app.route("/admin/analytics")
@@ -5107,10 +6525,12 @@ def user_profile(username):
 
 
 @app.route("/user/profile/edit", methods=["GET", "POST"])
+@limiter.limit(AUTH_RATELIMIT)
 def edit_profile():
     if "user_id" not in session:
         return redirect(url_for("user_login"))
     uid = session["user_id"]
+
     if request.method == "POST":
         first_name = request.form.get("first_name", "").strip()
         last_name = request.form.get("last_name", "").strip()
@@ -5120,15 +6540,67 @@ def edit_profile():
         avatar_file = request.files.get("avatar")
         avatar_url = None
 
+        # ---------- Name length limits ----------
+        if len(first_name) > 50 or len(last_name) > 50:
+            msg = "Names must be 50 characters or less."
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"error": msg}), 400
+            flash(msg, "danger")
+            return redirect(url_for("edit_profile"))
+
+        # ---------- Bio length limit ----------
+        if len(bio) > 500:
+            msg = "Bio must be 500 characters or less."
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"error": msg}), 400
+            flash(msg, "danger")
+            return redirect(url_for("edit_profile"))
+
+        # ---------- Social links length limit ----------
+        if len(social_links) > 500:
+            msg = "Social links must be 500 characters or less."
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"error": msg}), 400
+            flash(msg, "danger")
+            return redirect(url_for("edit_profile"))
+
+        # ---------- Username format ----------
+        if new_username and not re.fullmatch(r"[A-Za-z0-9]{3,20}", new_username):
+            msg = "Username must be 3-20 letters and numbers only (no spaces or symbols)."
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"error": msg}), 400
+            flash(msg, "danger")
+            return redirect(url_for("edit_profile"))
+
+        # ---------- Avatar validation ----------
         if avatar_file and allowed_image_file(avatar_file.filename):
             avatar_data = avatar_file.read()
-            if len(avatar_data) > 2 * 1024 * 1024:
-                msg = "Avatar must be under 2MB."
+
+            # Magic bytes check
+            if not is_valid_image(avatar_data):
+                msg = "Invalid avatar image. Only JPEG, PNG, GIF, or WebP allowed."
                 if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                   return jsonify({"error": msg}), 400
+                    return jsonify({"error": msg}), 400
                 flash(msg, "danger")
                 return redirect(url_for("edit_profile"))
+
+            # Size check (original)
+            if len(avatar_data) > 10 * 1024 * 1024:
+                msg = "Avatar must be under 10MB."
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return jsonify({"error": msg}), 400
+                flash(msg, "danger")
+                return redirect(url_for("edit_profile"))
+
+            # Compress + final size check
             avatar_data = compress_image(avatar_data, max_size=(200, 200), quality=80)
+            if len(avatar_data) > 2 * 1024 * 1024:
+                msg = "Avatar must be under 2MB after compression."
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return jsonify({"error": msg}), 400
+                flash(msg, "danger")
+                return redirect(url_for("edit_profile"))
+
             avatar_key = generate_r2_key(
                 "avatars", f"user_{uid}_{int(datetime.now().timestamp())}", ".jpg"
             )
@@ -5146,7 +6618,9 @@ def edit_profile():
 
         cur = mysql.connection.cursor()
 
+        # ---------- Username change check ----------
         if new_username and new_username != session.get("user_name"):
+            # Duplicate check
             cur.execute(
                 "SELECT id FROM users WHERE username = %s AND id != %s",
                 (new_username, uid),
@@ -5155,21 +6629,24 @@ def edit_profile():
                 cur.close()
                 flash("Username already taken. Please choose another.", "danger")
                 return redirect(url_for("edit_profile"))
+
+            # 30-day limit
             cur.execute("SELECT username_changed_at FROM users WHERE id = %s", (uid,))
-            last_changed = cur.fetchone()[0]
+            row = cur.fetchone()
+            last_changed = row[0] if row else None
             if last_changed and (datetime.utcnow() - last_changed).days < 30:
                 cur.close()
                 flash("You can change your username only once every 30 days.", "danger")
                 return redirect(url_for("edit_profile"))
+
             cur.execute(
                 "UPDATE users SET username = %s, username_changed_at = NOW() WHERE id = %s",
                 (new_username, uid),
             )
             mysql.connection.commit()
             session["user_name"] = new_username
-            full_name = (first_name + " " + last_name).strip()
-            session["user_display_name"] = full_name or new_username
 
+        # ---------- Update profile fields ----------
         cur.execute(
             """
             UPDATE users
@@ -5182,11 +6659,7 @@ def edit_profile():
         mysql.connection.commit()
         cur.close()
 
-        full_name = (first_name + " " + last_name).strip()
-        session["user_display_name"] = full_name or session.get("user_name")
-        if avatar_url:
-            session["avatar_url"] = avatar_url
-
+        # ---------- Session update (ek hi baar) ----------
         full_name = (first_name + " " + last_name).strip()
         session["user_display_name"] = full_name or session.get("user_name")
         if avatar_url:
@@ -5202,6 +6675,7 @@ def edit_profile():
         flash(msg, "success")
         return redirect(url_for("user_profile", username=session.get("user_name")))
 
+    # ---------- GET: load profile ----------
     cur = mysql.connection.cursor()
     cur.execute(
         "SELECT first_name, last_name, bio, social_links, avatar_url, username FROM users WHERE id = %s",
@@ -5218,24 +6692,6 @@ def edit_profile():
         "username": row[5] or "",
     }
     return render_template("edit_profile.html", profile=profile)
-
-
-# ================== USER STATS API ==================
-@app.route("/api/user-stats")
-def user_stats_api():
-    user_id = request.args.get("user_id", type=int)
-    if not user_id:
-        return jsonify({"error": "Missing user_id"}), 400
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(*) FROM documents WHERE uploaded_by = %s", (user_id,))
-    uploads = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM book_comments WHERE user_id = %s", (user_id,))
-    comments = cur.fetchone()[0]
-    cur.execute("SELECT SUM(points) FROM user_points WHERE user_id = %s", (user_id,))
-    points = cur.fetchone()[0] or 0
-    cur.close()
-    return jsonify({"uploads": uploads, "comments": comments, "points": points})
-
 
 # ================== NOTIFICATIONS PAGE ==================
 @app.route("/user/notifications")
@@ -5508,6 +6964,7 @@ def leaderboard():
 
 # ================== BOOK COMMENTS ==================
 @app.route("/book/<int:book_id>/comments", methods=["GET"])
+@limiter.limit(USER_ACTION_RATELIMIT)
 def get_comments(book_id):
     cur = mysql.connection.cursor()
     cur.execute(
@@ -5537,6 +6994,7 @@ def get_comments(book_id):
 
 
 @app.route("/book/<int:book_id>/comments", methods=["POST"])
+@limiter.limit(USER_ACTION_RATELIMIT)
 def add_comment(book_id):
     if "user_id" not in session:
         return jsonify({"error": "Login required"}), 401

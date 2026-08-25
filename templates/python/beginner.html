@@ -1,100 +1,756 @@
 {% extends 'base.html' %}
-{% block title %}{{ info.title }} — {{ category }} | DocoDive{% endblock %}
+{% block title %}Python Beginner Guide — Start from Zero | DocoDive{% endblock %}
+{% block meta_description %}Learn Python from scratch with 20 free beginner lessons, 3 hands-on projects, and a capstone project.{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ===== BASE ===== */
+  .lesson-hero {
+    background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);
+    border: 1px solid #e0e7ff;
+  }
+  .hero-stat-link {
+    text-decoration: none;
+    color: #6b7280;
+    transition: color 0.2s ease;
+  }
+  .hero-stat-link:hover {
+    color: #4338ca;
+  }
+
+  /* Desktop grid: sidebar + content */
+  .course-layout {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* Sidebar */
+  .course-nav {
+    position: sticky;
+    top: 90px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .course-nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    color: #4b5563;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .course-nav a:hover { background: #f5f7ff; color: #4338ca; }
+  .course-nav a .nav-num {
+    flex-shrink: 0; width: 24px; color: #4338ca; font-weight: 700;
+  }
+  .course-nav a .nav-title {
+    flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .course-nav a .nav-duration {
+    flex-shrink: 0; font-size: 0.72rem; color: #9ca3af;
+  }
+  .course-nav-toggle { display: none; }
+
+  /* ===== LESSON STYLING ===== */
+  .lesson-step { scroll-margin-top: 100px; margin-bottom: 32px; }
+  .lesson-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px;
+  }
+  .code-block {
+    background: #0d1117; color: #e6edf3; border-radius: 12px; overflow: hidden;
+  }
+  .code-block pre {
+    margin: 0; padding: 18px; font-family: Consolas, Monaco, 'Courier New', monospace;
+    font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+  }
+  .callout {
+    border-left: 4px solid; padding: 12px 16px; border-radius: 10px; font-size: 0.9rem;
+  }
+  .callout-tip     { background: #fef9ec; border-color: #ffb703; color: #7c5a00; }
+  .callout-warning { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+  .callout-best    { background: #ecfdf5; border-color: #10b981; color: #065f46; }
+  .callout-important { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+  .exercise-box {
+    background: #f8f9ff; border: 1px dashed #c7d2fe; border-radius: 12px; padding: 16px;
+  }
+  .docs-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;
+    color: #4338ca; text-decoration: none; font-weight: 600;
+  }
+  .docs-link:hover { text-decoration: underline; }
+  .lesson-complete { transition: all 0.2s ease; }
+  .lesson-complete.done { background: #ecfdf5; border-color: #10b981; }
+
+  /* ===== TERMINAL STYLE ===== */
+  .terminal {
+    background: #0d1117; color: #4ade80; border-radius: 12px; overflow: hidden;
+    font-family: Consolas, Monaco, monospace;
+  }
+  .terminal-header {
+    background: #161b22; padding: 10px 16px;
+    display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #21262d;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-red { background: #ff5f56; }
+  .dot-yellow { background: #ffbd2e; }
+  .dot-green { background: #27c93f; }
+  .terminal-title {
+    color: #8b949e; font-size: 0.75rem; margin-left: 6px;
+  }
+  .terminal-body {
+    padding: 14px 16px; font-size: 0.82rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+
+  /* ===== PROJECTS ACCORDION ===== */
+  .projects-section .accordion-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 16px !important;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .projects-section .accordion-button {
+    background: #fff;
+    color: #1e1b4b;
+    font-weight: 700;
+    padding: 18px 20px;
+    border-radius: 0 !important;
+  }
+  .projects-section .accordion-button:not(.collapsed) {
+    background: #f5f7ff;
+    color: #4338ca;
+  }
+  .projects-section .accordion-button:focus {
+    box-shadow: none;
+    border-color: transparent;
+  }
+  .project-badge {
+    background: #dbeafe; color: #1e40af; font-weight: 700;
+    padding: 5px 12px; border-radius: 50px; font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+  .project-guide {
+    background: #f8f9ff; border-radius: 12px; padding: 16px;
+  }
+  .project-guide h6 {
+    color: #4338ca; font-weight: 700; margin-bottom: 8px;
+  }
+  .concept-chip {
+    background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;
+    border-radius: 50px; padding: 3px 10px; font-size: 0.72rem; font-weight: 600;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 991.98px) {
+    .course-layout { grid-template-columns: 1fr; }
+    .course-nav-toggle {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; margin-bottom: 20px;
+    }
+    .course-nav { position: static; max-height: none; }
+    .course-nav.collapse.show { max-height: 60vh; overflow-y: auto; margin-bottom: 24px; }
+  }
+  @media (max-width: 576px) {
+    .lesson-hero { padding: 24px 16px; }
+    .lesson-hero h1 { font-size: 1.75rem; }
+    .lesson-card { padding: 16px; }
+    .lesson-card h2.h4 { font-size: 1.1rem; }
+    .code-block pre { font-size: 0.78rem; padding: 14px; }
+    .terminal-body { font-size: 0.75rem; padding: 12px; }
+    .callout { padding: 10px 12px; font-size: 0.85rem; }
+    .exercise-box { padding: 12px; }
+    .exercise-actions { flex-direction: column; width: 100%; }
+    .exercise-actions .btn { width: 100%; }
+    .lesson-footer { flex-direction: column; gap: 10px; }
+    .lesson-footer .btn { width: 100%; }
+    .project-guide { padding: 12px; }
+    .projects-section .accordion-button { padding: 14px 16px; font-size: 0.9rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
+{% if lessons %}
 <section class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+  <!-- HERO -->
+  <div class="lesson-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="badge rounded-pill" style="background:#ffb703;color:#1e1b4b;font-weight:700;">Beginner</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:#1e1b4b;">Python Beginner Guide</h1>
+    <p class="text-muted mb-4">Build a strong Python foundation from zero. Learn core syntax, data structures, functions, files, exceptions, modules, OOP, development tools, and build real-world projects.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 mb-3">
+      <span class="text-muted small"><i class="bi bi-clock me-1"></i>3–5 weeks</span>
+      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>20 lessons</span>
+      <a href="#beginner-projects" class="hero-stat-link small">
+        <i class="bi bi-code-square me-1"></i>3 projects
+      </a>
+      <a href="#lesson-20" class="hero-stat-link small">
+        <i class="bi bi-trophy me-1"></i>1 capstone
+      </a>
+      <span class="text-muted small"><i class="bi bi-person-check me-1"></i>No experience required</span>
+    </div>
+    <a href="#lesson-1" class="btn btn-primary rounded-pill px-4 py-2">
+      <i class="bi bi-play-circle me-2"></i>Start Learning
+    </a>
+  </div>
 
-      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 24px;">
+  <!-- MOBILE TOGGLE -->
+  <button class="btn btn-outline-primary rounded-pill course-nav-toggle" type="button"
+          data-bs-toggle="collapse" data-bs-target="#courseNav"
+          aria-expanded="false" aria-controls="courseNav">
+    <i class="bi bi-list-ol me-2"></i>Show Course Contents
+  </button>
 
-        <!-- HERO -->
-        <div class="p-5 text-center" style="background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);">
-          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-               style="width: 96px; height: 96px; background: #fff; box-shadow: 0 12px 30px rgba(67, 56, 202, 0.12);">
-            <i class="bi {{ info.icon }} fs-1 {{ info.color }}"></i>
+  <div class="course-layout">
+    <!-- SIDEBAR -->
+    <aside id="courseNav" class="course-nav collapse d-lg-block">
+      <h6 class="fw-bold mb-3" style="color:#4338ca;"><i class="bi bi-list-ol me-2"></i>Course Content</h6>
+      {% for lesson in lessons %}
+      <a href="#lesson-{{ lesson.id }}" class="course-nav-link">
+        <span class="nav-num">{{ "%02d"|format(lesson.id) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+        <span class="nav-duration">{{ lesson.duration }}</span>
+      </a>
+      {% endfor %}
+      <a href="#beginner-projects" class="course-nav-link">
+        <span class="nav-num"><i class="bi bi-hammer"></i></span>
+        <span class="nav-title">Beginner Projects</span>
+      </a>
+    </aside>
+
+    <!-- LESSONS -->
+    <div>
+      {% for lesson in lessons %}
+      <div id="lesson-{{ lesson.id }}" class="lesson-step">
+        <div class="lesson-card lesson-complete" data-lesson="{{ lesson.id }}">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="nav-num fw-bold" style="color:#4338ca;">{{ "%02d"|format(lesson.id) }}</span>
+            <h2 class="h4 fw-bold mb-0" style="color:#1e1b4b;">{{ lesson.title }}</h2>
+            <span class="nav-duration ms-auto text-muted small"><i class="bi bi-clock me-1"></i>{{ lesson.duration }}</span>
           </div>
 
-          <span class="badge rounded-pill px-3 py-2 mb-3"
-                style="background: #ffb703; color: #1e1b4b; font-weight: 700; font-size: 0.9rem;">
-            <i class="bi bi-cone-striped me-2"></i> COMING SOON
-          </span>
+          <div class="mb-3">
+            <h6 class="fw-bold mb-2" style="color:#4338ca;"><i class="bi bi-bullseye me-2"></i>What you'll learn</h6>
+            <ul class="list-unstyled">
+              {% for obj in lesson.objectives %}
+              <li class="d-flex gap-2 mb-1">
+                <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                <span class="text-dark">{{ obj }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
 
-          <h1 class="fw-bolder mt-2" style="color: #1e1b4b;">{{ info.title }}</h1>
-          <p class="text-muted lead mb-4">
-            We're building something amazing for <strong>{{ category }}</strong> learners!
-          </p>
+          <p class="text-dark">{{ lesson.explanation }}</p>
 
-          <div class="alert border-0 rounded-4 text-start shadow-sm mx-auto"
-               style="max-width: 640px; background: #e0f2fe; color: #0c4a6e;">
-            <p class="mb-2 fw-semibold">
-              <i class="bi bi-tools me-2"></i>This module is under construction
-            </p>
-            <p class="small mb-0">
-              Our team is preparing detailed lessons, practical examples, downloadable
-              resources and interactive exercises for <strong>{{ info.title }}</strong> in
-              <strong>{{ category }}</strong>. This content will guide you step-by-step,
-              from the fundamentals right up to an advanced level.
-            </p>
+          <div class="code-block mb-3">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:#161b22;color:#8b949e;font-size:0.8rem;">
+              <span><i class="bi bi-filetype-py me-1"></i>{{ lesson.code_label or 'Python' }}</span>
+              <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                <i class="bi bi-clipboard me-1"></i>Copy
+              </button>
+            </div>
+            <pre>{{ lesson.code }}</pre>
+          </div>
+
+          <div class="mb-3">
+            <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Output</div>
+            <div class="terminal">
+              <div class="terminal-header">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+                <span class="terminal-title">python</span>
+              </div>
+              <div class="terminal-body">{{ lesson.output }}</div>
+            </div>
+          </div>
+
+          <div class="callout callout-{{ lesson.callout_type }} mb-3">
+            {% if lesson.callout_type == 'tip' %}<strong>💡 Tip:</strong>
+            {% elif lesson.callout_type == 'warning' %}<strong>⚠️ Common Mistake:</strong>
+            {% elif lesson.callout_type == 'best' %}<strong>✓ Best Practice:</strong>
+            {% else %}<strong>🔎 Important:</strong>{% endif %}
+            {{ lesson.callout_text }}
+          </div>
+
+          <div class="mb-3">
+            <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="docs-link">
+              <i class="bi bi-box-arrow-up-right"></i>{{ lesson.docs_label }} — Official Documentation
+            </a>
+          </div>
+
+          <div class="exercise-box">
+            <h6 class="fw-bold mb-2" style="color:#4338ca;"><i class="bi bi-pencil-square me-2"></i>Try it yourself</h6>
+            <p class="mb-2">{{ lesson.exercise_prompt }}</p>
+            <div class="d-flex gap-2 mb-3 exercise-actions">
+              <button class="btn btn-outline-primary btn-sm rounded-pill" onclick="toggleHint(this)">Show Hint</button>
+              <button class="btn btn-outline-success btn-sm rounded-pill" onclick="toggleSolution(this)">Show Solution</button>
+            </div>
+            <div class="hint-box d-none small text-muted"><i class="bi bi-lightbulb me-1"></i>{{ lesson.exercise_hint }}</div>
+            <div class="solution-box d-none">
+              <div class="code-block"><pre>{{ lesson.exercise_solution }}</pre></div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer" style="border-top:1px solid #e5e7eb;">
+            {% if loop.previtem %}
+            <a href="#lesson-{{ loop.previtem.id }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+              <i class="bi bi-arrow-left me-1"></i>Lesson {{ "%02d"|format(loop.previtem.id) }}
+            </a>
+            {% else %}
+            <span></span>
+            {% endif %}
+
+            <button class="btn btn-outline-success btn-sm rounded-pill mark-complete" onclick="markComplete(this)">
+              <i class="bi bi-check2-circle me-1"></i>Mark Complete
+            </button>
+
+            {% if loop.nextitem %}
+            <a href="#lesson-{{ loop.nextitem.id }}" class="btn btn-primary btn-sm rounded-pill">
+              Next Lesson <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            {% else %}
+            <span></span>
+            {% endif %}
           </div>
         </div>
+      </div>
+      {% endfor %}
 
-        <!-- WHAT YOU'LL GET -->
-        <div class="p-5">
-          <h5 class="fw-bold mb-4 text-center" style="color: #4338ca;">
-            What you'll get in this module
-          </h5>
+      <!-- ==================== BEGINNER PROJECTS ==================== -->
+      <div class="projects-section mt-5" id="beginner-projects">
+        <h3 class="fw-bold mb-4" style="color:#1e1b4b;">
+          <i class="bi bi-hammer me-2"></i>Beginner Projects
+        </h3>
+        <p class="text-muted mb-4">Apply everything you've learned. Click each project to open its full guide.</p>
 
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #f0f4ff;">
-                <i class="bi bi-journal-text fs-3 text-primary"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Detailed Lessons</h6>
-                  <p class="small text-muted mb-0">Step-by-step structured content designed for every level.</p>
+        <div class="accordion" id="projectsAccordion">
+
+          <!-- PROJECT 1 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#project1">
+                <span class="project-badge me-3">Project 1</span>
+                Number Guessing Game
+              </button>
+            </h2>
+            <div id="project1" class="accordion-collapse collapse show" data-bs-parent="#projectsAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                  <p class="small text-dark mb-2">The computer secretly picks a number from a range you choose. You get 7 attempts to find it. After each guess, the program tells you whether to go higher or lower.</p>
+
+                  <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">random.randint()</span>
+                    <span class="concept-chip">int(input())</span>
+                    <span class="concept-chip">while loop</span>
+                    <span class="concept-chip">if / else</span>
+                    <span class="concept-chip">variables</span>
+                  </div>
+
+                  <h6><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h6>
+                  <ol class="small text-dark mb-0">
+                    <li>The program asks for a starting and ending number.</li>
+                    <li><code>random.randint(start, end)</code> picks a secret number inside that range.</li>
+                    <li>The loop runs while you still have attempts left.</li>
+                    <li>Each turn you type a guess, and <code>used_guesses</code> increases by 1.</li>
+                    <li>The program says "too low" or "too high" and shows remaining attempts.</li>
+                    <li>If you guess correctly, the loop breaks and you win.</li>
+                    <li>The <code>else</code> after <code>while</code> runs only if you run out of attempts — a clean Python trick.</li>
+                  </ol>
                 </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fff4e5;">
-                <i class="bi bi-lightbulb fs-3 text-warning"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Real Examples</h6>
-                  <p class="small text-muted mb-0">Practical examples you can understand and apply instantly.</p>
+
+                <div class="code-block mb-3">
+                  <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:#161b22;color:#8b949e;font-size:0.8rem;">
+                    <span><i class="bi bi-filetype-py me-1"></i>Python</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>import random
+
+print("Number Guessing Game")
+print("I will pick a secret number inside your chosen range.\n")
+
+start = int(input("Enter the starting number: "))
+end = int(input("Enter the ending number: "))
+
+secret = random.randint(start, end)
+
+max_guesses = 7
+used_guesses = 0
+
+print(f"\nGuess the secret number between {start} and {end}.")
+print(f"You have {max_guesses} attempts.\n")
+
+while used_guesses < max_guesses:
+    used_guesses += 1
+    guess = int(input(f"Attempt {used_guesses}: "))
+
+    if guess == secret:
+        print(f"\nCorrect! The secret number is {secret}.")
+        print(f"You found it in {used_guesses} attempt(s).")
+        break
+
+    remaining = max_guesses - used_guesses
+    if guess < secret:
+        print(f"Too low. {remaining} attempt(s) left.\n")
+    else:
+        print(f"Too high. {remaining} attempt(s) left.\n")
+
+else:
+    print(f"\nOut of attempts! The secret number was {secret}.")</pre>
                 </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #e8faf0;">
-                <i class="bi bi-patch-check fs-3 text-success"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Practice &amp; Quizzes</h6>
-                  <p class="small text-muted mb-0">Test your knowledge with quizzes and hands-on exercises.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fdeef4;">
-                <i class="bi bi-download fs-3 text-danger"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Resources &amp; PDFs</h6>
-                  <p class="small text-muted mb-0">Curated notes and downloadable study material.</p>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">python guessing_game.py</span>
+                  </div>
+                  <div class="terminal-body">Enter the starting number: 1
+Enter the ending number: 100
+
+Guess the secret number between 1 and 100.
+You have 7 attempts.
+
+Attempt 1: 50
+Too high. 6 attempt(s) left.
+
+Attempt 2: 25
+Too low. 5 attempt(s) left.
+
+Attempt 3: 37
+Correct! The secret number is 37.
+You found it in 3 attempt(s).</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="text-center mt-5">
-            <a href="/learn/{{ category_slug }}" class="btn btn-primary rounded-pill px-4 py-2 me-2">
-              <i class="bi bi-collection me-2"></i> Explore {{ category }}
-            </a>
-            <a href="/" class="btn btn-outline-primary rounded-pill px-4 py-2">
-              <i class="bi bi-arrow-left me-2"></i> Back to Home
-            </a>
+          <!-- PROJECT 2 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#project2">
+                <span class="project-badge me-3">Project 2</span>
+                Word Guessing (Hangman)
+              </button>
+            </h2>
+            <div id="project2" class="accordion-collapse collapse" data-bs-parent="#projectsAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                  <p class="small text-dark mb-2">The computer picks a secret word from a list. You guess one letter at a time. Correct letters are revealed; wrong guesses cost a life. Win by revealing the whole word before lives run out.</p>
+
+                  <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">random.choice()</span>
+                    <span class="concept-chip">lists</span>
+                    <span class="concept-chip">enumerate()</span>
+                    <span class="concept-chip">while loop</span>
+                    <span class="concept-chip">input validation</span>
+                  </div>
+
+                  <h6><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h6>
+                  <ol class="small text-dark mb-0">
+                    <li><code>word_bank</code> holds a list of possible words.</li>
+                    <li><code>random.choice(word_bank)</code> selects the secret word.</li>
+                    <li><code>revealed</code> is a list of underscores — one per letter.</li>
+                    <li>The loop runs while lives remain and the word is still hidden.</li>
+                    <li>The player enters one letter — the program validates it.</li>
+                    <li>If the letter is in the word, every matching position is revealed.</li>
+                    <li>If not, lives decrease by 1.</li>
+                    <li>Game ends when the word is fully revealed (win) or lives hit 0 (loss).</li>
+                  </ol>
+                </div>
+
+                <div class="code-block mb-3">
+                  <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:#161b22;color:#8b949e;font-size:0.8rem;">
+                    <span><i class="bi bi-filetype-py me-1"></i>Python</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>import random
+
+print("Word Guessing Game")
+player_name = input("What is your name? ")
+print(f"Good luck, {player_name}!\n")
+
+word_bank = [
+    "planet", "garden", "rocket", "forest",
+    "orange", "silver", "bridge", "candle",
+    "winter", "summer", "tiger", "eagle"
+]
+
+secret_word = random.choice(word_bank)
+revealed = ["_"] * len(secret_word)
+lives = 8
+
+print("Guess the secret word one letter at a time.\n")
+
+while lives > 0 and "_" in revealed:
+    print("Word: " + " ".join(revealed))
+    print(f"Lives left: {lives}")
+
+    letter = input("Guess a letter: ").strip().lower()
+
+    if len(letter) != 1 or not letter.isalpha():
+        print("Please enter a single letter.\n")
+        continue
+
+    if letter in revealed:
+        print("You already found that letter.\n")
+        continue
+
+    if letter in secret_word:
+        for index, char in enumerate(secret_word):
+            if char == letter:
+                revealed[index] = letter
+        print("Correct!\n")
+    else:
+        lives -= 1
+        print(f"Wrong. {lives} live(s) left.\n")
+
+if "_" not in revealed:
+    print(f"You won, {player_name}!")
+    print(f"The word was: {secret_word}")
+else:
+    print(f"You lost, {player_name}.")
+    print(f"The word was: {secret_word}")</pre>
+                </div>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">python word_guessing.py</span>
+                  </div>
+                  <div class="terminal-body">Word Guessing Game
+What is your name? Sufyan
+Good luck, Sufyan!
+
+Guess the secret word one letter at a time.
+
+Word: _ _ _ _ _ _
+Lives left: 8
+Guess a letter: p
+Correct!
+
+Word: p _ _ _ _ _
+Lives left: 8
+Guess a letter: y
+Correct!
+
+Word: p y _ _ _ _
+Lives left: 8
+Guess a letter: t
+Correct!
+
+Word: p y t _ _ _
+Lives left: 8
+Guess a letter: h
+Correct!
+
+Word: p y t h _ _
+Lives left: 8
+Guess a letter: o
+Correct!
+
+Word: p y t h o _
+Lives left: 8
+Guess a letter: n
+Correct!
+
+You won, Sufyan!
+The word was: python</div>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <!-- PROJECT 3 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#project3">
+                <span class="project-badge me-3">Project 3</span>
+                Mastermind 4-Digit
+              </button>
+            </h2>
+            <div id="project3" class="accordion-collapse collapse" data-bs-parent="#projectsAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                  <p class="small text-dark mb-2">Crack a secret 4-digit code. After each guess, the program tells you how many digits are in the correct position — but not which ones — so you solve it by logic.</p>
+
+                  <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">random.randint()</span>
+                    <span class="concept-chip">str()</span>
+                    <span class="concept-chip">while True</span>
+                    <span class="concept-chip">input validation</span>
+                    <span class="concept-chip">sum()</span>
+                  </div>
+
+                  <h6><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h6>
+                  <ol class="small text-dark mb-0">
+                    <li><code>random.randint(1000, 9999)</code> creates the secret code, then <code>str()</code> turns it into text.</li>
+                    <li>The player enters a 4-digit guess.</li>
+                    <li>Validation rejects anything that isn't exactly 4 digits.</li>
+                    <li>The program compares each position: <code>guess[i]</code> vs <code>secret_code[i]</code>.</li>
+                    <li>A counter counts how many positions match.</li>
+                    <li>The player sees the count but not which digits were correct — that's the puzzle.</li>
+                    <li>Play repeats until the guess matches the secret code exactly.</li>
+                  </ol>
+                </div>
+
+                <div class="code-block mb-3">
+                  <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:#161b22;color:#8b949e;font-size:0.8rem;">
+                    <span><i class="bi bi-filetype-py me-1"></i>Python</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>import random
+
+print("Mastermind 4-Digit")
+print("Crack the secret 4-digit code.\n")
+
+secret_code = str(random.randint(1000, 9999))
+tries = 0
+
+while True:
+    guess = input("Enter a 4-digit guess: ").strip()
+
+    if not guess.isdigit() or len(guess) != 4:
+        print("Enter exactly 4 digits.\n")
+        continue
+
+    tries += 1
+
+    if guess == secret_code:
+        print(f"\nMastermind! You cracked the code in {tries} tries.")
+        break
+
+    correct_spots = sum(1 for i in range(4) if guess[i] == secret_code[i])
+
+    print(f"Digits in the correct position: {correct_spots}")
+    print(f"Attempts so far: {tries}\n")</pre>
+                </div>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">python mastermind.py</span>
+                  </div>
+                  <div class="terminal-body">Mastermind 4-Digit
+Crack the secret 4-digit code.
+
+Enter a 4-digit guess: 5678
+Digits in the correct position: 1
+Attempts so far: 1
+
+Enter a 4-digit guess: 1234
+Digits in the correct position: 0
+Attempts so far: 2
+
+Enter a 4-digit guess: 9876
+Mastermind! You cracked the code in 3 tries.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
+      </div>
 
+      <!-- Next Level CTA -->
+      <div class="text-center mt-4 p-4 rounded-4" style="background:#f0f4ff;">
+        <h5 class="fw-bold" style="color:#1e1b4b;">You've completed all 20 lessons. Ready to continue?</h5>
+        <p class="text-muted mb-3">Continue to Python Intermediate to level up your skills.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <a href="/learn/python/intermediate" class="btn btn-primary rounded-pill px-4">
+            <i class="bi bi-arrow-right me-2"></i>Continue to Intermediate
+          </a>
+          <a href="/learn/python" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="bi bi-collection me-2"></i>Python Hub
+          </a>
+        </div>
       </div>
     </div>
   </div>
 </section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy'; }, 2000);
+    });
+  }
+  function toggleHint(btn) {
+    const box = btn.closest('.exercise-box').querySelector('.hint-box');
+    box.classList.toggle('d-none');
+    btn.textContent = box.classList.contains('d-none') ? 'Show Hint' : 'Hide Hint';
+  }
+  function toggleSolution(btn) {
+    const box = btn.closest('.exercise-box').querySelector('.solution-box');
+    box.classList.toggle('d-none');
+    btn.textContent = box.classList.contains('d-none') ? 'Show Solution' : 'Hide Solution';
+  }
+  function markComplete(btn) {
+    const card = btn.closest('.lesson-complete');
+    card.classList.add('done');
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Completed';
+    btn.classList.remove('btn-outline-success');
+    btn.classList.add('btn-success');
+    btn.disabled = true;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const nav = document.getElementById('courseNav');
+    const toggleBtn = document.querySelector('.course-nav-toggle');
+
+    if (nav && toggleBtn) {
+      nav.addEventListener('shown.bs.collapse', function() {
+        toggleBtn.innerHTML = '<i class="bi bi-x-circle me-2"></i>Hide Course Contents';
+      });
+      nav.addEventListener('hidden.bs.collapse', function() {
+        toggleBtn.innerHTML = '<i class="bi bi-list-ol me-2"></i>Show Course Contents';
+      });
+      nav.querySelectorAll('.course-nav-link').forEach(function(link) {
+        link.addEventListener('click', function() {
+          if (window.innerWidth < 992 && nav.classList.contains('show')) {
+            const bsCollapse = bootstrap.Collapse.getInstance(nav);
+            if (bsCollapse) bsCollapse.hide();
+          }
+        });
+      });
+    }
+  });
+</script>
 {% endblock %}

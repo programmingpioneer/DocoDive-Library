@@ -377,9 +377,9 @@
       }
 
       .notif-dropdown {
-        left: 50% !important;
-        right: auto !important;
-        transform: translateX(-50%) !important;
+        left: auto !important;
+        right: 0 !important;
+        transform: none !important;
       }
       @media (min-width: 992px) {
         .navbar .dropdown .notif-dropdown,
@@ -414,15 +414,18 @@
       }
 
       @media (max-width: 576px) {
-        .dropdown-menu[aria-labelledby="notificationBell"] {
-          width: 300px !important;
-          left: auto !important;
-          right: 0 !important;
+        .notif-dropdown {
+          position: fixed !important;
+          left: 10px !important;
+          right: 10px !important;
+          width: auto !important;
+          max-width: none !important;
+          top: 66px !important;
           transform: none !important;
-          position: absolute !important;
-          top: 100% !important;
-          margin-top: 4px !important;
+          margin: 0 !important;
           border-radius: 16px !important;
+          max-height: calc(100vh - 80px) !important;
+          overflow: hidden !important;
         }
       }
 
@@ -1234,9 +1237,9 @@
         z-index: 9999;
         transition: width 0.1s linear;
       }
-            /* ========== PAGE ENTER ANIMATION ========== */
+      /* ========== PAGE ENTER ANIMATION ========== */
       .page-enter {
-        animation: pageFade .5s ease-out;
+        animation: pageFade 0.5s ease-out;
       }
 
       @keyframes pageFade {
@@ -1384,7 +1387,6 @@
               class="nav-link position-relative"
               id="notificationBell"
               data-bs-toggle="dropdown"
-              data-bs-trigger="hover"
               aria-expanded="false"
               role="button"
               style="color: var(--edox-dark); cursor: pointer"
@@ -1401,56 +1403,62 @@
               class="dropdown-menu dropdown-menu-end notif-dropdown p-0 shadow-lg border-0 animate slideIn"
               style="
                 width: 360px;
-                max-height: 440px;
-                overflow-y: auto;
-                overflow-x: hidden;
+                max-width: calc(100vw - 20px);
                 border-radius: 20px;
                 margin-top: 0;
+                overflow: hidden;
               "
             >
-              <div
-                class="d-flex justify-content-between align-items-center px-3 py-2 bg-light"
-                style="
-                  border-radius: 20px 20px 0 0;
-                  border-bottom: 1px solid #e0e7ff;
-                "
-              >
-                <h6 class="mb-0 fw-bold" style="color: var(--edox-dark)">
-                  <i
-                    class="bi bi-bell-fill me-2"
-                    style="color: var(--edox-purple)"
-                  ></i
-                  >Notifications
-                </h6>
-                <small
-                  class="text-primary"
-                  style="cursor: pointer"
-                  onclick="markAllRead()"
+              <div class="d-flex flex-column" style="max-height: 440px">
+                <div
+                  class="d-flex justify-content-between align-items-center px-3 py-2 bg-light"
+                  style="
+                    border-radius: 20px 20px 0 0;
+                    border-bottom: 1px solid #e0e7ff;
+                    flex-shrink: 0;
+                  "
                 >
-                  <i class="bi bi-check-all me-1"></i>Mark all as read
-                </small>
-              </div>
-              <div id="notifList" class="px-2 py-1">
-                <div class="text-center text-muted py-4">
-                  <i class="bi bi-bell-slash fs-2 d-block mb-2"></i>
-                  <small>No notifications yet</small>
+                  <h6 class="mb-0 fw-bold" style="color: var(--edox-dark)">
+                    <i
+                      class="bi bi-bell-fill me-2"
+                      style="color: var(--edox-purple)"
+                    ></i
+                    >Notifications
+                  </h6>
+                  <small
+                    class="text-primary"
+                    style="cursor: pointer"
+                    onclick="markAllRead()"
+                  >
+                    <i class="bi bi-check-all me-1"></i>Mark all as read
+                  </small>
                 </div>
-              </div>
-              <div
-                class="text-center py-2 bg-light"
-                style="border-radius: 0 0 20px 20px"
-              >
-                <a
-                  href="/user/notifications"
-                  class="small text-decoration-none"
-                  style="color: var(--edox-purple)"
+                <div
+                  id="notifList"
+                  class="px-2 py-1"
+                  style="overflow-y: auto; flex: 1 1 auto; min-height: 0"
                 >
-                  View all notifications <i class="bi bi-arrow-right ms-1"></i>
-                </a>
+                  <div class="text-center text-muted py-4">
+                    <i class="bi bi-bell-slash fs-2 d-block mb-2"></i>
+                    <small>No notifications yet</small>
+                  </div>
+                </div>
+                <div
+                  class="text-center py-2 bg-light"
+                  style="border-radius: 0 0 20px 20px; flex-shrink: 0"
+                >
+                  <a
+                    href="/user/notifications"
+                    class="small text-decoration-none"
+                    style="color: var(--edox-purple)"
+                  >
+                    View all notifications
+                    <i class="bi bi-arrow-right ms-1"></i>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
-
           <!-- Reader Profile Dropdown -->
           <div class="dropdown">
             <button
@@ -1821,13 +1829,15 @@
     </nav>
 
     <!-- ================== MAIN CONTENT ================== -->
-    <main class="flex-grow-1 page-enter">{% block content %}{% endblock %}</main>
+    <main class="flex-grow-1 page-enter">
+      {% block content %}{% endblock %}
+    </main>
 
     <!-- ================== FOOTER ================== -->
     <footer class="site-footer mt-auto">
       <div class="container" data-aos="fade-up">
         <div class="row footer-grid g-4 py-5">
-                        <!-- COLUMN 1: Brand -->
+          <!-- COLUMN 1: Brand -->
           <div class="col-lg-3" data-aos="fade-right" data-aos-delay="0">
             <h6
               class="footer-heading d-flex justify-content-between align-items-center"
@@ -1843,12 +1853,42 @@
                 learning resources. Knowledge should be free.
               </p>
               <div class="d-flex flex-wrap gap-2">
-                <a href="https://github.com/programmingpioneer" target="_blank" class="footer-social-icon"><i class="bi bi-github"></i></a>
-                <a href="https://www.linkedin.com/in/sufyan-khans/" target="_blank" class="footer-social-icon"><i class="bi bi-linkedin"></i></a>
-                <a href="https://x.com/programerPioner" target="_blank" class="footer-social-icon"><i class="bi bi-twitter-x"></i></a>
-                <a href="https://www.instagram.com/programmingpioneer/" target="_blank" class="footer-social-icon"><i class="bi bi-instagram"></i></a>
-                <a href="https://www.facebook.com/Programmingpioneer" target="_blank" class="footer-social-icon"><i class="bi bi-facebook"></i></a>
-                <a href="https://t.me/Programmingpioneers" target="_blank" class="footer-social-icon"><i class="bi bi-telegram"></i></a>
+                <a
+                  href="https://github.com/programmingpioneer"
+                  target="_blank"
+                  class="footer-social-icon"
+                  ><i class="bi bi-github"></i
+                ></a>
+                <a
+                  href="https://www.linkedin.com/in/sufyan-khans/"
+                  target="_blank"
+                  class="footer-social-icon"
+                  ><i class="bi bi-linkedin"></i
+                ></a>
+                <a
+                  href="https://x.com/programerPioner"
+                  target="_blank"
+                  class="footer-social-icon"
+                  ><i class="bi bi-twitter-x"></i
+                ></a>
+                <a
+                  href="https://www.instagram.com/programmingpioneer/"
+                  target="_blank"
+                  class="footer-social-icon"
+                  ><i class="bi bi-instagram"></i
+                ></a>
+                <a
+                  href="https://www.facebook.com/Programmingpioneer"
+                  target="_blank"
+                  class="footer-social-icon"
+                  ><i class="bi bi-facebook"></i
+                ></a>
+                <a
+                  href="https://t.me/Programmingpioneers"
+                  target="_blank"
+                  class="footer-social-icon"
+                  ><i class="bi bi-telegram"></i
+                ></a>
               </div>
             </div>
           </div>
@@ -1947,8 +1987,8 @@
         <!-- Quick links + dark bottom bar -->
         <div
           class="footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 py-3"
-data-aos="fade-up"
-data-aos-delay="400"
+          data-aos="fade-up"
+          data-aos-delay="400"
         >
           <div class="small">
             <a href="/privacy" class="me-3">Privacy</a>

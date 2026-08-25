@@ -2,6 +2,12 @@
 const CACHE_VERSION = 'v1.0.7';  // ⬆️ Version badha di
 const STATIC_CACHE = `docodive-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `docodive-images-${CACHE_VERSION}`;
+// DEV: Service worker temporarily disabled
+if (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1' || self.location.hostname.startsWith('192.168.')) {
+  self.addEventListener('install', event => self.skipWaiting());
+  self.addEventListener('activate', event => self.registration.unregister());
+  return;
+}
 
 // Assets to precache on install — '/' REMOVED (HTML should never be cached)
 const PRECACHE_URLS = [
@@ -93,6 +99,12 @@ self.addEventListener('fetch', event => {
 
   // ⚠️ NETWORK-ONLY for HTML pages — NEVER cache dynamic HTML
   if (request.headers.get('Accept')?.includes('text/html')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+    // API + debug routes: NETWORK-ONLY (never cache — sessions/CSRF sensitive)
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/debug/')) {
     event.respondWith(fetch(request));
     return;
   }
