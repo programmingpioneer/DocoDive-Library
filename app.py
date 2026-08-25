@@ -128,6 +128,12 @@ app.config["CACHE_TYPE"] = "SimpleCache"
 app.config["CACHE_DEFAULT_TIMEOUT"] = 300
 cache = Cache(app)
 
+@app.before_request
+def enforce_canonical_host():
+    """www -> non-www redirect (single canonical domain for SEO)."""
+    host = request.host
+    if host.startswith("www."):
+        return redirect(request.url.replace("://www.", "://", 1), code=301)
 
 @app.after_request
 def add_cache_headers(response):
