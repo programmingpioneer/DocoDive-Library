@@ -4304,7 +4304,7 @@ def sitemap():
             "priority": "1.0",
         },
         {
-            "loc": url_for("feedback", _external=True),
+            "loc": url_for("user_feedback", _external=True),
             "changefreq": "weekly",
             "priority": "0.7",
         },
