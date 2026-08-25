@@ -4304,29 +4304,14 @@ def sitemap():
             "priority": "1.0",
         },
         {
-            "loc": url_for("user_login", _external=True),
-            "changefreq": "monthly",
-            "priority": "0.5",
-        },
-        {
-            "loc": url_for("user_signup", _external=True),
-            "changefreq": "monthly",
-            "priority": "0.5",
-        },
-        {
-            "loc": url_for("forgot_password", _external=True),
-            "changefreq": "monthly",
-            "priority": "0.3",
-        },
-        {
-            "loc": url_for("user_favorites", _external=True),
+            "loc": url_for("feedback", _external=True),
             "changefreq": "weekly",
-            "priority": "0.4",
+            "priority": "0.7",
         },
         {
-            "loc": url_for("user_history", _external=True),
-            "changefreq": "weekly",
-            "priority": "0.4",
+            "loc": url_for("leaderboard", _external=True),
+            "changefreq": "daily",
+            "priority": "0.8",
         },
     ]
 
