@@ -1,10 +1,38 @@
-{% extends 'base.html' %} {% block title %}{{ book.title }} - DocoDive{%
-endblock %} {% block meta_description %}{{ book.description[:160] if
-book.description else 'Read ' + book.title + ' by ' + book.author + ' on
-DocoDive. Free PDF download available.' }}{% endblock %} {% block og_image %}{{
-book.image_url if book.image_url and book.image_url != 'None' else
-url_for('static', filename='images/docodive-og.png', _external=True) }}{%
-endblock %} {% block content %}
+{% extends 'base.html' %}
+
+{% block title %}{{ book.title }} - DocoDive{% endblock %}
+
+{% block canonical %}{{ request.url_root.rstrip('/') }}/book/{{ book.id }}{% endblock %}
+
+{% block meta_description %}{{ book.description[:160] if book.description else 'Read ' + book.title + ' by ' + book.author + ' on DocoDive. Free PDF download available.' }}{% endblock %}
+
+{% block og_image %}{{ book.image_url if book.image_url and book.image_url != 'None' else url_for('static', filename='images/docodive-og.png', _external=True) }}{% endblock %}
+
+{% block structured_data %}
+{{ super() }}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Book",
+  "name": {{ book.title|tojson }},
+  "author": { "@type": "Person", "name": {{ book.author|tojson }} },
+  "description": {{ (book.description[:200] if book.description else '')|tojson }},
+  "image": {{ (book.image_url if book.image_url and book.image_url != 'None' else '')|tojson }},
+  "url": {{ request.url|tojson }},
+  "inLanguage": {{ book.language|tojson }},
+  "genre": {{ book.level|tojson }},
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock"
+  },
+  "publisher": { "@type": "Organization", "name": "DocoDive" }
+}
+</script>
+{% endblock %}
+
+{% block content %}
 <div class="container py-4 py-md-5">
   <div class="row g-4">
     <!-- Book Cover -->
@@ -343,35 +371,6 @@ endblock %} {% block content %}
   </section>
   {% endif %}
 </div>
-
-<!-- ================== JSON-LD Structured Data (SEO) ================== -->
-<script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Book",
-    "name": {{ book.title|tojson }},
-    "author": {
-      "@type": "Person",
-      "name": {{ book.author|tojson }}
-    },
-    "description": {{ (book.description[:200] if book.description else '')|tojson }},
-    "image": {{ (book.image_url if book.image_url and book.image_url != 'None' else '')|tojson }},
-    "url": {{ request.url|tojson }},
-    "inLanguage": {{ book.language|tojson }},
-    "genre": {{ book.level|tojson }},
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD",
-      "availability": "https://schema.org/InStock"
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "DocoDive"
-    }
-  }
-</script>
-
 <!-- ================== QR & SHARE POPUPS ================== -->
 <div
   id="qrPopup"

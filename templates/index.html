@@ -830,48 +830,41 @@
     transition: none !important;
   }
 
-  /* ===== CAROUSEL CARDS: ONLY FADE — NO SLIDE MOVEMENT ===== */
-  @keyframes fadeCardIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
+  /* ===== CAROUSEL CARDS: SUBTLE FADE ONLY ===== */
+@keyframes fadeCardIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-  #recommendedCarousel .carousel-item.active .col-4,
-  #newArrivalsCarousel .carousel-item.active .col-4 {
-    animation: fadeCardIn 1.5s ease both;
-  }
+#recommendedCarousel .carousel-item.active .col-4,
+#newArrivalsCarousel .carousel-item.active .col-4 {
+  animation: fadeCardIn 0.45s ease-out both;
+}
 
-  #recommendedCarousel .carousel-item.active .col-4:nth-child(1),
-  #newArrivalsCarousel .carousel-item.active .col-4:nth-child(1) {
-    animation-delay: 0.1s;
-  }
-  #recommendedCarousel .carousel-item.active .col-4:nth-child(2),
-  #newArrivalsCarousel .carousel-item.active .col-4:nth-child(2) {
-    animation-delay: 0.25s;
-  }
-  #recommendedCarousel .carousel-item.active .col-4:nth-child(3),
-  #newArrivalsCarousel .carousel-item.active .col-4:nth-child(3) {
-    animation-delay: 0.4s;
-  }
+#recommendedCarousel .carousel-item.active .col-4:nth-child(1),
+#newArrivalsCarousel .carousel-item.active .col-4:nth-child(1) {
+  animation-delay: 0s;
+}
+#recommendedCarousel .carousel-item.active .col-4:nth-child(2),
+#newArrivalsCarousel .carousel-item.active .col-4:nth-child(2) {
+  animation-delay: 0.06s;
+}
+#recommendedCarousel .carousel-item.active .col-4:nth-child(3),
+#newArrivalsCarousel .carousel-item.active .col-4:nth-child(3) {
+  animation-delay: 0.12s;
+}
 
-  /* Cards ka entrance fade */
-  @keyframes fadeCardIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+/* Smooth crossfade + stable height (no page jump) */
+#recommendedCarousel .carousel-inner,
+#newArrivalsCarousel .carousel-inner {
+  min-height: 340px;
+}
+@media (max-width: 576px) {
+  #recommendedCarousel .carousel-inner,
+  #newArrivalsCarousel .carousel-inner {
+    min-height: 300px;
   }
-
-  #recommendedCarousel .carousel-item.active .col-4,
-  #newArrivalsCarousel .carousel-item.active .col-4 {
-    animation: fadeCardIn 1.5s ease both;
-  }
+}
   /* ===== ABOUT MODERN ===== */
   .founder-card {
     background: #fff;
