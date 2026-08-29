@@ -384,7 +384,7 @@ def get_book_of_the_day():
 app.config["ADMIN_NOTIFICATION_EMAIL"] = os.getenv("ADMIN_NOTIFICATION_EMAIL")
 app.config["SUPPORT_EMAIL"] = os.getenv("SUPPORT_EMAIL", "")
 app.config["MAIL_FROM_NAME"] = os.getenv("MAIL_FROM_NAME", "DocoDive")
-app.config["MAIL_FROM_EMAIL"] = os.getenv("MAIL_FROM_EMAIL", "7t7sufyan@gmail.com")
+app.config["MAIL_FROM_EMAIL"] = os.getenv("MAIL_FROM_EMAIL", "noreply@programmingpioneer.com")
 
 ALLOWED_EXTENSIONS = {"pdf"}
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
@@ -483,7 +483,7 @@ def send_email_via_api(subject, recipient, body, html_body=None):
     if not api_key:
         app.logger.error("BREVO_API_KEY not set, cannot send via API")
         return False
-    sender_email = app.config.get("MAIL_FROM_EMAIL") or "7t7sufyan@gmail.com"
+    sender_email = app.config.get("MAIL_FROM_EMAIL") or "noreply@programmingpioneer.com"
     sender_name = app.config.get("MAIL_FROM_NAME") or "DocoDive"
     try:
         data = {
