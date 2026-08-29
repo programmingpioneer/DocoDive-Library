@@ -1,100 +1,558 @@
 {% extends 'base.html' %}
-{% block title %}{{ info.title }} — {{ category }} | DocoDive{% endblock %}
+{% block title %}Machine Learning Advanced Course — Deep Learning, NLP & Production Deployment | DocoDive{% endblock %}
+{% block meta_description %}Master advanced machine learning with 40 free lessons: gradient boosting internals, neural networks, transformers, RAG, vector databases, causal ML, bandits, graph ML, MLOps, drift monitoring, canary deployment, and a production ML capstone.{% endblock %}
+
+{% block extra_css %}
+<style>
+  .ml-adv-hero {
+    background: linear-gradient(135deg, #f7fee7 0%, #ecfccb 100%);
+    border: 1px solid #bef264;
+  }
+  .hero-stat-link { text-decoration: none; color: #6b7280; transition: color 0.2s ease; cursor: pointer; }
+  .hero-stat-link:hover { color: #65a30d; text-decoration: underline; }
+  .course-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .course-nav {
+    position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto;
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 14px;
+  }
+  .course-nav a {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border-radius: 10px; color: #4b5563; text-decoration: none; font-size: 0.85rem; font-weight: 500;
+  }
+  .course-nav a:hover { background: #f7fee7; color: #65a30d; }
+  .course-nav a .nav-num { flex-shrink: 0; width: 24px; color: #65a30d; font-weight: 700; }
+  .course-nav a .nav-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .course-nav-toggle { display: none; }
+  .lesson-step { scroll-margin-top: 100px; margin-bottom: 32px; }
+  .lesson-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; }
+  .code-block { background: #0d1117; color: #e6edf3; border-radius: 12px; overflow: hidden; }
+  .code-block pre {
+    margin: 0; padding: 18px; font-family: Consolas, Monaco, monospace;
+    font-size: 0.88rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+  }
+  .callout { border-left: 4px solid; padding: 12px 16px; border-radius: 10px; font-size: 0.9rem; }
+  .callout-tip { background: #fef9ec; border-color: #ffb703; color: #7c5a00; }
+  .callout-warning { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+  .callout-best { background: #ecfdf5; border-color: #10b981; color: #065f46; }
+  .callout-important { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+  .terminal { background: #0d1117; color: #4ade80; border-radius: 12px; overflow: hidden; font-family: Consolas, Monaco, monospace; }
+  .terminal-header {
+    background: #161b22; padding: 10px 16px; display: flex; align-items: center;
+    gap: 8px; border-bottom: 1px solid #21262d;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-red { background: #ff5f56; }
+  .dot-yellow { background: #ffbd2e; }
+  .dot-green { background: #27c93f; }
+  .terminal-title { color: #8b949e; font-size: 0.75rem; margin-left: 6px; }
+  .terminal-body { padding: 14px 16px; font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .exercise-box { background: #f7fee7; border: 1px dashed #bef264; border-radius: 12px; padding: 16px; }
+  .docs-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;
+    color: #65a30d; text-decoration: none; font-weight: 600;
+  }
+  .docs-link:hover { text-decoration: underline; }
+  .lesson-complete { transition: all 0.2s ease; }
+  .lesson-complete.done { background: #ecfdf5; border-color: #10b981; }
+
+  /* ===== COLORFUL PREVIEWS — PROPERLY CENTERED ===== */
+  .output-preview { border-radius: 14px; overflow: hidden; border: 1px solid #e5e7eb; background: #fff; }
+  .output-preview-header {
+    background: #161b22; color: #8b949e; font-size: 0.75rem; padding: 8px 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .output-preview-body {
+    min-height: 170px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 20px;
+    background: #f7fee7;
+    text-align: center;
+  }
+  .pv-box { border-radius: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .pv-green { background: #65a30d; color: #fff; }
+  .pv-light-green { background: #bef264; color: #4d7c0f; }
+  .pv-lime { background: #ecfccb; color: #4d7c0f; border: 2px solid #bef264; }
+  .pv-red { background: #ef4444; color: #fff; }
+  .pv-blue { background: #3b82f6; color: #fff; }
+  .pv-purple { background: #8b5cf6; color: #fff; }
+  .pv-sm { padding: 6px 10px; font-size: 0.7rem; border-radius: 6px; }
+  .pv-md { padding: 10px 16px; font-size: 0.8rem; border-radius: 8px; }
+  .pv-lg { padding: 14px 20px; font-size: 0.85rem; border-radius: 10px; }
+  .pv-flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .pv-arrow { color: #4d7c0f; font-weight: 800; }
+  .pv-chart { display: flex; align-items: flex-end; gap: 8px; height: 110px; }
+  .pv-bar { width: 38px; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, #bef264, #65a30d); }
+  .pv-bar-label { text-align: center; font-size: 0.65rem; font-weight: 700; color: #4d7c0f; margin-top: 6px; }
+  .pv-point-grid { position: relative; width: 200px; height: 130px; background: #fff; border: 1px solid #bef264; border-radius: 8px; }
+  .pv-point { position: absolute; width: 10px; height: 10px; border-radius: 50%; }
+  .pv-heat { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .pv-heat-cell { width: 36px; height: 36px; border-radius: 6px; }
+  .pv-stats { display: flex; gap: 12px; }
+  .pv-stat-box { background: #fff; border: 2px solid #bef264; border-radius: 10px; padding: 12px 18px; text-align: center; }
+  .pv-stat-value { font-size: 1.3rem; font-weight: 800; color: #65a30d; }
+  .pv-stat-label { font-size: 0.65rem; color: #6b7280; font-weight: 600; }
+  .pv-tree { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .pv-tree-node { background: #ecfccb; color: #4d7c0f; border: 1px solid #bef264; padding: 6px 12px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; }
+  .pv-tree-root { background: #65a30d; color: #fff; }
+  .pv-progress { width: 100%; max-width: 280px; }
+  .pv-progress-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .pv-progress-label { width: 90px; font-size: 0.7rem; font-weight: 700; color: #4d7c0f; text-align: right; }
+  .pv-progress-bar { flex: 1; height: 12px; background: #ecfccb; border-radius: 50px; overflow: hidden; }
+  .pv-progress-fill { height: 100%; background: linear-gradient(90deg, #bef264, #65a30d); border-radius: 50px; }
+  .pv-brain { font-size: 2.5rem; }
+  .pv-layers { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+  .pv-layer { display: flex; gap: 4px; }
+  .pv-neuron { width: 22px; height: 22px; border-radius: 50%; background: #65a30d; }
+  .pv-neuron-dim { background: #bef264; }
+  .pv-confusion { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .pv-conf-cell { width: 52px; height: 52px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; }
+  .pv-msg { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 0.75rem; }
+  .pv-msg-user { background: #65a30d; color: #fff; margin-left: auto; }
+  .pv-msg-bot { background: #ecfccb; color: #4d7c0f; }
+  .pv-waveform { display: flex; align-items: center; gap: 3px; height: 50px; }
+  .pv-wave { width: 5px; background: #65a30d; border-radius: 3px; }
+  .pv-doc { background: #fff; border: 1px solid #bef264; border-radius: 8px; padding: 12px; font-size: 0.72rem; color: #4d7c0f; max-width: 200px; }
+  .pv-tag { display: inline-block; background: #ecfccb; color: #4d7c0f; border: 1px solid #bef264; border-radius: 6px; padding: 3px 8px; font-size: 0.7rem; font-weight: 700; margin: 2px; }
+
+  @media (max-width: 991.98px) {
+    .course-layout { grid-template-columns: 1fr; }
+    .course-nav-toggle { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 20px; }
+    .course-nav { position: static; max-height: none; }
+    .course-nav.collapse.show { max-height: 60vh; overflow-y: auto; margin-bottom: 24px; }
+  }
+  @media (max-width: 576px) {
+    .ml-adv-hero { padding: 24px 16px; }
+    .ml-adv-hero h1 { font-size: 1.75rem; }
+    .lesson-card { padding: 16px; }
+    .code-block pre { font-size: 0.78rem; padding: 14px; }
+    .terminal-body { font-size: 0.75rem; padding: 12px; }
+    .callout { padding: 10px 12px; font-size: 0.85rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
+{% if lessons %}
 <section class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+  <div class="ml-adv-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="badge rounded-pill" style="background:#65a30d;color:#fff;font-weight:700;">Advanced</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:#1e1b4b;">Machine Learning Advanced: Deep Learning, NLP & Deployment</h1>
+    <p class="text-muted mb-4">Master the frontier — gradient boosting internals, neural networks, transformers, RAG, vector databases, causal ML, MLOps, and ship a production ML system. This is the full ML engineering skill set.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 mb-3">
+      <span class="text-muted small"><i class="bi bi-clock me-1"></i>10–14 weeks</span>
+      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons</span>
+      <a href="#lesson-40" class="hero-stat-link small"><i class="bi bi-trophy me-1"></i>1 capstone</a>
+      <span class="text-muted small"><i class="bi bi-person-check me-1"></i>ML Intermediate required</span>
+    </div>
+    <a href="#lesson-1" class="btn btn-primary rounded-pill px-4 py-2" style="background:#65a30d;border-color:#65a30d;">
+      <i class="bi bi-play-circle me-2"></i>Start Learning
+    </a>
+  </div>
 
-      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 24px;">
+  <button class="btn btn-outline-primary rounded-pill course-nav-toggle" type="button"
+          data-bs-toggle="collapse" data-bs-target="#courseNav"
+          aria-expanded="false" aria-controls="courseNav">
+    <i class="bi bi-list-ol me-2"></i>Show Course Contents
+  </button>
 
-        <!-- HERO -->
-        <div class="p-5 text-center" style="background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);">
-          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-               style="width: 96px; height: 96px; background: #fff; box-shadow: 0 12px 30px rgba(67, 56, 202, 0.12);">
-            <i class="bi {{ info.icon }} fs-1 {{ info.color }}"></i>
+  <div class="course-layout">
+    <aside id="courseNav" class="course-nav collapse d-lg-block">
+      <h6 class="fw-bold mb-3" style="color:#65a30d;"><i class="bi bi-list-ol me-2"></i>Course Content</h6>
+      {% for lesson in lessons %}
+      <a href="#lesson-{{ lesson.id }}" class="course-nav-link">
+        <span class="nav-num">{{ "%02d"|format(lesson.id) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+      </a>
+      {% endfor %}
+    </aside>
+
+    <div>
+      {% for lesson in lessons %}
+      <div id="lesson-{{ lesson.id }}" class="lesson-step">
+        <div class="lesson-card lesson-complete" data-lesson="{{ lesson.id }}">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="nav-num fw-bold" style="color:#65a30d;">{{ "%02d"|format(lesson.id) }}</span>
+            <h2 class="h4 fw-bold mb-0" style="color:#1e1b4b;">{{ lesson.title }}</h2>
+            <span class="ms-auto text-muted small"><i class="bi bi-clock me-1"></i>{{ lesson.duration }}</span>
           </div>
 
-          <span class="badge rounded-pill px-3 py-2 mb-3"
-                style="background: #ffb703; color: #1e1b4b; font-weight: 700; font-size: 0.9rem;">
-            <i class="bi bi-cone-striped me-2"></i> COMING SOON
-          </span>
+          <div class="mb-3">
+            <h6 class="fw-bold mb-2" style="color:#65a30d;"><i class="bi bi-bullseye me-2"></i>What you'll learn</h6>
+            <ul class="list-unstyled">
+              {% for obj in lesson.objectives %}
+              <li class="d-flex gap-2 mb-1">
+                <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                <span class="text-dark">{{ obj }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
 
-          <h1 class="fw-bolder mt-2" style="color: #1e1b4b;">{{ info.title }}</h1>
-          <p class="text-muted lead mb-4">
-            We're building something amazing for <strong>{{ category }}</strong> learners!
-          </p>
+          <p class="text-dark">{{ lesson.explanation }}</p>
 
-          <div class="alert border-0 rounded-4 text-start shadow-sm mx-auto"
-               style="max-width: 640px; background: #e0f2fe; color: #0c4a6e;">
-            <p class="mb-2 fw-semibold">
-              <i class="bi bi-tools me-2"></i>This module is under construction
-            </p>
-            <p class="small mb-0">
-              Our team is preparing detailed lessons, practical examples, downloadable
-              resources and interactive exercises for <strong>{{ info.title }}</strong> in
-              <strong>{{ category }}</strong>. This content will guide you step-by-step,
-              from the fundamentals right up to an advanced level.
-            </p>
+          <div class="code-block mb-3">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:#161b22;color:#8b949e;font-size:0.8rem;">
+              <span><i class="bi bi-code-slash me-1"></i>{{ lesson.code_label or 'Code' }}</span>
+              <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                <i class="bi bi-clipboard me-1"></i>Copy
+              </button>
+            </div>
+            <pre>{{ lesson.code }}</pre>
+          </div>
+
+          {% if lesson.preview and lesson.preview != 'none' %}
+          <div class="mb-3">
+            <div class="text-muted small mb-1"><i class="bi bi-eye me-1"></i>Live Preview</div>
+            <div class="output-preview">
+              <div class="output-preview-header">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+                <span class="terminal-title">{{ lesson.title }}</span>
+              </div>
+              <div class="output-preview-body">
+                {% if lesson.preview == 'boosting' %}
+                <div class="pv-chart">
+                  <div style="text-align:center;"><div class="pv-bar" style="height:40px;"></div><div class="pv-bar-label">T1</div></div>
+                  <div style="text-align:center;"><div class="pv-bar" style="height:60px;"></div><div class="pv-bar-label">T2</div></div>
+                  <div style="text-align:center;"><div class="pv-bar" style="height:80px;"></div><div class="pv-bar-label">T3</div></div>
+                  <div style="text-align:center;"><div class="pv-bar" style="height:100px;"></div><div class="pv-bar-label">Sum</div></div>
+                </div>
+                {% elif lesson.preview == 'xgboost' %}
+                <div class="pv-progress">
+                  <div class="pv-progress-row"><span class="pv-progress-label">max_depth</span><div class="pv-progress-bar"><div class="pv-progress-fill" style="width:40%;"></div></div></div>
+                  <div class="pv-progress-row"><span class="pv-progress-label">subsample</span><div class="pv-progress-bar"><div class="pv-progress-fill" style="width:80%;"></div></div></div>
+                  <div class="pv-progress-row"><span class="pv-progress-label">colsample</span><div class="pv-progress-bar"><div class="pv-progress-fill" style="width:80%;"></div></div></div>
+                </div>
+                {% elif lesson.preview == 'boosting_libs' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-lg">XGBoost</div>
+                  <div class="pv-box pv-light-green pv-lg">LightGBM</div>
+                  <div class="pv-box pv-lime pv-lg">CatBoost</div>
+                </div>
+                {% elif lesson.preview == 'mlp' %}
+                <div class="pv-layers">
+                  <div class="pv-layer"><div class="pv-neuron"></div><div class="pv-neuron"></div><div class="pv-neuron"></div><div class="pv-neuron"></div></div>
+                  <div class="pv-layer"><div class="pv-neuron pv-neuron-dim"></div><div class="pv-neuron pv-neuron-dim"></div><div class="pv-neuron pv-neuron-dim"></div></div>
+                  <div class="pv-layer"><div class="pv-neuron"></div><div class="pv-neuron"></div></div>
+                </div>
+                {% elif lesson.preview == 'cnn' %}
+                <div class="pv-heat">
+                  <div class="pv-heat-cell" style="background:#65a30d;"></div><div class="pv-heat-cell" style="background:#bef264;"></div><div class="pv-heat-cell" style="background:#ecfccb;"></div><div class="pv-heat-cell" style="background:#65a30d;"></div>
+                  <div class="pv-heat-cell" style="background:#bef264;"></div><div class="pv-heat-cell" style="background:#65a30d;"></div><div class="pv-heat-cell" style="background:#bef264;"></div><div class="pv-heat-cell" style="background:#ecfccb;"></div>
+                  <div class="pv-heat-cell" style="background:#ecfccb;"></div><div class="pv-heat-cell" style="background:#bef264;"></div><div class="pv-heat-cell" style="background:#65a30d;"></div><div class="pv-heat-cell" style="background:#bef264;"></div>
+                  <div class="pv-heat-cell" style="background:#65a30d;"></div><div class="pv-heat-cell" style="background:#ecfccb;"></div><div class="pv-heat-cell" style="background:#bef264;"></div><div class="pv-heat-cell" style="background:#65a30d;"></div>
+                </div>
+                {% elif lesson.preview == 'sequence' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-light-green pv-md">x1</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-md">x2</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-md">x3</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green pv-md">h</div>
+                </div>
+                {% elif lesson.preview == 'transformer' %}
+                <div class="pv-layers">
+                  <div class="pv-box pv-green pv-md">Encoder</div>
+                  <div class="pv-box pv-light-green pv-md">Self-Attention</div>
+                  <div class="pv-box pv-green pv-md">Decoder</div>
+                </div>
+                {% elif lesson.preview == 'training' %}
+                <div class="pv-progress">
+                  <div class="pv-progress-row"><span class="pv-progress-label">Loss</span><div class="pv-progress-bar"><div class="pv-progress-fill" style="width:30%;"></div></div></div>
+                  <div class="pv-progress-row"><span class="pv-progress-label">Epoch</span><div class="pv-progress-bar"><div class="pv-progress-fill" style="width:60%;"></div></div></div>
+                </div>
+                {% elif lesson.preview == 'ranking' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">1st</div>
+                  <div class="pv-box pv-light-green pv-md">2nd</div>
+                  <div class="pv-box pv-lime pv-md">3rd</div>
+                </div>
+                {% elif lesson.preview == 'gp' %}
+                <div class="pv-point-grid">
+                  <div class="pv-point" style="background:#65a30d;left:10%;top:60%;"></div>
+                  <div class="pv-point" style="background:#65a30d;left:30%;top:35%;"></div>
+                  <div class="pv-point" style="background:#65a30d;left:50%;top:20%;"></div>
+                  <div class="pv-point" style="background:#65a30d;left:70%;top:30%;"></div>
+                  <div class="pv-point" style="background:#65a30d;left:90%;top:15%;"></div>
+                </div>
+                {% elif lesson.preview == 'bayesian' %}
+                <div class="pv-stats">
+                  <div class="pv-stat-box"><div class="pv-stat-value">Beta(2,2)</div><div class="pv-stat-label">Prior</div></div>
+                  <div class="pv-stat-box"><div class="pv-stat-value">→</div><div class="pv-stat-label">Posterior</div></div>
+                </div>
+                {% elif lesson.preview == 'online' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-light-green pv-md">sample₁</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-md">update</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-md">sample₂</div>
+                </div>
+                {% elif lesson.preview == 'bandit' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">Explore</div>
+                  <div class="pv-box pv-lime pv-md">Exploit</div>
+                  <div class="pv-box pv-green pv-md">Learn</div>
+                </div>
+                {% elif lesson.preview == 'graph' %}
+                <div class="pv-point-grid">
+                  <div class="pv-point" style="background:#65a30d;left:20%;top:20%;"></div>
+                  <div class="pv-point" style="background:#65a30d;left:50%;top:50%;"></div>
+                  <div class="pv-point" style="background:#65a30d;left:80%;top:30%;"></div>
+                  <div class="pv-point" style="background:#65a30d;left:30%;top:70%;"></div>
+                  <div class="pv-point" style="background:#65a30d;left:70%;top:75%;"></div>
+                </div>
+                {% elif lesson.preview == 'metric' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">Anchor</div>
+                  <div class="pv-box pv-light-green pv-md">Positive (close)</div>
+                  <div class="pv-box pv-red pv-md">Negative (far)</div>
+                </div>
+                {% elif lesson.preview == 'self_supervised' %}
+                <div class="pv-box pv-lime pv-lg">No labels needed</div>
+                {% elif lesson.preview == 'few_shot' %}
+                <div class="pv-stats">
+                  <div class="pv-stat-box"><div class="pv-stat-value">0</div><div class="pv-stat-label">Zero-shot</div></div>
+                  <div class="pv-stat-box"><div class="pv-stat-value">5</div><div class="pv-stat-label">Few-shot</div></div>
+                </div>
+                {% elif lesson.preview == 'active' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">Model</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-md">Uncertain?</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-lime pv-md">Label these</div>
+                </div>
+                {% elif lesson.preview == 'continual' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">Task A ✓</div>
+                  <div class="pv-box pv-light-green pv-md">Task B ✓</div>
+                  <div class="pv-box pv-lime pv-md">Both ✓</div>
+                </div>
+                {% elif lesson.preview == 'causal' %}
+                <div class="pv-stats">
+                  <div class="pv-stat-box"><div class="pv-stat-value">+12%</div><div class="pv-stat-label">Treatment effect</div></div>
+                  <div class="pv-stat-box"><div class="pv-stat-value">-3%</div><div class="pv-stat-label">No effect</div></div>
+                </div>
+                {% elif lesson.preview == 'embedding' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">"hello"</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-md">[0.2, 0.8, ...]</div>
+                </div>
+                {% elif lesson.preview == 'lora' %}
+                <div class="pv-progress">
+                  <div class="pv-progress-row"><span class="pv-progress-label">Full fine-tune</span><div class="pv-progress-bar"><div class="pv-progress-fill" style="width:100%;"></div></div></div>
+                  <div class="pv-progress-row"><span class="pv-progress-label">LoRA</span><div class="pv-progress-bar"><div class="pv-progress-fill" style="width:5%;"></div></div></div>
+                </div>
+                {% elif lesson.preview == 'rag' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">Query</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-md">Retrieve</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-lime pv-md">Generate</div>
+                </div>
+                {% elif lesson.preview == 'vectordb' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">Embed</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-md">Index</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-lime pv-md">Search</div>
+                </div>
+                {% elif lesson.preview == 'sentiment' %}
+                <div class="pv-stats">
+                  <div class="pv-stat-box"><div class="pv-stat-value">😀 92%</div><div class="pv-stat-label">Positive</div></div>
+                  <div class="pv-stat-box"><div class="pv-stat-value">😞 8%</div><div class="pv-stat-label">Negative</div></div>
+                </div>
+                {% elif lesson.preview == 'ner' %}
+                <div class="pv-flow">
+                  <span class="pv-tag">Sufyan: PER</span>
+                  <span class="pv-tag">Google: ORG</span>
+                  <span class="pv-tag">Lahore: LOC</span>
+                </div>
+                {% elif lesson.preview == 'translation' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">Hello</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-md">ہیلو</div>
+                </div>
+                {% elif lesson.preview == 'speech' %}
+                <div class="pv-waveform">
+                  <div class="pv-wave" style="height:20px;"></div><div class="pv-wave" style="height:40px;"></div>
+                  <div class="pv-wave" style="height:25px;"></div><div class="pv-wave" style="height:35px;"></div>
+                  <div class="pv-wave" style="height:15px;"></div>
+                </div>
+                {% elif lesson.preview == 'deployment' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">Model</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-md">API</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-lime pv-md">Cloud</div>
+                </div>
+                {% elif lesson.preview == 'docker' %}
+                <div class="pv-box pv-lime pv-lg">🐳 Container</div>
+                {% elif lesson.preview == 'monitoring' %}
+                <div class="pv-progress">
+                  <div class="pv-progress-row"><span class="pv-progress-label">Drift: age</span><div class="pv-progress-bar"><div class="pv-progress-fill" style="width:85%;"></div></div></div>
+                  <div class="pv-progress-row"><span class="pv-progress-label">Drift: income</span><div class="pv-progress-bar"><div class="pv-progress-fill" style="width:20%;"></div></div></div>
+                </div>
+                {% elif lesson.preview == 'mlflow' %}
+                <div class="pv-stats">
+                  <div class="pv-stat-box"><div class="pv-stat-value">0.93</div><div class="pv-stat-label">Accuracy</div></div>
+                  <div class="pv-stat-box"><div class="pv-stat-value">42</div><div class="pv-stat-label">Runs</div></div>
+                </div>
+                {% elif lesson.preview == 'feature_store' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">Features</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-md">Store</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-lime pv-md">Serve</div>
+                </div>
+                {% elif lesson.preview == 'compression' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-lg">50MB</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-lg">12MB</div>
+                </div>
+                {% elif lesson.preview == 'explainable' %}
+                <div class="pv-progress">
+                  <div class="pv-progress-row"><span class="pv-progress-label">age</span><div class="pv-progress-bar"><div class="pv-progress-fill" style="width:90%;"></div></div></div>
+                  <div class="pv-progress-row"><span class="pv-progress-label">income</span><div class="pv-progress-bar"><div class="pv-progress-fill" style="width:50%;"></div></div></div>
+                </div>
+                {% elif lesson.preview == 'canary' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">95% old</div>
+                  <div class="pv-box pv-light-green pv-md">5% new</div>
+                </div>
+                {% elif lesson.preview == 'edge' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">📱</div>
+                  <div class="pv-box pv-light-green pv-md">int8</div>
+                </div>
+                {% elif lesson.preview == 'adversarial' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">Clean ✓</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-red pv-md">Perturbed ✗</div>
+                </div>
+                {% elif lesson.preview == 'distributed' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">GPU₁</div>
+                  <div class="pv-box pv-green pv-md">GPU₂</div>
+                  <div class="pv-box pv-green pv-md">GPU₃</div>
+                </div>
+                {% elif lesson.preview == 'capstone' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green pv-md">Train</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-green pv-md">Deploy</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-lime pv-md">Monitor</div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div class="mb-3">
+            <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Output</div>
+            <div class="terminal">
+              <div class="terminal-header">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+                <span class="terminal-title">python</span>
+              </div>
+              <div class="terminal-body">{{ lesson.output }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="callout callout-{{ lesson.callout_type }} mb-3">
+            {% if lesson.callout_type == 'tip' %}<strong>💡 Tip:</strong>
+            {% elif lesson.callout_type == 'warning' %}<strong>⚠️ Common Mistake:</strong>
+            {% elif lesson.callout_type == 'best' %}<strong>✓ Best Practice:</strong>
+            {% else %}<strong>🔎 Important:</strong>{% endif %}
+            {{ lesson.callout_text }}
+          </div>
+
+          <div class="mb-3">
+            <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="docs-link">
+              <i class="bi bi-box-arrow-up-right"></i>{{ lesson.docs_label }}
+            </a>
+          </div>
+
+          <div class="exercise-box">
+            <h6 class="fw-bold mb-2" style="color:#65a30d;"><i class="bi bi-pencil-square me-2"></i>Try it yourself</h6>
+            <p class="mb-2">{{ lesson.exercise_prompt }}</p>
+            <div class="d-flex gap-2 mb-2 exercise-actions">
+              <button class="btn btn-outline-primary btn-sm rounded-pill" onclick="toggleHint(this)">Show Hint</button>
+              <button class="btn btn-outline-success btn-sm rounded-pill" onclick="toggleSolution(this)">Show Solution</button>
+            </div>
+            <div class="hint-box d-none small text-muted"><i class="bi bi-lightbulb me-1"></i>{{ lesson.exercise_hint }}</div>
+            <div class="solution-box d-none">
+              <div class="code-block"><pre>{{ lesson.exercise_solution }}</pre></div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer" style="border-top:1px solid #e5e7eb;">
+            {% if loop.previtem %}
+            <a href="#lesson-{{ loop.previtem.id }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+              <i class="bi bi-arrow-left me-1"></i>Lesson {{ "%02d"|format(loop.previtem.id) }}
+            </a>
+            {% else %}<span></span>{% endif %}
+
+            <button class="btn btn-outline-success btn-sm rounded-pill mark-complete" onclick="markComplete(this)">
+              <i class="bi bi-check2-circle me-1"></i>Mark Complete
+            </button>
+
+            {% if loop.nextitem %}
+            <a href="#lesson-{{ loop.nextitem.id }}" class="btn btn-primary btn-sm rounded-pill" style="background:#65a30d;border-color:#65a30d;">
+              Next Lesson <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            {% else %}<span></span>{% endif %}
           </div>
         </div>
+      </div>
+      {% endfor %}
 
-        <!-- WHAT YOU'LL GET -->
-        <div class="p-5">
-          <h5 class="fw-bold mb-4 text-center" style="color: #4338ca;">
-            What you'll get in this module
-          </h5>
-
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #f0f4ff;">
-                <i class="bi bi-journal-text fs-3 text-primary"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Detailed Lessons</h6>
-                  <p class="small text-muted mb-0">Step-by-step structured content designed for every level.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fff4e5;">
-                <i class="bi bi-lightbulb fs-3 text-warning"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Real Examples</h6>
-                  <p class="small text-muted mb-0">Practical examples you can understand and apply instantly.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #e8faf0;">
-                <i class="bi bi-patch-check fs-3 text-success"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Practice &amp; Quizzes</h6>
-                  <p class="small text-muted mb-0">Test your knowledge with quizzes and hands-on exercises.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fdeef4;">
-                <i class="bi bi-download fs-3 text-danger"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Resources &amp; PDFs</h6>
-                  <p class="small text-muted mb-0">Curated notes and downloadable study material.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="text-center mt-5">
-            <a href="/learn/{{ category_slug }}" class="btn btn-primary rounded-pill px-4 py-2 me-2">
-              <i class="bi bi-collection me-2"></i> Explore {{ category }}
-            </a>
-            <a href="/" class="btn btn-outline-primary rounded-pill px-4 py-2">
-              <i class="bi bi-arrow-left me-2"></i> Back to Home
-            </a>
-          </div>
+      <div class="text-center mt-4 p-4 rounded-4" style="background:#f7fee7;">
+        <h5 class="fw-bold" style="color:#1e1b4b;">You've completed all {{ lessons|length }} advanced lessons. You're now an ML engineer.</h5>
+        <p class="text-muted mb-3">Practice your skills or return to the ML hub.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <a href="/learn/machine-learning/practice" class="btn btn-primary rounded-pill px-4" style="background:#65a30d;border-color:#65a30d;">
+            <i class="bi bi-collection me-2"></i>Practice Resources
+          </a>
+          <a href="/learn/machine-learning" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="bi bi-grid me-2"></i>ML Hub
+          </a>
         </div>
-
       </div>
     </div>
   </div>
 </section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy'; }, 2000);
+    });
+  }
+  function toggleHint(btn) {
+    const box = btn.closest('.exercise-box').querySelector('.hint-box');
+    box.classList.toggle('d-none');
+    btn.textContent = box.classList.contains('d-none') ? 'Show Hint' : 'Hide Hint';
+  }
+  function toggleSolution(btn) {
+    const box = btn.closest('.exercise-box').querySelector('.solution-box');
+    box.classList.toggle('d-none');
+    btn.textContent = box.classList.contains('d-none') ? 'Show Solution' : 'Hide Solution';
+  }
+  function markComplete(btn) {
+    const card = btn.closest('.lesson-complete');
+    card.classList.add('done');
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Completed';
+    btn.classList.remove('btn-outline-success');
+    btn.classList.add('btn-success');
+    btn.disabled = true;
+  }
+</script>
 {% endblock %}

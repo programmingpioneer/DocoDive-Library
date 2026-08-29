@@ -1,100 +1,236 @@
 {% extends 'base.html' %}
-{% block title %}{{ info.title }} — {{ category }} | DocoDive{% endblock %}
+{% block title %}Mobile Apps — Intermediate Guide: Flutter APIs, State & Real Apps | DocoDive{% endblock %}
+{% block meta_description %}Level up your Flutter skills: 30 intermediate lessons covering state management, REST APIs, JSON, local storage, media, and real-world app architecture.{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --ma-primary: #d97706;
+    --ma-primary-dark: #92400e;
+    --ma-soft: #fef3c7;
+    --ma-ink: #1e293b;
+    --ma-muted: #64748b;
+    --ma-line: #e2e8f0;
+    --ma-radius: 16px;
+    --ma-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    --ma-shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.12);
+  }
+
+  * { transition: background-color .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease, opacity .3s ease; }
+
+  .ma-hero { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #fcd34d; }
+
+  .ma-grid { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
+
+  .ma-nav {
+    display: none; position: sticky; top: 90px;
+    max-height: calc(100vh - 110px); overflow-y: auto;
+    background: #fff; border: 1px solid var(--ma-line); border-radius: var(--ma-radius); padding: 14px;
+  }
+  .ma-nav a {
+    display: flex; align-items: center; gap: 8px; padding: 9px 12px;
+    border-radius: 10px; color: var(--ma-muted); text-decoration: none;
+    font-size: 0.82rem; font-weight: 500;
+  }
+  .ma-nav a:hover { background: var(--ma-soft); color: var(--ma-primary-dark); transform: translateX(3px); }
+  .ma-nav a .nav-num { flex-shrink: 0; width: 22px; color: var(--ma-primary); font-weight: 700; }
+  .ma-nav a .nav-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .ma-tips { display: none; position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto; flex-direction: column; gap: 12px; }
+  .ma-tip { border-radius: 12px; padding: 14px; font-size: 0.82rem; background: #fff; border: 1px solid var(--ma-line); }
+  .ma-tip strong { display: block; margin-bottom: 4px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.3px; color: var(--ma-primary-dark); }
+
+  .ma-card {
+    background: #fff; border: 1px solid var(--ma-line); border-radius: var(--ma-radius);
+    padding: 20px; scroll-margin-top: 90px; box-shadow: var(--ma-shadow);
+  }
+  .ma-card:hover { box-shadow: var(--ma-shadow-lg); }
+
+  .ma-example-box { background: #f8fafc; border-left: 4px solid var(--ma-primary); border-radius: 10px; padding: 16px; line-height: 1.8; font-family: monospace; font-size: 0.88rem; white-space: pre-wrap; }
+  .ma-trap-box { background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 10px; padding: 14px 16px; }
+  .ma-tip-box { border-radius: 12px; padding: 14px 16px; height: 100%; background: #f8fafc; border: 1px solid var(--ma-line); }
+  .ma-tip-box strong { display: block; margin-bottom: 4px; font-size: 0.78rem; color: var(--ma-primary-dark); }
+
+  .ma-reveal { opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .5s ease; }
+  .ma-reveal.is-visible { opacity: 1; transform: translateY(0); }
+
+  @keyframes maFadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .ma-hero { animation: maFadeUp .5s ease both; }
+
+  @media (max-width: 767.98px) {
+    .btn { min-height: 44px; }
+    .ma-card { padding: 16px; }
+    .ma-hero h1 { font-size: 1.6rem; }
+    .prev-next { flex-direction: column; gap: 8px; }
+    .prev-next .btn { width: 100%; }
+  }
+  @media (min-width: 992px) {
+    .ma-grid { grid-template-columns: 240px minmax(0, 1fr) 260px; gap: 24px; }
+    .ma-nav { display: block; }
+    .ma-tips { display: flex; }
+    .ma-hero h1 { font-size: 2rem; }
+    .ma-card { padding: 28px; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+<div class="container py-4 py-md-5">
 
-      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 24px;">
-
-        <!-- HERO -->
-        <div class="p-5 text-center" style="background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);">
-          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-               style="width: 96px; height: 96px; background: #fff; box-shadow: 0 12px 30px rgba(67, 56, 202, 0.12);">
-            <i class="bi {{ info.icon }} fs-1 {{ info.color }}"></i>
-          </div>
-
-          <span class="badge rounded-pill px-3 py-2 mb-3"
-                style="background: #ffb703; color: #1e1b4b; font-weight: 700; font-size: 0.9rem;">
-            <i class="bi bi-cone-striped me-2"></i> COMING SOON
-          </span>
-
-          <h1 class="fw-bolder mt-2" style="color: #1e1b4b;">{{ info.title }}</h1>
-          <p class="text-muted lead mb-4">
-            We're building something amazing for <strong>{{ category }}</strong> learners!
-          </p>
-
-          <div class="alert border-0 rounded-4 text-start shadow-sm mx-auto"
-               style="max-width: 640px; background: #e0f2fe; color: #0c4a6e;">
-            <p class="mb-2 fw-semibold">
-              <i class="bi bi-tools me-2"></i>This module is under construction
-            </p>
-            <p class="small mb-0">
-              Our team is preparing detailed lessons, practical examples, downloadable
-              resources and interactive exercises for <strong>{{ info.title }}</strong> in
-              <strong>{{ category }}</strong>. This content will guide you step-by-step,
-              from the fundamentals right up to an advanced level.
-            </p>
-          </div>
-        </div>
-
-        <!-- WHAT YOU'LL GET -->
-        <div class="p-5">
-          <h5 class="fw-bold mb-4 text-center" style="color: #4338ca;">
-            What you'll get in this module
-          </h5>
-
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #f0f4ff;">
-                <i class="bi bi-journal-text fs-3 text-primary"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Detailed Lessons</h6>
-                  <p class="small text-muted mb-0">Step-by-step structured content designed for every level.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fff4e5;">
-                <i class="bi bi-lightbulb fs-3 text-warning"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Real Examples</h6>
-                  <p class="small text-muted mb-0">Practical examples you can understand and apply instantly.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #e8faf0;">
-                <i class="bi bi-patch-check fs-3 text-success"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Practice &amp; Quizzes</h6>
-                  <p class="small text-muted mb-0">Test your knowledge with quizzes and hands-on exercises.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fdeef4;">
-                <i class="bi bi-download fs-3 text-danger"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Resources &amp; PDFs</h6>
-                  <p class="small text-muted mb-0">Curated notes and downloadable study material.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="text-center mt-5">
-            <a href="/learn/{{ category_slug }}" class="btn btn-primary rounded-pill px-4 py-2 me-2">
-              <i class="bi bi-collection me-2"></i> Explore {{ category }}
-            </a>
-            <a href="/" class="btn btn-outline-primary rounded-pill px-4 py-2">
-              <i class="bi bi-arrow-left me-2"></i> Back to Home
-            </a>
-          </div>
-        </div>
-
-      </div>
+  <!-- HERO -->
+  <div class="ma-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <span class="badge rounded-pill" style="background:var(--ma-primary);color:#fff;">Mobile Apps</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+      <span class="badge rounded-pill" style="background:#fef3c7;color:#92400e;">Intermediate</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:var(--ma-ink);">Mobile App Development — Intermediate Guide</h1>
+    <p class="text-muted mb-3">Level up your Flutter skills: state management, REST APIs, JSON, local storage, media, and real-world architecture.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 small text-muted">
+      <span><i class="bi bi-clock me-1"></i>8–10 weeks</span>
+      <span><i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons</span>
+      <span><i class="bi bi-phone me-1"></i>Flutter + Dart</span>
     </div>
   </div>
-</section>
+
+  <!-- 3-COLUMN GRID -->
+  <div class="ma-grid">
+
+    <!-- LEFT: LESSON NAV -->
+    <aside class="ma-nav">
+      <h6 class="fw-bold mb-3" style="color:var(--ma-primary);"><i class="bi bi-list-ol me-2"></i>Lessons</h6>
+      {% for lesson in lessons %}
+      <a href="#lesson-{{ lesson.id }}">
+        <span class="nav-num">{{ "%02d"|format(lesson.id) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+      </a>
+      {% endfor %}
+    </aside>
+
+    <!-- CENTER: LESSONS -->
+    <div>
+      {% for lesson in lessons %}
+      <div id="lesson-{{ lesson.id }}" class="ma-card mb-4 ma-reveal">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <span class="badge rounded-pill" style="background:var(--ma-primary);color:#fff;">{{ "%02d"|format(lesson.id) }}</span>
+          <h3 class="h5 fw-bold mb-0" style="color:var(--ma-ink);">{{ lesson.title }}</h3>
+          <span class="ms-auto text-muted small"><i class="bi bi-clock me-1"></i>{{ lesson.duration }}</span>
+        </div>
+
+        <p class="text-dark mb-4" style="line-height:1.8;">{{ lesson.intro }}</p>
+
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ma-primary-dark);"><i class="bi bi-bullseye me-1"></i>What you'll learn</h4>
+        <ul class="list-unstyled text-dark mb-4">
+          {% for obj in lesson.objectives %}
+          <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ obj }}</li>
+          {% endfor %}
+        </ul>
+
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ma-primary-dark);"><i class="bi bi-book me-1"></i>Concept</h4>
+        <p class="text-dark mb-4" style="line-height:1.8;">{{ lesson.explanation }}</p>
+
+        {% if lesson.how_it_works %}
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ma-primary-dark);"><i class="bi bi-gear me-1"></i>How it works</h4>
+        <p class="text-dark mb-4" style="line-height:1.8;">{{ lesson.how_it_works }}</p>
+        {% endif %}
+
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ma-primary-dark);"><i class="bi bi-code-slash me-1"></i>Example</h4>
+        <div class="ma-example-box mb-4">{{ lesson.example }}</div>
+
+        {% if lesson.understand_it %}
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ma-primary-dark);"><i class="bi bi-lightbulb me-1"></i>Understand it</h4>
+        <p class="text-dark mb-4" style="line-height:1.8;">{{ lesson.understand_it }}</p>
+        {% endif %}
+
+        <div class="row g-2 mb-4">
+          <div class="col-md-6">
+            <div class="ma-tip-box" style="background:#fef2f2;border-left:4px solid #ef4444;">
+              <strong style="color:#dc2626;">⚠️ Common Mistake</strong>
+              <span class="small text-dark">{{ lesson.common_trap }}</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="ma-tip-box" style="background:#eff6ff;border-left:4px solid #3b82f6;">
+              <strong style="color:#1e40af;">💡 Pro Tip</strong>
+              <span class="small text-dark">{{ lesson.quick_tip }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert mb-3 py-3" style="background:var(--ma-soft);color:var(--ma-primary-dark);border:1px solid #fcd34d;">
+          <strong>✅ Key takeaway:</strong> {{ lesson.callout_text }}
+        </div>
+
+        <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="small fw-semibold text-decoration-none" style="color:var(--ma-primary);">
+          <i class="bi bi-box-arrow-up-right me-1"></i>{{ lesson.docs_label }}
+        </a>
+
+        <div class="mt-3 p-3 p-md-4 rounded-3" style="background:#f8fafc;border:1px dashed #94a3b8;">
+          <h4 class="h6 fw-bold mb-2" style="color:var(--ma-ink);"><i class="bi bi-pencil-square me-1"></i>Practice</h4>
+          <p class="text-dark mb-3">{{ lesson.exercise_prompt }}</p>
+          <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="toggleBox(this,'hint-{{ lesson.id }}')">Show Hint</button>
+          <button class="btn btn-sm btn-outline-success rounded-pill ms-2" onclick="toggleBox(this,'sol-{{ lesson.id }}')">Show Solution</button>
+          <div id="hint-{{ lesson.id }}" class="d-none small text-muted mt-2"><i class="bi bi-lightbulb me-1"></i>{{ lesson.exercise_hint }}</div>
+          <div id="sol-{{ lesson.id }}" class="d-none small mt-2 p-3 rounded-3" style="background:#ecfdf5;color:#065f46;white-space:pre-wrap;">✓ {{ lesson.exercise_solution }}</div>
+        </div>
+
+        <div class="d-flex prev-next justify-content-between align-items-center mt-4 pt-3" style="border-top:1px solid var(--ma-line);">
+          {% if loop.previtem %}
+          <a href="#lesson-{{ loop.previtem.id }}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-arrow-left me-1"></i>Previous</a>
+          {% else %}<span></span>{% endif %}
+          <span class="text-muted small d-none d-md-inline">{{ "%02d"|format(lesson.id) }} / {{ lessons|length }}</span>
+          {% if loop.nextitem %}
+          <a href="#lesson-{{ loop.nextitem.id }}" class="btn btn-sm rounded-pill next-link" style="background:var(--ma-primary);color:#fff;">Next <i class="bi bi-arrow-right ms-1"></i></a>
+          {% else %}<span></span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="text-center p-4 p-md-5 rounded-4" style="background:var(--ma-soft);">
+        <h5 class="fw-bold" style="color:var(--ma-ink);">You have completed all {{ lessons|length }} intermediate lessons.</h5>
+        <p class="text-muted mb-3">Move on to Advanced for production-ready apps, security, and publishing.</p>
+        <a href="/learn/mobile-apps/advanced" class="btn rounded-pill px-4" style="background:var(--ma-primary);color:#fff;">Continue to Advanced <i class="bi bi-arrow-right ms-1"></i></a>
+      </div>
+    </div>
+
+    <!-- RIGHT: TIPS SIDEBAR -->
+    <aside class="ma-tips">
+      <h6 class="fw-bold mb-1" style="color:var(--ma-primary);"><i class="bi bi-lightbulb me-2"></i>Smart Tips</h6>
+      <div class="ma-tip"><strong>💡 Structure</strong>Model + service + state + UI — separate concerns for maintainable code.</div>
+      <div class="ma-tip"><strong>⚠️ Biggest Trap</strong>Loading data without a loading/error state — users see blank screens.</div>
+      <div class="ma-tip"><strong>🎯 Pro Tip</strong>Use FutureBuilder or Provider for clean async state.</div>
+      <div class="ma-tip"><strong>⏱ Time Saver</strong>Test APIs in Postman before writing Flutter code.</div>
+    </aside>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleBox(btn, id) {
+    const box = document.getElementById(id);
+    box.classList.toggle('d-none');
+    const hidden = box.classList.contains('d-none');
+    const isHint = btn.textContent.includes('Hint');
+    btn.textContent = hidden ? (isHint ? 'Show Hint' : 'Show Solution') : (isHint ? 'Hide Hint' : 'Hide Solution');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const targets = document.querySelectorAll('.ma-card, .ma-example-box, .ma-tip-box');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+
+    targets.forEach(el => observer.observe(el));
+  });
+</script>
 {% endblock %}

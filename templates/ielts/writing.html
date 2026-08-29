@@ -1,23 +1,870 @@
 {% extends 'base.html' %}
-{% block title %}IELTS Writing — DocoDive{% endblock %}
+{% block title %}IELTS Writing — Complete Guide: Task 1, Task 2, Band 6-9 Strategies | DocoDive{% endblock %}
+{% block meta_description %}Master IELTS Writing with our complete guide: Academic Task 1 charts, GT letters, Task 2 essays, PEEL paragraphs, and Band 6 to 9 upgrade strategies.{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-dark: #3730a3;
+    --primary-soft: #eef2ff;
+    --ink: #1e293b;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --bg: #f8fafc;
+    --radius: 16px;
+    --shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.12);
+  }
+
+  * { transition: background-color .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease, opacity .3s ease; }
+
+  .ielts-hero {
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    border: 1px solid #c7d2fe;
+  }
+
+  .ielts-grid { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
+
+  .lesson-nav {
+    display: none; position: sticky; top: 90px;
+    max-height: calc(100vh - 110px); overflow-y: auto;
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px;
+  }
+  .lesson-nav a {
+    display: flex; align-items: center; gap: 8px; padding: 9px 12px;
+    border-radius: 10px; color: var(--muted); text-decoration: none;
+    font-size: 0.82rem; font-weight: 500; cursor: pointer;
+  }
+  .lesson-nav a:hover { background: var(--primary-soft); color: var(--primary); transform: translateX(3px); }
+  .lesson-nav a .nav-num { flex-shrink: 0; width: 22px; color: var(--primary); font-weight: 700; }
+  .lesson-nav a .nav-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .tips-side { display: none; position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto; flex-direction: column; gap: 12px; }
+  .tip-static { border-radius: 12px; padding: 14px; font-size: 0.82rem; background: #fff; border: 1px solid var(--line); }
+  .tip-static strong { display: block; margin-bottom: 4px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.3px; color: var(--primary); }
+
+  /* Tabs */
+  .tab-btn {
+    border-radius: 50px; padding: 10px 22px; font-weight: 600; font-size: 0.9rem;
+    border: 1.5px solid var(--line); background: #fff; color: var(--muted); cursor: pointer;
+  }
+  .tab-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .tab-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3); }
+  .sub-btn { border-radius: 50px; padding: 7px 16px; font-weight: 600; font-size: 0.8rem; border: 1.5px solid var(--line); background: #fff; color: var(--muted); cursor: pointer; }
+  .sub-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .sub-btn.active { background: var(--primary-dark); border-color: var(--primary-dark); color: #fff; }
+  #subTabs { display: none; }
+
+  .lesson-card {
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 20px; scroll-margin-top: 90px; box-shadow: var(--shadow);
+  }
+  .lesson-card:hover { box-shadow: var(--shadow-lg); }
+  .example-box { background: #f8fafc; border-left: 4px solid var(--primary); border-radius: 10px; padding: 16px; line-height: 1.8; }
+  .trap-box { background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 10px; padding: 14px 16px; }
+  .tip-box { border-radius: 12px; padding: 14px 16px; height: 100%; background: #f8fafc; border: 1px solid var(--line); }
+  .tip-box strong { display: block; margin-bottom: 4px; font-size: 0.78rem; color: var(--primary); }
+
+  /* Visuals */
+  .visual { margin-bottom: 24px; }
+  .visual-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+  .viz-box { background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; padding: 20px; overflow-x: auto; }
+
+  .line-chart { position: relative; width: 100%; max-width: 280px; height: 160px; margin: 0 auto; }
+  .line-chart .axis { position: absolute; background: #cbd5e1; }
+  .line-chart .ax { left: 0; right: 0; bottom: 0; height: 2px; }
+  .line-chart .ay { left: 0; top: 0; bottom: 0; width: 2px; }
+  .line-chart .pt { position: absolute; width: 8px; height: 8px; background: var(--primary); border-radius: 50%; }
+
+  .bar-chart { display: flex; align-items: flex-end; gap: 14px; height: 170px; justify-content: center; padding-top: 10px; }
+  .bar { width: 40px; border-radius: 6px 6px 0 0; background: #c7d2fe; text-align: center; color: var(--primary-dark); font-size: 0.7rem; font-weight: 700; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; }
+  .bar.hi { background: var(--primary); color: #fff; }
+
+  .pie-wrap { display: flex; gap: 20px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .pie { width: 130px; height: 130px; border-radius: 50%; background: conic-gradient(var(--primary) 0 35%, #c7d2fe 35% 55%, #a5b4fc 55% 75%, #e0e7ff 75% 100%); }
+  .legend { font-size: 0.75rem; }
+  .legend span { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+
+  .process-flow { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .process-step { background: var(--primary-soft); border: 2px solid var(--primary); border-radius: 8px; padding: 8px 16px; font-size: 0.78rem; font-weight: 700; color: var(--primary-dark); width: 70%; text-align: center; }
+  .process-arrow { color: var(--primary); font-weight: 800; }
+
+  .map-pair { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .map-box { width: 120px; border: 2px solid var(--primary); border-radius: 10px; padding: 12px; text-align: center; font-size: 0.72rem; font-weight: 700; color: var(--primary-dark); background: var(--primary-soft); }
+
+  .flow-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .flow-step { background: var(--primary-soft); border: 2px solid var(--primary); border-radius: 8px; padding: 8px 16px; font-size: 0.78rem; font-weight: 700; color: var(--primary-dark); width: 75%; text-align: center; }
+  .flow-arrow { color: var(--primary); font-weight: 800; }
+
+  .peel-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .peel-letter { width: 44px; height: 44px; border-radius: 10px; background: var(--primary); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+  .peel-word { align-self: center; font-size: 0.78rem; font-weight: 700; color: var(--ink); }
+
+  .band-ladder { display: flex; flex-direction: column; gap: 8px; }
+  .band-row { border-radius: 10px; padding: 12px 14px; font-size: 0.8rem; background: #fff; border: 1px solid var(--line); }
+  .band-6 { border-left: 4px solid #d97706; }
+  .band-7 { border-left: 4px solid #3b82f6; }
+  .band-9 { border-left: 4px solid #10b981; }
+
+  .band-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .band-table th { padding: 8px; text-align: left; color: #fff; }
+  .band-table td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+
+  /* Practice cards */
+  .practice-btn {
+    border-radius: 50px; padding: 12px 28px; font-weight: 600; font-size: 0.9rem;
+    border: none; cursor: pointer; color: #fff;
+  }
+  .practice-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+  .practice-btn:active { transform: translateY(0); }
+
+  .practice-card {
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+    scroll-margin-top: 90px; box-shadow: var(--shadow);
+  }
+  .practice-card:hover { box-shadow: var(--shadow-lg); }
+
+  /* Section reveal animation */
+  .practice-section { animation: fadeSlideUp .4s ease both; }
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Band buttons */
+  .band-btn {
+    border-radius: 50px; padding: 7px 18px; font-weight: 600; font-size: 0.82rem;
+    border: 1.5px solid var(--line); background: #fff; color: var(--muted); cursor: pointer;
+  }
+  .band-btn:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+  .band-btn.active { color: #fff; border-color: transparent; }
+
+  /* Essay box */
+  .essay-box { border-radius: 12px; padding: 16px; border: 1px solid var(--line); background: #fff; }
+  .essay-box.show { animation: fadeIn .3s ease both; }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Lesson collapse */
+  .lesson-body { transition: max-height .3s ease, opacity .3s ease; overflow: hidden; }
+  .lesson-body.d-none { display: none; }
+
+  /* Responsive */
+  @media (max-width: 767.98px) {
+    .btn, .tab-btn, .sub-btn, .practice-btn, .band-btn { min-height: 44px; }
+    .lesson-card { padding: 16px; }
+    .ielts-hero h1 { font-size: 1.6rem; }
+    .prev-next { flex-direction: column; gap: 8px; }
+    .prev-next .btn { width: 100%; }
+    .tab-btn { flex: 1; padding: 10px 14px; font-size: 0.8rem; }
+    .practice-btn { width: 100%; }
+  }
+  @media (min-width: 992px) {
+    .ielts-grid { grid-template-columns: 220px minmax(0, 1fr) 260px; gap: 24px; }
+    .lesson-nav { display: block; }
+    .tips-side { display: flex; }
+    .ielts-hero h1 { font-size: 2rem; }
+    .lesson-card { padding: 28px; }
+  }
+    /* Practice card staggered reveal */
+  .practice-card {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .practice-card.animating {
+    animation: fadeSlideUp .45s ease both;
+  }
+
+  /* Band essay switch animation */
+  .essay-box {
+    animation: fadeIn .3s ease both;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Practice button pulse on hover */
+  .practice-btn {
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .practice-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 22px rgba(79, 70, 229, 0.25);
+  }
+  .practice-btn:active {
+    transform: translateY(0) scale(.98);
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
-      <div class="card border-0 shadow-sm text-center p-5" style="border-radius: 20px;">
-        <i class="bi bi-pencil-square display-3 text-danger"></i>
-        <h1 class="fw-bold mt-3" style="color: #1e1b4b;">IELTS Writing</h1>
-        <div class="alert alert-info rounded-4 mt-3 mb-0">
-          <i class="bi bi-cone-striped me-2"></i>
-          <strong>Coming soon!</strong> Detailed guide and practice content will be added here.
+<div class="container py-4 py-md-5">
+
+  <!-- HERO -->
+  <div class="ielts-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <span class="badge rounded-pill" style="background:var(--primary);color:#fff;">Writing</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+      <span class="badge rounded-pill" style="background:#dcfce7;color:#16a34a;">Band 7+ Target</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:var(--ink);">IELTS Writing: Complete Guide</h1>
+    <p class="text-muted mb-3">Master Task 1 (charts, letters, maps) and Task 2 (essays), learn clear structures, and upgrade your writing from Band 6 to Band 9.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 small text-muted mb-3">
+      <span><i class="bi bi-clock me-1"></i>60 minutes</span>
+      <span><i class="bi bi-pencil me-1"></i>{{ lessons|length }} lessons</span>
+      <span><i class="bi bi-award me-1"></i>Task 2 = 2× Task 1</span>
+    </div>
+
+    <!-- TABS -->
+    <div class="d-flex flex-wrap gap-2 mb-2">
+      <button class="tab-btn active" data-section="all" onclick="filterSection('all', this)">All</button>
+      <button class="tab-btn" data-section="task1" onclick="filterSection('task1', this)">Task 1</button>
+      <button class="tab-btn" data-section="task2" onclick="filterSection('task2', this)">Task 2</button>
+    </div>
+      <div class="d-flex flex-wrap gap-2" id="subTabs">
+      <button class="sub-btn active" data-type="academic" onclick="filterType('academic', this)">Academic</button>
+    </div>
+  </div>
+
+  <!-- BAND UPGRADE TABLE -->
+  <h2 class="h4 fw-bold mb-3" style="color:var(--ink);">📈 Band 6 → 7 → 9 Upgrade</h2>
+  <div class="table-responsive mb-4">
+    <table class="table band-table bg-white">
+      <thead>
+        <tr>
+          <th style="background:#d97706;">Band 6</th>
+          <th style="background:#3b82f6;">Band 7</th>
+          <th style="background:#10b981;">Band 8/9</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-warning-emphasis">"I think this is a good idea because it helps people."</td>
+          <td class="text-primary-emphasis">"This approach is beneficial because it helps people manage their time."</td>
+          <td class="text-success-emphasis">"This approach is particularly advantageous because it enables individuals to manage their time more effectively."</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== PRACTICE PART 1 ===== -->
+  <button class="practice-btn mb-4" style="background:var(--primary);" onclick="togglePractice()">
+    <i class="bi bi-pencil-square me-2"></i>Practice Part 1
+  </button>
+
+  <section id="practice-part1" class="mb-4 d-none practice-section">
+    <h2 class="h4 fw-bold mb-3" style="color:var(--ink);">📊 Academic Writing Task 1 — Practice</h2>
+    <p class="text-muted mb-4">13 real-style practice tasks. Study the visual, read four model essays at Band 5, 6, 7 and 9, learn the key tips, and check the sentence transformations.</p>
+
+    <!-- PRACTICE FILTER -->
+    <div class="d-flex flex-wrap gap-2 mb-4">
+      <button class="tab-btn practice-filter active" data-cat="all" data-label="All" onclick="filterPractice('all', this)">All</button>
+      <button class="tab-btn practice-filter" data-cat="line" data-label="📈 Line Graph" onclick="filterPractice('line', this)">📈 Line Graph</button>
+      <button class="tab-btn practice-filter" data-cat="bar" data-label="📊 Bar Chart" onclick="filterPractice('bar', this)">📊 Bar Chart</button>
+      <button class="tab-btn practice-filter" data-cat="process" data-label="⚙️ Process" onclick="filterPractice('process', this)">⚙️ Process</button>
+      <button class="tab-btn practice-filter" data-cat="map" data-label="🗺️ Maps" onclick="filterPractice('map', this)">🗺️ Maps</button>
+      <button class="tab-btn practice-filter" data-cat="multiple" data-label="📚 Multiple / Combination" onclick="filterPractice('multiple', this)">📚 Multiple / Combination</button>
+    </div>
+
+    {% for v in writing_practice %}
+    <div class="card border-0 shadow-sm mb-4 practice-card" data-cat="{% if v.id == 1 or v.id == 2 %}line{% elif v.id == 3 %}process{% elif v.id == 4 or v.id == 13 %}map{% elif v.id == 8 or v.id == 9 or v.id == 10 %}bar{% else %}multiple{% endif %}">
+      <div class="card-body p-4 p-md-5">
+
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <span class="badge rounded-pill" style="background:var(--primary);color:#fff;">{{ "%02d"|format(v.id) }}</span>
+          <h3 class="h5 fw-bold mb-0" style="color:var(--ink);">{{ v.title }}</h3>
         </div>
-        <div class="text-center mt-4">
-          <a href="/ielts" class="btn btn-outline-primary rounded-pill px-4">
-            <i class="bi bi-arrow-left me-2"></i> Back to IELTS Hub
+
+        <p class="text-dark mb-4" style="line-height:1.8;">{{ v.intro }}</p>
+
+        <img id="taskimg-{{ v.id }}" src="/{{ v.png }}" alt="{{ v.title }}" class="rounded-3 mb-2 d-block mx-auto" style="max-width: min(100%, 560px); width: auto; height: auto; border:1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
+        <p class="small text-muted mb-4"><i class="bi bi-image me-1"></i>cambridge-ielts-09-academic-writing-part1-ex{{ v.id }} (.png / .jpg / .webp)</p>
+
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ink);">🎯 See the Band Difference</h4>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <button class="band-btn" data-pid="{{ v.id }}" data-band="5" onclick="showEssay({{ v.id }}, '5', this)">Band 5</button>
+          <button class="band-btn" data-pid="{{ v.id }}" data-band="6" onclick="showEssay({{ v.id }}, '6', this)">Band 6</button>
+          <button class="band-btn active" data-pid="{{ v.id }}" data-band="7" onclick="showEssay({{ v.id }}, '7', this)">Band 7</button>
+          <button class="band-btn" data-pid="{{ v.id }}" data-band="9" onclick="showEssay({{ v.id }}, '9', this)">Band 9</button>
+        </div>
+
+        <div id="essay-{{ v.id }}-5" class="essay-box d-none mb-3" style="border-left:4px solid #d97706;">
+          <strong style="color:#d97706;">Band 5</strong>
+          <p class="text-dark mt-2 mb-0" style="white-space:pre-line;line-height:1.8;">{{ v.band5 }}</p>
+        </div>
+        <div id="essay-{{ v.id }}-6" class="essay-box d-none mb-3" style="border-left:4px solid #f59e0b;">
+          <strong style="color:#f59e0b;">Band 6</strong>
+          <p class="text-dark mt-2 mb-0" style="white-space:pre-line;line-height:1.8;">{{ v.band6 }}</p>
+        </div>
+        <div id="essay-{{ v.id }}-7" class="essay-box mb-3" style="border-left:4px solid #3b82f6;">
+          <strong style="color:#3b82f6;">Band 7</strong>
+          <p class="text-dark mt-2 mb-0" style="white-space:pre-line;line-height:1.8;">{{ v.band7 }}</p>
+        </div>
+        <div id="essay-{{ v.id }}-9" class="essay-box d-none mb-3" style="border-left:4px solid #10b981;">
+          <strong style="color:#10b981;">Band 9</strong>
+          <p class="text-dark mt-2 mb-0" style="white-space:pre-line;line-height:1.8;">{{ v.band9 }}</p>
+        </div>
+
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ink);">💡 Key Tips</h4>
+        <ul class="small text-dark mb-4">
+          {% for t in v.tips %}
+          <li class="mb-1"><i class="bi bi-lightbulb me-2" style="color:#f59e0b;"></i>{{ t }}</li>
+          {% endfor %}
+        </ul>
+
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ink);">📝 5 Sentence Transformations</h4>
+        <div class="accordion" id="acc-{{ v.id }}">
+          {% for ex in v.examples %}
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ex-{{ v.id }}-{{ loop.index }}">
+                Example {{ loop.index }} — <span class="ms-2 badge {% if ex.band == 'Band 5' %}bg-warning{% elif ex.band == 'Band 6' %}bg-warning text-dark{% elif ex.band == 'Band 7' %}bg-primary{% else %}bg-success{% endif %}">{{ ex.band }}</span>
+              </button>
+            </h2>
+            <div id="ex-{{ v.id }}-{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#acc-{{ v.id }}">
+              <div class="accordion-body">
+                <p class="text-dark small mb-2"><strong>Sentence:</strong> {{ ex.sentence }}</p>
+                <p class="text-dark small mb-2"><strong>Band Version:</strong> {{ ex.band }}</p>
+                <p class="text-muted small mb-0"><strong>Tip:</strong> {{ ex.tip }}</p>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="text-center mt-4 pt-3" style="border-top:1px solid var(--line);">
+      <button class="btn btn-outline-secondary rounded-pill px-4" onclick="scrollTopAndClose('practice-part1')">
+        <i class="bi bi-arrow-up me-2"></i>Back to Top
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== PRACTICE TASK 2 — ESSAY QUESTIONS ===== -->
+  <button class="practice-btn mb-4" style="background:var(--primary-dark);" onclick="togglePractice2()">
+    <i class="bi bi-pencil-square me-2"></i>Practice Task 2
+  </button>
+
+  <section id="practice-task2" class="mb-4 d-none practice-section">
+    <h2 class="h4 fw-bold mb-3" style="color:var(--ink);">📝 Writing Task 2 — Essay Practice</h2>
+    <p class="text-muted mb-4">Real-style essay questions with Band 5, 6, 7 and 9 model answers, key tips, and sentence transformations.</p>
+
+    {% if task2_practice %}
+      {% for v in task2_practice %}
+      <div class="card border-0 shadow-sm mb-4 practice-card" data-cat="task2">
+        <div class="card-body p-4 p-md-5">
+
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="badge rounded-pill" style="background:var(--primary);color:#fff;">{{ "%02d"|format(v.id) }}</span>
+            <h3 class="h5 fw-bold mb-0" style="color:var(--ink);">{{ v.title }}</h3>
+            {% if v.type %}
+            <span class="badge rounded-pill" style="background:var(--primary-soft);color:var(--primary-dark);">{{ v.type }}</span>
+            {% endif %}
+          </div>
+
+          <p class="text-dark mb-4" style="line-height:1.8;">{{ v.intro }}</p>
+
+          <h4 class="h6 fw-bold mb-2" style="color:var(--ink);">🎯 See the Band Difference</h4>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <button class="band-btn" data-pid="{{ v.id }}" data-band="5" onclick="showEssay2({{ v.id }}, '5', this)">Band 5</button>
+            <button class="band-btn" data-pid="{{ v.id }}" data-band="6" onclick="showEssay2({{ v.id }}, '6', this)">Band 6</button>
+            <button class="band-btn active" data-pid="{{ v.id }}" data-band="7" onclick="showEssay2({{ v.id }}, '7', this)">Band 7</button>
+            <button class="band-btn" data-pid="{{ v.id }}" data-band="9" onclick="showEssay2({{ v.id }}, '9', this)">Band 9</button>
+          </div>
+
+          <div id="t2essay-{{ v.id }}-5" class="essay-box d-none mb-3" style="border-left:4px solid #d97706;">
+            <strong style="color:#d97706;">Band 5</strong>
+            <p class="text-dark mt-2 mb-0" style="white-space:pre-line;line-height:1.8;">{{ v.band5 }}</p>
+          </div>
+          <div id="t2essay-{{ v.id }}-6" class="essay-box d-none mb-3" style="border-left:4px solid #f59e0b;">
+            <strong style="color:#f59e0b;">Band 6</strong>
+            <p class="text-dark mt-2 mb-0" style="white-space:pre-line;line-height:1.8;">{{ v.band6 }}</p>
+          </div>
+          <div id="t2essay-{{ v.id }}-7" class="essay-box mb-3" style="border-left:4px solid #3b82f6;">
+            <strong style="color:#3b82f6;">Band 7</strong>
+            <p class="text-dark mt-2 mb-0" style="white-space:pre-line;line-height:1.8;">{{ v.band7 }}</p>
+          </div>
+          <div id="t2essay-{{ v.id }}-9" class="essay-box d-none mb-3" style="border-left:4px solid #10b981;">
+            <strong style="color:#10b981;">Band 9</strong>
+            <p class="text-dark mt-2 mb-0" style="white-space:pre-line;line-height:1.8;">{{ v.band9 }}</p>
+          </div>
+
+          <h4 class="h6 fw-bold mb-2" style="color:var(--ink);">💡 Key Tips</h4>
+          <ul class="small text-dark mb-4">
+            {% for t in v.tips %}
+            <li class="mb-1"><i class="bi bi-lightbulb me-2" style="color:#f59e0b;"></i>{{ t }}</li>
+            {% endfor %}
+          </ul>
+
+          <h4 class="h6 fw-bold mb-2" style="color:var(--ink);">📝 5 Sentence Transformations</h4>
+          <div class="accordion" id="t2acc-{{ v.id }}">
+            {% for ex in v.examples %}
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#t2ex-{{ v.id }}-{{ loop.index }}">
+                  Example {{ loop.index }} — <span class="ms-2 badge {% if ex.band == 'Band 5' %}bg-warning{% elif ex.band == 'Band 6' %}bg-warning text-dark{% elif ex.band == 'Band 7' %}bg-primary{% else %}bg-success{% endif %}">{{ ex.band }}</span>
+                </button>
+              </h2>
+              <div id="t2ex-{{ v.id }}-{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#t2acc-{{ v.id }}">
+                <div class="accordion-body">
+                  <p class="text-dark small mb-2"><strong>Sentence:</strong> {{ ex.sentence }}</p>
+                  <p class="text-dark small mb-2"><strong>Band Version:</strong> {{ ex.band }}</p>
+                  <p class="text-dark small mb-2"><strong>Improved:</strong> {{ ex.improved }}</p>
+                  <p class="text-muted small mb-0"><strong>Tip:</strong> {{ ex.tip }}</p>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center p-5 rounded-4" style="background:var(--primary-soft);">
+        <h5 class="fw-bold" style="color:var(--primary-dark);"><i class="bi bi-hourglass-split me-2"></i>Task 2 Practice Coming Soon</h5>
+        <p class="text-muted mb-0">Essay questions, Band 5/6/7/9 model answers, and tips will be added here.</p>
+      </div>
+    {% endif %}
+
+    <div class="text-center mt-4 pt-3" style="border-top:1px solid var(--line);">
+      <button class="btn btn-outline-secondary rounded-pill px-4" onclick="scrollTopAndClose('practice-task2')">
+        <i class="bi bi-arrow-up me-2"></i>Back to Top
+      </button>
+    </div>
+  </section>
+
+  <!-- 3-COLUMN GRID -->
+  <div class="ielts-grid">
+
+    <!-- LEFT: LESSON NAV -->
+    <aside class="lesson-nav">
+      <h6 class="fw-bold mb-3" style="color:var(--primary);"><i class="bi bi-list-ol me-2"></i>Lessons</h6>
+      {% for lesson in lessons %}
+      <a href="#lesson-{{ lesson.id }}" class="nav-link-item" onclick="toggleLesson({{ lesson.id }}); event.preventDefault();">
+        <span class="nav-num">{{ "%02d"|format(lesson.id) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+      </a>
+      {% endfor %}
+    </aside>
+
+    <!-- CENTER: LESSONS -->
+    <div>
+      {% for lesson in lessons %}
+
+      <div id="lesson-{{ lesson.id }}" class="lesson-card mb-4" data-section="{{ lesson.section }}" data-type="{{ lesson.type }}">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <span class="badge rounded-pill" style="background:var(--primary);color:#fff;">{{ "%02d"|format(lesson.id) }}</span>
+          <h3 class="h5 fw-bold mb-0" style="color:var(--ink);">{{ lesson.title }}</h3>
+          <span class="ms-auto text-muted small"><i class="bi bi-clock me-1"></i>{{ lesson.duration }}</span>
+        </div>
+
+        <div class="lesson-body" id="lesson-body-{{ lesson.id }}">
+          {% if lesson.section == 'task1' %}
+          <span class="badge rounded-pill mb-2" style="background:var(--primary-soft);color:var(--primary-dark);">{% if lesson.type == 'academic' %}Academic{% else %}General Training{% endif %}</span>
+          {% endif %}
+
+          <h4 class="h6 fw-bold mb-2" style="color:var(--ink);"><i class="bi bi-bullseye me-1"></i>What you will learn</h4>
+          <ul class="list-unstyled text-dark mb-4">
+            {% for obj in lesson.objectives %}
+            <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ obj }}</li>
+            {% endfor %}
+          </ul>
+
+          <h4 class="h6 fw-bold mb-2" style="color:var(--ink);"><i class="bi bi-book me-1"></i>Explanation</h4>
+          <p class="text-dark mb-4" style="font-size:1rem;line-height:1.8;">{{ lesson.explanation }}</p>
+
+          {% if lesson.visual %}
+          <div class="visual">
+            <div class="visual-label">👀 See It</div>
+            <div class="viz-box">
+              {% if lesson.visual == 'line' %}
+              <div class="line-chart">
+                <div class="axis ax"></div><div class="axis ay"></div>
+                <div class="pt" style="left:20px;bottom:20px;"></div>
+                <div class="pt" style="left:70px;bottom:50px;"></div>
+                <div class="pt" style="left:120px;bottom:40px;"></div>
+                <div class="pt" style="left:170px;bottom:90px;"></div>
+                <div class="pt" style="left:220px;bottom:120px;"></div>
+              </div>
+              {% elif lesson.visual == 'bar' %}
+              <div class="bar-chart">
+                <div class="bar" style="height:60px;">A</div>
+                <div class="bar" style="height:90px;">B</div>
+                <div class="bar hi" style="height:150px;">C</div>
+                <div class="bar" style="height:30px;">D</div>
+              </div>
+              {% elif lesson.visual == 'pie' %}
+              <div class="pie-wrap">
+                <div class="pie"></div>
+                <div class="legend">
+                  <div><span style="background:var(--primary);"></span>Food 35%</div>
+                  <div><span style="background:#c7d2fe;"></span>Travel 20%</div>
+                  <div><span style="background:#a5b4fc;"></span>Rent 20%</div>
+                  <div><span style="background:#e0e7ff;"></span>Other 25%</div>
+                </div>
+              </div>
+              {% elif lesson.visual == 'process' %}
+              <div class="process-flow">
+                <div class="process-step">Raw Material</div><div class="process-arrow">↓</div>
+                <div class="process-step">Processing</div><div class="process-arrow">↓</div>
+                <div class="process-step">Heating</div><div class="process-arrow">↓</div>
+                <div class="process-step">Packaging</div>
+              </div>
+              {% elif lesson.visual == 'map' %}
+              <div class="map-pair">
+                <div class="map-box">BEFORE<br>Shop<br>Garden</div>
+                <div class="map-box">→</div>
+                <div class="map-box">AFTER<br>Café<br>Car Park</div>
+              </div>
+              {% elif lesson.visual == 'letter_types' or lesson.visual == 'letter_purpose' or lesson.visual == 'letter_structure' %}
+              <div class="flow-col">
+                <div class="flow-step">Greeting</div><div class="flow-arrow">↓</div>
+                <div class="flow-step">Opening (purpose)</div><div class="flow-arrow">↓</div>
+                <div class="flow-step">Point 1 · Point 2 · Point 3</div><div class="flow-arrow">↓</div>
+                <div class="flow-step">Closing + Sign-off</div>
+              </div>
+              {% elif lesson.visual == 'essay_structure' %}
+              <div class="flow-col">
+                <div class="flow-step">Introduction</div><div class="flow-arrow">↓</div>
+                <div class="flow-step">Body 1</div><div class="flow-arrow">↓</div>
+                <div class="flow-step">Body 2</div><div class="flow-arrow">↓</div>
+                <div class="flow-step">Conclusion</div>
+              </div>
+              {% elif lesson.visual == 'peel' %}
+              <div class="peel-row">
+                <div class="peel-letter">P</div><div class="peel-word">Point</div>
+                <div class="peel-letter">E</div><div class="peel-word">Explanation</div>
+                <div class="peel-letter">E</div><div class="peel-word">Example</div>
+                <div class="peel-letter">L</div><div class="peel-word">Link</div>
+              </div>
+              {% elif lesson.visual == 'band_ladder' %}
+              <div class="band-ladder">
+                <div class="band-row band-6"><strong>Band 6:</strong> {{ lesson.band_6 }}</div>
+                <div class="band-row band-7"><strong>Band 7:</strong> {{ lesson.band_7 }}</div>
+                <div class="band-row band-9"><strong>Band 9:</strong> {{ lesson.band_9 }}</div>
+              </div>
+              {% else %}
+              <div class="flow-col"><div class="flow-step">Question → paraphrase → answer</div></div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
+          {% if lesson.example %}
+          <h4 class="h6 fw-bold mb-2" style="color:var(--ink);"><i class="bi bi-pencil me-1"></i>Example</h4>
+          <div class="example-box mb-4">{{ lesson.example }}</div>
+          {% endif %}
+
+          <h4 class="h6 fw-bold mb-2" style="color:#dc2626;"><i class="bi bi-exclamation-triangle me-1"></i>Common Mistake</h4>
+          <div class="trap-box mb-4">{{ lesson.common_trap }}</div>
+
+          <h4 class="h6 fw-bold mb-2" style="color:var(--ink);"><i class="bi bi-lightbulb me-1"></i>Strategy & Tips</h4>
+          <div class="row g-2 mb-4">
+            <div class="col-md-4">
+              <div class="tip-box">
+                <strong>💡 Strategy</strong>
+                <span class="small text-dark">{{ lesson.quick_tip }}</span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="tip-box">
+                <strong>🎯 Score Booster</strong>
+                <span class="small text-dark">{{ lesson.band_upgrade }}</span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="tip-box">
+                <strong>⏱ Time Saver</strong>
+                <span class="small text-dark">{{ lesson.time_saver }}</span>
+              </div>
+            </div>
+          </div>
+
+          {% if lesson.band_6 and lesson.band_7 and lesson.band_9 %}
+          <h4 class="h6 fw-bold mb-2" style="color:var(--ink);"><i class="bi bi-graph-up me-1"></i>Band Comparison</h4>
+          <div class="table-responsive mb-4">
+            <table class="table band-table bg-white">
+              <thead>
+                <tr>
+                  <th style="background:#d97706;">Band 6</th>
+                  <th style="background:#3b82f6;">Band 7</th>
+                  <th style="background:#10b981;">Band 8/9</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="text-warning-emphasis">{{ lesson.band_6 }}</td>
+                  <td class="text-primary-emphasis">{{ lesson.band_7 }}</td>
+                  <td class="text-success-emphasis">{{ lesson.band_9 }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+
+          <div class="alert mb-3 py-3" style="background:var(--primary-soft);color:var(--primary-dark);border:1px solid #c7d2fe;">
+            <strong>🔎 Key takeaway:</strong> {{ lesson.callout_text }}
+          </div>
+
+          <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="small fw-semibold text-decoration-none" style="color:var(--primary);">
+            <i class="bi bi-box-arrow-up-right me-1"></i>{{ lesson.docs_label }}
           </a>
+
+          <div class="mt-3 p-3 p-md-4 rounded-3" style="background:#f8fafc;border:1px dashed #94a3b8;">
+            <h4 class="h6 fw-bold mb-2" style="color:var(--ink);"><i class="bi bi-pencil-square me-1"></i>Try it yourself</h4>
+            <p class="text-dark mb-3">{{ lesson.exercise_prompt }}</p>
+            <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="toggleBox(this,'hint-{{ lesson.id }}')">Show Hint</button>
+            <button class="btn btn-sm btn-outline-success rounded-pill ms-2" onclick="toggleBox(this,'sol-{{ lesson.id }}')">Show Model Answer</button>
+            <div id="hint-{{ lesson.id }}" class="d-none small text-muted mt-2"><i class="bi bi-lightbulb me-1"></i>{{ lesson.exercise_hint }}</div>
+            <div id="sol-{{ lesson.id }}" class="d-none small mt-2 p-3 rounded-3" style="background:#ecfdf5;color:#065f46;">✓ {{ lesson.exercise_solution }}</div>
+          </div>
+        </div>
+
+        <div class="d-flex prev-next justify-content-between align-items-center mt-4 pt-3" style="border-top:1px solid var(--line);">
+          {% if loop.previtem %}
+          <a href="#lesson-{{ loop.previtem.id }}" class="btn btn-outline-secondary btn-sm rounded-pill prev-link"><i class="bi bi-arrow-left me-1"></i>Previous</a>
+          {% else %}<span></span>{% endif %}
+          <span class="text-muted small d-none d-md-inline">{{ "%02d"|format(lesson.id) }} / {{ lessons|length }}</span>
+          {% if loop.nextitem %}
+          <a href="#lesson-{{ loop.nextitem.id }}" class="btn btn-sm rounded-pill next-link" style="background:var(--primary);color:#fff;">Next <i class="bi bi-arrow-right ms-1"></i></a>
+          {% else %}<span></span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="text-center p-4 p-md-5 rounded-4" style="background:var(--primary-soft);">
+        <h5 class="fw-bold" style="color:var(--ink);">You have completed all {{ lessons|length }} writing lessons.</h5>
+        <p class="text-muted mb-3">Move on to IELTS Speaking for Part 1, cue cards, and fluency strategies.</p>
+        <div class="d-flex flex-wrap gap-2 justify-content-center">
+          <a href="/learn/ielts/speaking" class="btn rounded-pill px-4" style="background:var(--primary);color:#fff;">Continue to Speaking <i class="bi bi-arrow-right ms-1"></i></a>
+          <button class="btn btn-outline-secondary rounded-pill px-4" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+            <i class="bi bi-house me-2"></i>Home
+          </button>
         </div>
       </div>
     </div>
+
+    <!-- RIGHT: TIPS SIDEBAR -->
+    <aside class="tips-side">
+      <h6 class="fw-bold mb-1" style="color:var(--primary);"><i class="bi bi-lightbulb me-2"></i>Smart Tips</h6>
+      <div class="tip-static"><strong>💡 Structure</strong>Task 1: intro + overview + details. Task 2: intro + 2 body + conclusion.</div>
+      <div class="tip-static"><strong>⚠️ Biggest Trap</strong>Missing the overview in Task 1 caps your score below Band 6.</div>
+      <div class="tip-static"><strong>🎯 Band Booster</strong>Task 2 is worth double Task 1 — spend 40 minutes on the essay.</div>
+      <div class="tip-static"><strong>⏱ Time Saver</strong>Plan for 2 minutes before each task; a clear plan prevents wandering.</div>
+    </aside>
+
   </div>
-</section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  /* ============================================================
+     IELTS WRITING — POLISHED INTERACTIONS
+     - Top tabs → filter lessons only
+     - Sidebar topics → toggle lesson body (on/off)
+     - Practice buttons → exclusive open + scroll
+     - Back to Top / Home buttons
+     ============================================================ */
+
+  let currentSection = 'all';
+  let currentType = 'all';
+
+  /* ---------- Helpers ---------- */
+  function replayAnim(el) {
+    if (!el) return;
+    el.style.animation = 'none';
+    void el.offsetHeight;
+    el.style.animation = '';
+  }
+
+  function smoothScrollTo(target) {
+    if (!target) return;
+    setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  }
+
+  function revealCards(cards) {
+    cards.forEach((card, i) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(12px)';
+      setTimeout(() => {
+        card.style.transition = 'opacity .35s ease, transform .35s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, i * 40);
+    });
+  }
+
+  /* ---------- Lesson filtering (top tabs) ---------- */
+  function applyFilter() {
+    const cards = Array.from(document.querySelectorAll('.lesson-card'));
+    cards.forEach(card => {
+      const s = card.dataset.section;
+      const t = card.dataset.type;
+      let show = (currentSection === 'all' || s === currentSection);
+      if (show && currentSection === 'task1' && currentType !== 'all') {
+        show = (t === currentType);
+      }
+      card.style.display = show ? '' : 'none';
+    });
+
+    const visible = cards.filter(c => c.style.display !== 'none');
+    revealCards(visible);
+    smoothScrollTo(visible[0]);
+  }
+
+  function filterSection(section, btn) {
+    currentSection = section;
+    currentType = 'all';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const subTabs = document.getElementById('subTabs');
+    if (section === 'task1') {
+      subTabs.style.display = 'flex';
+      document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+    } else {
+      subTabs.style.display = 'none';
+    }
+    applyFilter();
+  }
+
+  function filterType(type, btn) {
+    currentType = type;
+    document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilter();
+  }
+
+  /* ---------- Sidebar topic toggle (on/off lesson body) ---------- */
+  function toggleLesson(id) {
+    const body = document.getElementById('lesson-body-' + id);
+    const card = document.getElementById('lesson-' + id);
+    if (!body || !card) return;
+    const isOpening = body.classList.contains('d-none');
+    body.classList.toggle('d-none');
+    if (isOpening) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      replayAnim(body);
+    }
+  }
+
+  /* ---------- Lesson exercise hints ---------- */
+  function toggleBox(btn, id) {
+    const box = document.getElementById(id);
+    box.classList.toggle('d-none');
+    const hidden = box.classList.contains('d-none');
+    const isHint = btn.textContent.includes('Hint');
+    btn.textContent = hidden
+      ? (isHint ? 'Show Hint' : 'Show Model Answer')
+      : (isHint ? 'Hide Hint' : 'Hide Model Answer');
+  }
+
+  /* ---------- Band essay switching ---------- */
+  const BAND_COLORS = { '5': '#d97706', '6': '#f59e0b', '7': '#3b82f6', '9': '#10b981' };
+
+  function setActiveBandButton(pid, band, selector) {
+    document.querySelectorAll(selector + '[data-pid="' + pid + '"]').forEach(x => {
+      x.classList.remove('active');
+      x.style.background = '#fff';
+      x.style.color = '#64748b';
+      x.style.borderColor = '#e2e8f0';
+    });
+  }
+
+  function showEssay(pid, band, btn) {
+    ['5','6','7','9'].forEach(b => {
+      const el = document.getElementById('essay-' + pid + '-' + b);
+      if (el) el.classList.add('d-none');
+    });
+    const target = document.getElementById('essay-' + pid + '-' + band);
+    if (target) { target.classList.remove('d-none'); replayAnim(target); }
+    setActiveBandButton(pid, band, '.band-btn');
+    btn.classList.add('active');
+    btn.style.background = BAND_COLORS[band];
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'transparent';
+  }
+
+  function showEssay2(pid, band, btn) {
+    ['5','6','7','9'].forEach(b => {
+      const el = document.getElementById('t2essay-' + pid + '-' + b);
+      if (el) el.classList.add('d-none');
+    });
+    const target = document.getElementById('t2essay-' + pid + '-' + band);
+    if (target) { target.classList.remove('d-none'); replayAnim(target); }
+    setActiveBandButton(pid, band, '.band-btn2');
+    btn.classList.add('active');
+    btn.style.background = BAND_COLORS[band];
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'transparent';
+  }
+
+  /* ---------- Practice sections (exclusive) ---------- */
+  function togglePracticeSection(secId, otherId) {
+    const sec = document.getElementById(secId);
+    const other = document.getElementById(otherId);
+    const isOpening = sec.classList.contains('d-none');
+
+    if (!other.classList.contains('d-none')) other.classList.add('d-none');
+    sec.classList.toggle('d-none');
+
+    if (isOpening) {
+      replayAnim(sec);
+      smoothScrollTo(sec);
+
+      // Staggered reveal of practice cards inside this section
+      setTimeout(() => {
+        const cards = Array.from(sec.querySelectorAll('.practice-card'));
+        revealCards(cards);
+        // Scroll to first card
+        if (cards[0]) cards[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+    }
+  }
+
+  function togglePractice() { togglePracticeSection('practice-part1', 'practice-task2'); }
+  function togglePractice2() { togglePracticeSection('practice-task2', 'practice-part1'); }
+
+  /* ---------- Practice filter (Task 1 only) ---------- */
+  function filterPractice(cat, btn) {
+    const cards = Array.from(document.querySelectorAll('#practice-part1 .practice-card'));
+    cards.forEach(card => {
+      card.style.display = (cat === 'all' || card.dataset.cat === cat) ? '' : 'none';
+    });
+    document.querySelectorAll('.practice-filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    revealCards(cards.filter(c => c.style.display !== 'none'));
+  }
+
+  function updatePracticeCounts() {
+    const counts = {};
+    document.querySelectorAll('#practice-part1 .practice-card').forEach(card => {
+      const c = card.dataset.cat;
+      counts[c] = (counts[c] || 0) + 1;
+    });
+    document.querySelectorAll('.practice-filter').forEach(btn => {
+      const c = btn.dataset.cat;
+      const total = document.querySelectorAll('#practice-part1 .practice-card').length;
+      const n = (c === 'all') ? total : (counts[c] || 0);
+      btn.textContent = btn.dataset.label + ' (' + n + ')';
+    });
+  }
+  updatePracticeCounts();
+
+  /* ---------- Back to Top + close section ---------- */
+  function scrollTopAndClose(sectionId) {
+    const sec = document.getElementById(sectionId);
+    if (sec) sec.classList.add('d-none');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
 {% endblock %}

@@ -1,100 +1,796 @@
 {% extends 'base.html' %}
-{% block title %}{{ info.title }} — {{ category }} | DocoDive{% endblock %}
+{% block title %}JavaScript Beginner Guide — Start from Zero | DocoDive{% endblock %}
+{% block meta_description %}Learn JavaScript from scratch with 20 free beginner lessons, code examples, exact outputs, and official MDN documentation links.{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ===== JS THEME ===== */
+  .js-hero {
+    background: linear-gradient(135deg, #fffbe6 0%, #fffdf5 100%);
+    border: 1px solid #f5e6a3;
+  }
+  .js-badge {
+    background: #f7df1e; color: #1e1b4b; font-weight: 700;
+    border-radius: 50px; padding: 6px 16px; font-size: 0.78rem;
+  }
+  .hero-stat-link { text-decoration: none; color: #6b7280; transition: color 0.2s ease; }
+  .hero-stat-link:hover { color: #b45309; }
+
+  /* ===== LAYOUT ===== */
+  .course-layout {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* ===== SIDEBAR TOC ===== */
+  .course-nav {
+    position: sticky; top: 90px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 16px; padding: 14px;
+  }
+  .course-nav a {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 10px;
+    color: #4b5563; text-decoration: none;
+    font-size: 0.85rem; font-weight: 500;
+  }
+  .course-nav a:hover { background: #fffbe6; color: #b45309; }
+  .course-nav a .nav-num {
+    flex-shrink: 0; width: 24px; color: #b45309; font-weight: 700;
+  }
+  .course-nav a .nav-title {
+    flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .course-nav-toggle { display: none; }
+
+  /* ===== LESSON CARD ===== */
+  .lesson-step { scroll-margin-top: 100px; margin-bottom: 32px; }
+  .lesson-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px;
+  }
+  .section-label {
+    font-weight: 700; color: #b45309; font-size: 0.82rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+
+  /* ===== CODE BLOCK ===== */
+  .code-block {
+    background: #0d1117; color: #e6edf3; border-radius: 12px; overflow: hidden;
+  }
+  .code-block pre {
+    margin: 0; padding: 18px;
+    font-family: Consolas, Monaco, 'Courier New', monospace;
+    font-size: 0.9rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .code-header {
+    background: #161b22; color: #8b949e;
+    font-size: 0.8rem; padding: 8px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  /* ===== TERMINAL OUTPUT ===== */
+  .terminal {
+    background: #0d1117; color: #4ade80; border-radius: 12px; overflow: hidden;
+    font-family: Consolas, Monaco, monospace;
+  }
+  .terminal-header {
+    background: #161b22; padding: 10px 16px;
+    display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #21262d;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-red { background: #ff5f56; }
+  .dot-yellow { background: #ffbd2e; }
+  .dot-green { background: #27c93f; }
+  .terminal-title { color: #8b949e; font-size: 0.75rem; margin-left: 6px; }
+  .terminal-body {
+    padding: 14px 16px; font-size: 0.82rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+
+  /* ===== CALLOUTS ===== */
+  .callout {
+    border-left: 4px solid; padding: 12px 16px; border-radius: 10px; font-size: 0.9rem;
+  }
+  .callout-breakdown { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+  .callout-outputexp { background: #f0fdf4; border-color: #22c55e; color: #14532d; }
+  .callout-tip { background: #fef9ec; border-color: #ffb703; color: #7c5a00; }
+
+  /* ===== MDN LINK ===== */
+  .docs-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.85rem; color: #b45309; text-decoration: none; font-weight: 600;
+  }
+  .docs-link:hover { text-decoration: underline; }
+
+  /* ===== LESSON NAV ===== */
+  .lesson-complete { transition: all 0.2s ease; }
+  .lesson-complete.done { background: #f0fdf4; border-color: #22c55e; }
+
+  /* ===== NEXT LEVEL CTA ===== */
+  .next-level {
+    background: #fffbe6; border: 1px solid #f5e6a3;
+    border-radius: 16px; padding: 24px; text-align: center;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 991.98px) {
+    .course-layout { grid-template-columns: 1fr; }
+    .course-nav-toggle {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; margin-bottom: 20px;
+    }
+    .course-nav { position: static; max-height: none; }
+    .course-nav.collapse.show { max-height: 60vh; overflow-y: auto; margin-bottom: 24px; }
+  }
+  @media (max-width: 576px) {
+    .js-hero { padding: 24px 16px; }
+    .js-hero h1 { font-size: 1.75rem; }
+    .lesson-card { padding: 16px; }
+    .lesson-card h2.h4 { font-size: 1.1rem; }
+    .code-block pre { font-size: 0.78rem; padding: 14px; }
+    .terminal-body { font-size: 0.75rem; padding: 12px; }
+    .callout { padding: 10px 12px; font-size: 0.85rem; }
+    .lesson-footer { flex-direction: column; gap: 10px; }
+    .lesson-footer .btn { width: 100%; }
+  }
+    .project-badge {
+    background: #dbeafe; color: #1e40af; font-weight: 700;
+    padding: 5px 12px; border-radius: 50px; font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+  .project-guide { background: #fffbe6; border-radius: 12px; padding: 16px; }
+  .project-guide h6 { color: #b45309; font-weight: 700; margin-bottom: 8px; }
+  .concept-chip {
+    background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;
+    border-radius: 50px; padding: 3px 10px; font-size: 0.72rem; font-weight: 600;
+  }
+  .projects-section .accordion-item {
+    border: 1px solid #e5e7eb; border-radius: 16px !important;
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .projects-section .accordion-button {
+    background: #fff; color: #1e1b4b; font-weight: 700;
+    padding: 18px 20px; border-radius: 0 !important;
+  }
+  .projects-section .accordion-button:not(.collapsed) { background: #fffbe6; color: #b45309; }
+  .projects-section .accordion-button:focus { box-shadow: none; border-color: transparent; }
+</style>
+{% endblock %}
+
 {% block content %}
+{% if lessons %}
 <section class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+  <!-- HERO -->
+  <div class="js-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="js-badge">Beginner</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:#1e1b4b;">JavaScript Beginner Guide</h1>
+    <p class="text-muted mb-4">Master JavaScript from zero with 20 beginner lessons. Each topic includes a deep explanation, runnable code, line-by-line breakdown, exact output, and official MDN documentation links.</p>
+        <div class="d-flex flex-wrap gap-3 gap-md-4 mb-3">
+      <span class="text-muted small"><i class="bi bi-clock me-1"></i>3–4 weeks</span>
+      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons</span>
+      <a href="#js-projects" class="hero-stat-link small">
+        <i class="bi bi-code-square me-1"></i>3 projects
+      </a>
+      <a href="#js-capstone" class="hero-stat-link small">
+        <i class="bi bi-trophy me-1"></i>1 capstone
+      </a>
+      <span class="text-muted small"><i class="bi bi-person-check me-1"></i>No experience required</span>
+    </div>
+    <a href="#lesson-1" class="btn btn-primary rounded-pill px-4 py-2">
+      <i class="bi bi-play-circle me-2"></i>Start Learning
+    </a>
+  </div>
 
-      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 24px;">
+  <!-- MOBILE TOGGLE -->
+  <button class="btn btn-outline-primary rounded-pill course-nav-toggle" type="button"
+          data-bs-toggle="collapse" data-bs-target="#courseNav"
+          aria-expanded="false" aria-controls="courseNav">
+    <i class="bi bi-list-ol me-2"></i>Show Course Contents
+  </button>
 
-        <!-- HERO -->
-        <div class="p-5 text-center" style="background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);">
-          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-               style="width: 96px; height: 96px; background: #fff; box-shadow: 0 12px 30px rgba(67, 56, 202, 0.12);">
-            <i class="bi {{ info.icon }} fs-1 {{ info.color }}"></i>
+  <div class="course-layout">
+    <!-- SIDEBAR TOC -->
+    <aside id="courseNav" class="course-nav collapse d-lg-block">
+      <h6 class="fw-bold mb-3" style="color:#b45309;"><i class="bi bi-list-ol me-2"></i>Course Content</h6>
+      {% for lesson in lessons %}
+      <a href="#{{ lesson.slug }}" class="course-nav-link">
+        <span class="nav-num">{{ "%02d"|format(loop.index) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+      </a>
+      {% endfor %}
+    </aside>
+
+    <!-- LESSONS -->
+    <div>
+      {% for lesson in lessons %}
+      <div id="{{ lesson.slug }}" class="lesson-step">
+        <div class="lesson-card lesson-complete" data-lesson="{{ loop.index }}">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="nav-num fw-bold" style="color:#b45309;">{{ "%02d"|format(loop.index) }}</span>
+            <h2 class="h4 fw-bold mb-0" style="color:#1e1b4b;">{{ lesson.title }}</h2>
           </div>
 
-          <span class="badge rounded-pill px-3 py-2 mb-3"
-                style="background: #ffb703; color: #1e1b4b; font-weight: 700; font-size: 0.9rem;">
-            <i class="bi bi-cone-striped me-2"></i> COMING SOON
-          </span>
+          <!-- 1. Explanation -->
+          <p class="text-dark">{{ lesson.explanation }}</p>
 
-          <h1 class="fw-bolder mt-2" style="color: #1e1b4b;">{{ info.title }}</h1>
-          <p class="text-muted lead mb-4">
-            We're building something amazing for <strong>{{ category }}</strong> learners!
-          </p>
+          <!-- 2. Code Example -->
+          <div class="section-label mb-2"><i class="bi bi-filetype-js me-1"></i>Code Example</div>
+          <div class="code-block mb-3">
+            <div class="code-header">
+              <span>javascript</span>
+              <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                <i class="bi bi-clipboard me-1"></i>Copy
+              </button>
+            </div>
+            <pre>{{ lesson.code }}</pre>
+          </div>
 
-          <div class="alert border-0 rounded-4 text-start shadow-sm mx-auto"
-               style="max-width: 640px; background: #e0f2fe; color: #0c4a6e;">
-            <p class="mb-2 fw-semibold">
-              <i class="bi bi-tools me-2"></i>This module is under construction
-            </p>
-            <p class="small mb-0">
-              Our team is preparing detailed lessons, practical examples, downloadable
-              resources and interactive exercises for <strong>{{ info.title }}</strong> in
-              <strong>{{ category }}</strong>. This content will guide you step-by-step,
-              from the fundamentals right up to an advanced level.
-            </p>
+          <!-- 3. Code Breakdown -->
+          <div class="section-label mb-2"><i class="bi bi-diagram-3 me-1"></i>Code Breakdown</div>
+          <div class="callout callout-breakdown mb-3">
+            {{ lesson.code_breakdown }}
+          </div>
+
+          <!-- 4. Output -->
+          <div class="section-label mb-2"><i class="bi bi-terminal me-1"></i>Output</div>
+          <div class="terminal mb-3">
+            <div class="terminal-header">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+              <span class="terminal-title">console</span>
+            </div>
+            <div class="terminal-body">{{ lesson.output }}</div>
+          </div>
+
+          <!-- 5. Output Explanation -->
+          <div class="section-label mb-2"><i class="bi bi-chat-left-text me-1"></i>Output Explanation</div>
+          <div class="callout callout-outputexp mb-3">
+            {{ lesson.output_explanation }}
+          </div>
+
+          <!-- 6. MDN Link -->
+          <div class="mb-3">
+            <a href="{{ lesson.mdn_url }}" target="_blank" rel="noopener" class="docs-link">
+              <i class="bi bi-box-arrow-up-right"></i>Official MDN Documentation
+            </a>
+          </div>
+
+          <!-- LESSON NAV -->
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer" style="border-top:1px solid #e5e7eb;">
+            {% if loop.previtem %}
+            <a href="#{{ loop.previtem.slug }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+              <i class="bi bi-arrow-left me-1"></i>Previous
+            </a>
+            {% else %}
+            <span></span>
+            {% endif %}
+
+            <button class="btn btn-outline-success btn-sm rounded-pill mark-complete" onclick="markComplete(this)">
+              <i class="bi bi-check2-circle me-1"></i>Mark Complete
+            </button>
+
+            {% if loop.nextitem %}
+            <a href="#{{ loop.nextitem.slug }}" class="btn btn-primary btn-sm rounded-pill">
+              Next Lesson <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            {% else %}
+            <span></span>
+            {% endif %}
           </div>
         </div>
+      </div>
+      {% endfor %}
 
-        <!-- WHAT YOU'LL GET -->
-        <div class="p-5">
-          <h5 class="fw-bold mb-4 text-center" style="color: #4338ca;">
-            What you'll get in this module
-          </h5>
+            <!-- ==================== JAVASCRIPT BEGINNER PROJECTS ==================== -->
+      <div class="projects-section mt-5" id="js-projects">
+        <h3 class="fw-bold mb-4" style="color:#1e1b4b;">
+          <i class="bi bi-hammer me-2"></i>JavaScript Beginner Projects
+        </h3>
+        <p class="text-muted mb-4">Apply everything you've learned. Click each project to open its full guide.</p>
 
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #f0f4ff;">
-                <i class="bi bi-journal-text fs-3 text-primary"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Detailed Lessons</h6>
-                  <p class="small text-muted mb-0">Step-by-step structured content designed for every level.</p>
+        <div class="accordion" id="jsProjectsAccordion">
+
+          <!-- PROJECT 1 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#jsproject1">
+                <span class="project-badge me-3">Project 1</span>
+                Number Guessing Game
+              </button>
+            </h2>
+            <div id="jsproject1" class="accordion-collapse collapse show" data-bs-parent="#jsProjectsAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                  <p class="small text-dark mb-2">The computer picks a secret number from 1 to 100. You get 7 attempts to find it. After each guess, the program tells you whether to go higher or lower.</p>
+
+                  <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">Math.random()</span>
+                    <span class="concept-chip">parseInt()</span>
+                    <span class="concept-chip">while loop</span>
+                    <span class="concept-chip">if / else</span>
+                    <span class="concept-chip">prompt()</span>
+                  </div>
+
+                  <h6><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h6>
+                  <ol class="small text-dark mb-0">
+                    <li><code>Math.random()</code> generates a decimal between 0 and 1.</li>
+                    <li>Multiply by 100 and round up to get a secret number from 1 to 100.</li>
+                    <li>The loop runs while you still have attempts left.</li>
+                    <li>Each turn you type a guess using <code>prompt()</code>.</li>
+                    <li>The program says "too low" or "too high" and shows remaining attempts.</li>
+                    <li>If you guess correctly, the loop breaks and you win.</li>
+                    <li>When attempts reach 0, the game ends and reveals the secret number.</li>
+                  </ol>
                 </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fff4e5;">
-                <i class="bi bi-lightbulb fs-3 text-warning"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Real Examples</h6>
-                  <p class="small text-muted mb-0">Practical examples you can understand and apply instantly.</p>
+
+                <div class="code-block mb-3">
+                  <div class="code-header">
+                    <span>javascript</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>console.log("Number Guessing Game\n");
+
+let secret = Math.floor(Math.random() * 100) + 1;
+let maxGuesses = 7;
+let usedGuesses = 0;
+
+console.log("Guess the secret number between 1 and 100.");
+console.log("You have " + maxGuesses + " attempts.\n");
+
+while (usedGuesses < maxGuesses) {
+    usedGuesses++;
+    let guess = parseInt(prompt("Attempt " + usedGuesses + ": "));
+
+    if (guess === secret) {
+        console.log("\nCorrect! The secret number is " + secret + ".");
+        console.log("You found it in " + usedGuesses + " attempt(s).");
+        break;
+    }
+
+    let remaining = maxGuesses - usedGuesses;
+    if (guess < secret) {
+        console.log("Too low. " + remaining + " attempt(s) left.\n");
+    } else {
+        console.log("Too high. " + remaining + " attempt(s) left.\n");
+    }
+}
+
+if (usedGuesses === maxGuesses) {
+    console.log("Out of attempts! The secret number was " + secret + ".");
+}</pre>
                 </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #e8faf0;">
-                <i class="bi bi-patch-check fs-3 text-success"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Practice &amp; Quizzes</h6>
-                  <p class="small text-muted mb-0">Test your knowledge with quizzes and hands-on exercises.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fdeef4;">
-                <i class="bi bi-download fs-3 text-danger"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Resources &amp; PDFs</h6>
-                  <p class="small text-muted mb-0">Curated notes and downloadable study material.</p>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">console</span>
+                  </div>
+                  <div class="terminal-body">Number Guessing Game
+
+Guess the secret number between 1 and 100.
+You have 7 attempts.
+
+Attempt 1: 50
+Too high. 6 attempt(s) left.
+
+Attempt 2: 25
+Too low. 5 attempt(s) left.
+
+Attempt 3: 37
+Correct! The secret number is 37.
+You found it in 3 attempt(s).</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="text-center mt-5">
-            <a href="/learn/{{ category_slug }}" class="btn btn-primary rounded-pill px-4 py-2 me-2">
-              <i class="bi bi-collection me-2"></i> Explore {{ category }}
-            </a>
-            <a href="/" class="btn btn-outline-primary rounded-pill px-4 py-2">
-              <i class="bi bi-arrow-left me-2"></i> Back to Home
-            </a>
+          <!-- PROJECT 2 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#jsproject2">
+                <span class="project-badge me-3">Project 2</span>
+                Temperature Converter
+              </button>
+            </h2>
+            <div id="jsproject2" class="accordion-collapse collapse" data-bs-parent="#jsProjectsAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                  <p class="small text-dark mb-2">Convert temperatures between Celsius and Fahrenheit. You choose the direction, enter a value, and the program calculates the result instantly.</p>
+
+                  <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">functions</span>
+                    <span class="concept-chip">parameters & return</span>
+                    <span class="concept-chip">parseFloat()</span>
+                    <span class="concept-chip">if / else</span>
+                    <span class="concept-chip">template literals</span>
+                  </div>
+
+                  <h6><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h6>
+                  <ol class="small text-dark mb-0">
+                    <li>The user picks a conversion direction: C to F or F to C.</li>
+                    <li>The user enters a temperature value.</li>
+                    <li><code>parseFloat()</code> converts the input text to a number.</li>
+                    <li>The correct formula runs based on the chosen direction.</li>
+                    <li>The result is printed using a template literal with two decimal places.</li>
+                  </ol>
+                </div>
+
+                <div class="code-block mb-3">
+                  <div class="code-header">
+                    <span>javascript</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>function celsiusToFahrenheit(c) {
+    return (c * 9 / 5) + 32;
+}
+
+function fahrenheitToCelsius(f) {
+    return (f - 32) * 5 / 9;
+}
+
+console.log("Temperature Converter\n");
+let choice = prompt("Convert (1) C to F or (2) F to C: ");
+let temp = parseFloat(prompt("Enter temperature: "));
+
+if (choice === "1") {
+    let result = celsiusToFahrenheit(temp);
+    console.log(`${temp}°C = ${result.toFixed(2)}°F`);
+} else if (choice === "2") {
+    let result = fahrenheitToCelsius(temp);
+    console.log(`${temp}°F = ${result.toFixed(2)}°C`);
+} else {
+    console.log("Invalid choice.");
+}</pre>
+                </div>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">console</span>
+                  </div>
+                  <div class="terminal-body">Temperature Converter
+
+Convert (1) C to F or (2) F to C: 1
+Enter temperature: 0
+
+0°C = 32.00°F</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROJECT 3 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#jsproject3">
+                <span class="project-badge me-3">Project 3</span>
+                Simple To-Do List
+              </button>
+            </h2>
+            <div id="jsproject3" class="accordion-collapse collapse" data-bs-parent="#jsProjectsAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                  <p class="small text-dark mb-2">Create a simple to-do list. You can add tasks, view all tasks, remove a task by number, and exit — all using arrays and a menu loop.</p>
+
+                  <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">arrays</span>
+                    <span class="concept-chip">push()</span>
+                    <span class="concept-chip">splice()</span>
+                    <span class="concept-chip">while loop</span>
+                    <span class="concept-chip">switch</span>
+                  </div>
+
+                  <h6><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h6>
+                  <ol class="small text-dark mb-0">
+                    <li><code>todos</code> is an empty array that stores tasks.</li>
+                    <li>A <code>while (true)</code> loop shows the menu and reads the choice.</li>
+                    <li>Choice 1 adds a task using <code>push()</code>.</li>
+                    <li>Choice 2 lists all tasks with their index numbers.</li>
+                    <li>Choice 3 removes a task using <code>splice()</code>.</li>
+                    <li>Choice 4 breaks the loop and exits.</li>
+                  </ol>
+                </div>
+
+                <div class="code-block mb-3">
+                  <div class="code-header">
+                    <span>javascript</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>let todos = [];
+
+console.log("Simple To-Do List\n");
+
+while (true) {
+    console.log("1. Add task");
+    console.log("2. View tasks");
+    console.log("3. Remove task");
+    console.log("4. Exit\n");
+
+    let choice = prompt("Choose an option: ");
+
+    if (choice === "1") {
+        let task = prompt("Enter task: ");
+        todos.push(task);
+        console.log(`"${task}" added!\n`);
+    } else if (choice === "2") {
+        console.log("Your tasks:");
+        todos.forEach((task, i) => console.log(`${i + 1}. ${task}`));
+        console.log("");
+    } else if (choice === "3") {
+        let num = parseInt(prompt("Task number to remove: "));
+        if (num > 0 && num <= todos.length) {
+            let removed = todos.splice(num - 1, 1);
+            console.log(`Removed: ${removed[0]}\n`);
+        } else {
+            console.log("Invalid task number.\n");
+        }
+    } else if (choice === "4") {
+        console.log("Goodbye!");
+        break;
+    } else {
+        console.log("Invalid option.\n");
+    }
+}</pre>
+                </div>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">console</span>
+                  </div>
+                  <div class="terminal-body">Simple To-Do List
+
+1. Add task
+2. View tasks
+3. Remove task
+4. Exit
+
+Choose an option: 1
+Enter task: Learn JavaScript
+
+"Learn JavaScript" added!
+
+1. Add task
+2. View tasks
+3. Remove task
+4. Exit
+
+Choose an option: 2
+Your tasks:
+1. Learn JavaScript</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
+      <!-- ==================== CAPSTONE PROJECT ==================== -->
+      <div class="projects-section mt-5" id="js-capstone">
+        <h3 class="fw-bold mb-4" style="color:#1e1b4b;">
+          <i class="bi bi-trophy me-2"></i>Beginner Capstone Project
+        </h3>
+        <p class="text-muted mb-4">Put everything together. This capstone combines variables, arrays, loops, functions, conditionals, and object basics into one complete project.</p>
+
+        <div class="accordion" id="jsCapstoneAccordion">
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#jscapstone1">
+                <span class="project-badge me-3">Capstone</span>
+                Interactive Quiz App
+              </button>
+            </h2>
+            <div id="jscapstone1" class="accordion-collapse collapse show" data-bs-parent="#jsCapstoneAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                  <p class="small text-dark mb-2">Build an interactive quiz app with 5 questions. The app asks each question, checks the answer, keeps score, and shows the final result with a percentage and a custom message.</p>
+
+                  <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">array of objects</span>
+                    <span class="concept-chip">functions</span>
+                    <span class="concept-chip">for loop</span>
+                    <span class="concept-chip">if / else</span>
+                    <span class="concept-chip">score tracking</span>
+                  </div>
+
+                  <h6><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h6>
+                  <ol class="small text-dark mb-0">
+                    <li><code>questions</code> is an array of objects — each object holds a question, options, and correct answer.</li>
+                    <li>A <code>for</code> loop goes through each question one by one.</li>
+                    <li>The user picks an answer using <code>prompt()</code>.</li>
+                    <li>If the answer matches, <code>score</code> increases by 1.</li>
+                    <li>After all questions, the score is converted to a percentage.</li>
+                    <li>A final message shows the score and percentage.</li>
+                  </ol>
+                </div>
+
+                <div class="code-block mb-3">
+                  <div class="code-header">
+                    <span>javascript</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>let questions = [
+    {
+        question: "Which keyword declares a constant?",
+        options: "1) let  2) const  3) var",
+        answer: "2"
+    },
+    {
+        question: "What does console.log() do?",
+        options: "1) Reads input  2) Prints output  3) Runs a loop",
+        answer: "2"
+    },
+    {
+        question: "Which symbol checks strict equality?",
+        options: "1) ==  2) =  3) ===",
+        answer: "3"
+    },
+    {
+        question: "What does an array use to store items?",
+        options: "1) [ ]  2) { }  3) ( )",
+        answer: "1"
+    },
+    {
+        question: "Which loop runs while a condition is true?",
+        options: "1) for  2) while  3) switch",
+        answer: "2"
+    }
+];
+
+console.log("Interactive Quiz App\n");
+
+let score = 0;
+
+for (let i = 0; i < questions.length; i++) {
+    console.log(`Question ${i + 1}: ${questions[i].question}`);
+    console.log(questions[i].options);
+
+    let answer = prompt("Your answer (1, 2, or 3): ");
+
+    if (answer === questions[i].answer) {
+        console.log("Correct!\n");
+        score++;
+    } else {
+        console.log(`Wrong! Correct answer: ${questions[i].answer}\n`);
+    }
+}
+
+let percentage = (score / questions.length) * 100;
+console.log(`Final Score: ${score} out of ${questions.length}`);
+console.log(`Percentage: ${percentage}%`);
+
+if (percentage === 100) {
+    console.log("Perfect score! You're a JavaScript master!");
+} else if (percentage >= 60) {
+    console.log("Well done! Keep practicing to reach 100%.");
+} else {
+    console.log("Review the beginner lessons and try again.");
+}</pre>
+                </div>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">console</span>
+                  </div>
+                  <div class="terminal-body">Interactive Quiz App
+
+Question 1: Which keyword declares a constant?
+1) let  2) const  3) var
+Your answer (1, 2, or 3): 2
+Correct!
+
+Question 2: What does console.log() do?
+1) Reads input  2) Prints output  3) Runs a loop
+Your answer (1, 2, or 3): 2
+Correct!
+
+...
+
+Final Score: 5 out of 5
+Percentage: 100%
+Perfect score! You're a JavaScript master!</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEXT LEVEL CTA -->
+      <div class="next-level mt-5">
+        <h5 class="fw-bold" style="color:#1e1b4b;">You've completed all {{ lessons|length }} lessons. Ready to continue?</h5>
+        <p class="text-muted mb-3">Level up with JavaScript Intermediate, Advanced, and Practice resources.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <a href="/learn/javascript/intermediate" class="btn btn-primary rounded-pill px-4">
+            <i class="bi bi-arrow-right me-2"></i>Continue to Intermediate
+          </a>
+          <a href="/learn/javascript/practice" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="bi bi-collection me-2"></i>Practice Resources
+          </a>
+        </div>
       </div>
     </div>
   </div>
 </section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy'; }, 2000);
+    });
+  }
+  function markComplete(btn) {
+    const card = btn.closest('.lesson-complete');
+    card.classList.add('done');
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Completed';
+    btn.classList.remove('btn-outline-success');
+    btn.classList.add('btn-success');
+    btn.disabled = true;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const nav = document.getElementById('courseNav');
+    const toggleBtn = document.querySelector('.course-nav-toggle');
+
+    if (nav && toggleBtn) {
+      nav.addEventListener('shown.bs.collapse', function() {
+        toggleBtn.innerHTML = '<i class="bi bi-x-circle me-2"></i>Hide Course Contents';
+      });
+      nav.addEventListener('hidden.bs.collapse', function() {
+        toggleBtn.innerHTML = '<i class="bi bi-list-ol me-2"></i>Show Course Contents';
+      });
+      nav.querySelectorAll('.course-nav-link').forEach(function(link) {
+        link.addEventListener('click', function() {
+          if (window.innerWidth < 992 && nav.classList.contains('show')) {
+            const bsCollapse = bootstrap.Collapse.getInstance(nav);
+            if (bsCollapse) bsCollapse.hide();
+          }
+        });
+      });
+    }
+  });
+</script>
 {% endblock %}

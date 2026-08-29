@@ -1,100 +1,872 @@
 {% extends 'base.html' %}
-{% block title %}{{ info.title }} — {{ category }} | DocoDive{% endblock %}
+{% block title %}C & C++ Beginner Course — Learn Both Languages | DocoDive{% endblock %}
+{% block meta_description %}Learn C and C++ from scratch with 40 free beginner lessons (20 C + 20 C++). Variables, loops, functions, arrays, pointers, and more — each with code, output, and official documentation.{% endblock %}
+
+{% block extra_css %}
+<style>
+  .cc-hero {
+    background: linear-gradient(135deg, #ccfbf1 0%, #f0fdfa 100%);
+    border: 1px solid #5eead4;
+  }
+  .cc-badge {
+    background: #0d9488; color: #fff; font-weight: 700;
+    border-radius: 50px; padding: 6px 16px; font-size: 0.78rem;
+  }
+  .hero-stat-link { text-decoration: none; color: #6b7280; transition: color 0.2s ease; }
+  .hero-stat-link:hover { color: #0f766e; }
+
+  .course-layout {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .course-nav {
+    position: sticky; top: 90px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 16px; padding: 14px;
+  }
+  .course-nav a {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 10px;
+    color: #4b5563; text-decoration: none;
+    font-size: 0.85rem; font-weight: 500;
+  }
+  .course-nav a:hover { background: #ccfbf1; color: #0f766e; }
+  .course-nav a .nav-num {
+    flex-shrink: 0; width: 24px; color: #0f766e; font-weight: 700;
+  }
+  .course-nav a .nav-title {
+    flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .course-nav-toggle { display: none; }
+
+  .lang-tab-btn {
+    border: 2px solid #2dd4bf;
+    background: #fff;
+    color: #0f766e;
+    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .lang-tab-btn.active {
+    background: #0d9488;
+    color: #fff;
+    border-color: #0d9488;
+  }
+  .lang-tab-btn[data-lang="cpp"].active {
+    background: #0f766e;
+    border-color: #0f766e;
+  }
+  .lang-pane { display: none; }
+  .lang-pane.active { display: block; }
+
+  .lesson-step { scroll-margin-top: 100px; margin-bottom: 32px; }
+  .lesson-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px;
+  }
+  .section-label {
+    font-weight: 700; color: #0f766e; font-size: 0.82rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .code-block {
+    background: #0d1117; color: #e6edf3; border-radius: 12px; overflow: hidden;
+  }
+  .code-block pre {
+    margin: 0; padding: 18px;
+    font-family: Consolas, Monaco, 'Courier New', monospace;
+    font-size: 0.9rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .code-header {
+    background: #161b22; color: #8b949e;
+    font-size: 0.8rem; padding: 8px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .terminal {
+    background: #0d1117; color: #4ade80; border-radius: 12px; overflow: hidden;
+    font-family: Consolas, Monaco, monospace;
+  }
+  .terminal-header {
+    background: #161b22; padding: 10px 16px;
+    display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #21262d;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-red { background: #ff5f56; }
+  .dot-yellow { background: #ffbd2e; }
+  .dot-green { background: #27c93f; }
+  .terminal-title { color: #8b949e; font-size: 0.75rem; margin-left: 6px; }
+  .terminal-body {
+    padding: 14px 16px; font-size: 0.82rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .callout {
+    border-left: 4px solid; padding: 12px 16px; border-radius: 10px; font-size: 0.9rem;
+  }
+  .callout-breakdown { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+  .callout-outputexp { background: #f0fdf4; border-color: #22c55e; color: #14532d; }
+  .docs-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.85rem; color: #0f766e; text-decoration: none; font-weight: 600;
+  }
+  .docs-link:hover { text-decoration: underline; }
+  .lesson-complete { transition: all 0.2s ease; }
+  .lesson-complete.done { background: #f0fdf4; border-color: #22c55e; }
+  .next-level {
+    background: #ccfbf1; border: 1px solid #5eead4;
+    border-radius: 16px; padding: 24px; text-align: center;
+  }
+  .project-badge {
+    background: #ccfbf1; color: #0f766e; font-weight: 700;
+    padding: 5px 12px; border-radius: 50px; font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+  .project-guide { background: #f0fdfa; border-radius: 12px; padding: 16px; }
+  .project-guide h6 { color: #0f766e; font-weight: 700; margin-bottom: 8px; }
+  .concept-chip {
+    background: #ccfbf1; color: #0f766e; border: 1px solid #5eead4;
+    border-radius: 50px; padding: 3px 10px; font-size: 0.72rem; font-weight: 600;
+  }
+  .projects-section .accordion-item {
+    border: 1px solid #e5e7eb; border-radius: 16px !important;
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .projects-section .accordion-button {
+    background: #fff; color: #1e1b4b; font-weight: 700;
+    padding: 18px 20px; border-radius: 0 !important;
+  }
+  .projects-section .accordion-button:not(.collapsed) { background: #f0fdfa; color: #0f766e; }
+  .projects-section .accordion-button:focus { box-shadow: none; border-color: transparent; }
+
+  @media (max-width: 991.98px) {
+    .course-layout { grid-template-columns: 1fr; }
+    .course-nav-toggle {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; margin-bottom: 20px;
+    }
+    .course-nav { position: static; max-height: none; }
+    .course-nav.collapse.show { max-height: 60vh; overflow-y: auto; margin-bottom: 24px; }
+  }
+  @media (max-width: 576px) {
+    .cc-hero { padding: 24px 16px; }
+    .cc-hero h1 { font-size: 1.75rem; }
+    .lesson-card { padding: 16px; }
+    .lesson-card h2.h4 { font-size: 1.1rem; }
+    .code-block pre { font-size: 0.78rem; padding: 14px; }
+    .terminal-body { font-size: 0.75rem; padding: 12px; }
+    .callout { padding: 10px 12px; font-size: 0.85rem; }
+    .lesson-footer { flex-direction: column; gap: 10px; }
+    .lesson-footer .btn { width: 100%; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
+{% if lessons %}
+{% set c_lessons = lessons|selectattr('lang', 'equalto', 'c')|list %}
+{% set cpp_lessons = lessons|selectattr('lang', 'equalto', 'cpp')|list %}
 <section class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+  <div class="cc-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="cc-badge">Beginner</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:#1e1b4b;">C & C++ Beginner Guide</h1>
+    <p class="text-muted mb-4">Choose your language to start learning. Switch between C and C++ anytime using the buttons below.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 mb-4">
+  <span class="text-muted small"><i class="bi bi-clock me-1"></i>6–8 weeks</span>
 
-      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 24px;">
+  <span class="text-muted small">
+    <i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons
+  </span>
 
-        <!-- HERO -->
-        <div class="p-5 text-center" style="background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);">
-          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-               style="width: 96px; height: 96px; background: #fff; box-shadow: 0 12px 30px rgba(67, 56, 202, 0.12);">
-            <i class="bi {{ info.icon }} fs-1 {{ info.color }}"></i>
-          </div>
+  <span class="text-muted small">
+    <i class="bi bi-c-square me-1"></i>{{ c_lessons|length }} C
+  </span>
 
-          <span class="badge rounded-pill px-3 py-2 mb-3"
-                style="background: #ffb703; color: #1e1b4b; font-weight: 700; font-size: 0.9rem;">
-            <i class="bi bi-cone-striped me-2"></i> COMING SOON
-          </span>
+  <span class="text-muted small">
+    <i class="bi bi-c-square-fill me-1"></i>{{ cpp_lessons|length }} C++
+  </span>
 
-          <h1 class="fw-bolder mt-2" style="color: #1e1b4b;">{{ info.title }}</h1>
-          <p class="text-muted lead mb-4">
-            We're building something amazing for <strong>{{ category }}</strong> learners!
-          </p>
+  <a href="#c-projects" class="hero-stat-link small" onclick="switchLang('c')">
+    <i class="bi bi-code-square me-1"></i>C Projects
+  </a>
+  <a href="#cpp-projects" class="hero-stat-link small" onclick="switchLang('cpp')">
+    <i class="bi bi-code-square me-1"></i>C++ Projects
+  </a>
+  <a href="#c-capstone" class="hero-stat-link small" onclick="switchLang('c')">
+    <i class="bi bi-trophy me-1"></i>C Capstone
+  </a>
+  <a href="#cpp-capstone" class="hero-stat-link small" onclick="switchLang('cpp')">
+    <i class="bi bi-trophy me-1"></i>C++ Capstone
+  </a>
 
-          <div class="alert border-0 rounded-4 text-start shadow-sm mx-auto"
-               style="max-width: 640px; background: #e0f2fe; color: #0c4a6e;">
-            <p class="mb-2 fw-semibold">
-              <i class="bi bi-tools me-2"></i>This module is under construction
-            </p>
-            <p class="small mb-0">
-              Our team is preparing detailed lessons, practical examples, downloadable
-              resources and interactive exercises for <strong>{{ info.title }}</strong> in
-              <strong>{{ category }}</strong>. This content will guide you step-by-step,
-              from the fundamentals right up to an advanced level.
-            </p>
+  <span class="text-muted small"><i class="bi bi-person-check me-1"></i>No experience required</span>
+</div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <button class="lang-tab-btn active" data-lang="c" onclick="switchLang('c')">
+        <i class="bi bi-c-square me-2"></i>C Language
+      </button>
+      <button class="lang-tab-btn" data-lang="cpp" onclick="switchLang('cpp')">
+        <i class="bi bi-c-square-fill me-2"></i>C++ Language
+      </button>
+    </div>
+  </div>
+
+  <button class="btn btn-outline-primary rounded-pill course-nav-toggle" type="button"
+          data-bs-toggle="collapse" data-bs-target="#courseNav"
+          aria-expanded="false" aria-controls="courseNav">
+    <i class="bi bi-list-ol me-2"></i>Show Course Contents
+  </button>
+
+  <div class="course-layout">
+    <aside id="courseNav" class="course-nav collapse d-lg-block">
+      <div id="toc-c">
+        <h6 class="fw-bold mb-2" style="color:#0f766e;"><i class="bi bi-list-ol me-2"></i>C Topics</h6>
+        {% for lesson in c_lessons %}
+        <a href="#{{ lesson.slug }}" class="course-nav-link">
+          <span class="nav-num">{{ "%02d"|format(loop.index) }}</span>
+          <span class="nav-title">{{ lesson.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+
+      <div id="toc-cpp" class="d-none">
+        <h6 class="fw-bold mb-2" style="color:#0d9488;"><i class="bi bi-list-ol me-2"></i>C++ Topics</h6>
+        {% for lesson in cpp_lessons %}
+        <a href="#{{ lesson.slug }}" class="course-nav-link">
+          <span class="nav-num">{{ "%02d"|format(loop.index) }}</span>
+          <span class="nav-title">{{ lesson.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </aside>
+
+    <div>
+      <!-- ============ C PANE ============ -->
+      <div id="pane-c" class="lang-pane active">
+        <h2 class="fw-bold mb-3" style="color:#0f766e;"><i class="bi bi-c-square me-2"></i>Part 1: C Language</h2>
+        {% for lesson in c_lessons %}
+        <div id="{{ lesson.slug }}" class="lesson-step">
+          <div class="lesson-card lesson-complete" data-lesson="{{ loop.index }}">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+              <span class="nav-num fw-bold" style="color:#0f766e;">{{ "%02d"|format(loop.index) }}</span>
+              <h2 class="h4 fw-bold mb-0" style="color:#1e1b4b;">{{ lesson.title }}</h2>
+            </div>
+            <p class="text-dark">{{ lesson.explanation }}</p>
+            <div class="section-label mb-2"><i class="bi bi-filetype-c me-1"></i>Code Example</div>
+            <div class="code-block mb-3">
+              <div class="code-header">
+                <span>C</span>
+                <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button>
+              </div>
+              <pre>{{ lesson.code }}</pre>
+            </div>
+            <div class="section-label mb-2"><i class="bi bi-diagram-3 me-1"></i>Code Breakdown</div>
+            <div class="callout callout-breakdown mb-3">{{ lesson.code_breakdown }}</div>
+            <div class="section-label mb-2"><i class="bi bi-terminal me-1"></i>Output</div>
+            <div class="terminal mb-3">
+              <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+              <div class="terminal-body">{{ lesson.output }}</div>
+            </div>
+            <div class="section-label mb-2"><i class="bi bi-chat-left-text me-1"></i>Output Explanation</div>
+            <div class="callout callout-outputexp mb-3">{{ lesson.output_explanation }}</div>
+            <div class="mb-3">
+              <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="docs-link"><i class="bi bi-box-arrow-up-right"></i>Official Documentation</a>
+            </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer" style="border-top:1px solid #e5e7eb;">
+              {% if loop.previtem %}
+              <a href="#{{ loop.previtem.slug }}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-arrow-left me-1"></i>Previous</a>
+              {% else %}<span></span>{% endif %}
+              <button class="btn btn-outline-success btn-sm rounded-pill mark-complete" onclick="markComplete(this)"><i class="bi bi-check2-circle me-1"></i>Mark Complete</button>
+              {% if loop.nextitem %}
+              <a href="#{{ loop.nextitem.slug }}" class="btn btn-primary btn-sm rounded-pill">Next Lesson <i class="bi bi-arrow-right ms-1"></i></a>
+              {% else %}
+              <button class="btn btn-primary btn-sm rounded-pill" onclick="switchLang('cpp')">Continue to C++ <i class="bi bi-arrow-right ms-1"></i></button>
+              {% endif %}
+            </div>
           </div>
         </div>
+        {% endfor %}
 
-        <!-- WHAT YOU'LL GET -->
-        <div class="p-5">
-          <h5 class="fw-bold mb-4 text-center" style="color: #4338ca;">
-            What you'll get in this module
-          </h5>
+        <!-- C PROJECTS -->
+        <div class="projects-section mt-5">
+          <h3 class="fw-bold mb-4" style="color:#1e1b4b;"><i class="bi bi-hammer me-2"></i>C Beginner Projects</h3>
+          <div class="accordion" id="cProjectsAccordion">
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cproj1"><span class="project-badge me-3">Project 1</span>Simple Calculator (C)</button>
+              </h2>
+              <div id="cproj1" class="accordion-collapse collapse show" data-bs-parent="#cProjectsAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Build a simple calculator that takes two numbers and an operator, then prints the result using switch.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2"><span class="concept-chip">scanf/printf</span><span class="concept-chip">switch</span><span class="concept-chip">operators</span><span class="concept-chip">if/else</span></div>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;stdio.h&gt;
 
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #f0f4ff;">
-                <i class="bi bi-journal-text fs-3 text-primary"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Detailed Lessons</h6>
-                  <p class="small text-muted mb-0">Step-by-step structured content designed for every level.</p>
+int main() {
+    double a, b;
+    char op;
+
+    printf("Enter first number: ");
+    scanf("%lf", &amp;a);
+
+    printf("Enter second number: ");
+    scanf("%lf", &amp;b);
+
+    printf("Enter operator (+, -, *, /): ");
+    scanf(" %c", &amp;op);
+
+    switch (op) {
+        case '+': printf("%.2f + %.2f = %.2f\n", a, b, a + b); break;
+        case '-': printf("%.2f - %.2f = %.2f\n", a, b, a - b); break;
+        case '*': printf("%.2f * %.2f = %.2f\n", a, b, a * b); break;
+        case '/':
+            if (b != 0) printf("%.2f / %.2f = %.2f\n", a, b, a / b);
+            else printf("Error: Cannot divide by zero.\n");
+            break;
+        default: printf("Invalid operator.\n");
+    }
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">Enter first number: 10
+Enter second number: 4
+Enter operator (+, -, *, /): /
+10.00 / 4.00 = 2.50</div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fff4e5;">
-                <i class="bi bi-lightbulb fs-3 text-warning"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Real Examples</h6>
-                  <p class="small text-muted mb-0">Practical examples you can understand and apply instantly.</p>
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cproj2"><span class="project-badge me-3">Project 2</span>Factorial &amp; Fibonacci (C)</button>
+              </h2>
+              <div id="cproj2" class="accordion-collapse collapse" data-bs-parent="#cProjectsAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Compute factorial and the first N Fibonacci numbers using loops and functions.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2"><span class="concept-chip">functions</span><span class="concept-chip">loops</span><span class="concept-chip">return</span><span class="concept-chip">scanf</span></div>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;stdio.h&gt;
+
+int factorial(int n) {
+    int result = 1;
+    for (int i = 1; i &lt;= n; i++) result *= i;
+    return result;
+}
+
+void fibonacci(int n) {
+    int a = 0, b = 1, next;
+    for (int i = 0; i &lt; n; i++) {
+        printf("%d ", a);
+        next = a + b;
+        a = b;
+        b = next;
+    }
+    printf("\n");
+}
+
+int main() {
+    printf("Factorial of 5: %d\n", factorial(5));
+    printf("First 7 Fibonacci numbers: ");
+    fibonacci(7);
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">Factorial of 5: 120
+First 7 Fibonacci numbers: 0 1 1 2 3 5 8</div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #e8faf0;">
-                <i class="bi bi-patch-check fs-3 text-success"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Practice &amp; Quizzes</h6>
-                  <p class="small text-muted mb-0">Test your knowledge with quizzes and hands-on exercises.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fdeef4;">
-                <i class="bi bi-download fs-3 text-danger"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Resources &amp; PDFs</h6>
-                  <p class="small text-muted mb-0">Curated notes and downloadable study material.</p>
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cproj3"><span class="project-badge me-3">Project 3</span>Array Statistics (C)</button>
+              </h2>
+              <div id="cproj3" class="accordion-collapse collapse" data-bs-parent="#cProjectsAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Find the minimum, maximum, and average of an array of numbers.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2"><span class="concept-chip">arrays</span><span class="concept-chip">loops</span><span class="concept-chip">if/else</span></div>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;stdio.h&gt;
+
+int main() {
+    int nums[] = {12, 5, 18, 3, 9};
+    int size = 5;
+    int min = nums[0], max = nums[0], sum = 0;
+
+    for (int i = 0; i &lt; size; i++) {
+        sum += nums[i];
+        if (nums[i] &lt; min) min = nums[i];
+        if (nums[i] &gt; max) max = nums[i];
+    }
+
+    double avg = (double)sum / size;
+    printf("Min: %d\nMax: %d\nAverage: %.2f\n", min, max, avg);
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">Min: 3
+Max: 18
+Average: 9.40</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="text-center mt-5">
-            <a href="/learn/{{ category_slug }}" class="btn btn-primary rounded-pill px-4 py-2 me-2">
-              <i class="bi bi-collection me-2"></i> Explore {{ category }}
-            </a>
-            <a href="/" class="btn btn-outline-primary rounded-pill px-4 py-2">
-              <i class="bi bi-arrow-left me-2"></i> Back to Home
-            </a>
+          <!-- C CAPSTONE -->
+          <h3 class="fw-bold mt-5 mb-4" style="color:#1e1b4b;"><i class="bi bi-trophy me-2"></i>C Capstone Project</h3>
+          <div class="accordion" id="cCapstoneAccordion">
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#ccap1"><span class="project-badge me-3">Capstone</span>Student Record System (C)</button>
+              </h2>
+              <div id="ccap1" class="accordion-collapse collapse show" data-bs-parent="#cCapstoneAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Store and display multiple student records using structs and arrays.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2"><span class="concept-chip">structs</span><span class="concept-chip">arrays</span><span class="concept-chip">loops</span><span class="concept-chip">scanf/printf</span></div>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;stdio.h&gt;
+
+struct Student {
+    char name[50];
+    int age;
+    float grade;
+};
+
+int main() {
+    struct Student students[3];
+
+    for (int i = 0; i &lt; 3; i++) {
+        printf("Student %d name: ", i + 1);
+        scanf("%s", students[i].name);
+        printf("Age: ");
+        scanf("%d", &amp;students[i].age);
+        printf("Grade: ");
+        scanf("%f", &amp;students[i].grade);
+    }
+
+    printf("\n--- Records ---\n");
+    for (int i = 0; i &lt; 3; i++) {
+        printf("%s | Age: %d | Grade: %.1f\n",
+               students[i].name, students[i].age, students[i].grade);
+    }
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">Student 1 name: Ali
+Age: 25
+Grade: 85.5
+Student 2 name: Sara
+Age: 22
+Grade: 92.0
+Student 3 name: Zain
+Age: 28
+Grade: 78.5
+
+--- Records ---
+Ali | Age: 25 | Grade: 85.5
+Sara | Age: 22 | Grade: 92.0
+Zain | Age: 28 | Grade: 78.5</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
+      <!-- ============ C++ PANE ============ -->
+      <div id="pane-cpp" class="lang-pane">
+        <h2 class="fw-bold mb-3" style="color:#0d9488;"><i class="bi bi-c-square-fill me-2"></i>Part 2: C++ Language</h2>
+        {% for lesson in cpp_lessons %}
+        <div id="{{ lesson.slug }}" class="lesson-step">
+          <div class="lesson-card lesson-complete" data-lesson="{{ loop.index }}">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+              <span class="nav-num fw-bold" style="color:#0d9488;">{{ "%02d"|format(loop.index) }}</span>
+              <h2 class="h4 fw-bold mb-0" style="color:#1e1b4b;">{{ lesson.title }}</h2>
+            </div>
+            <p class="text-dark">{{ lesson.explanation }}</p>
+            <div class="section-label mb-2"><i class="bi bi-filetype-cpp me-1"></i>Code Example</div>
+            <div class="code-block mb-3">
+              <div class="code-header">
+                <span>C++</span>
+                <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button>
+              </div>
+              <pre>{{ lesson.code }}</pre>
+            </div>
+            <div class="section-label mb-2"><i class="bi bi-diagram-3 me-1"></i>Code Breakdown</div>
+            <div class="callout callout-breakdown mb-3">{{ lesson.code_breakdown }}</div>
+            <div class="section-label mb-2"><i class="bi bi-terminal me-1"></i>Output</div>
+            <div class="terminal mb-3">
+              <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+              <div class="terminal-body">{{ lesson.output }}</div>
+            </div>
+            <div class="section-label mb-2"><i class="bi bi-chat-left-text me-1"></i>Output Explanation</div>
+            <div class="callout callout-outputexp mb-3">{{ lesson.output_explanation }}</div>
+            <div class="mb-3">
+              <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="docs-link"><i class="bi bi-box-arrow-up-right"></i>Official Documentation</a>
+            </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer" style="border-top:1px solid #e5e7eb;">
+              {% if loop.previtem %}
+              <a href="#{{ loop.previtem.slug }}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-arrow-left me-1"></i>Previous</a>
+              {% else %}<span></span>{% endif %}
+              <button class="btn btn-outline-success btn-sm rounded-pill mark-complete" onclick="markComplete(this)"><i class="bi bi-check2-circle me-1"></i>Mark Complete</button>
+              {% if loop.nextitem %}
+              <a href="#{{ loop.nextitem.slug }}" class="btn btn-primary btn-sm rounded-pill">Next Lesson <i class="bi bi-arrow-right ms-1"></i></a>
+              {% else %}<span></span>{% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+        <!-- C++ PROJECTS -->
+        <div class="projects-section mt-5">
+          <h3 class="fw-bold mb-4" style="color:#1e1b4b;"><i class="bi bi-hammer me-2"></i>C++ Beginner Projects</h3>
+          <div class="accordion" id="cppProjectsAccordion">
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cppproj1"><span class="project-badge me-3">Project 1</span>To-Do List with vector (C++)</button>
+              </h2>
+              <div id="cppproj1" class="accordion-collapse collapse show" data-bs-parent="#cppProjectsAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Build a menu-driven to-do list that can add, view, and remove tasks using std::vector.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2"><span class="concept-chip">vector</span><span class="concept-chip">push_back</span><span class="concept-chip">switch</span><span class="concept-chip">cin/cout</span></div>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C++</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;string&gt;
+
+int main() {
+    std::vector&lt;std::string&gt; tasks;
+    int choice;
+
+    do {
+        std::cout &lt;&lt; "\n1. Add task\n2. View tasks\n3. Exit\nChoose: ";
+        std::cin &gt;&gt; choice;
+        std::cin.ignore();
+
+        switch (choice) {
+            case 1: {
+                std::string task;
+                std::cout &lt;&lt; "Task: ";
+                std::getline(std::cin, task);
+                tasks.push_back(task);
+                break;
+            }
+            case 2:
+                for (size_t i = 0; i &lt; tasks.size(); i++) {
+                    std::cout &lt;&lt; i + 1 &lt;&lt; ". " &lt;&lt; tasks[i] &lt;&lt; std::endl;
+                }
+                break;
+        }
+    } while (choice != 3);
+
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">1. Add task
+2. View tasks
+3. Exit
+Choose: 1
+Task: Learn C++
+
+1. Add task
+2. View tasks
+3. Exit
+Choose: 2
+1. Learn C++</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cppproj2"><span class="project-badge me-3">Project 2</span>Bank Account Class (C++)</button>
+              </h2>
+              <div id="cppproj2" class="accordion-collapse collapse" data-bs-parent="#cppProjectsAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Build a BankAccount class with deposit, withdraw, and getBalance using encapsulation.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2"><span class="concept-chip">classes</span><span class="concept-chip">private</span><span class="concept-chip">methods</span></div>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C++</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;iostream&gt;
+
+class BankAccount {
+private:
+    double balance = 0;
+
+public:
+    void deposit(double amount) {
+        if (amount &gt; 0) balance += amount;
+    }
+
+    void withdraw(double amount) {
+        if (amount &gt; 0 &amp;&amp; amount &lt;= balance) balance -= amount;
+    }
+
+    double getBalance() {
+        return balance;
+    }
+};
+
+int main() {
+    BankAccount acc;
+    acc.deposit(100);
+    acc.withdraw(40);
+    acc.withdraw(100);  // rejected (insufficient)
+
+    std::cout &lt;&lt; "Balance: " &lt;&lt; acc.getBalance() &lt;&lt; std::endl;
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">Balance: 60</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cppproj3"><span class="project-badge me-3">Project 3</span>Word Frequency with map (C++)</button>
+              </h2>
+              <div id="cppproj3" class="accordion-collapse collapse" data-bs-parent="#cppProjectsAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Count how many times each word appears in a string using std::map.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2"><span class="concept-chip">map</span><span class="concept-chip">string</span><span class="concept-chip">istringstream</span></div>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C++</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;iostream&gt;
+#include &lt;map&gt;
+#include &lt;sstream&gt;
+#include &lt;string&gt;
+
+int main() {
+    std::string text = "the cat and the dog";
+    std::istringstream stream(text);
+    std::string word;
+    std::map&lt;std::string, int&gt; counts;
+
+    while (stream &gt;&gt; word) {
+        counts[word]++;
+    }
+
+    for (const auto&amp; entry : counts) {
+        std::cout &lt;&lt; entry.first &lt;&lt; ": " &lt;&lt; entry.second &lt;&lt; std::endl;
+    }
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">and: 1
+cat: 1
+dog: 1
+the: 2</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- C++ CAPSTONE -->
+          <h3 class="fw-bold mt-5 mb-4" style="color:#1e1b4b;"><i class="bi bi-trophy me-2"></i>C++ Capstone Project</h3>
+          <div class="accordion" id="cppCapstoneAccordion">
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cppcap1"><span class="project-badge me-3">Capstone</span>Library Management (C++)</button>
+              </h2>
+              <div id="cppcap1" class="accordion-collapse collapse show" data-bs-parent="#cppCapstoneAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Build a library system using an abstract base class, inheritance, and polymorphism.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2"><span class="concept-chip">inheritance</span><span class="concept-chip">virtual</span><span class="concept-chip">vector</span><span class="concept-chip">polymorphism</span></div>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C++</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;string&gt;
+
+class Item {
+public:
+    std::string title;
+    Item(std::string t) : title(t) {}
+    virtual void info() = 0;
+};
+
+class Book : public Item {
+public:
+    std::string author;
+    Book(std::string t, std::string a) : Item(t), author(a) {}
+    void info() override {
+        std::cout &lt;&lt; "Book: " &lt;&lt; title &lt;&lt; " by " &lt;&lt; author &lt;&lt; std::endl;
+    }
+};
+
+class Magazine : public Item {
+public:
+    int issue;
+    Magazine(std::string t, int i) : Item(t), issue(i) {}
+    void info() override {
+        std::cout &lt;&lt; "Magazine: " &lt;&lt; title &lt;&lt; " Issue " &lt;&lt; issue &lt;&lt; std::endl;
+    }
+};
+
+int main() {
+    std::vector&lt;Item*&gt; catalog;
+    catalog.push_back(new Book("Effective C++", "Scott Meyers"));
+    catalog.push_back(new Magazine("Tech Monthly", 42));
+
+    for (Item* item : catalog) {
+        item-&gt;info();
+    }
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">Book: Effective C++ by Scott Meyers
+Magazine: Tech Monthly Issue 42</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEXT LEVEL CTA (shared) -->
+      <div class="next-level mt-5">
+        <h5 class="fw-bold" style="color:#1e1b4b;">You've completed all 40 lessons (20 C + 20 C++). Ready to continue?</h5>
+        <p class="text-muted mb-3">Level up with C/C++ Intermediate, Advanced, and Practice resources.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <a href="/learn/c-c/intermediate" class="btn btn-primary rounded-pill px-4"><i class="bi bi-arrow-right me-2"></i>Continue to Intermediate</a>
+          <a href="/learn/c-c/practice" class="btn btn-outline-primary rounded-pill px-4"><i class="bi bi-collection me-2"></i>Practice Resources</a>
+        </div>
       </div>
     </div>
   </div>
 </section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function switchLang(lang) {
+    document.querySelectorAll('.lang-tab-btn').forEach(btn => {
+      if (btn.dataset.lang === lang) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+
+    document.getElementById('pane-c').classList.toggle('active', lang === 'c');
+    document.getElementById('pane-cpp').classList.toggle('active', lang === 'cpp');
+
+    document.getElementById('toc-c').classList.toggle('d-none', lang !== 'c');
+    document.getElementById('toc-cpp').classList.toggle('d-none', lang !== 'cpp');
+
+    window.scrollTo({ top: document.querySelector('.course-layout').offsetTop - 80, behavior: 'smooth' });
+  }
+
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy'; }, 2000);
+    });
+  }
+  function markComplete(btn) {
+    const card = btn.closest('.lesson-complete');
+    card.classList.add('done');
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Completed';
+    btn.classList.remove('btn-outline-success');
+    btn.classList.add('btn-success');
+    btn.disabled = true;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const nav = document.getElementById('courseNav');
+    const toggleBtn = document.querySelector('.course-nav-toggle');
+    if (nav && toggleBtn) {
+      nav.addEventListener('shown.bs.collapse', function() {
+        toggleBtn.innerHTML = '<i class="bi bi-x-circle me-2"></i>Hide Course Contents';
+      });
+      nav.addEventListener('hidden.bs.collapse', function() {
+        toggleBtn.innerHTML = '<i class="bi bi-list-ol me-2"></i>Show Course Contents';
+      });
+      nav.querySelectorAll('.course-nav-link').forEach(function(link) {
+        link.addEventListener('click', function() {
+          if (window.innerWidth < 992 && nav.classList.contains('show')) {
+            const bsCollapse = bootstrap.Collapse.getInstance(nav);
+            if (bsCollapse) bsCollapse.hide();
+          }
+        });
+      });
+    }
+  });
+</script>
 {% endblock %}

@@ -1,100 +1,920 @@
 {% extends 'base.html' %}
-{% block title %}{{ info.title }} — {{ category }} | DocoDive{% endblock %}
+{% block title %}C & C++ Intermediate Course — Level Up | DocoDive{% endblock %}
+{% block meta_description %}Take C and C++ to the next level with 40 free intermediate lessons (20 C + 20 C++). Pointers, file I/O, structs, dynamic memory, templates, STL, smart pointers, and more — each with code, output, and official docs.{% endblock %}
+
+{% block extra_css %}
+<style>
+  .cc-hero {
+    background: linear-gradient(135deg, #cffafe 0%, #ecfeff 100%);
+    border: 1px solid #67e8f9;
+  }
+  .cc-badge {
+    background: #0891b2; color: #fff; font-weight: 700;
+    border-radius: 50px; padding: 6px 16px; font-size: 0.78rem;
+  }
+  .hero-stat-link { text-decoration: none; color: #6b7280; transition: color 0.2s ease; }
+  .hero-stat-link:hover { color: #0e7490; }
+
+  .course-layout {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .course-nav {
+    position: sticky; top: 90px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 16px; padding: 14px;
+  }
+  .course-nav a {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 10px;
+    color: #4b5563; text-decoration: none;
+    font-size: 0.85rem; font-weight: 500;
+  }
+  .course-nav a:hover { background: #cffafe; color: #0e7490; }
+  .course-nav a .nav-num {
+    flex-shrink: 0; width: 24px; color: #0e7490; font-weight: 700;
+  }
+  .course-nav a .nav-title {
+    flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .course-nav-toggle { display: none; }
+
+  .lang-tab-btn {
+    border: 2px solid #67e8f9;
+    background: #fff;
+    color: #0e7490;
+    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .lang-tab-btn.active {
+    background: #0891b2;
+    color: #fff;
+    border-color: #0891b2;
+  }
+  .lang-tab-btn[data-lang="cpp"].active {
+    background: #0e7490;
+    border-color: #0e7490;
+  }
+  .lang-pane { display: none; }
+  .lang-pane.active { display: block; }
+
+  .lesson-step { scroll-margin-top: 100px; margin-bottom: 32px; }
+  .lesson-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px;
+  }
+  .section-label {
+    font-weight: 700; color: #0e7490; font-size: 0.82rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .code-block {
+    background: #0d1117; color: #e6edf3; border-radius: 12px; overflow: hidden;
+  }
+  .code-block pre {
+    margin: 0; padding: 18px;
+    font-family: Consolas, Monaco, 'Courier New', monospace;
+    font-size: 0.9rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .code-header {
+    background: #161b22; color: #8b949e;
+    font-size: 0.8rem; padding: 8px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .terminal {
+    background: #0d1117; color: #4ade80; border-radius: 12px; overflow: hidden;
+    font-family: Consolas, Monaco, monospace;
+  }
+  .terminal-header {
+    background: #161b22; padding: 10px 16px;
+    display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #21262d;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-red { background: #ff5f56; }
+  .dot-yellow { background: #ffbd2e; }
+  .dot-green { background: #27c93f; }
+  .terminal-title { color: #8b949e; font-size: 0.75rem; margin-left: 6px; }
+  .terminal-body {
+    padding: 14px 16px; font-size: 0.82rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .callout {
+    border-left: 4px solid; padding: 12px 16px; border-radius: 10px; font-size: 0.9rem;
+  }
+  .callout-breakdown { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+  .callout-outputexp { background: #f0fdf4; border-color: #22c55e; color: #14532d; }
+  .docs-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.85rem; color: #0e7490; text-decoration: none; font-weight: 600;
+  }
+  .docs-link:hover { text-decoration: underline; }
+  .lesson-complete { transition: all 0.2s ease; }
+  .lesson-complete.done { background: #f0fdf4; border-color: #22c55e; }
+  .next-level {
+    background: #cffafe; border: 1px solid #67e8f9;
+    border-radius: 16px; padding: 24px; text-align: center;
+  }
+  .project-badge {
+    background: #cffafe; color: #0e7490; font-weight: 700;
+    padding: 5px 12px; border-radius: 50px; font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+  .project-guide { background: #ecfeff; border-radius: 12px; padding: 16px; }
+  .project-guide h6 { color: #0e7490; font-weight: 700; margin-bottom: 8px; }
+  .concept-chip {
+    background: #cffafe; color: #0e7490; border: 1px solid #67e8f9;
+    border-radius: 50px; padding: 3px 10px; font-size: 0.72rem; font-weight: 600;
+  }
+  .projects-section .accordion-item {
+    border: 1px solid #e5e7eb; border-radius: 16px !important;
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .projects-section .accordion-button {
+    background: #fff; color: #1e1b4b; font-weight: 700;
+    padding: 18px 20px; border-radius: 0 !important;
+  }
+  .projects-section .accordion-button:not(.collapsed) { background: #ecfeff; color: #0e7490; }
+  .projects-section .accordion-button:focus { box-shadow: none; border-color: transparent; }
+
+  @media (max-width: 991.98px) {
+    .course-layout { grid-template-columns: 1fr; }
+    .course-nav-toggle {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; margin-bottom: 20px;
+    }
+    .course-nav { position: static; max-height: none; }
+    .course-nav.collapse.show { max-height: 60vh; overflow-y: auto; margin-bottom: 24px; }
+  }
+  @media (max-width: 576px) {
+    .cc-hero { padding: 24px 16px; }
+    .cc-hero h1 { font-size: 1.75rem; }
+    .lesson-card { padding: 16px; }
+    .lesson-card h2.h4 { font-size: 1.1rem; }
+    .code-block pre { font-size: 0.78rem; padding: 14px; }
+    .terminal-body { font-size: 0.75rem; padding: 12px; }
+    .callout { padding: 10px 12px; font-size: 0.85rem; }
+    .lesson-footer { flex-direction: column; gap: 10px; }
+    .lesson-footer .btn { width: 100%; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
+{% if lessons %}
+{% set c_lessons = lessons|selectattr('lang', 'equalto', 'c')|list %}
+{% set cpp_lessons = lessons|selectattr('lang', 'equalto', 'cpp')|list %}
 <section class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+  <div class="cc-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="cc-badge">Intermediate</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:#1e1b4b;">C & C++ Intermediate Course</h1>
+    <p class="text-muted mb-4">Level up your C and C++ skills. Switch between languages using the buttons below — each has 20 lessons, 3 projects, and a capstone.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 mb-4">
+      <span class="text-muted small"><i class="bi bi-clock me-1"></i>4–6 weeks</span>
+      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>40 lessons</span>
+      <span class="text-muted small"><i class="bi bi-person-check me-1"></i>Beginner knowledge required</span>
+    </div>
 
-      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 24px;">
+    <div class="d-flex flex-wrap gap-2">
+      <button class="lang-tab-btn active" data-lang="c" onclick="switchLang('c')">
+        <i class="bi bi-c-square me-2"></i>C Language
+      </button>
+      <button class="lang-tab-btn" data-lang="cpp" onclick="switchLang('cpp')">
+        <i class="bi bi-c-square-fill me-2"></i>C++ Language
+      </button>
+    </div>
+  </div>
 
-        <!-- HERO -->
-        <div class="p-5 text-center" style="background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);">
-          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-               style="width: 96px; height: 96px; background: #fff; box-shadow: 0 12px 30px rgba(67, 56, 202, 0.12);">
-            <i class="bi {{ info.icon }} fs-1 {{ info.color }}"></i>
-          </div>
+  <button class="btn btn-outline-primary rounded-pill course-nav-toggle" type="button"
+          data-bs-toggle="collapse" data-bs-target="#courseNav"
+          aria-expanded="false" aria-controls="courseNav">
+    <i class="bi bi-list-ol me-2"></i>Show Course Contents
+  </button>
 
-          <span class="badge rounded-pill px-3 py-2 mb-3"
-                style="background: #ffb703; color: #1e1b4b; font-weight: 700; font-size: 0.9rem;">
-            <i class="bi bi-cone-striped me-2"></i> COMING SOON
-          </span>
+  <div class="course-layout">
+    <aside id="courseNav" class="course-nav collapse d-lg-block">
+      <div id="toc-c">
+        <h6 class="fw-bold mb-2" style="color:#0e7490;"><i class="bi bi-list-ol me-2"></i>C Topics</h6>
+        {% for lesson in c_lessons %}
+        <a href="#{{ lesson.slug }}" class="course-nav-link">
+          <span class="nav-num">{{ "%02d"|format(loop.index) }}</span>
+          <span class="nav-title">{{ lesson.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
 
-          <h1 class="fw-bolder mt-2" style="color: #1e1b4b;">{{ info.title }}</h1>
-          <p class="text-muted lead mb-4">
-            We're building something amazing for <strong>{{ category }}</strong> learners!
-          </p>
+      <div id="toc-cpp" class="d-none">
+        <h6 class="fw-bold mb-2" style="color:#0891b2;"><i class="bi bi-list-ol me-2"></i>C++ Topics</h6>
+        {% for lesson in cpp_lessons %}
+        <a href="#{{ lesson.slug }}" class="course-nav-link">
+          <span class="nav-num">{{ "%02d"|format(loop.index) }}</span>
+          <span class="nav-title">{{ lesson.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </aside>
 
-          <div class="alert border-0 rounded-4 text-start shadow-sm mx-auto"
-               style="max-width: 640px; background: #e0f2fe; color: #0c4a6e;">
-            <p class="mb-2 fw-semibold">
-              <i class="bi bi-tools me-2"></i>This module is under construction
-            </p>
-            <p class="small mb-0">
-              Our team is preparing detailed lessons, practical examples, downloadable
-              resources and interactive exercises for <strong>{{ info.title }}</strong> in
-              <strong>{{ category }}</strong>. This content will guide you step-by-step,
-              from the fundamentals right up to an advanced level.
-            </p>
+    <div>
+      <!-- ============ C PANE ============ -->
+      <div id="pane-c" class="lang-pane active">
+        <h2 class="fw-bold mb-3" style="color:#0e7490;"><i class="bi bi-c-square me-2"></i>C Intermediate Lessons</h2>
+        {% for lesson in c_lessons %}
+        <div id="{{ lesson.slug }}" class="lesson-step">
+          <div class="lesson-card lesson-complete" data-lesson="{{ loop.index }}">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+              <span class="nav-num fw-bold" style="color:#0e7490;">{{ "%02d"|format(loop.index) }}</span>
+              <h2 class="h4 fw-bold mb-0" style="color:#1e1b4b;">{{ lesson.title }}</h2>
+            </div>
+            <p class="text-dark">{{ lesson.explanation }}</p>
+            <div class="section-label mb-2"><i class="bi bi-filetype-c me-1"></i>Code Example</div>
+            <div class="code-block mb-3">
+              <div class="code-header">
+                <span>C</span>
+                <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button>
+              </div>
+              <pre>{{ lesson.code }}</pre>
+            </div>
+            <div class="section-label mb-2"><i class="bi bi-diagram-3 me-1"></i>Code Breakdown</div>
+            <div class="callout callout-breakdown mb-3">{{ lesson.code_breakdown }}</div>
+            <div class="section-label mb-2"><i class="bi bi-terminal me-1"></i>Output</div>
+            <div class="terminal mb-3">
+              <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+              <div class="terminal-body">{{ lesson.output }}</div>
+            </div>
+            <div class="section-label mb-2"><i class="bi bi-chat-left-text me-1"></i>Output Explanation</div>
+            <div class="callout callout-outputexp mb-3">{{ lesson.output_explanation }}</div>
+            <div class="mb-3">
+              <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="docs-link"><i class="bi bi-box-arrow-up-right"></i>Official Documentation</a>
+            </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer" style="border-top:1px solid #e5e7eb;">
+              {% if loop.previtem %}
+              <a href="#{{ loop.previtem.slug }}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-arrow-left me-1"></i>Previous</a>
+              {% else %}<span></span>{% endif %}
+              <button class="btn btn-outline-success btn-sm rounded-pill mark-complete" onclick="markComplete(this)"><i class="bi bi-check2-circle me-1"></i>Mark Complete</button>
+              {% if loop.nextitem %}
+              <a href="#{{ loop.nextitem.slug }}" class="btn btn-primary btn-sm rounded-pill">Next Lesson <i class="bi bi-arrow-right ms-1"></i></a>
+              {% else %}<span></span>{% endif %}
+            </div>
           </div>
         </div>
+        {% endfor %}
 
-        <!-- WHAT YOU'LL GET -->
-        <div class="p-5">
-          <h5 class="fw-bold mb-4 text-center" style="color: #4338ca;">
-            What you'll get in this module
-          </h5>
+        <!-- C PROJECTS -->
+        <div class="projects-section mt-5">
+          <h3 class="fw-bold mb-4" style="color:#1e1b4b;"><i class="bi bi-hammer me-2"></i>C Intermediate Projects</h3>
+          <div class="accordion" id="cIntProjectsAccordion">
 
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #f0f4ff;">
-                <i class="bi bi-journal-text fs-3 text-primary"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Detailed Lessons</h6>
-                  <p class="small text-muted mb-0">Step-by-step structured content designed for every level.</p>
+            <!-- C PROJECT 1 -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cintproj1">
+                  <span class="project-badge me-3">Project 1</span>Linked List Manager (C)
+                </button>
+              </h2>
+              <div id="cintproj1" class="accordion-collapse collapse show" data-bs-parent="#cIntProjectsAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Build a singly linked list with insert, display, and search using dynamic memory and struct pointers.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                      <span class="concept-chip">linked lists</span>
+                      <span class="concept-chip">malloc</span>
+                      <span class="concept-chip">struct pointers</span>
+                      <span class="concept-chip">loops</span>
+                    </div>
+                    <h6><i class="bi bi-list-check me-2"></i>Topics used</h6>
+                    <p class="small text-muted mb-0">Linked Lists, Structs &amp; Pointers, Dynamic Memory, Pointer Arithmetic</p>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+struct Node {
+    int data;
+    struct Node *next;
+};
+
+struct Node* insertHead(struct Node *head, int value) {
+    struct Node *n = (struct Node*)malloc(sizeof(struct Node));
+    n-&gt;data = value;
+    n-&gt;next = head;
+    return n;
+}
+
+void display(struct Node *head) {
+    struct Node *cur = head;
+    while (cur != NULL) {
+        printf("%d -&gt; ", cur-&gt;data);
+        cur = cur-&gt;next;
+    }
+    printf("NULL\n");
+}
+
+int main() {
+    struct Node *head = NULL;
+    head = insertHead(head, 30);
+    head = insertHead(head, 20);
+    head = insertHead(head, 10);
+    display(head);
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">10 -&gt; 20 -&gt; 30 -&gt; NULL</div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fff4e5;">
-                <i class="bi bi-lightbulb fs-3 text-warning"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Real Examples</h6>
-                  <p class="small text-muted mb-0">Practical examples you can understand and apply instantly.</p>
+
+            <!-- C PROJECT 2 -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cintproj2">
+                  <span class="project-badge me-3">Project 2</span>Sort &amp; Search Toolkit (C)
+                </button>
+              </h2>
+              <div id="cintproj2" class="accordion-collapse collapse" data-bs-parent="#cIntProjectsAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Sort an array with bubble sort, then search using binary search.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                      <span class="concept-chip">bubble sort</span>
+                      <span class="concept-chip">binary search</span>
+                      <span class="concept-chip">function pointers</span>
+                      <span class="concept-chip">arrays</span>
+                    </div>
+                    <h6><i class="bi bi-list-check me-2"></i>Topics used</h6>
+                    <p class="small text-muted mb-0">Sorting, Searching, Function Pointers, Arrays</p>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;stdio.h&gt;
+
+void bubbleSort(int arr[], int n) {
+    for (int i = 0; i &lt; n - 1; i++)
+        for (int j = 0; j &lt; n - i - 1; j++)
+            if (arr[j] &gt; arr[j + 1]) {
+                int t = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = t;
+            }
+}
+
+int binarySearch(int arr[], int low, int high, int target) {
+    while (low &lt;= high) {
+        int mid = low + (high - low) / 2;
+        if (arr[mid] == target) return mid;
+        if (arr[mid] &lt; target) low = mid + 1;
+        else high = mid - 1;
+    }
+    return -1;
+}
+
+int main() {
+    int nums[] = {9, 2, 7, 1, 5};
+    int size = 5;
+    bubbleSort(nums, size);
+
+    for (int i = 0; i &lt; size; i++) printf("%d ", nums[i]);
+    printf("\n");
+
+    printf("Index of 7: %d\n", binarySearch(nums, 0, size - 1, 7));
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">1 2 5 7 9
+Index of 7: 3</div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #e8faf0;">
-                <i class="bi bi-patch-check fs-3 text-success"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Practice &amp; Quizzes</h6>
-                  <p class="small text-muted mb-0">Test your knowledge with quizzes and hands-on exercises.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fdeef4;">
-                <i class="bi bi-download fs-3 text-danger"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Resources &amp; PDFs</h6>
-                  <p class="small text-muted mb-0">Curated notes and downloadable study material.</p>
+
+            <!-- C PROJECT 3 -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cintproj3">
+                  <span class="project-badge me-3">Project 3</span>String Tokenizer (C)
+                </button>
+              </h2>
+              <div id="cintproj3" class="accordion-collapse collapse" data-bs-parent="#cIntProjectsAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Split a sentence into words using strtok and count them — practicing string functions and pointers.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                      <span class="concept-chip">strtok</span>
+                      <span class="concept-chip">pointers</span>
+                      <span class="concept-chip">string functions</span>
+                      <span class="concept-chip">loops</span>
+                    </div>
+                    <h6><i class="bi bi-list-check me-2"></i>Topics used</h6>
+                    <p class="small text-muted mb-0">String Functions, Pointers &amp; Arrays, Pointer Arithmetic</p>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main() {
+    char sentence[] = "learn C programming today";
+    int count = 0;
+
+    char *token = strtok(sentence, " ");
+    while (token != NULL) {
+        printf("%s\n", token);
+        count++;
+        token = strtok(NULL, " ");
+    }
+
+    printf("Words: %d\n", count);
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">learn
+C
+programming
+today
+Words: 4</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="text-center mt-5">
-            <a href="/learn/{{ category_slug }}" class="btn btn-primary rounded-pill px-4 py-2 me-2">
-              <i class="bi bi-collection me-2"></i> Explore {{ category }}
-            </a>
-            <a href="/" class="btn btn-outline-primary rounded-pill px-4 py-2">
-              <i class="bi bi-arrow-left me-2"></i> Back to Home
-            </a>
+          <!-- C CAPSTONE -->
+          <h3 class="fw-bold mt-5 mb-4" style="color:#1e1b4b;"><i class="bi bi-trophy me-2"></i>C Capstone Project</h3>
+          <div class="accordion" id="cIntCapstoneAccordion">
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cintcap1">
+                  <span class="project-badge me-3">Capstone</span>Contact Database with File I/O (C)
+                </button>
+              </h2>
+              <div id="cintcap1" class="accordion-collapse collapse show" data-bs-parent="#cIntCapstoneAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Save and load contacts using structs, dynamic memory, and error handling with file I/O.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                      <span class="concept-chip">file I/O</span>
+                      <span class="concept-chip">structs</span>
+                      <span class="concept-chip">fprintf</span>
+                      <span class="concept-chip">error handling</span>
+                    </div>
+                    <h6><i class="bi bi-list-check me-2"></i>Topics used</h6>
+                    <p class="small text-muted mb-0">File I/O, Structs, String Functions, Dynamic Memory, Error Handling (errno)</p>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;errno.h&gt;
+
+struct Contact {
+    char name[50];
+    char phone[20];
+};
+
+int main() {
+    struct Contact contacts[2] = {
+        {"Ali", "0300-111"},
+        {"Sara", "0301-222"}
+    };
+
+    FILE *fp = fopen("contacts.txt", "w");
+    if (fp == NULL) {
+        printf("Error: %s\n", strerror(errno));
+        return 1;
+    }
+
+    for (int i = 0; i &lt; 2; i++) {
+        fprintf(fp, "%s %s\n", contacts[i].name, contacts[i].phone);
+    }
+    fclose(fp);
+
+    printf("Contacts saved to contacts.txt\n");
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">Contacts saved to contacts.txt</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
+      <!-- ============ C++ PANE ============ -->
+      <div id="pane-cpp" class="lang-pane">
+        <h2 class="fw-bold mb-3" style="color:#0891b2;"><i class="bi bi-c-square-fill me-2"></i>C++ Intermediate Lessons</h2>
+        {% for lesson in cpp_lessons %}
+        <div id="{{ lesson.slug }}" class="lesson-step">
+          <div class="lesson-card lesson-complete" data-lesson="{{ loop.index }}">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+              <span class="nav-num fw-bold" style="color:#0891b2;">{{ "%02d"|format(loop.index) }}</span>
+              <h2 class="h4 fw-bold mb-0" style="color:#1e1b4b;">{{ lesson.title }}</h2>
+            </div>
+            <p class="text-dark">{{ lesson.explanation }}</p>
+            <div class="section-label mb-2"><i class="bi bi-filetype-cpp me-1"></i>Code Example</div>
+            <div class="code-block mb-3">
+              <div class="code-header">
+                <span>C++</span>
+                <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button>
+              </div>
+              <pre>{{ lesson.code }}</pre>
+            </div>
+            <div class="section-label mb-2"><i class="bi bi-diagram-3 me-1"></i>Code Breakdown</div>
+            <div class="callout callout-breakdown mb-3">{{ lesson.code_breakdown }}</div>
+            <div class="section-label mb-2"><i class="bi bi-terminal me-1"></i>Output</div>
+            <div class="terminal mb-3">
+              <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+              <div class="terminal-body">{{ lesson.output }}</div>
+            </div>
+            <div class="section-label mb-2"><i class="bi bi-chat-left-text me-1"></i>Output Explanation</div>
+            <div class="callout callout-outputexp mb-3">{{ lesson.output_explanation }}</div>
+            <div class="mb-3">
+              <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="docs-link"><i class="bi bi-box-arrow-up-right"></i>Official Documentation</a>
+            </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer" style="border-top:1px solid #e5e7eb;">
+              {% if loop.previtem %}
+              <a href="#{{ loop.previtem.slug }}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-arrow-left me-1"></i>Previous</a>
+              {% else %}<span></span>{% endif %}
+              <button class="btn btn-outline-success btn-sm rounded-pill mark-complete" onclick="markComplete(this)"><i class="bi bi-check2-circle me-1"></i>Mark Complete</button>
+              {% if loop.nextitem %}
+              <a href="#{{ loop.nextitem.slug }}" class="btn btn-primary btn-sm rounded-pill">Next Lesson <i class="bi bi-arrow-right ms-1"></i></a>
+              {% else %}<span></span>{% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+        <!-- C++ PROJECTS -->
+        <div class="projects-section mt-5">
+          <h3 class="fw-bold mb-4" style="color:#1e1b4b;"><i class="bi bi-hammer me-2"></i>C++ Intermediate Projects</h3>
+          <div class="accordion" id="cppIntProjectsAccordion">
+
+            <!-- C++ PROJECT 1 -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cppintproj1">
+                  <span class="project-badge me-3">Project 1</span>Smart Resource Manager (C++)
+                </button>
+              </h2>
+              <div id="cppintproj1" class="accordion-collapse collapse show" data-bs-parent="#cppIntProjectsAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Build a resource manager using smart pointers and RAII — memory is automatically freed.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                      <span class="concept-chip">unique_ptr</span>
+                      <span class="concept-chip">RAII</span>
+                      <span class="concept-chip">move semantics</span>
+                      <span class="concept-chip">vector</span>
+                    </div>
+                    <h6><i class="bi bi-list-check me-2"></i>Topics used</h6>
+                    <p class="small text-muted mb-0">Smart Pointers, RAII, Move Semantics, Classes</p>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C++</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;iostream&gt;
+#include &lt;memory&gt;
+#include &lt;vector&gt;
+#include &lt;string&gt;
+
+class Resource {
+public:
+    std::string name;
+    Resource(std::string n) : name(n) {
+        std::cout &lt;&lt; "Acquired: " &lt;&lt; name &lt;&lt; std::endl;
+    }
+    ~Resource() {
+        std::cout &lt;&lt; "Released: " &lt;&lt; name &lt;&lt; std::endl;
+    }
+};
+
+int main() {
+    std::vector&lt;std::unique_ptr&lt;Resource&gt;&gt; resources;
+    resources.push_back(std::make_unique&lt;Resource&gt;("DB Connection"));
+    resources.push_back(std::make_unique&lt;Resource&gt;("File Handle"));
+
+    for (const auto&amp; r : resources) {
+        std::cout &lt;&lt; "Using: " &lt;&lt; r-&gt;name &lt;&lt; std::endl;
+    }
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">Acquired: DB Connection
+Acquired: File Handle
+Using: DB Connection
+Using: File Handle
+Released: File Handle
+Released: DB Connection</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- C++ PROJECT 2 -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cppintproj2">
+                  <span class="project-badge me-3">Project 2</span>Generic Stack with Operators (C++)
+                </button>
+              </h2>
+              <div id="cppintproj2" class="accordion-collapse collapse" data-bs-parent="#cppIntProjectsAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Build a generic stack using class templates and overloaded operators.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                      <span class="concept-chip">class templates</span>
+                      <span class="concept-chip">operator overloading</span>
+                      <span class="concept-chip">vector</span>
+                      <span class="concept-chip">functions</span>
+                    </div>
+                    <h6><i class="bi bi-list-check me-2"></i>Topics used</h6>
+                    <p class="small text-muted mb-0">Class Templates, Operator Overloading, STL Containers</p>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C++</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;iostream&gt;
+#include &lt;vector&gt;
+
+template &lt;typename T&gt;
+class Stack {
+private:
+    std::vector&lt;T&gt; items;
+public:
+    void operator+=(T item) { items.push_back(item); }
+    T top() const { return items.back(); }
+    void pop() { if (!items.empty()) items.pop_back(); }
+    bool empty() const { return items.empty(); }
+};
+
+int main() {
+    Stack&lt;int&gt; s;
+    s += 10;
+    s += 20;
+    s += 30;
+
+    while (!s.empty()) {
+        std::cout &lt;&lt; s.top() &lt;&lt; " ";
+        s.pop();
+    }
+    std::cout &lt;&lt; std::endl;
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">30 20 10</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- C++ PROJECT 3 -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cppintproj3">
+                  <span class="project-badge me-3">Project 3</span>Custom Exception &amp; Parser (C++)
+                </button>
+              </h2>
+              <div id="cppintproj3" class="accordion-collapse collapse" data-bs-parent="#cppIntProjectsAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Parse numbers using string streams and handle errors with a custom exception class.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                      <span class="concept-chip">string streams</span>
+                      <span class="concept-chip">custom exceptions</span>
+                      <span class="concept-chip">lambdas</span>
+                      <span class="concept-chip">try/catch</span>
+                    </div>
+                    <h6><i class="bi bi-list-check me-2"></i>Topics used</h6>
+                    <p class="small text-muted mb-0">String Streams, Custom Exceptions, Lambda Captures</p>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C++</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;iostream&gt;
+#include &lt;sstream&gt;
+#include &lt;exception&gt;
+
+class ParseException : public std::exception {
+public:
+    const char* what() const noexcept override {
+        return "Invalid number format";
+    }
+};
+
+int main() {
+    std::istringstream input("42 3.14 hello");
+
+    try {
+        int i;
+        double d;
+
+        input &gt;&gt; i &gt;&gt; d;
+
+        if (input.fail()) throw ParseException();
+
+        auto sum = [](int a, double b) { return a + b; };
+        std::cout &lt;&lt; "Sum: " &lt;&lt; sum(i, d) &lt;&lt; std::endl;
+    } catch (const std::exception&amp; e) {
+        std::cout &lt;&lt; "Error: " &lt;&lt; e.what() &lt;&lt; std::endl;
+    }
+
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">Sum: 45.14</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- C++ CAPSTONE -->
+          <h3 class="fw-bold mt-5 mb-4" style="color:#1e1b4b;"><i class="bi bi-trophy me-2"></i>C++ Capstone Project</h3>
+          <div class="accordion" id="cppIntCapstoneAccordion">
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cppintcap1">
+                  <span class="project-badge me-3">Capstone</span>Expression Calculator (C++)
+                </button>
+              </h2>
+              <div id="cppintcap1" class="accordion-collapse collapse show" data-bs-parent="#cppIntCapstoneAccordion">
+                <div class="accordion-body">
+                  <div class="project-guide mb-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                    <p class="small text-dark mb-2">Build a calculator that parses expressions using string streams, overloaded operators, custom exceptions, and lambdas.</p>
+                    <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                      <span class="concept-chip">string streams</span>
+                      <span class="concept-chip">custom exceptions</span>
+                      <span class="concept-chip">operator overloading</span>
+                      <span class="concept-chip">lambdas</span>
+                    </div>
+                    <h6><i class="bi bi-list-check me-2"></i>Topics used</h6>
+                    <p class="small text-muted mb-0">String Streams, Custom Exceptions, Operator Overloading, Lambda Captures</p>
+                  </div>
+                  <div class="code-block mb-3">
+                    <div class="code-header"><span>C++</span><button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;"><i class="bi bi-clipboard me-1"></i>Copy</button></div>
+                    <pre>#include &lt;iostream&gt;
+#include &lt;sstream&gt;
+#include &lt;string&gt;
+#include &lt;exception&gt;
+
+class DivideByZeroException : public std::exception {
+public:
+    const char* what() const noexcept override {
+        return "Cannot divide by zero";
+    }
+};
+
+int main() {
+    std::istringstream input("10 / 4 + 2");
+    double a, b;
+    char op1, op2;
+    std::string extra;
+
+    input &gt;&gt; a &gt;&gt; op1 &gt;&gt; b &gt;&gt; op2 &gt;&gt; extra;
+
+    try {
+        double result;
+        if (op1 == '/') {
+            if (b == 0) throw DivideByZeroException();
+            result = a / b;
+        }
+
+        auto addTwo = [result](double x) { return result + x; };
+        if (op2 == '+') {
+            result = addTwo(std::stod(extra));
+        }
+
+        std::cout &lt;&lt; "Result: " &lt;&lt; result &lt;&lt; std::endl;
+    } catch (const std::exception&amp; e) {
+        std::cout &lt;&lt; "Error: " &lt;&lt; e.what() &lt;&lt; std::endl;
+    }
+
+    return 0;
+}</pre>
+                  </div>
+                  <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                  <div class="terminal">
+                    <div class="terminal-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span><span class="terminal-title">terminal</span></div>
+                    <div class="terminal-body">Result: 4.5</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEXT LEVEL CTA -->
+      <div class="next-level mt-5">
+        <h5 class="fw-bold" style="color:#1e1b4b;">You've completed all 40 lessons (20 C + 20 C++). Ready for the final level?</h5>
+        <p class="text-muted mb-3">Level up with C/C++ Advanced and Practice resources.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <a href="/learn/c-c/advanced" class="btn btn-primary rounded-pill px-4"><i class="bi bi-arrow-right me-2"></i>Continue to Advanced</a>
+          <a href="/learn/c-c/practice" class="btn btn-outline-primary rounded-pill px-4"><i class="bi bi-collection me-2"></i>Practice Resources</a>
+        </div>
       </div>
     </div>
   </div>
 </section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function switchLang(lang) {
+    document.querySelectorAll('.lang-tab-btn').forEach(btn => {
+      if (btn.dataset.lang === lang) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+
+    document.getElementById('pane-c').classList.toggle('active', lang === 'c');
+    document.getElementById('pane-cpp').classList.toggle('active', lang === 'cpp');
+
+    document.getElementById('toc-c').classList.toggle('d-none', lang !== 'c');
+    document.getElementById('toc-cpp').classList.toggle('d-none', lang !== 'cpp');
+
+    window.scrollTo({ top: document.querySelector('.course-layout').offsetTop - 80, behavior: 'smooth' });
+  }
+
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy'; }, 2000);
+    });
+  }
+  function markComplete(btn) {
+    const card = btn.closest('.lesson-complete');
+    card.classList.add('done');
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Completed';
+    btn.classList.remove('btn-outline-success');
+    btn.classList.add('btn-success');
+    btn.disabled = true;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const nav = document.getElementById('courseNav');
+    const toggleBtn = document.querySelector('.course-nav-toggle');
+    if (nav && toggleBtn) {
+      nav.addEventListener('shown.bs.collapse', function() {
+        toggleBtn.innerHTML = '<i class="bi bi-x-circle me-2"></i>Hide Course Contents';
+      });
+      nav.addEventListener('hidden.bs.collapse', function() {
+        toggleBtn.innerHTML = '<i class="bi bi-list-ol me-2"></i>Show Course Contents';
+      });
+      nav.querySelectorAll('.course-nav-link').forEach(function(link) {
+        link.addEventListener('click', function() {
+          if (window.innerWidth < 992 && nav.classList.contains('show')) {
+            const bsCollapse = bootstrap.Collapse.getInstance(nav);
+            if (bsCollapse) bsCollapse.hide();
+          }
+        });
+      });
+    }
+  });
+</script>
 {% endblock %}

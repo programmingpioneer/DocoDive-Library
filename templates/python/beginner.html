@@ -191,7 +191,7 @@
     <p class="text-muted mb-4">Build a strong Python foundation from zero. Learn core syntax, data structures, functions, files, exceptions, modules, OOP, development tools, and build real-world projects.</p>
     <div class="d-flex flex-wrap gap-3 gap-md-4 mb-3">
       <span class="text-muted small"><i class="bi bi-clock me-1"></i>3–5 weeks</span>
-      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>20 lessons</span>
+      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons</span>
       <a href="#beginner-projects" class="hero-stat-link small">
         <i class="bi bi-code-square me-1"></i>3 projects
       </a>
@@ -686,7 +686,7 @@ Mastermind! You cracked the code in 3 tries.</div>
 
       <!-- Next Level CTA -->
       <div class="text-center mt-4 p-4 rounded-4" style="background:#f0f4ff;">
-        <h5 class="fw-bold" style="color:#1e1b4b;">You've completed all 20 lessons. Ready to continue?</h5>
+        <h5 class="fw-bold" style="color:#1e1b4b;">You've completed all {{ lessons|length }} lessons. Ready to continue?</h5>
         <p class="text-muted mb-3">Continue to Python Intermediate to level up your skills.</p>
         <div class="d-flex flex-wrap justify-content-center gap-2">
           <a href="/learn/python/intermediate" class="btn btn-primary rounded-pill px-4">

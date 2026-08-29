@@ -103,6 +103,13 @@
         >
           <i class="bi bi-qr-code me-2"></i> QR Code
         </button>
+                <button
+          class="btn btn-outline-info rounded-pill px-4 share-modal-btn"
+          data-book-id="{{ book.id }}"
+          data-book-title="{{ book.title }}"
+        >
+          <i class="bi bi-share-fill me-2"></i> Share
+        </button>
         {% if user_logged_in %}
         <button
           class="btn btn-outline-warning rounded-pill px-4 favorite-btn"
@@ -739,7 +746,7 @@
 </div>
 
 <script>
-  function showShareModal(bookId) {
+  function showShareModal(bookId, bookTitle) {
     const shareUrl = window.location.origin + "/book/" + bookId;
     document.getElementById("shareLinkInput").value = shareUrl;
     document.getElementById("shareFacebook").href =
@@ -748,7 +755,7 @@
     document.getElementById("shareTwitter").href =
       "https://twitter.com/intent/tweet?url=" + encodeURIComponent(shareUrl);
     document.getElementById("shareWhatsapp").href =
-      "https://wa.me/?text=" + encodeURIComponent(shareUrl);
+      "https://wa.me/?text=" + encodeURIComponent((bookTitle ? bookTitle + " — " : "") + shareUrl);
     document.getElementById("shareTelegram").href =
       "https://t.me/share/url?url=" + encodeURIComponent(shareUrl);
     document.getElementById("shareLinkedin").href =
@@ -768,11 +775,12 @@
       .then(() => alert("✅ Link copied!"))
       .catch(() => alert("❌ Copy failed"));
   }
-  document.addEventListener("click", function (e) {
+    document.addEventListener("click", function (e) {
     if (e.target.closest(".share-modal-btn")) {
       const btn = e.target.closest(".share-modal-btn");
       const bookId = btn.dataset.bookId;
-      showShareModal(bookId);
+      const bookTitle = btn.dataset.bookTitle || "";
+      showShareModal(bookId, bookTitle);
     }
   });
 </script>

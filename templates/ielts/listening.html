@@ -1,26 +1,467 @@
-{% extends 'base.html' %} {% block title %}IELTS Listening — DocoDive{% endblock
-%} {% block content %}
-<section class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
-      <div
-        class="card border-0 shadow-sm text-center p-5"
-        style="border-radius: 20px"
-      >
-        <i class="bi bi-headphones display-3 text-primary"></i>
-        <h1 class="fw-bold mt-3" style="color: #1e1b4b">IELTS Listening</h1>
-        <div class="alert alert-info rounded-4 mt-3 mb-0">
-          <i class="bi bi-cone-striped me-2"></i>
-          <strong>Coming soon!</strong> Detailed guide and practice content will
-          be added here.
-        </div>
-        <div class="text-center mt-4">
-          <a href="/ielts" class="btn btn-outline-primary rounded-pill px-4">
-            <i class="bi bi-arrow-left me-2"></i> Back to IELTS Hub
-          </a>
-        </div>
-      </div>
+{% extends 'base.html' %}
+{% block title %}IELTS Listening — Complete Guide: Format, Question Types & Strategies | DocoDive{% endblock %}
+{% block meta_description %}Master IELTS Listening with our complete responsive text guide: test format, 4 parts, all question types, prediction, keywords, distractors, numbers, and a full strategy — target Band 7+.{% endblock %}
+
+{% block extra_css %}
+<style>
+  .ielts-hero {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+  }
+
+  /* ===== 3-column desktop layout ===== */
+  .ielts-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* Left lesson nav — desktop only */
+  .lesson-nav {
+    display: none;
+    position: sticky;
+    top: 90px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .lesson-nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    color: #475569;
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+  .lesson-nav a:hover { background: #f0f9ff; color: #0284c7; }
+  .lesson-nav a .nav-num { flex-shrink: 0; width: 22px; color: #0284c7; font-weight: 700; }
+  .lesson-nav a .nav-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Right tips sidebar — desktop only */
+  .tips-side {
+    display: none;
+    position: sticky;
+    top: 90px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .tip-static {
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+  }
+  .tip-static strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .tip-blue   { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+  .tip-red    { background: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; }
+  .tip-green  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+  .tip-amber  { background: #fef9ec; border-left: 4px solid #f59e0b; color: #92400e; }
+
+  /* Quick access cards */
+  .qa-card {
+    display: block;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    height: 100%;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .qa-card:hover { border-color: #0284c7; background: #f0f9ff; }
+  .qa-card .qa-num { color: #0284c7; font-weight: 700; font-size: 0.8rem; }
+  .qa-card .qa-title { color: #334155; font-size: 0.82rem; font-weight: 600; }
+
+  /* Lesson card */
+  .lesson-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    scroll-margin-top: 90px;
+  }
+  .section-head {
+    color: #0c4a6e;
+    border-bottom: 3px solid #0284c7;
+    padding-bottom: 8px;
+    margin: 32px 0 16px;
+  }
+  .example-box {
+    background: #f0f9ff;
+    border-left: 4px solid #0284c7;
+    border-radius: 10px;
+    padding: 16px;
+    line-height: 1.8;
+  }
+  .trap-box {
+    background: #fef2f2;
+    border-left: 4px solid #ef4444;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .tip-box {
+    border-radius: 12px;
+    padding: 14px 16px;
+    height: 100%;
+  }
+  .tip-box strong { display: block; margin-bottom: 4px; font-size: 0.78rem; }
+  .tip-box.band { background: #ecfdf5; color: #065f46; }
+  .tip-box.time { background: #fef9ec; color: #92400e; }
+
+  /* Touch-friendly buttons on mobile */
+  @media (max-width: 767.98px) {
+    .btn { min-height: 44px; }
+    .lesson-card { padding: 16px; }
+    .ielts-hero h1 { font-size: 1.6rem; }
+    .ielts-hero p { font-size: 0.95rem; }
+    .prev-next { flex-direction: column; gap: 8px; }
+    .prev-next .btn { width: 100%; }
+  }
+
+  /* Desktop 3-column */
+  @media (min-width: 992px) {
+    .ielts-grid {
+      grid-template-columns: 220px minmax(0, 1fr) 260px;
+      gap: 24px;
+    }
+    .lesson-nav { display: block; }
+    .tips-side { display: flex; }
+    .ielts-hero h1 { font-size: 2rem; }
+    .lesson-card { padding: 28px; }
+  }
+    /* ===== ANIMATIONS ===== */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes popIn {
+    0% { transform: scale(.94); opacity: 0; }
+    60% { transform: scale(1.03); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Lesson cards + quick access hover lift */
+  .lesson-card,
+  .qa-card {
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, opacity .4s ease;
+  }
+  .lesson-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(2, 132, 199, 0.12);
+  }
+  .qa-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(2, 132, 199, 0.12);
+  }
+
+  /* Scroll-reveal */
+  .reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  .reveal-on-scroll.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Button click pop */
+  .btn:active {
+    transform: scale(.96);
+  }
+
+  /* Smooth anchor scrolling for the whole page */
+  html {
+    scroll-behavior: smooth;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 py-md-5">
+
+  <!-- HERO -->
+  <div class="ielts-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <span class="badge rounded-pill" style="background:#0284c7;color:#fff;">Listening</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+      <span class="badge rounded-pill" style="background:#dcfce7;color:#16a34a;">Band 7+ Target</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:#0c4a6e;">IELTS Listening: Complete Guide</h1>
+    <p class="text-muted mb-3">The test format, every question type, core skills, and a full strategy — in clear, simple text. Jump to any topic below.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 small text-muted">
+      <span><i class="bi bi-clock me-1"></i>3–4 weeks</span>
+      <span><i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons</span>
+      <span><i class="bi bi-ear me-1"></i>40 questions · 4 parts · 30 min</span>
     </div>
   </div>
-</section>
+
+  <!-- QUICK ACCESS (visible on all screens) -->
+  <h2 class="h5 fw-bold mb-3" style="color:#0c4a6e;">⚡ Quick Access — Jump to Any Topic</h2>
+  <div class="row g-2 mb-4">
+    {% for lesson in lessons %}
+    <div class="col-6 col-md-4 col-lg-3">
+      <a href="#lesson-{{ lesson.id }}" class="qa-card">
+        <div class="qa-num">{{ "%02d"|format(lesson.id) }}</div>
+        <div class="qa-title">{{ lesson.title }}</div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- BAND SCORE -->
+  <h2 class="h4 fw-bold mb-3" style="color:#0c4a6e;">📊 Band Score Conversion</h2>
+  <div class="table-responsive mb-4">
+    <table class="table table-bordered text-center align-middle bg-white mb-0" style="font-size:0.9rem;">
+      <thead style="background:#0284c7;color:#fff;">
+        <tr><th>Band</th><th>Correct (out of 40)</th><th>Level</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="fw-bold text-success">9.0</td><td>39–40</td><td>Expert</td></tr>
+        <tr><td class="fw-bold text-success">8.0</td><td>35–36</td><td>Very good</td></tr>
+        <tr><td class="fw-bold text-primary">7.0</td><td>30–31</td><td>Good</td></tr>
+        <tr><td class="fw-bold text-warning">6.0</td><td>23–25</td><td>Competent</td></tr>
+        <tr><td class="fw-bold text-danger">5.0</td><td>16–17</td><td>Modest</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 3-COLUMN GRID -->
+  <div class="ielts-grid">
+
+    <!-- LEFT: LESSON NAV (desktop only) -->
+    <aside class="lesson-nav">
+      <h6 class="fw-bold mb-3" style="color:#0284c7;"><i class="bi bi-list-ol me-2"></i>Lessons</h6>
+      {% for lesson in lessons %}
+      <a href="#lesson-{{ lesson.id }}">
+        <span class="nav-num">{{ "%02d"|format(lesson.id) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+      </a>
+      {% endfor %}
+    </aside>
+
+    <!-- CENTER: LESSONS -->
+    <div>
+      {% for lesson in lessons %}
+
+      {% if lesson.id == 1 %}
+      <h2 class="h4 fw-bold section-head">📘 Introduction</h2>
+      {% elif lesson.id == 2 %}
+      <h2 class="h4 fw-bold section-head">🎯 Core Skills</h2>
+      {% elif lesson.id == 4 %}
+      <h2 class="h4 fw-bold section-head">❓ Question Types</h2>
+      {% elif lesson.id == 13 %}
+      <h2 class="h4 fw-bold section-head">🧭 Part-by-Part Strategy</h2>
+      {% elif lesson.id == 14 %}
+      <h2 class="h4 fw-bold section-head">🏁 Final Strategy</h2>
+      {% endif %}
+
+      <div id="lesson-{{ lesson.id }}" class="lesson-card mb-4">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <span class="badge rounded-pill" style="background:#0284c7;color:#fff;">{{ "%02d"|format(lesson.id) }}</span>
+          <h3 class="h5 fw-bold mb-0" style="color:#0c4a6e;">{{ lesson.title }}</h3>
+          <span class="ms-auto text-muted small"><i class="bi bi-clock me-1"></i>{{ lesson.duration }}</span>
+        </div>
+
+        <!-- Objectives -->
+        <h4 class="h6 fw-bold mb-2" style="color:#0284c7;"><i class="bi bi-bullseye me-1"></i>What you will learn</h4>
+        <ul class="list-unstyled text-dark mb-4">
+          {% for obj in lesson.objectives %}
+          <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ obj }}</li>
+          {% endfor %}
+        </ul>
+
+        <!-- Concept -->
+        <h4 class="h6 fw-bold mb-2" style="color:#0284c7;"><i class="bi bi-book me-1"></i>Main Concept</h4>
+        <p class="text-dark mb-4" style="font-size:1rem;line-height:1.8;">{{ lesson.explanation }}</p>
+
+        <!-- Example -->
+        {% if lesson.example %}
+        <h4 class="h6 fw-bold mb-2" style="color:#0284c7;"><i class="bi bi-pencil me-1"></i>Example</h4>
+        <div class="example-box mb-4">{{ lesson.example }}</div>
+        {% endif %}
+
+        <!-- Common trap -->
+        <h4 class="h6 fw-bold mb-2" style="color:#dc2626;"><i class="bi bi-exclamation-triangle me-1"></i>Common Mistake</h4>
+        <div class="trap-box mb-4">{{ lesson.common_trap }}</div>
+
+        <!-- Tips (stacked on mobile, 3-col on desktop) -->
+        <h4 class="h6 fw-bold mb-2" style="color:#0284c7;"><i class="bi bi-lightbulb me-1"></i>Quick Strategy</h4>
+        <div class="row g-2 mb-4">
+          <div class="col-md-4">
+            <div class="tip-box" style="background:#eff6ff;border-left:4px solid #3b82f6;">
+              <strong style="color:#1e40af;">💡 Strategy</strong>
+              <span class="small text-dark">{{ lesson.quick_tip }}</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="tip-box band">
+              <strong>🎯 Score Booster</strong>
+              <span class="small text-dark">{{ lesson.band_upgrade }}</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="tip-box time">
+              <strong>⏱ Time Saver</strong>
+              <span class="small text-dark">{{ lesson.time_saver }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key takeaway -->
+        <div class="alert mb-3 py-3" style="background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;">
+          <strong>🔎 Key takeaway:</strong> {{ lesson.callout_text }}
+        </div>
+
+        <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="small fw-semibold text-decoration-none" style="color:#0284c7;">
+          <i class="bi bi-box-arrow-up-right me-1"></i>{{ lesson.docs_label }}
+        </a>
+
+        <!-- Practice -->
+        <div class="mt-3 p-3 p-md-4 rounded-3" style="background:#f8fafc;border:1px dashed #94a3b8;">
+          <h4 class="h6 fw-bold mb-2" style="color:#0c4a6e;"><i class="bi bi-pencil-square me-1"></i>Try it yourself</h4>
+          <p class="text-dark mb-3">{{ lesson.exercise_prompt }}</p>
+          <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="toggleBox(this,'hint-{{ lesson.id }}')">Show Hint</button>
+          <button class="btn btn-sm btn-outline-success rounded-pill ms-2" onclick="toggleBox(this,'sol-{{ lesson.id }}')">Show Solution</button>
+          <div id="hint-{{ lesson.id }}" class="d-none small text-muted mt-2"><i class="bi bi-lightbulb me-1"></i>{{ lesson.exercise_hint }}</div>
+          <div id="sol-{{ lesson.id }}" class="d-none small mt-2 p-3 rounded-3" style="background:#ecfdf5;color:#065f46;">✓ {{ lesson.exercise_solution }}</div>
+        </div>
+
+        <!-- Prev/Next -->
+        <div class="d-flex prev-next justify-content-between align-items-center mt-4 pt-3" style="border-top:1px solid #e2e8f0;">
+          {% if loop.previtem %}
+          <a href="#lesson-{{ loop.previtem.id }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+            <i class="bi bi-arrow-left me-1"></i>Previous
+          </a>
+          {% else %}<span></span>{% endif %}
+
+          <span class="text-muted small d-none d-md-inline">{{ "%02d"|format(lesson.id) }} / {{ lessons|length }}</span>
+
+          {% if loop.nextitem %}
+          <a href="#lesson-{{ loop.nextitem.id }}" class="btn btn-sm rounded-pill" style="background:#0284c7;color:#fff;">
+            Next <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+          {% else %}<span></span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Completion -->
+      <div class="text-center p-4 p-md-5 rounded-4" style="background:#f0f9ff;">
+        <h5 class="fw-bold" style="color:#0c4a6e;">You have completed all {{ lessons|length }} listening lessons.</h5>
+        <p class="text-muted mb-3">Move on to IELTS Reading for skimming, scanning, and TRUE/FALSE/NOT GIVEN strategies.</p>
+        <a href="/learn/ielts/reading" class="btn rounded-pill px-4" style="background:#0284c7;color:#fff;">
+          Continue to Reading <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- RIGHT: TIPS SIDEBAR (desktop only) -->
+    <aside class="tips-side">
+      <h6 class="fw-bold mb-1" style="color:#0284c7;"><i class="bi bi-lightbulb me-2"></i>Smart Tips</h6>
+      <div class="tip-static tip-blue">
+        <strong>💡 General Strategy</strong>
+        Underline keywords in every question before the audio starts — they are your map to the answers.
+      </div>
+      <div class="tip-static tip-red">
+        <strong>⚠️ Biggest Trap</strong>
+        The first answer is often changed. Listen for "but", "actually", and "instead".
+      </div>
+      <div class="tip-static tip-green">
+        <strong>🎯 Band Booster</strong>
+        Band 7 needs about 30 correct out of 40. Bank easy marks in Sections 1 and 2.
+      </div>
+      <div class="tip-static tip-amber">
+        <strong>⏱ Time Saver</strong>
+        Use the 10-minute transfer time to check spelling, not to write answers from scratch.
+      </div>
+    </aside>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  /* ============================================================
+     IELTS LISTENING — ANIMATED INTERACTIONS
+     - Smooth scroll + stagger reveal on load
+     - Scroll-triggered fade-in for cards
+     - Button pop + hint/solution animated toggle
+     ============================================================ */
+
+  /* ---------- Hint / Solution toggle with animation ---------- */
+
+  function toggleBox(btn, id) {
+    const box = document.getElementById(id);
+    const isOpening = box.classList.contains('d-none');
+    box.classList.toggle('d-none');
+    const hidden = box.classList.contains('d-none');
+    const isHint = btn.textContent.includes('Hint');
+    btn.textContent = hidden
+      ? (isHint ? 'Show Hint' : 'Show Solution')
+      : (isHint ? 'Hide Hint' : 'Hide Solution');
+
+    if (isOpening) {
+      box.style.animation = 'none';
+      void box.offsetHeight;
+      box.style.animation = 'popIn .35s ease both';
+    }
+  }
+
+  /* ---------- Staggered reveal on page load ---------- */
+
+  function revealCardsStaggered() {
+    const cards = document.querySelectorAll('.lesson-card, .qa-card');
+    cards.forEach((card, i) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(14px)';
+      setTimeout(() => {
+        card.style.transition = 'opacity .4s ease, transform .4s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, i * 35);
+    });
+  }
+
+  /* ---------- Scroll-triggered reveal (subtle) ---------- */
+
+  document.addEventListener('DOMContentLoaded', () => {
+    revealCardsStaggered();
+
+    const targets = document.querySelectorAll('.lesson-card, .example-box, .trap-box, .tip-box, .qa-card');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+
+    targets.forEach(el => {
+      el.classList.add('reveal-on-scroll');
+      observer.observe(el);
+    });
+  });
+</script>
 {% endblock %}
