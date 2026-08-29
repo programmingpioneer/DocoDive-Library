@@ -191,7 +191,7 @@
     <p class="text-muted mb-4">Level up your Python with decorators, generators, advanced OOP, databases, APIs, testing, and real-world projects.</p>
     <div class="d-flex flex-wrap gap-3 gap-md-4 mb-3">
       <span class="text-muted small"><i class="bi bi-clock me-1"></i>4–6 weeks</span>
-      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>20 lessons</span>
+      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons</span>
       <a href="#intermediate-projects" class="hero-stat-link small">
         <i class="bi bi-code-square me-1"></i>3 projects
       </a>
@@ -595,7 +595,7 @@ book.close()</pre>
 
       <!-- Next Level CTA -->
       <div class="text-center mt-4 p-4 rounded-4" style="background:#fff7ed;">
-        <h5 class="fw-bold" style="color:#1e1b4b;">You've completed all 20 intermediate lessons. Ready for more?</h5>
+        <h5 class="fw-bold" style="color:#1e1b4b;">You've completed all {{ lessons|length }} lessons. Ready to continue?</h5>
         <p class="text-muted mb-3">Continue to Python Advanced for professional-grade concepts.</p>
         <div class="d-flex flex-wrap justify-content-center gap-2">
           <a href="/learn/python/advanced" class="btn btn-primary rounded-pill px-4" style="background:#ea580c;border-color:#ea580c;">

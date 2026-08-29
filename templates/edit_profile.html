@@ -1,152 +1,321 @@
-{% extends 'base.html' %} {% block content %}
-<div class="container py-5">
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  :root {
+    --pp-primary: #4f46e5;
+    --pp-primary-dark: #3730a3;
+    --pp-soft: #eef2ff;
+    --pp-ink: #1e293b;
+    --pp-muted: #64748b;
+    --pp-line: #e2e8f0;
+    --pp-radius: 18px;
+  }
+
+  .pp-wrap { animation: ppFadeUp .5s ease both; }
+  @keyframes ppFadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .pp-card {
+    background: #fff;
+    border: 1px solid var(--pp-line);
+    border-radius: 24px;
+    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+  }
+
+  .pp-card-head {
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    padding: 28px 28px 22px;
+    border-bottom: 1px solid #c7d2fe;
+  }
+  .pp-card-head h2 {
+    color: var(--pp-ink);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .pp-card-head p {
+    color: var(--pp-muted);
+    margin: 6px 0 0;
+    font-size: 0.9rem;
+  }
+
+  .pp-body { padding: 24px 28px 28px; }
+
+  .pp-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--pp-primary-dark);
+    margin-bottom: 8px;
+  }
+  .pp-label i { font-size: 1.05rem; color: var(--pp-primary); }
+
+  .pp-input {
+    border: 1.5px solid var(--pp-line);
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+    background: #fbfcfe;
+  }
+  .pp-input:focus {
+    border-color: var(--pp-primary);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+    background: #fff;
+  }
+  .pp-input:hover { border-color: #c7d2fe; }
+  textarea.pp-input { resize: vertical; min-height: 90px; }
+
+  .pp-avatar-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 18px;
+    background: linear-gradient(135deg, #f8faff 0%, #eef2ff 100%);
+    border: 1px dashed #c7d2fe;
+    border-radius: 18px;
+    margin-bottom: 22px;
+  }
+  .pp-avatar-img-wrap {
+    position: relative;
+    width: 110px;
+    height: 110px;
+  }
+  .pp-avatar-img-wrap img {
+    width: 110px !important;
+    height: 110px !important;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 50% !important;
+    border: 4px solid #fff;
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.18);
+    display: block;
+    transition: transform .3s ease;
+  }
+  .pp-avatar-img-wrap:hover img { transform: scale(1.04); }
+  .pp-avatar-badge {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 32px;
+    height: 32px;
+    background: var(--pp-primary);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+  }
+
+  .pp-file {
+    border: 1.5px dashed #c7d2fe;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    background: #fff;
+    cursor: pointer;
+    transition: all .2s ease;
+  }
+  .pp-file:hover { border-color: var(--pp-primary); background: #f8faff; }
+
+  .pp-progress { height: 8px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+  .pp-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4f46e5, #818cf8);
+    border-radius: 999px;
+    transition: width .2s ease;
+  }
+
+  .pp-btn {
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+    border: none;
+    border-radius: 50px;
+    padding: 13px 28px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    box-shadow: 0 8px 22px rgba(79, 70, 229, 0.3);
+    transition: all .25s ease;
+  }
+  .pp-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(79, 70, 229, 0.4); }
+  .pp-btn:active { transform: scale(0.97); }
+  .pp-btn:disabled { opacity: .7; transform: none; }
+
+  .pp-add-btn {
+    border: 1.5px dashed var(--pp-primary);
+    color: var(--pp-primary);
+    background: #fff;
+    border-radius: 50px;
+    padding: 8px 18px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all .2s ease;
+  }
+  .pp-add-btn:hover { background: var(--pp-soft); }
+
+  .social-link-row {
+    animation: ppFadeUp .3s ease both;
+  }
+  .social-link-row .form-select,
+  .social-link-row .link-input {
+    border: 1.5px solid var(--pp-line);
+    border-radius: 12px;
+  }
+  .social-link-row .link-input:focus {
+    border-color: var(--pp-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  }
+
+  .pp-stagger { opacity: 0; transform: translateY(10px); animation: ppFadeUp .45s ease forwards; }
+  .pp-stagger:nth-child(1) { animation-delay: .05s; }
+  .pp-stagger:nth-child(2) { animation-delay: .1s; }
+  .pp-stagger:nth-child(3) { animation-delay: .15s; }
+  .pp-stagger:nth-child(4) { animation-delay: .2s; }
+  .pp-stagger:nth-child(5) { animation-delay: .25s; }
+  .pp-stagger:nth-child(6) { animation-delay: .3s; }
+
+  @media (max-width: 576px) {
+    .pp-body { padding: 18px 16px; }
+    .pp-card-head { padding: 20px 18px 18px; }
+  }
+</style>
+
+<div class="container py-4 py-md-5 pp-wrap">
   <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
-      <div class="card border-0 shadow-lg rounded-4 p-4">
-        <div id="profileFlash"></div>
-        <h2 class="fw-bold mb-4">
-          <i class="bi bi-pencil-square me-2"></i> Edit Profile
-        </h2>
-        <form
-          method="POST"
-          action="/user/profile/edit"
-          enctype="multipart/form-data"
-          id="editProfileForm"
-        >
-          <input
-            type="hidden"
-            name="_csrf_token"
-            value="{{ session['_csrf_token'] }}"
-          />
-          <input type="hidden" name="social_links" id="socialLinksInput" />
+      <div class="pp-card">
+        <div class="pp-card-head">
+          <h2><i class="bi bi-pencil-square me-2"></i>Edit Profile</h2>
+          <p>Update your personal details, avatar, and social links.</p>
+        </div>
 
-          <!-- Avatar -->
-          <div class="mb-4 text-center">
-            <img
-              id="avatarPreview"
-              src="{{ profile.avatar_url or url_for('static', filename='default-avatar.png') }}"
-              class="rounded-circle border shadow-sm mb-2 d-block mx-auto"
-              alt="Avatar preview"
-              style="
-                width: 100px !important;
-                height: 100px !important;
-                object-fit: cover;
-                object-position: center;
-                border-radius: 50% !important;
-                display: block;
-                margin-left: auto;
-                margin-right: auto;
-              "
-            />
-            <input
-              type="file"
-              name="avatar"
-              class="form-control"
-              accept="image/*"
-              onchange="previewAvatar(this)"
-            />
-            <small class="text-muted">JPG, PNG, GIF, WEBP (max 2MB)</small>
-          </div>
+        <div class="pp-body">
+          <div id="profileFlash"></div>
 
-          <!-- First Name -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold">First Name</label>
-            <input
-              type="text"
-              name="first_name"
-              class="form-control"
-              value="{{ profile.first_name or '' }}"
-              placeholder="Your first name"
-            />
-          </div>
+          <form
+            method="POST"
+            action="/user/profile/edit"
+            enctype="multipart/form-data"
+            id="editProfileForm"
+          >
+            <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}" />
+            <input type="hidden" name="social_links" id="socialLinksInput" />
 
-          <!-- Last Name -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Last Name</label>
-            <input
-              type="text"
-              name="last_name"
-              class="form-control"
-              value="{{               profile.last_name or '' }}"
-              placeholder="Your last name"
-            />
-          </div>
+            <!-- Avatar -->
+            <div class="pp-stagger">
+              <div class="pp-label"><i class="bi bi-person-circle"></i> Profile Picture</div>
+              <div class="pp-avatar-wrap">
+                <div class="pp-avatar-img-wrap">
+                  <img
+                    id="avatarPreview"
+                    src="{{ profile.avatar_url or url_for('static', filename='default-avatar.png') }}"
+                    alt="Avatar preview"
+                  />
+                  <span class="pp-avatar-badge"><i class="bi bi-camera"></i></span>
+                </div>
+                <input
+                  type="file"
+                  name="avatar"
+                  id="avatarInput"
+                  class="form-control pp-file"
+                  accept="image/*"
+                  onchange="previewAvatar(this)"
+                />
+                <small class="text-muted">JPG, PNG, GIF, WEBP (max 2MB)</small>
 
-          <!-- Username -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Username</label>
-            <div class="input-group">
+                <div class="d-none mt-2 w-100" id="avatarProgressWrap">
+                  <div class="pp-progress">
+                    <div id="avatarProgressBar" class="pp-progress-bar" style="width: 0%">0%</div>
+                  </div>
+                </div>
+                <div id="avatarStatus" class="small mt-1"></div>
+              </div>
+            </div>
+
+            <!-- First Name -->
+            <div class="mb-3 pp-stagger">
+              <div class="pp-label"><i class="bi bi-person"></i> First Name</div>
               <input
                 type="text"
-                name="username"
-                id="usernameInput"
-                class="form-control"
-                value="{{ profile.username or '' }}"
+                name="first_name"
+                class="form-control pp-input"
+                value="{{ profile.first_name or '' }}"
+                placeholder="Your first name"
               />
-              <span
-                class="input-group-text bg-transparent border-0"
-                id="usernameCheck"
-                style="display: none"
-                >✅</span
-              >
             </div>
-            <small class="form-text text-muted"
-              >You can change your username once every 30 days. Leave empty to
-              keep current.</small
-            >
-            <small class="text-danger d-none" id="usernameError"></small>
-          </div>
 
-          <!-- Bio -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Bio</label>
-            <textarea
-              name="bio"
-              class="form-control"
-              rows="3"
-              placeholder="Tell something about yourself..."
-            >
-{{ profile.bio or '' }}</textarea
-            >
-          </div>
-
-          <!-- Social Links Editor -->
-          <div class="mb-4">
-            <label class="form-label fw-semibold">Social Links</label>
-            <div id="socialLinksContainer">
-              <!-- Existing links pre-populated by JS -->
+            <!-- Last Name -->
+            <div class="mb-3 pp-stagger">
+              <div class="pp-label"><i class="bi bi-person"></i> Last Name</div>
+              <input
+                type="text"
+                name="last_name"
+                class="form-control pp-input"
+                value="{{ profile.last_name or '' }}"
+                placeholder="Your last name"
+              />
             </div>
-            <button
-              type="button"
-              class="btn btn-outline-primary btn-sm rounded-pill mt-2"
-              onclick="addSocialLink()"
-            >
-              <i class="bi bi-plus-circle me-1"></i> Add Link
+
+            <!-- Username -->
+            <div class="mb-3 pp-stagger">
+              <div class="pp-label"><i class="bi bi-at"></i> Username</div>
+              <div class="input-group">
+                <input
+                  type="text"
+                  name="username"
+                  id="usernameInput"
+                  class="form-control pp-input"
+                  value="{{ profile.username or '' }}"
+                />
+                <span class="input-group-text bg-transparent border-0" id="usernameCheck" style="display: none">✅</span>
+              </div>
+              <small class="form-text text-muted">You can change your username once every 30 days.</small>
+              <small class="text-danger d-none" id="usernameError"></small>
+            </div>
+
+            <!-- Bio -->
+            <div class="mb-3 pp-stagger">
+              <div class="pp-label"><i class="bi bi-chat-left-text"></i> Bio</div>
+              <textarea
+                name="bio"
+                class="form-control pp-input"
+                rows="3"
+                placeholder="Tell something about yourself..."
+              >{{ profile.bio or '' }}</textarea>
+            </div>
+
+            <!-- Social Links -->
+            <div class="mb-4 pp-stagger">
+              <div class="pp-label"><i class="bi bi-link-45deg"></i> Social Links</div>
+              <div id="socialLinksContainer"></div>
+              <button type="button" id="addSocialLinkBtn" class="pp-add-btn mt-2">
+                <i class="bi bi-plus-circle me-1"></i> Add Link
+              </button>
+              <small class="form-text text-muted d-block mt-1">Add your social media profiles or website.</small>
+            </div>
+
+            <button type="submit" id="saveProfileBtn" class="pp-btn w-100">
+              <span class="btn-text">Save Changes</span>
+              <span class="spinner-border spinner-border-sm d-none ms-2" id="saveSpinner"></span>
             </button>
-            <small class="form-text text-muted d-block mt-1"
-              >Add your social media profiles or website.</small
-            >
-          </div>
-
-          <button
-            type="submit"
-            id="saveProfileBtn"
-            class="btn btn-primary rounded-pill px-4"
-          >
-            <span class="btn-text">Save Changes</span>
-            <span
-              class="spinner-border spinner-border-sm d-none"
-              id="saveSpinner"
-            ></span>
-          </button>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  // Platform icons (for reference)
   const iconMap = {
     Facebook: "bi-facebook",
     Twitter: "bi-twitter-x",
@@ -157,51 +326,83 @@
     Website: "bi-globe",
   };
 
-  // Pre-populate existing links from server (profile.social_links = social_links JSON)
+  let socialLinkCounter = 0;
+
   let existingLinks = {};
   try {
-    const raw = "{{ profile.social_links | tojson | safe }}";
-    if (raw && raw !== "null" && raw !== '""') {
-      existingLinks = JSON.parse(raw);
+    var rawLinks = JSON.parse('{{ profile.social_links | tojson | safe }}');
+    if (rawLinks) {
+      existingLinks = rawLinks;
     }
-  } catch (e) {}
+  } catch (e) {
+    existingLinks = {};
+  }
 
-  Object.entries(existingLinks).forEach(([platform, url]) => {
-    addSocialLink(platform, url);
+  function addSocialLink(platform, url) {
+    platform = platform || "";
+    url = url || "";
+    socialLinkCounter = socialLinkCounter + 1;
+    var idx = "row-" + socialLinkCounter;
+    var container = document.getElementById("socialLinksContainer");
+
+    var html = "";
+    html += '<div class="input-group mb-2 social-link-row" data-idx="' + idx + '">';
+    html += '  <select class="form-select platform-select" style="max-width: 140px;" onchange="validateRow(this)">';
+    html += '    <option value="">Platform</option>';
+    html += '    <option value="Facebook"' + (platform === "Facebook" ? " selected" : "") + '>Facebook</option>';
+    html += '    <option value="Twitter"' + (platform === "Twitter" ? " selected" : "") + '>X (Twitter)</option>';
+    html += '    <option value="LinkedIn"' + (platform === "LinkedIn" ? " selected" : "") + '>LinkedIn</option>';
+    html += '    <option value="GitHub"' + (platform === "GitHub" ? " selected" : "") + '>GitHub</option>';
+    html += '    <option value="Instagram"' + (platform === "Instagram" ? " selected" : "") + '>Instagram</option>';
+    html += '    <option value="YouTube"' + (platform === "YouTube" ? " selected" : "") + '>YouTube</option>';
+    html += '    <option value="Website"' + (platform === "Website" ? " selected" : "") + '>Website</option>';
+    html += '  </select>';
+    html += '  <input type="url" class="form-control link-input" placeholder="https://..." value="' + url + '" oninput="validateRow(this)">';
+    html += '  <span class="input-group-text validation-icon bg-transparent border-0" style="display:none;">✅</span>';
+    html += '  <button type="button" class="btn btn-outline-danger border-0 link-remove-btn"><i class="bi bi-trash"></i></button>';
+    html += '</div>';
+
+    container.insertAdjacentHTML("beforeend", html);
+
+    var row = container.querySelector('[data-idx="' + idx + '"]');
+    if (url) {
+      validateRow(row.querySelector(".link-input"));
+    }
+  }
+
+  // Pre-populate existing links
+  Object.keys(existingLinks).forEach(function (platform) {
+    addSocialLink(platform, existingLinks[platform]);
   });
 
-  function addSocialLink(platform = "", url = "") {
-    const container = document.getElementById("socialLinksContainer");
-    const idx = Date.now();
-    const html = `
-        <div class="input-group mb-2 social-link-row" data-idx="${idx}">
-            <select class="form-select platform-select" style="max-width: 140px;" onchange="validateRow(this)">
-                <option value="">Platform</option>
-                <option value="Facebook" ${platform === "Facebook" ? "selected" : ""}>Facebook</option>
-                <option value="Twitter" ${platform === "Twitter" ? "selected" : ""}>X (Twitter)</option>
-                <option value="LinkedIn" ${platform === "LinkedIn" ? "selected" : ""}>LinkedIn</option>
-                <option value="GitHub" ${platform === "GitHub" ? "selected" : ""}>GitHub</option>
-                <option value="Instagram" ${platform === "Instagram" ? "selected" : ""}>Instagram</option>
-                <option value="YouTube" ${platform === "YouTube" ? "selected" : ""}>YouTube</option>
-                <option value="Website" ${platform === "Website" ? "selected" : ""}>Website</option>
-            </select>
-            <input type="url" class="form-control link-input" placeholder="https://..." value="${url}" oninput="validateRow(this)">
-            <span class="input-group-text validation-icon bg-transparent border-0" style="display:none;">✅</span>
-            <button type="button" class="btn btn-outline-danger border-0" onclick="this.parentElement.remove()">
-                <i class="bi bi-trash"></i>
-            </button>
-        </div>
-    `;
-    container.insertAdjacentHTML("beforeend", html);
-    const row = container.querySelector(`[data-idx="${idx}"]`);
-    if (url) validateRow(row.querySelector(".link-input"));
+  // Add Link button
+  document.getElementById("addSocialLinkBtn").addEventListener("click", function () {
+    addSocialLink("", "");
+  });
+
+  // Delete row (event delegation)
+  document.getElementById("socialLinksContainer").addEventListener("click", function (e) {
+    var removeBtn = e.target.closest(".link-remove-btn");
+    if (removeBtn) {
+      removeBtn.closest(".social-link-row").remove();
+    }
+  });
+
+  function isValidUrl(string) {
+    try {
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   function validateRow(element) {
-    const row = element.closest(".social-link-row");
-    const input = row.querySelector(".link-input");
-    const iconSpan = row.querySelector(".validation-icon");
-    const url = input.value.trim();
+    var row = element.closest(".social-link-row");
+    var input = row.querySelector(".link-input");
+    var iconSpan = row.querySelector(".validation-icon");
+    var url = input.value.trim();
+
     if (url && isValidUrl(url)) {
       iconSpan.style.display = "inline";
       iconSpan.textContent = "✅";
@@ -218,106 +419,9 @@
     }
   }
 
-  function isValidUrl(string) {
-    try {
-      new URL(string);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  // Collect social links into JSON before submit
-  document
-    .getElementById("editProfileForm")
-    .addEventListener("submit", function (e) {
-      const rows = document.querySelectorAll(".social-link-row");
-      const linksObj = {};
-      rows.forEach((row) => {
-        const platform = row.querySelector(".platform-select").value;
-        const url = row.querySelector(".link-input").value.trim();
-        if (platform && url && isValidUrl(url)) {
-          linksObj[platform] = url;
-        }
-      });
-      document.getElementById("socialLinksInput").value =
-        JSON.stringify(linksObj);
-    });
-  // AJAX profile update with loading + success message
-  document
-    .getElementById("editProfileForm")
-    .addEventListener("submit", async function (e) {
-      e.preventDefault();
-
-      // Social links collection (pehle se existing code hai, use chalta rahe)
-      const rows = document.querySelectorAll(".social-link-row");
-      const linksObj = {};
-      rows.forEach((row) => {
-        const platform = row.querySelector(".platform-select").value;
-        const url = row.querySelector(".link-input").value.trim();
-        if (platform && url && isValidUrl(url)) {
-          linksObj[platform] = url;
-        }
-      });
-      document.getElementById("socialLinksInput").value =
-        JSON.stringify(linksObj);
-
-      const btn = document.getElementById("saveProfileBtn");
-      const btnText = btn.querySelector(".btn-text");
-      const spinner = document.getElementById("saveSpinner");
-
-      btn.disabled = true;
-      btnText.textContent = "Saving...";
-      spinner.classList.remove("d-none");
-
-      try {
-        const res = await fetch("/user/profile/edit", {
-          method: "POST",
-          body: new FormData(this),
-          headers: { "X-Requested-With": "XMLHttpRequest" },
-        });
-        const data = await res.json();
-
-        if (res.ok && data.success) {
-          showProfileFlash(
-            data.message || "Profile updated successfully!",
-            "success",
-          );
-          if (data.avatar_url) {
-            document.getElementById("avatarPreview").src = data.avatar_url;
-          }
-        } else {
-          showProfileFlash(
-            data.error || "Update failed. Please try again.",
-            "danger",
-          );
-        }
-      } catch (err) {
-        showProfileFlash("Something went wrong. Please try again.", "danger");
-      } finally {
-        btn.disabled = false;
-        btnText.textContent = "Save Changes";
-        spinner.classList.add("d-none");
-      }
-    });
-
-  function showProfileFlash(message, type) {
-    const flash = document.getElementById("profileFlash");
-    if (!flash) return;
-    flash.innerHTML = `
-        <div class="alert alert-${type} alert-dismissible fade show rounded-3" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>`;
-    setTimeout(() => {
-      flash.innerHTML = "";
-    }, 4000);
-  }
-
-  // Avatar preview
   function previewAvatar(input) {
     if (input.files && input.files[0]) {
-      const reader = new FileReader();
+      var reader = new FileReader();
       reader.onload = function (e) {
         document.getElementById("avatarPreview").src = e.target.result;
       };
@@ -325,26 +429,130 @@
     }
   }
 
-  // Username real-time availability check
-  const usernameInput = document.getElementById("usernameInput");
-  const usernameCheck = document.getElementById("usernameCheck");
-  const usernameError = document.getElementById("usernameError");
-  let debounceTimer;
+  function showProfileFlash(message, type) {
+    var flash = document.getElementById("profileFlash");
+    if (!flash) return;
+    flash.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show rounded-3" role="alert">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    setTimeout(function () {
+      flash.innerHTML = "";
+    }, 4000);
+  }
+
+  // Form submit (XHR with upload progress)
+  document.getElementById("editProfileForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    var rows = document.querySelectorAll(".social-link-row");
+    var linksObj = {};
+    rows.forEach(function (row) {
+      var platform = row.querySelector(".platform-select").value;
+      var url = row.querySelector(".link-input").value.trim();
+      if (platform && url && isValidUrl(url)) {
+        linksObj[platform] = url;
+      }
+    });
+    document.getElementById("socialLinksInput").value = JSON.stringify(linksObj);
+
+    var btn = document.getElementById("saveProfileBtn");
+    var btnText = btn.querySelector(".btn-text");
+    var spinner = document.getElementById("saveSpinner");
+    var progressWrap = document.getElementById("avatarProgressWrap");
+    var progressBar = document.getElementById("avatarProgressBar");
+    var avatarStatus = document.getElementById("avatarStatus");
+    var avatarInput = document.getElementById("avatarInput");
+
+    var hasAvatar = avatarInput && avatarInput.files && avatarInput.files.length > 0;
+
+    btn.disabled = true;
+    btnText.textContent = "Saving...";
+    spinner.classList.remove("d-none");
+
+    if (hasAvatar && progressWrap) {
+      progressWrap.classList.remove("d-none");
+      progressBar.style.width = "0%";
+      progressBar.textContent = "0%";
+      if (avatarStatus) avatarStatus.textContent = "";
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/user/profile/edit");
+    xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+
+    xhr.upload.onprogress = function (evt) {
+      if (evt.lengthComputable && progressBar) {
+        var pct = Math.round((evt.loaded / evt.total) * 100);
+        progressBar.style.width = pct + "%";
+        progressBar.textContent = pct + "%";
+      }
+    };
+
+    xhr.onload = function () {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        if (xhr.status === 200 && data.success) {
+          if (progressWrap) progressWrap.classList.add("d-none");
+          if (avatarStatus) {
+            avatarStatus.textContent = "✅ Avatar updated successfully";
+            avatarStatus.className = "text-success small mt-1";
+            setTimeout(function () { avatarStatus.textContent = ""; }, 3000);
+          }
+          if (data.avatar_url) {
+            var cacheBust = "?t=" + Date.now();
+            document.getElementById("avatarPreview").src = data.avatar_url + cacheBust;
+            var navImg = document.getElementById("navbarAvatar");
+            if (navImg) navImg.src = data.avatar_url + cacheBust;
+          }
+          showProfileFlash(data.message || "Profile updated successfully!", "success");
+        } else {
+          if (progressWrap) progressWrap.classList.add("d-none");
+          if (avatarStatus) {
+            avatarStatus.textContent = "❌ " + (data.error || "Upload failed. Please try again.");
+            avatarStatus.className = "text-danger small mt-1";
+          }
+          showProfileFlash(data.error || "Update failed. Please try again.", "danger");
+        }
+      } catch (err) {
+        if (progressWrap) progressWrap.classList.add("d-none");
+        showProfileFlash("Invalid server response.", "danger");
+      }
+      btn.disabled = false;
+      btnText.textContent = "Save Changes";
+      spinner.classList.add("d-none");
+    };
+
+    xhr.onerror = function () {
+      if (progressWrap) progressWrap.classList.add("d-none");
+      if (avatarStatus) {
+        avatarStatus.textContent = "❌ Network error — upload failed.";
+        avatarStatus.className = "text-danger small mt-1";
+      }
+      showProfileFlash("Network error. Please try again.", "danger");
+      btn.disabled = false;
+      btnText.textContent = "Save Changes";
+      spinner.classList.add("d-none");
+    };
+
+    xhr.send(new FormData(this));
+  });
+
+  // Username availability check
+  var usernameInput = document.getElementById("usernameInput");
+  var usernameCheck = document.getElementById("usernameCheck");
+  var usernameError = document.getElementById("usernameError");
+  var debounceTimer;
 
   usernameInput.addEventListener("input", function () {
     clearTimeout(debounceTimer);
-    const newUsername = this.value.trim();
+    var newUsername = this.value.trim();
     if (newUsername === "" || newUsername === "{{ profile.username }}") {
       usernameCheck.style.display = "none";
       usernameError.classList.add("d-none");
       return;
     }
-    debounceTimer = setTimeout(() => {
-      fetch(
-        `/api/check-availability?field=username&value=${encodeURIComponent(newUsername)}`,
-      )
-        .then((r) => r.json())
-        .then((data) => {
+    debounceTimer = setTimeout(function () {
+      fetch("/api/check-availability?field=username&value=" + encodeURIComponent(newUsername))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
           if (data.exists) {
             usernameCheck.style.display = "inline";
             usernameCheck.textContent = "❌";

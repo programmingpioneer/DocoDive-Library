@@ -355,6 +355,28 @@
           opacity: 1;
           transform: translateY(0) translateX(-50%);
         }
+                /* Logged-out navbar: compact Login button + proper spacing */
+        .navbar .btn-outline-primary {
+          padding: 6px 14px;
+          font-size: 0.85rem;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .navbar .btn-outline-primary i {
+          font-size: 0.9rem;
+        }
+        .navbar .order-lg-last {
+          gap: 6px !important;
+          flex-wrap: nowrap;
+          align-items: center;
+        }
+        .navbar-brand {
+          font-size: 1.15rem;
+        }
+        .navbar-brand .bg-primary {
+          width: 32px;
+          height: 32px;
+        }
       }
 
       .notif-dropdown {
@@ -1255,7 +1277,8 @@
       gtag("config", "G-3GC4V3QX2W");
     </script>
 
-    <!-- ================== BREVO CHAT WIDGET ================== -->
+        <!-- ================== BREVO CHAT WIDGET (HOME ONLY) ================== -->
+    {% if request.path == '/' %}
     <script>
       (function (d, w, c) {
         w.BrevoConversationsID = "6a551981edd95b5e7d08467b";
@@ -1270,6 +1293,7 @@
         if (d.head) d.head.appendChild(s);
       })(document, window, "BrevoConversations");
     </script>
+    {% endif %}
   </head>
 
   <body
@@ -1453,21 +1477,23 @@
                 padding: 4px 12px;
               "
             >
-              {% if session.get('avatar_url') and
-              session.get('avatar_url').startswith('http') %}
+                           {% set _av = session.get('avatar_url') or '' %}
+              {% if _av %}
               <img
-                src="{{ session.get('avatar_url') }}"
+                id="navbarAvatar"
+                src="{{ _av }}"
                 class="rounded-circle"
                 width="30"
                 height="30"
                 alt="Profile"
-                style="object-fit: cover"
+                style="object-fit: cover; flex-shrink: 0"
                 loading="lazy"
+                onerror="this.onerror=null;this.parentNode.innerHTML='<span class=&quot;avatar-fallback&quot;><i class=&quot;bi bi-person-fill&quot;></i></span>';"
               />
               {% else %}
-              <span class="avatar-fallback"
-                ><i class="bi bi-person-fill"></i
-              ></span>
+              <span class="avatar-fallback">
+                {{ (session.get('user_display_name') or session.get('user_name') or 'U')[:1]|upper }}
+              </span>
               {% endif %}
               <span class="fw-semibold d-none d-md-inline">
                 {{ session.get('user_display_name') or session.get('user_name')

@@ -1,100 +1,575 @@
 {% extends 'base.html' %}
-{% block title %}{{ info.title }} — {{ category }} | DocoDive{% endblock %}
+{% block title %}Databases Practice Hub — SQL, Indexing, Transactions & Scaling Challenges | DocoDive{% endblock %}
+{% block meta_description %}Practice databases with interactive challenges: MCQs and SQL/output prediction across fundamentals, joins, indexing, transactions, query optimization, and distributed systems — beginner to advanced.{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --dbp: #312e81;
+    --dbp-dark: #1e1b4b;
+    --dbp-light: #eef2ff;
+    --dbp-border: #818cf8;
+  }
+
+  .practice-hero {
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    border: 1px solid #818cf8;
+  }
+
+  .level-tabs { display: flex; flex-wrap: wrap; gap: 10px; }
+  .level-tab {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 22px; border-radius: 50px; font-weight: 700;
+    font-size: 0.9rem; cursor: pointer; border: 2px solid #e5e7eb;
+    background: #fff; color: #6b7280; transition: all 0.2s ease; user-select: none;
+  }
+  .level-tab.active { background: #312e81; color: #fff; border-color: #312e81; }
+  .level-tab[data-level="beginner"].active { background: #16a34a; border-color: #16a34a; }
+  .level-tab[data-level="intermediate"].active { background: #ea580c; border-color: #ea580c; }
+  .level-tab[data-level="advanced"].active { background: #dc2626; border-color: #dc2626; }
+  .level-tab[data-mode="survival"].active { background: #dc2626; border-color: #dc2626; }
+
+  .setup-label {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #6b7280; margin-bottom: 10px;
+  }
+  .topic-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #eef2ff; color: #312e81; border: 1px solid #818cf8;
+    border-radius: 50px; padding: 6px 14px; font-size: 0.82rem;
+    font-weight: 600; cursor: pointer; transition: all 0.2s ease; user-select: none;
+  }
+  .topic-chip:hover, .topic-chip.active {
+    background: #312e81; color: #fff; border-color: #312e81;
+  }
+  .form-select {
+    border-radius: 50px; border: 1px solid #e5e7eb; padding: 10px 16px; font-size: 0.9rem;
+  }
+  .form-select:focus { border-color: #312e81; box-shadow: 0 0 0 3px rgba(49,46,129,0.12); }
+
+  .setup-box { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; }
+  .session-header {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 16px;
+    padding: 16px 18px; margin-bottom: 16px;
+  }
+  .progress-track { height: 8px; background: #f3f4f6; border-radius: 50px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg,#312e81,#818cf8); border-radius: 50px; transition: width .4s; }
+  .challenge-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 22px; }
+  .code-block {
+    background: #0d1117; color: #c9d1d9; border-radius: 12px; padding: 16px;
+    font-family: Consolas, Monaco, monospace; font-size: 0.88rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word; margin: 10px 0; border: 1px solid #21262d;
+  }
+  .q-tag { background: #eef2ff; color: #312e81; border: 1px solid #818cf8; border-radius: 50px; padding: 3px 10px; font-size: 0.7rem; font-weight: 600; }
+  .tag-easy { background:#dcfce7; color:#16a34a; border-color:#bbf7d0; }
+  .tag-medium { background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
+  .tag-hard { background:#fee2e2; color:#dc2626; border-color:#fecaca; }
+  .type-badge { background:#eef2ff; color:#1e1b4b; border-radius:6px; padding:2px 8px; font-size:0.7rem; font-weight:700; text-transform:uppercase; }
+
+  .mcq-option {
+    display:block; width:100%; text-align:left; padding:12px 16px;
+    border:1px solid #e5e7eb; border-radius:12px; background:#fff; margin-bottom:8px;
+    cursor:pointer; transition:all .15s; font-size:.9rem;
+  }
+  .mcq-option:hover { border-color:#818cf8; background:#eef2ff; }
+  .mcq-option.correct { border-color:#16a34a !important; background:#dcfce7 !important; pointer-events:none; }
+  .mcq-option.incorrect { border-color:#dc2626 !important; background:#fee2e2 !important; pointer-events:none; }
+  .mcq-option.neutral { opacity:0.55; pointer-events:none; }
+
+  .answer-input {
+    width:100%; border:1px solid #e5e7eb; border-radius:12px; padding:12px 16px;
+    font-size:.9rem; font-family:Consolas,Monaco,monospace; resize:vertical;
+  }
+  .answer-input:focus { outline:none; border-color:#312e81; box-shadow:0 0 0 3px rgba(49,46,129,0.12); }
+
+  .feedback-box { border-radius:12px; padding:12px 16px; margin-top:12px; font-size:.9rem; display:none; }
+  .feedback-box.success { display:block; background:#dcfce7; color:#166534; border-left:4px solid #16a34a; }
+  .feedback-box.error { display:block; background:#fee2e2; color:#991b1b; border-left:4px solid #dc2626; }
+
+  .hint-box { background:#eef2ff; border-left:4px solid #312e81; color:#3730a3; padding:12px 16px; border-radius:10px; font-size:.9rem; margin-top:10px; display:none; }
+  .explanation-box {
+    margin-top: 12px; padding: 14px 16px; background: #fff;
+    border: 1px solid #e5e7eb; border-left: 4px solid #312e81;
+    border-radius: 10px; font-size: .9rem; color: #1e1b4b;
+  }
+  .explanation-box strong { color: #1e1b4b; }
+
+  .complete-card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:36px 24px; text-align:center; }
+  .complete-icon { width:72px; height:72px; border-radius:50%; background:#dcfce7; color:#16a34a; display:flex; align-items:center; justify-content:center; font-size:2.2rem; margin:0 auto 14px; }
+  .stat-box { background:#eef2ff; border:1px solid #818cf8; border-radius:14px; padding:14px; text-align:center; }
+  .stat-value { font-size:1.7rem; font-weight:800; color:#312e81; }
+  .stat-label { font-size:.75rem; color:#6b7280; font-weight:600; }
+  .survival-stats { display:inline-flex; gap:12px; align-items:center; }
+  .mistake-item { border:1px solid #e5e7eb; border-radius:12px; padding:12px 14px; margin-bottom:10px; background:#fff; }
+  #radarCanvas { max-width:100%; height:auto; }
+
+  @media (max-width:575.98px) {
+    .practice-hero { padding:24px 16px; }
+    .practice-hero h1 { font-size:1.7rem; }
+    .challenge-card { padding:16px; }
+    .setup-box { padding:16px; }
+    .level-tab { padding:8px 14px; font-size:.8rem; }
+    .survival-stats { gap:8px; font-size:.8rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <section class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+  <div class="practice-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="badge rounded-pill" style="background:#312e81;color:#fff;font-weight:700;">Practice Hub</span>
+      <span class="badge rounded-pill bg-light text-dark border">Unlimited Practice</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:#1e1b4b;">Databases Practice Hub</h1>
+    <p class="text-muted mb-0">Real MCQs and SQL/output-prediction challenges across SQL fundamentals, joins, indexing, transactions, query optimization, and distributed systems. Pick a level and topic — solve as many as you want, then finish to see your summary.</p>
+  </div>
 
-      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 24px;">
+  <div id="setupPanel" class="setup-box mb-4">
+    <div class="mb-4">
+      <div class="setup-label"><i class="bi bi-bar-chart me-1"></i>1. Choose Level</div>
+      <div class="level-tabs">
+        <button class="level-tab active" data-level="beginner" onclick="selectLevel('beginner', this)"><i class="bi bi-sunrise"></i> Beginner</button>
+        <button class="level-tab" data-level="intermediate" onclick="selectLevel('intermediate', this)"><i class="bi bi-sun"></i> Intermediate</button>
+        <button class="level-tab" data-level="advanced" onclick="selectLevel('advanced', this)"><i class="bi bi-rocket-takeoff"></i> Advanced</button>
+      </div>
+    </div>
+    <div class="mb-4">
+      <div class="setup-label"><i class="bi bi-folder2-open me-1"></i>2. Choose Topic</div>
+      <div class="d-flex flex-wrap gap-2" id="topicChips"></div>
+    </div>
+    <div class="mb-4">
+      <div class="setup-label"><i class="bi bi-controller me-1"></i>3. Choose Mode</div>
+      <div class="level-tabs">
+        <button class="level-tab active" data-mode="unlimited" onclick="selectMode('unlimited', this)"><i class="bi bi-infinity"></i> Unlimited</button>
+        <button class="level-tab" data-mode="survival" onclick="selectMode('survival', this)"><i class="bi bi-lightning-charge"></i> Survival</button>
+      </div>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-6">
+        <div class="setup-label">Difficulty</div>
+        <select id="difficultySelect" class="form-select">
+          <option value="all">Mixed</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-6">
+        <div class="setup-label">Type</div>
+        <select id="typeSelect" class="form-select">
+          <option value="all">Mixed</option>
+          <option value="mcq">MCQ</option>
+          <option value="output">Output</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary rounded-pill w-100 py-3" style="background:#312e81;border-color:#312e81;" onclick="startSession()">
+      <i class="bi bi-play-circle me-1"></i>Start Practice
+    </button>
+    <div class="d-flex flex-wrap gap-2 mt-3">
+      <button class="btn btn-outline-secondary rounded-pill flex-grow-1" onclick="openMistakes()"><i class="bi bi-journal-x me-1"></i>Mistakes</button>
+      <button class="btn btn-outline-secondary rounded-pill flex-grow-1" onclick="openRadar()"><i class="bi bi-pie-chart me-1"></i>Radar</button>
+    </div>
+  </div>
 
-        <!-- HERO -->
-        <div class="p-5 text-center" style="background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);">
-          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-               style="width: 96px; height: 96px; background: #fff; box-shadow: 0 12px 30px rgba(67, 56, 202, 0.12);">
-            <i class="bi {{ info.icon }} fs-1 {{ info.color }}"></i>
-          </div>
-
-          <span class="badge rounded-pill px-3 py-2 mb-3"
-                style="background: #ffb703; color: #1e1b4b; font-weight: 700; font-size: 0.9rem;">
-            <i class="bi bi-cone-striped me-2"></i> COMING SOON
+  <div id="sessionPanel" class="d-none">
+    <div class="session-header">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+        <div>
+          <span class="fw-bold" style="color:#312e81;" id="sessionTopic">Topic</span>
+          <span class="text-muted ms-2 small" id="sessionCounter">Solved: 0</span>
+        </div>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          <span class="text-muted small"><i class="bi bi-check-circle text-success me-1"></i><strong id="correctCount">0</strong></span>
+          <span class="text-muted small"><i class="bi bi-x-circle text-danger me-1"></i><strong id="wrongCount">0</strong></span>
+          <span class="text-muted small"><i class="bi bi-bullseye me-1"></i><strong id="accuracyCount">0%</strong></span>
+          <span class="text-muted small"><i class="bi bi-clock me-1"></i><strong id="timerDisplay">00:00</strong></span>
+          <span class="survival-stats d-none" id="survivalStats">
+            <span><i class="bi bi-heart-fill text-danger me-1"></i><strong id="livesDisplay">3</strong></span>
+            <span><i class="bi bi-fire text-warning me-1"></i><strong id="comboDisplay">0</strong></span>
+            <span><i class="bi bi-star-fill text-warning me-1"></i><strong id="scoreDisplay">0</strong></span>
           </span>
-
-          <h1 class="fw-bolder mt-2" style="color: #1e1b4b;">{{ info.title }}</h1>
-          <p class="text-muted lead mb-4">
-            We're building something amazing for <strong>{{ category }}</strong> learners!
-          </p>
-
-          <div class="alert border-0 rounded-4 text-start shadow-sm mx-auto"
-               style="max-width: 640px; background: #e0f2fe; color: #0c4a6e;">
-            <p class="mb-2 fw-semibold">
-              <i class="bi bi-tools me-2"></i>This module is under construction
-            </p>
-            <p class="small mb-0">
-              Our team is preparing detailed lessons, practical examples, downloadable
-              resources and interactive exercises for <strong>{{ info.title }}</strong> in
-              <strong>{{ category }}</strong>. This content will guide you step-by-step,
-              from the fundamentals right up to an advanced level.
-            </p>
-          </div>
+          <button class="btn btn-danger rounded-pill px-3 py-1" onclick="finishSession()"><i class="bi bi-stop-circle me-1"></i>Finish</button>
         </div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
+    </div>
+    <div class="challenge-card" id="challengeCard"></div>
+  </div>
 
-        <!-- WHAT YOU'LL GET -->
-        <div class="p-5">
-          <h5 class="fw-bold mb-4 text-center" style="color: #4338ca;">
-            What you'll get in this module
-          </h5>
-
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #f0f4ff;">
-                <i class="bi bi-journal-text fs-3 text-primary"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Detailed Lessons</h6>
-                  <p class="small text-muted mb-0">Step-by-step structured content designed for every level.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fff4e5;">
-                <i class="bi bi-lightbulb fs-3 text-warning"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Real Examples</h6>
-                  <p class="small text-muted mb-0">Practical examples you can understand and apply instantly.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #e8faf0;">
-                <i class="bi bi-patch-check fs-3 text-success"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Practice &amp; Quizzes</h6>
-                  <p class="small text-muted mb-0">Test your knowledge with quizzes and hands-on exercises.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fdeef4;">
-                <i class="bi bi-download fs-3 text-danger"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Resources &amp; PDFs</h6>
-                  <p class="small text-muted mb-0">Curated notes and downloadable study material.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="text-center mt-5">
-            <a href="/learn/{{ category_slug }}" class="btn btn-primary rounded-pill px-4 py-2 me-2">
-              <i class="bi bi-collection me-2"></i> Explore {{ category }}
-            </a>
-            <a href="/" class="btn btn-outline-primary rounded-pill px-4 py-2">
-              <i class="bi bi-arrow-left me-2"></i> Back to Home
-            </a>
-          </div>
-        </div>
-
+  <div id="completePanel" class="d-none">
+    <div class="complete-card">
+      <div class="complete-icon"><i class="bi bi-trophy"></i></div>
+      <h2 class="fw-bold mb-2" style="color:#1e1b4b;" id="completeTitle">Practice Session Complete 🎉</h2>
+      <p class="text-muted mb-4" id="completeText"></p>
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3"><div class="stat-box"><div class="stat-value" id="totalSolved">0</div><div class="stat-label">Solved</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat-box"><div class="stat-value text-success" id="finalCorrect">0</div><div class="stat-label">Correct</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat-box"><div class="stat-value" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat-box"><div class="stat-value" id="finalTime">0m 0s</div><div class="stat-label">Time</div></div></div>
+      </div>
+      <div class="d-flex flex-wrap justify-content-center gap-2">
+        <button class="btn btn-primary rounded-pill px-4" style="background:#312e81;border-color:#312e81;" onclick="startSession()"><i class="bi bi-arrow-repeat me-1"></i>Practice Again</button>
+        <button class="btn btn-outline-primary rounded-pill px-4" onclick="backToSetup()"><i class="bi bi-grid me-1"></i>Change Topic</button>
       </div>
     </div>
   </div>
+
+  <div id="mistakePanel" class="setup-box mb-4 d-none">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h5 class="fw-bold mb-0"><i class="bi bi-journal-x me-1"></i>Mistake Notebook</h5>
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="practiceMistakes()"><i class="bi bi-play me-1"></i>Practice Mistakes</button>
+        <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="clearMistakes()"><i class="bi bi-trash me-1"></i>Clear All</button>
+      </div>
+    </div>
+    <p class="small text-muted" id="mistakeCount"></p>
+    <div id="mistakeList"></div>
+    <button class="btn btn-outline-primary rounded-pill mt-3" onclick="showPanel('setupPanel')"><i class="bi bi-arrow-left me-1"></i>Back</button>
+  </div>
+
+  <div id="radarPanel" class="setup-box mb-4 d-none text-center">
+    <h5 class="fw-bold mb-3"><i class="bi bi-pie-chart me-1"></i>Topic Radar</h5>
+    <canvas id="radarCanvas" width="360" height="360" class="mx-auto d-block"></canvas>
+    <p class="small text-muted mt-2">Your accuracy per topic — bigger shape = stronger.</p>
+    <button class="btn btn-outline-primary rounded-pill mt-3" onclick="showPanel('setupPanel')"><i class="bi bi-arrow-left me-1"></i>Back</button>
+  </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const PRACTICE_DATA = {{ practice_items|tojson }};
+  const LS_SPACED = 'doco_db_spaced_rep';
+  const LS_MISTAKES = 'doco_db_mistakes';
+  const LS_TOPICS = 'doco_db_topic_stats';
+
+  let currentLevel = 'beginner';
+  let currentTopic = '';
+  let sessionMode = 'unlimited';
+  let session = null;
+  let filteredPool = [];
+  let usedIds = [];
+  let timerInterval = null;
+  let sessionStartTime = null;
+  let currentQ = null;
+
+  let spacedRep = loadJson(LS_SPACED, {});
+  let mistakes = loadJson(LS_MISTAKES, []);
+  let topicStats = loadJson(LS_TOPICS, {});
+
+  function loadJson(key, fallback) {
+    try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+    catch(e) { return fallback; }
+  }
+  function saveJson(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+  }
+
+  function selectLevel(level, btn) {
+    currentLevel = level;
+    currentTopic = '';
+    document.querySelectorAll('.level-tab[data-level]').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    renderTopics();
+  }
+  function selectMode(mode, btn) {
+    sessionMode = mode;
+    document.querySelectorAll('.level-tab[data-mode]').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  function selectTopic(topic, btn) {
+    currentTopic = topic;
+    document.querySelectorAll('.topic-chip').forEach(c => c.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+  }
+  function showPanel(id) {
+    ['setupPanel','sessionPanel','completePanel','mistakePanel','radarPanel'].forEach(p => document.getElementById(p).classList.add('d-none'));
+    document.getElementById(id).classList.remove('d-none');
+  }
+  function renderTopics() {
+    const container = document.getElementById('topicChips');
+    const topics = [...new Set(PRACTICE_DATA.filter(q => q.level === currentLevel).map(q => q.topic))];
+    container.innerHTML = '';
+    const allChip = document.createElement('button');
+    allChip.className = 'topic-chip active';
+    allChip.textContent = 'All Topics';
+    allChip.onclick = () => selectTopic('', allChip);
+    container.appendChild(allChip);
+    topics.forEach(topic => {
+      const chip = document.createElement('button');
+      chip.className = 'topic-chip';
+      chip.textContent = topic;
+      chip.onclick = () => selectTopic(topic, chip);
+      container.appendChild(chip);
+    });
+  }
+  function startSession() {
+    const difficulty = document.getElementById('difficultySelect').value;
+    const type = document.getElementById('typeSelect').value;
+    filteredPool = PRACTICE_DATA.filter(q => q.level === currentLevel);
+    if (currentTopic) filteredPool = filteredPool.filter(q => q.topic === currentTopic);
+    if (difficulty !== 'all') filteredPool = filteredPool.filter(q => q.difficulty === difficulty);
+    if (type !== 'all') filteredPool = filteredPool.filter(q => q.type === type);
+    if (filteredPool.length === 0) { alert('No challenges for this selection.'); return; }
+    beginSession(currentTopic || 'Mixed');
+  }
+  function practiceMistakes() {
+    const ids = mistakes.map(m => m.id);
+    filteredPool = PRACTICE_DATA.filter(q => ids.includes(q.id));
+    if (filteredPool.length === 0) { alert('No mistakes to practice.'); return; }
+    beginSession('Mistakes');
+  }
+  function beginSession(topicLabel) {
+    usedIds = [];
+    session = { total: 0, correct: 0, wrong: 0, topic: topicLabel, mode: sessionMode, lives: 3, combo: 0, maxCombo: 0, score: 0 };
+    sessionStartTime = Date.now();
+    clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
+    updateSurvivalUI();
+    showPanel('sessionPanel');
+    renderChallenge();
+  }
+  function spacedWeight(qid) {
+    const b = spacedRep[qid] ?? 2;
+    const weights = { 0: 6, 1: 5, 2: 3, 3: 2, 4: 1, 5: 0.5 };
+    return weights[b] ?? 3;
+  }
+  function pickChallenge() {
+    let avail = filteredPool.filter(q => !usedIds.includes(q.id));
+    if (avail.length === 0) { usedIds = []; avail = filteredPool; }
+    let totalW = 0;
+    avail.forEach(q => totalW += spacedWeight(q.id));
+    let r = Math.random() * totalW;
+    for (const q of avail) {
+      r -= spacedWeight(q.id);
+      if (r <= 0) return q;
+    }
+    return avail[0];
+  }
+  function renderChallenge() {
+    const q = pickChallenge();
+    currentQ = q;
+    document.getElementById('sessionTopic').textContent = session.topic + ' Practice';
+    document.getElementById('sessionCounter').textContent = 'Solved: ' + session.total;
+    document.getElementById('correctCount').textContent = session.correct;
+    document.getElementById('wrongCount').textContent = session.wrong;
+    document.getElementById('accuracyCount').textContent = calcAccuracy();
+    const lc = {beginner:'tag-easy',intermediate:'tag-medium',advanced:'tag-hard'}[q.level] || 'tag-medium';
+    let html = `
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <span class="q-tag">${escapeHtml(q.topic)}</span><span class="q-tag ${lc}">${escapeHtml(q.difficulty)}</span><span class="ms-auto type-badge">${escapeHtml(q.type)}</span>
+      </div>
+      <h2 class="h5 fw-bold mb-2" style="color:#1e1b4b;">${escapeHtml(q.title)}</h2>
+      <p class="fw-semibold mb-3" style="color:#1e1b4b;">${escapeHtml(q.question)}</p>`;
+    if (q.code) html += `<pre class="code-block">${escapeHtml(q.code)}</pre>`;
+    if (q.type === 'mcq' && q.options) {
+      html += '<div class="mb-2" id="mcqOptions">';
+      q.options.forEach(opt => { html += `<button class="mcq-option" onclick="checkMcq(this,'${q.id}')">${escapeHtml(opt)}</button>`; });
+      html += '</div>';
+    } else {
+      html += `<textarea id="answerText" class="answer-input mb-2" rows="3" placeholder="Type your answer..."></textarea>`;
+      html += `<div class="d-flex flex-wrap gap-2 mt-1"><button class="btn btn-primary rounded-pill px-4" style="background:#312e81;border-color:#312e81;" onclick="checkText('${q.id}')"><i class="bi bi-check2-circle me-1"></i>Check Answer</button></div>`;
+    }
+    html += `<div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+      <button class="btn btn-outline-secondary rounded-pill px-3" onclick="skipChallenge('${q.id}')"><i class="bi bi-skip-forward me-1"></i>Skip</button>
+    </div>`;
+    html += '<div class="feedback-box" id="fb"></div><div class="explanation-box d-none" id="explanationBox"></div><div class="hint-box" id="hintBox"></div>';
+    document.getElementById('challengeCard').innerHTML = html;
+    window.scrollTo({ top: document.getElementById('challengeCard').offsetTop - 100, behavior: 'smooth' });
+  }
+  function afterAnswer(isCorrect, q, userAnswer) {
+    usedIds.push(q.id);
+    session.total++; isCorrect ? session.correct++ : session.wrong++;
+    if (isCorrect) spacedRep[q.id] = Math.min(5, (spacedRep[q.id] ?? 2) + 1);
+    else spacedRep[q.id] = 0;
+    saveJson(LS_SPACED, spacedRep);
+
+    if (!isCorrect) {
+      const entry = { id: q.id, title: q.title, topic: q.topic, level: q.level, yourAnswer: userAnswer, correctAnswer: q.answer, ts: Date.now() };
+      const existing = mistakes.find(m => m.id === q.id);
+      if (existing) Object.assign(existing, entry);
+      else mistakes.unshift(entry);
+      mistakes = mistakes.slice(0, 200);
+      saveJson(LS_MISTAKES, mistakes);
+    }
+    const t = topicStats[q.topic] || { correct: 0, wrong: 0 };
+    if (isCorrect) t.correct++; else t.wrong++;
+    topicStats[q.topic] = t;
+    saveJson(LS_TOPICS, topicStats);
+
+    let gameOver = false;
+    if (session.mode === 'survival') {
+      if (isCorrect) { session.combo++; session.maxCombo = Math.max(session.maxCombo, session.combo); session.score += session.combo * 10; }
+      else { session.lives--; session.combo = 0; }
+      updateSurvivalUI();
+      if (session.lives <= 0) gameOver = true;
+    }
+
+    const fb = document.getElementById('fb');
+    const hint = document.getElementById('hintBox');
+    const exBox = document.getElementById('explanationBox');
+    fb.className = 'feedback-box ' + (isCorrect ? 'success' : 'error');
+    fb.style.display = 'block';
+    if (isCorrect) fb.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Correct! ✓';
+    else {
+      fb.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i> Incorrect. <span class="small">Expected: ' + escapeHtml(q.answer) + '</span>';
+      hint.style.display = 'block';
+      hint.innerHTML = '<i class="bi bi-lightbulb me-1"></i><strong>Hint:</strong> ' + escapeHtml(q.hint || '');
+    }
+    exBox.classList.remove('d-none');
+    exBox.innerHTML = '<strong>💡 Explanation:</strong> ' + escapeHtml(q.explanation || 'No explanation provided.');
+
+    if (!gameOver) {
+      document.getElementById('challengeCard').insertAdjacentHTML('beforeend', '<div class="text-center mt-3"><button class="btn btn-primary rounded-pill px-4" style="background:#312e81;border-color:#312e81;" onclick="nextChallenge()"><i class="bi bi-arrow-right-circle me-1"></i>Next Challenge</button></div>');
+    }
+    updateStats();
+    if (gameOver) { finishSession(); }
+  }
+  function checkMcq(btn, qid) {
+    const q = PRACTICE_DATA.find(x => x.id == qid);
+    if (!q) return;
+    const selected = btn.textContent.trim();
+    const isCorrect = selected === q.answer;
+    const container = document.getElementById('mcqOptions');
+    if (container) {
+      container.querySelectorAll('.mcq-option').forEach(o => {
+        o.style.pointerEvents = 'none';
+        const optText = o.textContent.trim();
+        if (optText === q.answer) o.classList.add('correct');
+        else if (optText === selected && !isCorrect) o.classList.add('incorrect');
+        else o.classList.add('neutral');
+      });
+    }
+    afterAnswer(isCorrect, q, selected);
+  }
+  function checkText(qid) {
+    const q = PRACTICE_DATA.find(x => x.id == qid);
+    if (!q) return;
+    const val = document.getElementById('answerText').value.trim();
+    if (!val) { alert('Type your answer first.'); return; }
+    const norm = s => s.toLowerCase().replace(/\s+/g, ' ').trim();
+    const isCorrect = norm(val) === norm(q.answer);
+    afterAnswer(isCorrect, q, val);
+  }
+  function nextChallenge() { renderChallenge(); }
+  function skipChallenge(qid) { usedIds.push(Number(qid)); renderChallenge(); }
+  function calcAccuracy() { const t = session.correct + session.wrong; return t === 0 ? '0%' : Math.round((session.correct / t) * 100) + '%'; }
+  function updateStats() {
+    document.getElementById('correctCount').textContent = session.correct;
+    document.getElementById('wrongCount').textContent = session.wrong;
+    document.getElementById('accuracyCount').textContent = calcAccuracy();
+    document.getElementById('sessionCounter').textContent = 'Solved: ' + session.total;
+    const pct = filteredPool.length ? Math.min(100, Math.round((usedIds.length / filteredPool.length) * 100)) : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+  }
+  function updateSurvivalUI() {
+    const el = document.getElementById('survivalStats');
+    if (!session) return;
+    if (session.mode === 'survival') {
+      el.classList.remove('d-none');
+      document.getElementById('livesDisplay').textContent = session.lives;
+      document.getElementById('comboDisplay').textContent = session.combo;
+      document.getElementById('scoreDisplay').textContent = session.score;
+    } else el.classList.add('d-none');
+  }
+  function updateTimer() {
+    if (!sessionStartTime) return;
+    const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('timerDisplay').textContent = m + ':' + s;
+  }
+  function formatDuration(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    return Math.floor(totalSec / 60) + 'm ' + (totalSec % 60) + 's';
+  }
+  function finishSession() {
+    clearInterval(timerInterval);
+    showPanel('completePanel');
+    if (session.mode === 'survival') {
+      document.getElementById('completeTitle').textContent = session.lives <= 0 ? '💀 Game Over' : '🎉 Survival Complete';
+      document.getElementById('completeText').textContent = 'Score: ' + session.score + ' | Best combo: ' + session.maxCombo;
+    } else {
+      document.getElementById('completeTitle').textContent = 'Practice Session Complete 🎉';
+      document.getElementById('completeText').textContent = 'You solved ' + session.total + ' challenges in ' + session.topic + '.';
+    }
+    document.getElementById('totalSolved').textContent = session.total;
+    document.getElementById('finalCorrect').textContent = session.correct;
+    document.getElementById('finalAccuracy').textContent = calcAccuracy();
+    const elapsed = sessionStartTime ? Date.now() - sessionStartTime : 0;
+    document.getElementById('finalTime').textContent = formatDuration(elapsed);
+    sessionStartTime = null;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function backToSetup() {
+    clearInterval(timerInterval);
+    sessionStartTime = null;
+    session = null;
+    showPanel('setupPanel');
+  }
+  function openMistakes() { renderMistakes(); showPanel('mistakePanel'); }
+  function renderMistakes() {
+    const list = document.getElementById('mistakeList');
+    document.getElementById('mistakeCount').textContent = mistakes.length + ' saved mistake(s)';
+    if (!mistakes.length) list.innerHTML = '<p class="text-muted text-center py-4">No mistakes yet. Great job! 🎉</p>';
+    else list.innerHTML = mistakes.map(m => `
+      <div class="mistake-item">
+        <div class="fw-bold">${escapeHtml(m.title)}</div>
+        <div class="small text-muted">${escapeHtml(m.topic)} · ${escapeHtml(m.level)}</div>
+        <div class="small mt-1 text-danger">Your answer: ${escapeHtml(m.yourAnswer)}</div>
+        <div class="small text-success">Correct: ${escapeHtml(m.correctAnswer)}</div>
+      </div>`).join('');
+  }
+  function clearMistakes() { mistakes = []; saveJson(LS_MISTAKES, mistakes); renderMistakes(); }
+  function openRadar() { drawRadar(); showPanel('radarPanel'); }
+  function drawRadar() {
+    const canvas = document.getElementById('radarCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const topics = Object.keys(topicStats).filter(t => (topicStats[t].correct + topicStats[t].wrong) > 0);
+    if (topics.length < 3) {
+      ctx.fillStyle = '#6b7280'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('Solve at least 3 topics to see the radar.', canvas.width / 2, canvas.height / 2);
+      return;
+    }
+    const cx = canvas.width / 2, cy = canvas.height / 2, R = Math.min(cx, cy) - 50;
+    const n = topics.length;
+    const angleStep = (2 * Math.PI) / n - Math.PI / 2;
+    for (let ring = 1; ring <= 4; ring++) {
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const a = angleStep * i;
+        const x = cx + Math.cos(a) * R * ring / 4;
+        const y = cy + Math.sin(a) * R * ring / 4;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.closePath(); ctx.strokeStyle = '#e5e7eb'; ctx.stroke();
+    }
+    for (let i = 0; i < n; i++) {
+      const a = angleStep * i;
+      const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y);
+      ctx.strokeStyle = '#e5e7eb'; ctx.stroke();
+      ctx.fillStyle = '#1e1b4b'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(topics[i], cx + Math.cos(a) * (R + 22), cy + Math.sin(a) * (R + 22));
+    }
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const s = topicStats[topics[i]];
+      const acc = s.correct / (s.correct + s.wrong);
+      const a = angleStep * i;
+      const x = cx + Math.cos(a) * R * acc;
+      const y = cy + Math.sin(a) * R * acc;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(49,46,129,0.25)'; ctx.fill();
+    ctx.strokeStyle = '#312e81'; ctx.lineWidth = 2; ctx.stroke();
+  }
+  function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
+  document.addEventListener('DOMContentLoaded', renderTopics);
+</script>
 {% endblock %}

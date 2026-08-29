@@ -1,100 +1,711 @@
 {% extends 'base.html' %}
-{% block title %}{{ info.title }} — {{ category }} | DocoDive{% endblock %}
+{% block title %}Java Advanced Course — Master the Language | DocoDive{% endblock %}
+{% block meta_description %}Master advanced Java with 25 free lessons on streams, lambdas, concurrency, Optional, reflection, records, serialization, and more — each with code, output, and official Oracle docs.{% endblock %}
+
+{% block extra_css %}
+<style>
+  .java-hero {
+    background: linear-gradient(135deg, #ffe4e6 0%, #fff5f5 100%);
+    border: 1px solid #fda4af;
+  }
+  .java-badge {
+    background: #dc2626; color: #fff; font-weight: 700;
+    border-radius: 50px; padding: 6px 16px; font-size: 0.78rem;
+  }
+  .hero-stat-link { text-decoration: none; color: #6b7280; transition: color 0.2s ease; }
+  .hero-stat-link:hover { color: #be123c; }
+
+  .course-layout {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .course-nav {
+    position: sticky; top: 90px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 16px; padding: 14px;
+  }
+  .course-nav a {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 10px;
+    color: #4b5563; text-decoration: none;
+    font-size: 0.85rem; font-weight: 500;
+  }
+  .course-nav a:hover { background: #ffe4e6; color: #be123c; }
+  .course-nav a .nav-num {
+    flex-shrink: 0; width: 24px; color: #be123c; font-weight: 700;
+  }
+  .course-nav a .nav-title {
+    flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .course-nav-toggle { display: none; }
+
+  .lesson-step { scroll-margin-top: 100px; margin-bottom: 32px; }
+  .lesson-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px;
+  }
+  .section-label {
+    font-weight: 700; color: #be123c; font-size: 0.82rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .code-block {
+    background: #0d1117; color: #e6edf3; border-radius: 12px; overflow: hidden;
+  }
+  .code-block pre {
+    margin: 0; padding: 18px;
+    font-family: Consolas, Monaco, 'Courier New', monospace;
+    font-size: 0.9rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .code-header {
+    background: #161b22; color: #8b949e;
+    font-size: 0.8rem; padding: 8px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .terminal {
+    background: #0d1117; color: #4ade80; border-radius: 12px; overflow: hidden;
+    font-family: Consolas, Monaco, monospace;
+  }
+  .terminal-header {
+    background: #161b22; padding: 10px 16px;
+    display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #21262d;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-red { background: #ff5f56; }
+  .dot-yellow { background: #ffbd2e; }
+  .dot-green { background: #27c93f; }
+  .terminal-title { color: #8b949e; font-size: 0.75rem; margin-left: 6px; }
+  .terminal-body {
+    padding: 14px 16px; font-size: 0.82rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .callout {
+    border-left: 4px solid; padding: 12px 16px; border-radius: 10px; font-size: 0.9rem;
+  }
+  .callout-breakdown { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+  .callout-outputexp { background: #f0fdf4; border-color: #22c55e; color: #14532d; }
+  .docs-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.85rem; color: #be123c; text-decoration: none; font-weight: 600;
+  }
+  .docs-link:hover { text-decoration: underline; }
+  .lesson-complete { transition: all 0.2s ease; }
+  .lesson-complete.done { background: #f0fdf4; border-color: #22c55e; }
+  .next-level {
+    background: #ffe4e6; border: 1px solid #fda4af;
+    border-radius: 16px; padding: 24px; text-align: center;
+  }
+
+  .project-badge {
+    background: #ffe4e6; color: #be123c; font-weight: 700;
+    padding: 5px 12px; border-radius: 50px; font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+  .project-guide { background: #fdf2f4; border-radius: 12px; padding: 16px; }
+  .project-guide h6 { color: #be123c; font-weight: 700; margin-bottom: 8px; }
+  .concept-chip {
+    background: #ffe4e6; color: #be123c; border: 1px solid #fda4af;
+    border-radius: 50px; padding: 3px 10px; font-size: 0.72rem; font-weight: 600;
+  }
+  .projects-section .accordion-item {
+    border: 1px solid #e5e7eb; border-radius: 16px !important;
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .projects-section .accordion-button {
+    background: #fff; color: #1e1b4b; font-weight: 700;
+    padding: 18px 20px; border-radius: 0 !important;
+  }
+  .projects-section .accordion-button:not(.collapsed) { background: #fdf2f4; color: #be123c; }
+  .projects-section .accordion-button:focus { box-shadow: none; border-color: transparent; }
+
+  @media (max-width: 991.98px) {
+    .course-layout { grid-template-columns: 1fr; }
+    .course-nav-toggle {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; margin-bottom: 20px;
+    }
+    .course-nav { position: static; max-height: none; }
+    .course-nav.collapse.show { max-height: 60vh; overflow-y: auto; margin-bottom: 24px; }
+  }
+  @media (max-width: 576px) {
+    .java-hero { padding: 24px 16px; }
+    .java-hero h1 { font-size: 1.75rem; }
+    .lesson-card { padding: 16px; }
+    .lesson-card h2.h4 { font-size: 1.1rem; }
+    .code-block pre { font-size: 0.78rem; padding: 14px; }
+    .terminal-body { font-size: 0.75rem; padding: 12px; }
+    .callout { padding: 10px 12px; font-size: 0.85rem; }
+    .lesson-footer { flex-direction: column; gap: 10px; }
+    .lesson-footer .btn { width: 100%; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
+{% if lessons %}
 <section class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+  <div class="java-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="java-badge">Advanced</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:#1e1b4b;">Java Advanced Course</h1>
+    <p class="text-muted mb-4">Master the hardest parts of Java with 25 advanced lessons. Deep-dive into streams, lambdas, concurrency, Optional, reflection, records, serialization, and more — each with code, exact output, and official Oracle documentation links.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 mb-3">
+      <span class="text-muted small"><i class="bi bi-clock me-1"></i>5–7 weeks</span>
+      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons</span>
+      <a href="#java-advanced-projects" class="hero-stat-link small">
+        <i class="bi bi-code-square me-1"></i>3 projects
+      </a>
+      <a href="#java-advanced-capstone" class="hero-stat-link small">
+        <i class="bi bi-trophy me-1"></i>1 capstone
+      </a>
+      <span class="text-muted small"><i class="bi bi-person-check me-1"></i>Intermediate knowledge required</span>
+    </div>
+    <a href="#lesson-1" class="btn btn-primary rounded-pill px-4 py-2">
+      <i class="bi bi-play-circle me-2"></i>Start Learning
+    </a>
+  </div>
 
-      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 24px;">
+  <button class="btn btn-outline-primary rounded-pill course-nav-toggle" type="button"
+          data-bs-toggle="collapse" data-bs-target="#courseNav"
+          aria-expanded="false" aria-controls="courseNav">
+    <i class="bi bi-list-ol me-2"></i>Show Course Contents
+  </button>
 
-        <!-- HERO -->
-        <div class="p-5 text-center" style="background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);">
-          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-               style="width: 96px; height: 96px; background: #fff; box-shadow: 0 12px 30px rgba(67, 56, 202, 0.12);">
-            <i class="bi {{ info.icon }} fs-1 {{ info.color }}"></i>
+  <div class="course-layout">
+    <aside id="courseNav" class="course-nav collapse d-lg-block">
+      <h6 class="fw-bold mb-3" style="color:#be123c;"><i class="bi bi-list-ol me-2"></i>Course Content</h6>
+      {% for lesson in lessons %}
+      <a href="#{{ lesson.slug }}" class="course-nav-link">
+        <span class="nav-num">{{ "%02d"|format(loop.index) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+      </a>
+      {% endfor %}
+    </aside>
+
+    <div>
+      {% for lesson in lessons %}
+      <div id="{{ lesson.slug }}" class="lesson-step">
+        <div class="lesson-card lesson-complete" data-lesson="{{ loop.index }}">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="nav-num fw-bold" style="color:#be123c;">{{ "%02d"|format(loop.index) }}</span>
+            <h2 class="h4 fw-bold mb-0" style="color:#1e1b4b;">{{ lesson.title }}</h2>
           </div>
 
-          <span class="badge rounded-pill px-3 py-2 mb-3"
-                style="background: #ffb703; color: #1e1b4b; font-weight: 700; font-size: 0.9rem;">
-            <i class="bi bi-cone-striped me-2"></i> COMING SOON
-          </span>
+          <p class="text-dark">{{ lesson.explanation }}</p>
 
-          <h1 class="fw-bolder mt-2" style="color: #1e1b4b;">{{ info.title }}</h1>
-          <p class="text-muted lead mb-4">
-            We're building something amazing for <strong>{{ category }}</strong> learners!
-          </p>
-
-          <div class="alert border-0 rounded-4 text-start shadow-sm mx-auto"
-               style="max-width: 640px; background: #e0f2fe; color: #0c4a6e;">
-            <p class="mb-2 fw-semibold">
-              <i class="bi bi-tools me-2"></i>This module is under construction
-            </p>
-            <p class="small mb-0">
-              Our team is preparing detailed lessons, practical examples, downloadable
-              resources and interactive exercises for <strong>{{ info.title }}</strong> in
-              <strong>{{ category }}</strong>. This content will guide you step-by-step,
-              from the fundamentals right up to an advanced level.
-            </p>
-          </div>
-        </div>
-
-        <!-- WHAT YOU'LL GET -->
-        <div class="p-5">
-          <h5 class="fw-bold mb-4 text-center" style="color: #4338ca;">
-            What you'll get in this module
-          </h5>
-
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #f0f4ff;">
-                <i class="bi bi-journal-text fs-3 text-primary"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Detailed Lessons</h6>
-                  <p class="small text-muted mb-0">Step-by-step structured content designed for every level.</p>
-                </div>
-              </div>
+          <div class="section-label mb-2"><i class="bi bi-filetype-java me-1"></i>Code Example</div>
+          <div class="code-block mb-3">
+            <div class="code-header">
+              <span>Java</span>
+              <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                <i class="bi bi-clipboard me-1"></i>Copy
+              </button>
             </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fff4e5;">
-                <i class="bi bi-lightbulb fs-3 text-warning"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Real Examples</h6>
-                  <p class="small text-muted mb-0">Practical examples you can understand and apply instantly.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #e8faf0;">
-                <i class="bi bi-patch-check fs-3 text-success"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Practice &amp; Quizzes</h6>
-                  <p class="small text-muted mb-0">Test your knowledge with quizzes and hands-on exercises.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fdeef4;">
-                <i class="bi bi-download fs-3 text-danger"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Resources &amp; PDFs</h6>
-                  <p class="small text-muted mb-0">Curated notes and downloadable study material.</p>
-                </div>
-              </div>
-            </div>
+            <pre>{{ lesson.code }}</pre>
           </div>
 
-          <div class="text-center mt-5">
-            <a href="/learn/{{ category_slug }}" class="btn btn-primary rounded-pill px-4 py-2 me-2">
-              <i class="bi bi-collection me-2"></i> Explore {{ category }}
-            </a>
-            <a href="/" class="btn btn-outline-primary rounded-pill px-4 py-2">
-              <i class="bi bi-arrow-left me-2"></i> Back to Home
+          <div class="section-label mb-2"><i class="bi bi-diagram-3 me-1"></i>Code Breakdown</div>
+          <div class="callout callout-breakdown mb-3">{{ lesson.code_breakdown }}</div>
+
+          <div class="section-label mb-2"><i class="bi bi-terminal me-1"></i>Output</div>
+          <div class="terminal mb-3">
+            <div class="terminal-header">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+              <span class="terminal-title">terminal</span>
+            </div>
+            <div class="terminal-body">{{ lesson.output }}</div>
+          </div>
+
+          <div class="section-label mb-2"><i class="bi bi-chat-left-text me-1"></i>Output Explanation</div>
+          <div class="callout callout-outputexp mb-3">{{ lesson.output_explanation }}</div>
+
+          <div class="mb-3">
+            <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="docs-link">
+              <i class="bi bi-box-arrow-up-right"></i>Official Oracle Docs
             </a>
           </div>
-        </div>
 
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer" style="border-top:1px solid #e5e7eb;">
+            {% if loop.previtem %}
+            <a href="#{{ loop.previtem.slug }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+              <i class="bi bi-arrow-left me-1"></i>Previous
+            </a>
+            {% else %}
+            <span></span>
+            {% endif %}
+
+            <button class="btn btn-outline-success btn-sm rounded-pill mark-complete" onclick="markComplete(this)">
+              <i class="bi bi-check2-circle me-1"></i>Mark Complete
+            </button>
+
+            {% if loop.nextitem %}
+            <a href="#{{ loop.nextitem.slug }}" class="btn btn-primary btn-sm rounded-pill">
+              Next Lesson <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            {% else %}
+            <span></span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- ==================== JAVA ADVANCED PROJECTS ==================== -->
+      <div class="projects-section mt-5" id="java-advanced-projects">
+        <h3 class="fw-bold mb-4" style="color:#1e1b4b;">
+          <i class="bi bi-hammer me-2"></i>Java Advanced Projects
+        </h3>
+        <p class="text-muted mb-4">Apply streams, concurrency, and advanced features. Click each project to open its full guide.</p>
+
+        <div class="accordion" id="javaAdvancedProjectsAccordion">
+
+          <!-- PROJECT 1 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#javaadvproject1">
+                <span class="project-badge me-3">Project 1</span>
+                Sales Data Analyzer with Streams
+              </button>
+            </h2>
+            <div id="javaadvproject1" class="accordion-collapse collapse show" data-bs-parent="#javaAdvancedProjectsAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                  <p class="small text-dark mb-2">Analyze sales records using streams — filter, map, reduce, and collect. Compute total revenue, count high-value sales, and extract product names.</p>
+
+                  <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">streams</span>
+                    <span class="concept-chip">filter</span>
+                    <span class="concept-chip">map</span>
+                    <span class="concept-chip">reduce</span>
+                    <span class="concept-chip">records</span>
+                  </div>
+
+                  <h6><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h6>
+                  <ol class="small text-dark mb-0">
+                    <li>A <code>record Sale</code> holds product and amount.</li>
+                    <li>A list of sales is created.</li>
+                    <li><code>mapToDouble</code> extracts amounts, and <code>sum()</code> computes total.</li>
+                    <li><code>filter</code> keeps sales above a threshold.</li>
+                    <li><code>map</code> extracts product names, and <code>collect</code> builds a list.</li>
+                  </ol>
+                </div>
+
+                <div class="code-block mb-3">
+                  <div class="code-header">
+                    <span>Java</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>import java.util.List;
+import java.util.stream.Collectors;
+
+record Sale(String product, double amount) {}
+
+public class SalesAnalyzer {
+    public static void main(String[] args) {
+        List<Sale> sales = List.of(
+                new Sale("Laptop", 1200),
+                new Sale("Mouse", 25),
+                new Sale("Keyboard", 75),
+                new Sale("Monitor", 300)
+        );
+
+        double total = sales.stream()
+                .mapToDouble(Sale::amount)
+                .sum();
+
+        List<String> bigSales = sales.stream()
+                .filter(s -> s.amount() > 100)
+                .map(Sale::product)
+                .collect(Collectors.toList());
+
+        System.out.printf("Total revenue: $%.2f%n", total);
+        System.out.println("Big sales: " + bigSales);
+    }
+}</pre>
+                </div>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">terminal</span>
+                  </div>
+                  <div class="terminal-body">Total revenue: $1600.00
+Big sales: [Laptop, Monitor]</div>
+                </div>
+
+                <div class="mt-3">
+                  <a href="https://docs.oracle.com/javase/tutorial/collections/streams/index.html" target="_blank" rel="noopener" class="docs-link">
+                    <i class="bi bi-box-arrow-up-right"></i>Oracle Docs: Streams
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROJECT 2 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#javaadvproject2">
+                <span class="project-badge me-3">Project 2</span>
+                Parallel Task Processor
+              </button>
+            </h2>
+            <div id="javaadvproject2" class="accordion-collapse collapse" data-bs-parent="#javaAdvancedProjectsAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                  <p class="small text-dark mb-2">Execute multiple tasks concurrently using a thread pool and collect their results with Future. Each task computes a different sum.</p>
+
+                  <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">ExecutorService</span>
+                    <span class="concept-chip">Callable</span>
+                    <span class="concept-chip">Future</span>
+                    <span class="concept-chip">thread pool</span>
+                  </div>
+
+                  <h6><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h6>
+                  <ol class="small text-dark mb-0">
+                    <li>A fixed thread pool of 3 threads is created.</li>
+                    <li>Three Callable tasks are submitted.</li>
+                    <li>Each task returns a computed sum.</li>
+                    <li><code>Future.get()</code> retrieves each result.</li>
+                    <li>The pool shuts down after all tasks complete.</li>
+                  </ol>
+                </div>
+
+                <div class="code-block mb-3">
+                  <div class="code-header">
+                    <span>Java</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+public class ParallelTasks {
+    public static void main(String[] args) throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(3);
+
+        Callable<Integer> sumTo100 = () -> {
+            int s = 0;
+            for (int i = 1; i <= 100; i++) s += i;
+            return s;
+        };
+
+        Callable<Integer> sumTo200 = () -> {
+            int s = 0;
+            for (int i = 1; i <= 200; i++) s += i;
+            return s;
+        };
+
+        Callable<Integer> sumTo300 = () -> {
+            int s = 0;
+            for (int i = 1; i <= 300; i++) s += i;
+            return s;
+        };
+
+        Future<Integer> f1 = pool.submit(sumTo100);
+        Future<Integer> f2 = pool.submit(sumTo200);
+        Future<Integer> f3 = pool.submit(sumTo300);
+
+        System.out.println(f1.get());
+        System.out.println(f2.get());
+        System.out.println(f3.get());
+
+        pool.shutdown();
+    }
+}</pre>
+                </div>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">terminal</span>
+                  </div>
+                  <div class="terminal-body">5050
+20100
+45150</div>
+                </div>
+
+                <div class="mt-3">
+                  <a href="https://docs.oracle.com/javase/tutorial/essential/concurrency/executors.html" target="_blank" rel="noopener" class="docs-link">
+                    <i class="bi bi-box-arrow-up-right"></i>Oracle Docs: Executors
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROJECT 3 -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#javaadvproject3">
+                <span class="project-badge me-3">Project 3</span>
+                Text Analyzer with NIO
+              </button>
+            </h2>
+            <div id="javaadvproject3" class="accordion-collapse collapse" data-bs-parent="#javaAdvancedProjectsAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                  <p class="small text-dark mb-2">Read a text file using NIO and analyze it with streams: count lines, count words, and find the longest word.</p>
+
+                  <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">Files.readString</span>
+                    <span class="concept-chip">streams</span>
+                    <span class="concept-chip">split</span>
+                    <span class="concept-chip">max</span>
+                  </div>
+
+                  <h6><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h6>
+                  <ol class="small text-dark mb-0">
+                    <li><code>Files.readString</code> reads the whole file.</li>
+                    <li><code>lines()</code> streams the lines for counting.</li>
+                    <li><code>split("\\\\s+")</code> splits text into words.</li>
+                    <li><code>max()</code> finds the longest word.</li>
+                    <li>Results are printed.</li>
+                  </ol>
+                </div>
+
+                <div class="code-block mb-3">
+                  <div class="code-header">
+                    <span>Java</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Comparator;
+
+public class TextAnalyzer {
+    public static void main(String[] args) throws Exception {
+        Path path = Path.of("sample.txt");
+        Files.writeString(path, "hello world\\njava programming\\n");
+
+        String content = Files.readString(path);
+        long lines = content.lines().count();
+        String[] words = content.split("\\\\s+");
+
+        String longest = Arrays.stream(words)
+                .max(Comparator.comparingInt(String::length))
+                .orElse("");
+
+        System.out.println("Lines: " + lines);
+        System.out.println("Words: " + words.length);
+        System.out.println("Longest word: " + longest);
+    }
+}</pre>
+                </div>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">terminal</span>
+                  </div>
+                  <div class="terminal-body">Lines: 2
+Words: 3
+Longest word: programming</div>
+                </div>
+
+                <div class="mt-3">
+                  <a href="https://docs.oracle.com/javase/tutorial/essential/io/fileio.html" target="_blank" rel="noopener" class="docs-link">
+                    <i class="bi bi-box-arrow-up-right"></i>Oracle Docs: File I/O
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== JAVA ADVANCED CAPSTONE ==================== -->
+      <div class="projects-section mt-5" id="java-advanced-capstone">
+        <h3 class="fw-bold mb-4" style="color:#1e1b4b;">
+          <i class="bi bi-trophy me-2"></i>Advanced Capstone Project
+        </h3>
+        <p class="text-muted mb-4">Combine records, streams, concurrency, and Optional into one complete project.</p>
+
+        <div class="accordion" id="javaAdvancedCapstoneAccordion">
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#javaadvcapstone1">
+                <span class="project-badge me-3">Capstone</span>
+                Employee Analytics System
+              </button>
+            </h2>
+            <div id="javaadvcapstone1" class="accordion-collapse collapse show" data-bs-parent="#javaAdvancedCapstoneAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h6><i class="bi bi-info-circle me-2"></i>About this project</h6>
+                  <p class="small text-dark mb-2">Build an employee analytics system using records and streams — compute average salary, find the highest-paid employee, and filter by department using Optional.</p>
+
+                  <h6><i class="bi bi-box me-2"></i>What you'll practice</h6>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">records</span>
+                    <span class="concept-chip">streams</span>
+                    <span class="concept-chip">Optional</span>
+                    <span class="concept-chip">map/filter</span>
+                    <span class="concept-chip">reduce</span>
+                  </div>
+
+                  <h6><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h6>
+                  <ol class="small text-dark mb-0">
+                    <li>An <code>Employee</code> record stores name, department, and salary.</li>
+                    <li><code>mapToDouble</code> + <code>average()</code> computes average salary.</li>
+                    <li><code>max()</code> finds the highest-paid employee as an Optional.</li>
+                    <li><code>filter</code> selects employees from a department.</li>
+                    <li>Results are printed using Optional's <code>orElse</code>.</li>
+                  </ol>
+                </div>
+
+                <div class="code-block mb-3">
+                  <div class="code-header">
+                    <span>Java</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>import java.util.List;
+import java.util.Optional;
+
+record Employee(String name, String department, double salary) {}
+
+public class EmployeeAnalytics {
+    public static void main(String[] args) {
+        List<Employee> employees = List.of(
+                new Employee("Ali", "IT", 75000),
+                new Employee("Sara", "HR", 60000),
+                new Employee("Zain", "IT", 90000),
+                new Employee("Mia", "Finance", 80000)
+        );
+
+        double avg = employees.stream()
+                .mapToDouble(Employee::salary)
+                .average()
+                .orElse(0);
+
+        Optional<Employee> highest = employees.stream()
+                .max((a, b) -> Double.compare(a.salary(), b.salary()));
+
+        long itCount = employees.stream()
+                .filter(e -> e.department().equals("IT"))
+                .count();
+
+        System.out.printf("Average salary: $%.2f%n", avg);
+        System.out.println("Highest paid: " + highest.map(Employee::name).orElse("None"));
+        System.out.println("IT employees: " + itCount);
+    }
+}</pre>
+                </div>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">terminal</span>
+                  </div>
+                  <div class="terminal-body">Average salary: $76250.00
+Highest paid: Zain
+IT employees: 2</div>
+                </div>
+
+                <div class="mt-3">
+                  <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Optional.html" target="_blank" rel="noopener" class="docs-link">
+                    <i class="bi bi-box-arrow-up-right"></i>Oracle Docs: Optional
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEXT LEVEL CTA -->
+      <div class="next-level mt-5">
+        <h5 class="fw-bold" style="color:#1e1b4b;">You've completed all {{ lessons|length }} lessons. Ready to continue?</h5>
+        <p class="text-muted mb-3">Reinforce everything with Java Practice Resources — exercises and quizzes.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <a href="/learn/java/practice" class="btn btn-primary rounded-pill px-4">
+            <i class="bi bi-arrow-right me-2"></i>Continue to Practice
+          </a>
+          <a href="/learn/java/beginner" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="bi bi-arrow-left me-2"></i>Review Beginner
+          </a>
+        </div>
       </div>
     </div>
   </div>
 </section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy'; }, 2000);
+    });
+  }
+  function markComplete(btn) {
+    const card = btn.closest('.lesson-complete');
+    card.classList.add('done');
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Completed';
+    btn.classList.remove('btn-outline-success');
+    btn.classList.add('btn-success');
+    btn.disabled = true;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const nav = document.getElementById('courseNav');
+    const toggleBtn = document.querySelector('.course-nav-toggle');
+
+    if (nav && toggleBtn) {
+      nav.addEventListener('shown.bs.collapse', function() {
+        toggleBtn.innerHTML = '<i class="bi bi-x-circle me-2"></i>Hide Course Contents';
+      });
+      nav.addEventListener('hidden.bs.collapse', function() {
+        toggleBtn.innerHTML = '<i class="bi bi-list-ol me-2"></i>Show Course Contents';
+      });
+      nav.querySelectorAll('.course-nav-link').forEach(function(link) {
+        link.addEventListener('click', function() {
+          if (window.innerWidth < 992 && nav.classList.contains('show')) {
+            const bsCollapse = bootstrap.Collapse.getInstance(nav);
+            if (bsCollapse) bsCollapse.hide();
+          }
+        });
+      });
+    }
+  });
+</script>
 {% endblock %}

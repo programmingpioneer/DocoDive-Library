@@ -1,100 +1,478 @@
 {% extends 'base.html' %}
-{% block title %}{{ info.title }} — {{ category }} | DocoDive{% endblock %}
+{% block title %}Cybersecurity Intermediate Course — Network Defense, Pentesting, Forensics & Security Operations | DocoDive{% endblock %}
+{% block meta_description %}Master intermediate cybersecurity with 30 free lessons: Wireshark, Nmap, OSINT, SQL injection, XSS, password cracking, privilege escalation, SIEM, forensics, Burp Suite, and a full penetration testing capstone.{% endblock %}
+
+{% block extra_css %}
+<style>
+  .cyber-int-hero {
+    background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+    border: 1px solid #2dd4bf;
+  }
+  .hero-stat-link { text-decoration: none; color: #6b7280; transition: color 0.2s ease; cursor: pointer; }
+  .hero-stat-link:hover { color: #0d9488; text-decoration: underline; }
+  .course-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .course-nav {
+    position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto;
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 14px;
+  }
+  .course-nav a {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border-radius: 10px; color: #4b5563; text-decoration: none; font-size: 0.85rem; font-weight: 500;
+  }
+  .course-nav a:hover { background: #f0fdfa; color: #0d9488; }
+  .course-nav a .nav-num { flex-shrink: 0; width: 24px; color: #0d9488; font-weight: 700; }
+  .course-nav a .nav-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .course-nav-toggle { display: none; }
+  .lesson-step { scroll-margin-top: 100px; margin-bottom: 32px; }
+  .lesson-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; }
+  .code-block { background: #0d1117; color: #e6edf3; border-radius: 12px; overflow: hidden; }
+  .code-block pre {
+    margin: 0; padding: 18px; font-family: Consolas, Monaco, monospace;
+    font-size: 0.88rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+  }
+  .callout { border-left: 4px solid; padding: 12px 16px; border-radius: 10px; font-size: 0.9rem; }
+  .callout-tip { background: #fef9ec; border-color: #ffb703; color: #7c5a00; }
+  .callout-warning { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+  .callout-best { background: #ecfdf5; border-color: #10b981; color: #065f46; }
+  .callout-important { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+  .terminal { background: #0d1117; color: #4ade80; border-radius: 12px; overflow: hidden; font-family: Consolas, Monaco, monospace; }
+  .terminal-header {
+    background: #161b22; padding: 10px 16px; display: flex; align-items: center;
+    gap: 8px; border-bottom: 1px solid #21262d;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-red { background: #ff5f56; }
+  .dot-yellow { background: #ffbd2e; }
+  .dot-green { background: #27c93f; }
+  .terminal-title { color: #8b949e; font-size: 0.75rem; margin-left: 6px; }
+  .terminal-body { padding: 14px 16px; font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .exercise-box { background: #f0fdfa; border: 1px dashed #2dd4bf; border-radius: 12px; padding: 16px; }
+  .docs-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;
+    color: #0d9488; text-decoration: none; font-weight: 600;
+  }
+  .docs-link:hover { text-decoration: underline; }
+  .lesson-complete { transition: all 0.2s ease; }
+  .lesson-complete.done { background: #ecfdf5; border-color: #10b981; }
+
+  .output-preview { border-radius: 14px; overflow: hidden; border: 1px solid #e5e7eb; background: #fff; }
+  .output-preview-header {
+    background: #161b22; color: #8b949e; font-size: 0.75rem; padding: 8px 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .output-preview-body {
+    min-height: 170px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 20px;
+    background: #f0fdfa;
+    text-align: center;
+  }
+  .pv-flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .pv-arrow { color: #0f766e; font-weight: 800; }
+  .pv-box { border-radius: 8px; padding: 8px 14px; font-weight: 700; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; }
+  .pv-teal { background: #0d9488; color: #fff; }
+  .pv-light { background: #2dd4bf; color: #134e4a; }
+  .pv-pale { background: #ccfbf1; color: #0f766e; border: 1px solid #2dd4bf; }
+  .pv-green { background: #10b981; color: #fff; }
+  .pv-red { background: #ef4444; color: #fff; }
+  .pv-amber { background: #f59e0b; color: #fff; }
+  .pv-navy { background: #0f172a; color: #fff; }
+  .pv-schema { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .pv-schema-box { background: #ccfbf1; border: 2px solid #2dd4bf; border-radius: 8px; padding: 10px 16px; font-weight: 700; font-size: 0.7rem; color: #0f766e; }
+  .pv-agg { display: flex; gap: 10px; }
+  .pv-agg-box { background: #fff; border: 2px solid #2dd4bf; border-radius: 10px; padding: 12px 16px; text-align: center; }
+  .pv-agg-value { font-size: 1.1rem; font-weight: 800; color: #0d9488; }
+  .pv-agg-label { font-size: 0.62rem; color: #6b7280; font-weight: 600; }
+  .pv-shield { font-size: 2.6rem; }
+
+  @media (max-width: 991.98px) {
+    .course-layout { grid-template-columns: 1fr; }
+    .course-nav-toggle { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 20px; }
+    .course-nav { position: static; max-height: none; }
+    .course-nav.collapse.show { max-height: 60vh; overflow-y: auto; margin-bottom: 24px; }
+  }
+  @media (max-width: 576px) {
+    .cyber-int-hero { padding: 24px 16px; }
+    .cyber-int-hero h1 { font-size: 1.75rem; }
+    .lesson-card { padding: 16px; }
+    .code-block pre { font-size: 0.78rem; padding: 14px; }
+    .terminal-body { font-size: 0.75rem; padding: 12px; }
+    .callout { padding: 10px 12px; font-size: 0.85rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
+{% if lessons %}
 <section class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+  <div class="cyber-int-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="badge rounded-pill" style="background:#0d9488;color:#fff;font-weight:700;">Intermediate</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:#134e4a;">Cybersecurity Intermediate: Offense & Defense</h1>
+    <p class="text-muted mb-4">Level up from fundamentals to real tools. Master packet analysis, vulnerability scanning, web attacks, password cracking, privilege escalation, SIEM, forensics, and run a full penetration testing capstone.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 mb-3">
+      <span class="text-muted small"><i class="bi bi-clock me-1"></i>6–8 weeks</span>
+      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons</span>
+      <a href="#lesson-30" class="hero-stat-link small"><i class="bi bi-trophy me-1"></i>1 pentest capstone</a>
+      <span class="text-muted small"><i class="bi bi-person-check me-1"></i>Beginner completed</span>
+    </div>
+    <a href="#lesson-1" class="btn btn-primary rounded-pill px-4 py-2" style="background:#0d9488;border-color:#0d9488;">
+      <i class="bi bi-shield-lock me-2"></i>Start Learning
+    </a>
+  </div>
 
-      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 24px;">
+  <button class="btn btn-outline-primary rounded-pill course-nav-toggle" type="button"
+          data-bs-toggle="collapse" data-bs-target="#courseNav"
+          aria-expanded="false" aria-controls="courseNav">
+    <i class="bi bi-list-ol me-2"></i>Show Course Contents
+  </button>
 
-        <!-- HERO -->
-        <div class="p-5 text-center" style="background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);">
-          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-               style="width: 96px; height: 96px; background: #fff; box-shadow: 0 12px 30px rgba(67, 56, 202, 0.12);">
-            <i class="bi {{ info.icon }} fs-1 {{ info.color }}"></i>
+  <div class="course-layout">
+    <aside id="courseNav" class="course-nav collapse d-lg-block">
+      <h6 class="fw-bold mb-3" style="color:#0d9488;"><i class="bi bi-list-ol me-2"></i>Course Content</h6>
+      {% for lesson in lessons %}
+      <a href="#lesson-{{ lesson.id }}" class="course-nav-link">
+        <span class="nav-num">{{ "%02d"|format(lesson.id) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+      </a>
+      {% endfor %}
+    </aside>
+
+    <div>
+      {% for lesson in lessons %}
+      <div id="lesson-{{ lesson.id }}" class="lesson-step">
+        <div class="lesson-card lesson-complete" data-lesson="{{ lesson.id }}">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="nav-num fw-bold" style="color:#0d9488;">{{ "%02d"|format(lesson.id) }}</span>
+            <h2 class="h4 fw-bold mb-0" style="color:#134e4a;">{{ lesson.title }}</h2>
+            <span class="ms-auto text-muted small"><i class="bi bi-clock me-1"></i>{{ lesson.duration }}</span>
           </div>
 
-          <span class="badge rounded-pill px-3 py-2 mb-3"
-                style="background: #ffb703; color: #1e1b4b; font-weight: 700; font-size: 0.9rem;">
-            <i class="bi bi-cone-striped me-2"></i> COMING SOON
-          </span>
+          <div class="mb-3">
+            <h6 class="fw-bold mb-2" style="color:#0d9488;"><i class="bi bi-bullseye me-2"></i>What you'll learn</h6>
+            <ul class="list-unstyled">
+              {% for obj in lesson.objectives %}
+              <li class="d-flex gap-2 mb-1">
+                <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                <span class="text-dark">{{ obj }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
 
-          <h1 class="fw-bolder mt-2" style="color: #1e1b4b;">{{ info.title }}</h1>
-          <p class="text-muted lead mb-4">
-            We're building something amazing for <strong>{{ category }}</strong> learners!
-          </p>
+          <p class="text-dark">{{ lesson.explanation }}</p>
 
-          <div class="alert border-0 rounded-4 text-start shadow-sm mx-auto"
-               style="max-width: 640px; background: #e0f2fe; color: #0c4a6e;">
-            <p class="mb-2 fw-semibold">
-              <i class="bi bi-tools me-2"></i>This module is under construction
-            </p>
-            <p class="small mb-0">
-              Our team is preparing detailed lessons, practical examples, downloadable
-              resources and interactive exercises for <strong>{{ info.title }}</strong> in
-              <strong>{{ category }}</strong>. This content will guide you step-by-step,
-              from the fundamentals right up to an advanced level.
-            </p>
+          {% if lesson.code %}
+          <div class="code-block mb-3">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:#161b22;color:#8b949e;font-size:0.8rem;">
+              <span><i class="bi bi-code-slash me-1"></i>{{ lesson.code_label or 'Code' }}</span>
+              <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                <i class="bi bi-clipboard me-1"></i>Copy
+              </button>
+            </div>
+            <pre>{{ lesson.code }}</pre>
+          </div>
+          {% endif %}
+
+          {% if lesson.preview and lesson.preview != 'none' %}
+          <div class="mb-3">
+            <div class="text-muted small mb-1"><i class="bi bi-eye me-1"></i>Live Preview</div>
+            <div class="output-preview">
+              <div class="output-preview-header">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+                <span class="terminal-title">{{ lesson.title }}</span>
+              </div>
+              <div class="output-preview-body">
+                {% if lesson.preview == 'osi' %}
+                <div class="pv-schema">
+                  <div class="pv-schema-box">7 Application</div>
+                  <div class="pv-schema-box">4 Transport</div>
+                  <div class="pv-schema-box">3 Network</div>
+                  <div class="pv-schema-box">2 Data Link</div>
+                </div>
+                {% elif lesson.preview == 'wireshark' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">SYN</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light">SYN-ACK</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">ACK</div>
+                </div>
+                {% elif lesson.preview == 'nmap' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-teal">-sS</div>
+                  <div class="pv-box pv-light">-sV</div>
+                  <div class="pv-box pv-teal">-sC</div>
+                  <div class="pv-box pv-navy">-O</div>
+                </div>
+                {% elif lesson.preview == 'vulnscan' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-teal">scan</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-amber">CVSS</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">patch</div>
+                </div>
+                {% elif lesson.preview == 'osint' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">dns</div>
+                  <div class="pv-box pv-teal">subdomains</div>
+                  <div class="pv-box pv-light">emails</div>
+                </div>
+                {% elif lesson.preview == 'sqli' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">' OR '1'='1</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">? params</div>
+                </div>
+                {% elif lesson.preview == 'xss' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">&lt;script&gt;</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">escape output</div>
+                </div>
+                {% elif lesson.preview == 'csrf' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">request</div><span class="pv-arrow">+</span>
+                  <div class="pv-box pv-teal">token</div><span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">safe</div>
+                </div>
+                {% elif lesson.preview == 'upload' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">shell.php</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-teal">validate</div><span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">blocked</div>
+                </div>
+                {% elif lesson.preview == 'cmdi' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">; rm -rf</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">no shell</div>
+                </div>
+                {% elif lesson.preview == 'hashcat' %}
+                <div class="pv-agg">
+                  <div class="pv-agg-box"><div class="pv-agg-value">MD5</div><div class="pv-agg-label">weak</div></div>
+                  <div class="pv-agg-box"><div class="pv-agg-value">bcrypt</div><div class="pv-agg-label">strong</div></div>
+                </div>
+                {% elif lesson.preview == 'privesc' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-teal">SUID</div>
+                  <div class="pv-box pv-light">cron</div>
+                  <div class="pv-box pv-amber">sudo</div>
+                </div>
+                {% elif lesson.preview == 'winpriv' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">whoami</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-red">SYSTEM</div>
+                </div>
+                {% elif lesson.preview == 'lateral' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">host A</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-teal">host B</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-red">target</div>
+                </div>
+                {% elif lesson.preview == 'persistence' %}
+                <div class="pv-schema">
+                  <div class="pv-schema-box">cron job</div>
+                  <div class="pv-schema-box">ssh key</div>
+                  <div class="pv-schema-box">registry Run</div>
+                </div>
+                {% elif lesson.preview == 'hardening' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">root login</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">key only</div>
+                </div>
+                {% elif lesson.preview == 'siem' %}
+                <div class="pv-agg">
+                  <div class="pv-agg-box"><div class="pv-agg-value">logs</div><div class="pv-agg-label">collect</div></div>
+                  <div class="pv-agg-box"><div class="pv-agg-value">alert</div><div class="pv-agg-label">correlate</div></div>
+                </div>
+                {% elif lesson.preview == 'ids' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">IDS</div><span class="pv-arrow">alert</span>
+                  <div class="pv-box pv-teal">IPS</div><span class="pv-arrow">block</span>
+                </div>
+                {% elif lesson.preview == 'threatintel' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">bad IP</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">blocklist</div>
+                </div>
+                {% elif lesson.preview == 'forensics' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">evidence.img</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-teal">hash</div><span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">verified</div>
+                </div>
+                {% elif lesson.preview == 'malanalysis' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">static</div><span class="pv-arrow">+</span>
+                  <div class="pv-box pv-teal">dynamic</div><span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">IOCs</div>
+                </div>
+                {% elif lesson.preview == 'reverse' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">machine code</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-teal">assembly</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">logic</div>
+                </div>
+                {% elif lesson.preview == 'burp' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-teal">Proxy</div>
+                  <div class="pv-box pv-light">Repeater</div>
+                  <div class="pv-box pv-amber">Intruder</div>
+                </div>
+                {% elif lesson.preview == 'api' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">/users/124</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">403</div>
+                </div>
+                {% elif lesson.preview == 'aircrack' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">monitor</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-teal">handshake</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-amber">crack</div>
+                </div>
+                {% elif lesson.preview == 'set' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">clone page</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-teal">MFA</div><span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">safe</div>
+                </div>
+                {% elif lesson.preview == 'pentest' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-teal">recon</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light">exploit</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">report</div>
+                </div>
+                {% elif lesson.preview == 'purple' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">red</div><span class="pv-arrow">⇄</span>
+                  <div class="pv-box pv-navy">blue</div><span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">purple</div>
+                </div>
+                {% elif lesson.preview == 'lab' %}
+                <div class="pv-schema">
+                  <div class="pv-schema-box">Kali (attacker)</div>
+                  <div class="pv-schema-box">Metasploitable (target)</div>
+                  <div class="pv-schema-box">isolated network</div>
+                </div>
+                {% elif lesson.preview == 'capstone' %}
+                <div class="pv-schema">
+                  <div class="pv-schema-box">recon → exploit → escalate</div>
+                  <div class="pv-schema-box">document → report</div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% elif lesson.output %}
+          <div class="mb-3">
+            <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Output</div>
+            <div class="terminal">
+              <div class="terminal-header">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+                <span class="terminal-title">bash</span>
+              </div>
+              <div class="terminal-body">{{ lesson.output }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="callout callout-{{ lesson.callout_type }} mb-3">
+            {% if lesson.callout_type == 'tip' %}<strong>💡 Tip:</strong>
+            {% elif lesson.callout_type == 'warning' %}<strong>⚠️ Common Mistake:</strong>
+            {% elif lesson.callout_type == 'best' %}<strong>✓ Best Practice:</strong>
+            {% else %}<strong>🔎 Important:</strong>{% endif %}
+            {{ lesson.callout_text }}
+          </div>
+
+          <div class="mb-3">
+            <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="docs-link">
+              <i class="bi bi-box-arrow-up-right"></i>{{ lesson.docs_label }}
+            </a>
+          </div>
+
+          <div class="exercise-box">
+            <h6 class="fw-bold mb-2" style="color:#0d9488;"><i class="bi bi-pencil-square me-2"></i>Try it yourself</h6>
+            <p class="mb-2">{{ lesson.exercise_prompt }}</p>
+            <div class="d-flex gap-2 mb-2 exercise-actions">
+              <button class="btn btn-outline-primary btn-sm rounded-pill" onclick="toggleHint(this)">Show Hint</button>
+              <button class="btn btn-outline-success btn-sm rounded-pill" onclick="toggleSolution(this)">Show Solution</button>
+            </div>
+            <div class="hint-box d-none small text-muted"><i class="bi bi-lightbulb me-1"></i>{{ lesson.exercise_hint }}</div>
+            <div class="solution-box d-none">
+              <div class="code-block"><pre>{{ lesson.exercise_solution }}</pre></div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer" style="border-top:1px solid #e5e7eb;">
+            {% if loop.previtem %}
+            <a href="#lesson-{{ loop.previtem.id }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+              <i class="bi bi-arrow-left me-1"></i>Lesson {{ "%02d"|format(loop.previtem.id) }}
+            </a>
+            {% else %}<span></span>{% endif %}
+
+            <button class="btn btn-outline-success btn-sm rounded-pill mark-complete" onclick="markComplete(this)">
+              <i class="bi bi-check2-circle me-1"></i>Mark Complete
+            </button>
+
+            {% if loop.nextitem %}
+            <a href="#lesson-{{ loop.nextitem.id }}" class="btn btn-primary btn-sm rounded-pill" style="background:#0d9488;border-color:#0d9488;">
+              Next Lesson <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            {% else %}<span></span>{% endif %}
           </div>
         </div>
+      </div>
+      {% endfor %}
 
-        <!-- WHAT YOU'LL GET -->
-        <div class="p-5">
-          <h5 class="fw-bold mb-4 text-center" style="color: #4338ca;">
-            What you'll get in this module
-          </h5>
-
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #f0f4ff;">
-                <i class="bi bi-journal-text fs-3 text-primary"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Detailed Lessons</h6>
-                  <p class="small text-muted mb-0">Step-by-step structured content designed for every level.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fff4e5;">
-                <i class="bi bi-lightbulb fs-3 text-warning"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Real Examples</h6>
-                  <p class="small text-muted mb-0">Practical examples you can understand and apply instantly.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #e8faf0;">
-                <i class="bi bi-patch-check fs-3 text-success"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Practice &amp; Quizzes</h6>
-                  <p class="small text-muted mb-0">Test your knowledge with quizzes and hands-on exercises.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fdeef4;">
-                <i class="bi bi-download fs-3 text-danger"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Resources &amp; PDFs</h6>
-                  <p class="small text-muted mb-0">Curated notes and downloadable study material.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="text-center mt-5">
-            <a href="/learn/{{ category_slug }}" class="btn btn-primary rounded-pill px-4 py-2 me-2">
-              <i class="bi bi-collection me-2"></i> Explore {{ category }}
-            </a>
-            <a href="/" class="btn btn-outline-primary rounded-pill px-4 py-2">
-              <i class="bi bi-arrow-left me-2"></i> Back to Home
-            </a>
-          </div>
+      <div class="text-center mt-4 p-4 rounded-4" style="background:#f0fdfa;">
+        <h5 class="fw-bold" style="color:#134e4a;">You've completed all {{ lessons|length }} intermediate lessons. You're now a security practitioner.</h5>
+        <p class="text-muted mb-3">Continue to Cybersecurity Advanced for zero-days, exploit development, cloud security, and red team operations.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <a href="/learn/cyber-security/advanced" class="btn btn-primary rounded-pill px-4" style="background:#0d9488;border-color:#0d9488;">
+            <i class="bi bi-arrow-right me-2"></i>Continue to Advanced
+          </a>
+          <a href="/learn/cyber-security" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="bi bi-collection me-2"></i>Cybersecurity Hub
+          </a>
         </div>
-
       </div>
     </div>
   </div>
 </section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy'; }, 2000);
+    });
+  }
+  function toggleHint(btn) {
+    const box = btn.closest('.exercise-box').querySelector('.hint-box');
+    box.classList.toggle('d-none');
+    btn.textContent = box.classList.contains('d-none') ? 'Show Hint' : 'Hide Hint';
+  }
+  function toggleSolution(btn) {
+    const box = btn.closest('.exercise-box').querySelector('.solution-box');
+    box.classList.toggle('d-none');
+    btn.textContent = box.classList.contains('d-none') ? 'Show Solution' : 'Hide Solution';
+  }
+  function markComplete(btn) {
+    const card = btn.closest('.lesson-complete');
+    card.classList.add('done');
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Completed';
+    btn.classList.remove('btn-outline-success');
+    btn.classList.add('btn-success');
+    btn.disabled = true;
+  }
+</script>
 {% endblock %}

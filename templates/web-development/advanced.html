@@ -1,100 +1,434 @@
 {% extends 'base.html' %}
-{% block title %}{{ info.title }} — {{ category }} | DocoDive{% endblock %}
+{% block title %}Web Development Advanced Course — 40 Mastery Lessons in JavaScript, APIs & Architecture | DocoDive{% endblock %}
+{% block meta_description %}Master advanced web development with 40 free lessons: CSS Grid areas, container queries, closures, the event loop, proxies, generators, service workers, WebSockets, canvas, custom events, web components, and a complete SPA capstone.{% endblock %}
+
+{% block extra_css %}
+<style>
+  .wd-adv-hero {
+    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+    border: 1px solid #fda4af;
+  }
+  .hero-stat-link { text-decoration: none; color: #6b7280; transition: color 0.2s ease; cursor: pointer; }
+  .hero-stat-link:hover { color: #e11d48; text-decoration: underline; }
+  .course-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .course-nav {
+    position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto;
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 14px;
+  }
+  .course-nav a {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border-radius: 10px; color: #4b5563; text-decoration: none; font-size: 0.85rem; font-weight: 500;
+  }
+  .course-nav a:hover { background: #fff1f2; color: #e11d48; }
+  .course-nav a .nav-num { flex-shrink: 0; width: 24px; color: #e11d48; font-weight: 700; }
+  .course-nav a .nav-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .course-nav-toggle { display: none; }
+  .lesson-step { scroll-margin-top: 100px; margin-bottom: 32px; }
+  .lesson-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; }
+  .code-block { background: #0d1117; color: #e6edf3; border-radius: 12px; overflow: hidden; }
+  .code-block pre {
+    margin: 0; padding: 18px; font-family: Consolas, Monaco, monospace;
+    font-size: 0.88rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+  }
+  .callout { border-left: 4px solid; padding: 12px 16px; border-radius: 10px; font-size: 0.9rem; }
+  .callout-tip { background: #fef9ec; border-color: #ffb703; color: #7c5a00; }
+  .callout-warning { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+  .callout-best { background: #ecfdf5; border-color: #10b981; color: #065f46; }
+  .callout-important { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+  .terminal { background: #0d1117; color: #4ade80; border-radius: 12px; overflow: hidden; font-family: Consolas, Monaco, monospace; }
+  .terminal-header {
+    background: #161b22; padding: 10px 16px; display: flex; align-items: center;
+    gap: 8px; border-bottom: 1px solid #21262d;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-red { background: #ff5f56; }
+  .dot-yellow { background: #ffbd2e; }
+  .dot-green { background: #27c93f; }
+  .terminal-title { color: #8b949e; font-size: 0.75rem; margin-left: 6px; }
+  .terminal-body { padding: 14px 16px; font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .exercise-box { background: #fff7f8; border: 1px dashed #fda4af; border-radius: 12px; padding: 16px; }
+  .docs-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;
+    color: #e11d48; text-decoration: none; font-weight: 600;
+  }
+  .docs-link:hover { text-decoration: underline; }
+  .lesson-complete { transition: all 0.2s ease; }
+  .lesson-complete.done { background: #ecfdf5; border-color: #10b981; }
+
+  /* ===== COLORFUL PREVIEWS ===== */
+  .output-preview { border-radius: 14px; overflow: hidden; border: 1px solid #e5e7eb; background: #fff; }
+  .output-preview-header {
+    background: #161b22; color: #8b949e; font-size: 0.75rem; padding: 8px 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .output-preview-body {
+    padding: 20px; display: flex; align-items: center; justify-content: center;
+    min-height: 170px; background: #fdf2f4;
+  }
+  .pv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 300px; }
+  .pv-grid-item {
+    background: linear-gradient(135deg, #e11d48, #f43f5e); color: #fff;
+    padding: 18px; border-radius: 10px; text-align: center; font-weight: 700;
+  }
+  .pv-container { width: 100%; max-width: 300px; }
+  .pv-container-item {
+    background: #fff; border: 2px solid #fecdd3; border-radius: 12px; padding: 14px;
+    display: flex; gap: 10px; align-items: center; margin-bottom: 8px;
+  }
+  .pv-typography h2 { font-size: clamp(1.3rem, 3vw, 2.2rem); color: #be123c; margin: 0; }
+  .pv-typography p { font-size: clamp(0.85rem, 1.5vw, 1.1rem); color: #444; }
+  .pv-spinner { width: 50px; height: 50px; border: 5px solid #fecdd3; border-top-color: #e11d48; border-radius: 50%; animation: pvspin 1s linear infinite; }
+  @keyframes pvspin { to { transform: rotate(360deg); } }
+  .pv-snap { display: flex; overflow-x: auto; width: 100%; max-width: 300px; gap: 10px; scroll-snap-type: x mandatory; }
+  .pv-snap-item {
+    flex: 0 0 90%; background: linear-gradient(135deg, #e11d48, #fb7185);
+    color: #fff; border-radius: 14px; padding: 30px; text-align: center;
+    scroll-snap-align: center; font-weight: 700;
+  }
+  .pv-mask-circle { width: 110px; height: 110px; background: linear-gradient(135deg, #e11d48, #f59e0b); clip-path: circle(50%); }
+  .pv-mask-hex { width: 110px; height: 100px; background: linear-gradient(135deg, #8b5cf6, #e11d48); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); margin-left: 16px; }
+  .pv-badge-box { position: relative; display: inline-block; padding: 16px 24px; background: #fff; border: 1px solid #fecdd3; border-radius: 10px; font-weight: 600; }
+  .pv-badge { position: absolute; top: -10px; right: -10px; background: #e11d48; color: #fff; font-size: 0.65rem; padding: 3px 8px; border-radius: 50px; }
+  .pv-btn { background: #e11d48; color: #fff; border: none; border-radius: 10px; padding: 12px 24px; font-weight: 700; }
+  .pv-flip { width: 120px; height: 150px; perspective: 800px; margin: 0 auto; }
+  .pv-flip-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; animation: pvflip 3s ease infinite; }
+  @keyframes pvflip { 0%, 100% { transform: rotateY(0); } 50% { transform: rotateY(180deg); } }
+  .pv-flip-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; }
+  .pv-flip-front { background: linear-gradient(135deg, #e11d48, #f43f5e); }
+  .pv-flip-back { background: linear-gradient(135deg, #8b5cf6, #6366f1); transform: rotateY(180deg); }
+  .pv-closure { display: flex; gap: 8px; align-items: flex-end; }
+  .pv-scope { border: 2px solid #fda4af; border-radius: 8px; padding: 12px; text-align: center; }
+  .pv-scope.outer { background: #fff1f2; }
+  .pv-scope.inner { background: #ffe4e6; border-color: #e11d48; }
+  .pv-scope-label { font-size: 0.65rem; color: #be123c; font-weight: 700; display: block; margin-bottom: 4px; }
+  .pv-value { font-size: 1.2rem; font-weight: 800; color: #9f1239; }
+  .pv-module { display: flex; gap: 8px; align-items: center; }
+  .pv-module-box { background: #fff; border: 2px solid #fda4af; border-radius: 10px; padding: 12px 16px; font-weight: 700; color: #be123c; }
+  .pv-module-arrow { color: #e11d48; font-weight: 800; font-size: 1.2rem; }
+  .pv-debounce { width: 100%; max-width: 280px; }
+  .pv-debounce input { width: 100%; padding: 10px; border: 1px solid #fda4af; border-radius: 8px; margin-bottom: 8px; }
+  .pv-debounce-status { font-size: 0.72rem; color: #be123c; font-weight: 600; }
+  .pv-regex { font-family: Consolas, monospace; background: #0d1117; color: #fb7185; padding: 14px; border-radius: 8px; font-size: 0.85rem; }
+  .pv-regex .match { background: #e11d48; color: #fff; padding: 1px 4px; border-radius: 4px; }
+  .pv-observer { width: 100%; max-width: 300px; position: relative; }
+  .pv-observer-track { height: 8px; background: #fecdd3; border-radius: 50px; overflow: hidden; }
+  .pv-observer-fill { height: 100%; width: 65%; background: linear-gradient(90deg, #e11d48, #f43f5e); border-radius: 50px; }
+  .pv-observer-label { font-size: 0.7rem; color: #be123c; font-weight: 600; margin-top: 6px; }
+  .pv-websocket { display: flex; align-items: center; gap: 8px; padding: 14px 18px; background: #0f172a; border-radius: 10px; }
+  .pv-live-dot { width: 10px; height: 10px; border-radius: 50%; background: #4ade80; animation: pvpulse 1.5s ease infinite; }
+  @keyframes pvpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .pv-websocket span { color: #e2e8f0; font-size: 0.8rem; font-weight: 600; }
+  .pv-canvas-box { width: 180px; height: 100px; background: #fff; border: 1px solid #fda4af; border-radius: 10px; position: relative; overflow: hidden; }
+  .pv-canvas-rect { position: absolute; top: 15px; left: 15px; width: 70px; height: 40px; background: #e11d48; border-radius: 4px; }
+  .pv-canvas-circle { position: absolute; top: 25px; left: 100px; width: 50px; height: 50px; background: #6366f1; border-radius: 50%; }
+  .pv-dashboard { width: 100%; max-width: 300px; }
+  .pv-dash-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .pv-dash-stat { background: linear-gradient(135deg, #e11d48, #f43f5e); color: #fff; padding: 16px; border-radius: 10px; text-align: center; font-weight: 700; }
+
+  @media (max-width: 991.98px) {
+    .course-layout { grid-template-columns: 1fr; }
+    .course-nav-toggle { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 20px; }
+    .course-nav { position: static; max-height: none; }
+    .course-nav.collapse.show { max-height: 60vh; overflow-y: auto; margin-bottom: 24px; }
+  }
+  @media (max-width: 576px) {
+    .wd-adv-hero { padding: 24px 16px; }
+    .wd-adv-hero h1 { font-size: 1.75rem; }
+    .lesson-card { padding: 16px; }
+    .code-block pre { font-size: 0.78rem; padding: 14px; }
+    .terminal-body { font-size: 0.75rem; padding: 12px; }
+    .callout { padding: 10px 12px; font-size: 0.85rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
+{% if lessons %}
 <section class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+  <div class="wd-adv-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="badge rounded-pill" style="background:#e11d48;color:#fff;font-weight:700;">Advanced</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:#1e1b4b;">Web Development Advanced Course</h1>
+    <p class="text-muted mb-4">Master the deepest parts of frontend engineering — advanced CSS, JavaScript internals, real-time APIs, performance, and full app architecture. This is where you go from writing code to engineering software.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 mb-3">
+      <span class="text-muted small"><i class="bi bi-clock me-1"></i>8–12 weeks</span>
+      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons</span>
+      <a href="#lesson-40" class="hero-stat-link small"><i class="bi bi-trophy me-1"></i>1 capstone</a>
+      <span class="text-muted small"><i class="bi bi-person-check me-1"></i>Intermediate knowledge required</span>
+    </div>
+    <a href="#lesson-1" class="btn btn-primary rounded-pill px-4 py-2" style="background:#e11d48;border-color:#e11d48;">
+      <i class="bi bi-play-circle me-2"></i>Start Learning
+    </a>
+  </div>
 
-      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 24px;">
+  <button class="btn btn-outline-primary rounded-pill course-nav-toggle" type="button"
+          data-bs-toggle="collapse" data-bs-target="#courseNav"
+          aria-expanded="false" aria-controls="courseNav">
+    <i class="bi bi-list-ol me-2"></i>Show Course Contents
+  </button>
 
-        <!-- HERO -->
-        <div class="p-5 text-center" style="background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);">
-          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-               style="width: 96px; height: 96px; background: #fff; box-shadow: 0 12px 30px rgba(67, 56, 202, 0.12);">
-            <i class="bi {{ info.icon }} fs-1 {{ info.color }}"></i>
+  <div class="course-layout">
+    <aside id="courseNav" class="course-nav collapse d-lg-block">
+      <h6 class="fw-bold mb-3" style="color:#e11d48;"><i class="bi bi-list-ol me-2"></i>Course Content</h6>
+      {% for lesson in lessons %}
+      <a href="#lesson-{{ lesson.id }}" class="course-nav-link">
+        <span class="nav-num">{{ "%02d"|format(lesson.id) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+      </a>
+      {% endfor %}
+    </aside>
+
+    <div>
+      {% for lesson in lessons %}
+      <div id="lesson-{{ lesson.id }}" class="lesson-step">
+        <div class="lesson-card lesson-complete" data-lesson="{{ lesson.id }}">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="nav-num fw-bold" style="color:#e11d48;">{{ "%02d"|format(lesson.id) }}</span>
+            <h2 class="h4 fw-bold mb-0" style="color:#1e1b4b;">{{ lesson.title }}</h2>
+            <span class="ms-auto text-muted small"><i class="bi bi-clock me-1"></i>{{ lesson.duration }}</span>
           </div>
 
-          <span class="badge rounded-pill px-3 py-2 mb-3"
-                style="background: #ffb703; color: #1e1b4b; font-weight: 700; font-size: 0.9rem;">
-            <i class="bi bi-cone-striped me-2"></i> COMING SOON
-          </span>
+          <div class="mb-3">
+            <h6 class="fw-bold mb-2" style="color:#e11d48;"><i class="bi bi-bullseye me-2"></i>What you'll learn</h6>
+            <ul class="list-unstyled">
+              {% for obj in lesson.objectives %}
+              <li class="d-flex gap-2 mb-1">
+                <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                <span class="text-dark">{{ obj }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
 
-          <h1 class="fw-bolder mt-2" style="color: #1e1b4b;">{{ info.title }}</h1>
-          <p class="text-muted lead mb-4">
-            We're building something amazing for <strong>{{ category }}</strong> learners!
-          </p>
+          <p class="text-dark">{{ lesson.explanation }}</p>
 
-          <div class="alert border-0 rounded-4 text-start shadow-sm mx-auto"
-               style="max-width: 640px; background: #e0f2fe; color: #0c4a6e;">
-            <p class="mb-2 fw-semibold">
-              <i class="bi bi-tools me-2"></i>This module is under construction
-            </p>
-            <p class="small mb-0">
-              Our team is preparing detailed lessons, practical examples, downloadable
-              resources and interactive exercises for <strong>{{ info.title }}</strong> in
-              <strong>{{ category }}</strong>. This content will guide you step-by-step,
-              from the fundamentals right up to an advanced level.
-            </p>
+          <div class="code-block mb-3">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:#161b22;color:#8b949e;font-size:0.8rem;">
+              <span><i class="bi bi-code-slash me-1"></i>{{ lesson.code_label or 'Code' }}</span>
+              <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                <i class="bi bi-clipboard me-1"></i>Copy
+              </button>
+            </div>
+            <pre>{{ lesson.code }}</pre>
+          </div>
+
+          {% if lesson.preview and lesson.preview != 'none' %}
+          <div class="mb-3">
+            <div class="text-muted small mb-1"><i class="bi bi-eye me-1"></i>Live Preview</div>
+            <div class="output-preview">
+              <div class="output-preview-header">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+                <span class="terminal-title">browser — {{ lesson.title }}</span>
+              </div>
+              <div class="output-preview-body">
+                {% if lesson.preview == 'grid' %}
+                <div class="pv-grid">
+                  <div class="pv-grid-item">1</div><div class="pv-grid-item">2</div><div class="pv-grid-item">3</div>
+                  <div class="pv-grid-item">4</div><div class="pv-grid-item">5</div><div class="pv-grid-item">6</div>
+                </div>
+                {% elif lesson.preview == 'container' %}
+                <div class="pv-container">
+                  <div class="pv-container-item">📦 Container A</div>
+                  <div class="pv-container-item">📦 Container B</div>
+                  <div class="pv-container-item">📦 Container C</div>
+                </div>
+                {% elif lesson.preview == 'typography' %}
+                <div class="pv-typography">
+                  <h2>Fluid Heading</h2>
+                  <p>This text scales smoothly with the viewport using clamp().</p>
+                </div>
+                {% elif lesson.preview == 'animation' %}
+                <div class="text-center">
+                  <div class="pv-spinner mx-auto"></div>
+                  <p class="small text-muted mt-2 mb-0">Staggered entrance</p>
+                </div>
+                {% elif lesson.preview == 'snap' %}
+                <div class="pv-snap">
+                  <div class="pv-snap-item">Slide 1</div>
+                  <div class="pv-snap-item">Slide 2</div>
+                  <div class="pv-snap-item">Slide 3</div>
+                </div>
+                {% elif lesson.preview == 'mask' %}
+                <div class="d-flex align-items-center">
+                  <div class="pv-mask-circle"></div>
+                  <div class="pv-mask-hex"></div>
+                </div>
+                {% elif lesson.preview == 'variables' %}
+                <div class="pv-btn">Themed Button</div>
+                {% elif lesson.preview == 'badge' %}
+                <div class="pv-badge-box">
+                  Product
+                  <span class="pv-badge">NEW</span>
+                </div>
+                {% elif lesson.preview == 'flex' %}
+                <div class="pv-flex" style="display:flex;gap:14px;align-items:center;padding:12px 16px;background:#fff;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+                  <span style="font-weight:800;color:#e11d48;">MySite</span>
+                  <div style="display:flex;gap:14px;"><span style="color:#6b7280;font-size:.8rem;font-weight:600;">Home</span><span style="color:#6b7280;font-size:.8rem;font-weight:600;">About</span></div>
+                </div>
+                {% elif lesson.preview == 'transform3d' %}
+                <div class="pv-flip">
+                  <div class="pv-flip-inner">
+                    <div class="pv-flip-face pv-flip-front">Front</div>
+                    <div class="pv-flip-face pv-flip-back">Back</div>
+                  </div>
+                </div>
+                {% elif lesson.preview == 'closure' %}
+                <div class="pv-closure">
+                  <div class="pv-scope outer"><span class="pv-scope-label">Outer</span><span class="pv-value">count=0</span></div>
+                  <div class="pv-scope inner"><span class="pv-scope-label">Inner</span><span class="pv-value">count++</span></div>
+                </div>
+                {% elif lesson.preview == 'module' %}
+                <div class="pv-module">
+                  <div class="pv-module-box">utils.js</div>
+                  <span class="pv-module-arrow">→</span>
+                  <div class="pv-module-box">main.js</div>
+                </div>
+                {% elif lesson.preview == 'debounce' %}
+                <div class="pv-debounce">
+                  <input type="text" value="hel" placeholder="Search...">
+                  <div class="pv-debounce-status">Waiting 500ms after typing stops…</div>
+                </div>
+                {% elif lesson.preview == 'regex' %}
+                <div class="pv-regex">test<span class="match">@</span>example.com → <span class="match">✓ match</span></div>
+                {% elif lesson.preview == 'observer' %}
+                <div class="pv-observer">
+                  <div class="pv-observer-track"><div class="pv-observer-fill"></div></div>
+                  <div class="pv-observer-label">65% visible — IntersectionObserver fired</div>
+                </div>
+                {% elif lesson.preview == 'websocket' %}
+                <div class="pv-websocket">
+                  <div class="pv-live-dot"></div>
+                  <span>Live connection open</span>
+                </div>
+                {% elif lesson.preview == 'canvas' %}
+                <div class="pv-canvas-box">
+                  <div class="pv-canvas-rect"></div>
+                  <div class="pv-canvas-circle"></div>
+                </div>
+                {% elif lesson.preview == 'dashboard' %}
+                <div class="pv-dashboard">
+                  <div class="pv-dash-stats">
+                    <div class="pv-dash-stat">Tasks<br>5</div>
+                    <div class="pv-dash-stat">Views<br>1.2k</div>
+                  </div>
+                  <div style="padding:12px;background:#fff;border-radius:10px;font-size:.8rem;font-weight:600;color:#4b5563;">SPA Dashboard</div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div class="mb-3">
+            <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Output</div>
+            <div class="terminal">
+              <div class="terminal-header">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+                <span class="terminal-title">console</span>
+              </div>
+              <div class="terminal-body">{{ lesson.output }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="callout callout-{{ lesson.callout_type }} mb-3">
+            {% if lesson.callout_type == 'tip' %}<strong>💡 Tip:</strong>
+            {% elif lesson.callout_type == 'warning' %}<strong>⚠️ Common Mistake:</strong>
+            {% elif lesson.callout_type == 'best' %}<strong>✓ Best Practice:</strong>
+            {% else %}<strong>🔎 Important:</strong>{% endif %}
+            {{ lesson.callout_text }}
+          </div>
+
+          <div class="mb-3">
+            <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="docs-link">
+              <i class="bi bi-box-arrow-up-right"></i>{{ lesson.docs_label }}
+            </a>
+          </div>
+
+          <div class="exercise-box">
+            <h6 class="fw-bold mb-2" style="color:#e11d48;"><i class="bi bi-pencil-square me-2"></i>Try it yourself</h6>
+            <p class="mb-2">{{ lesson.exercise_prompt }}</p>
+            <div class="d-flex gap-2 mb-2 exercise-actions">
+              <button class="btn btn-outline-primary btn-sm rounded-pill" onclick="toggleHint(this)">Show Hint</button>
+              <button class="btn btn-outline-success btn-sm rounded-pill" onclick="toggleSolution(this)">Show Solution</button>
+            </div>
+            <div class="hint-box d-none small text-muted"><i class="bi bi-lightbulb me-1"></i>{{ lesson.exercise_hint }}</div>
+            <div class="solution-box d-none">
+              <div class="code-block"><pre>{{ lesson.exercise_solution }}</pre></div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer" style="border-top:1px solid #e5e7eb;">
+            {% if loop.previtem %}
+            <a href="#lesson-{{ loop.previtem.id }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+              <i class="bi bi-arrow-left me-1"></i>Lesson {{ "%02d"|format(loop.previtem.id) }}
+            </a>
+            {% else %}<span></span>{% endif %}
+
+            <button class="btn btn-outline-success btn-sm rounded-pill mark-complete" onclick="markComplete(this)">
+              <i class="bi bi-check2-circle me-1"></i>Mark Complete
+            </button>
+
+            {% if loop.nextitem %}
+            <a href="#lesson-{{ loop.nextitem.id }}" class="btn btn-primary btn-sm rounded-pill" style="background:#e11d48;border-color:#e11d48;">
+              Next Lesson <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            {% else %}<span></span>{% endif %}
           </div>
         </div>
+      </div>
+      {% endfor %}
 
-        <!-- WHAT YOU'LL GET -->
-        <div class="p-5">
-          <h5 class="fw-bold mb-4 text-center" style="color: #4338ca;">
-            What you'll get in this module
-          </h5>
-
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #f0f4ff;">
-                <i class="bi bi-journal-text fs-3 text-primary"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Detailed Lessons</h6>
-                  <p class="small text-muted mb-0">Step-by-step structured content designed for every level.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fff4e5;">
-                <i class="bi bi-lightbulb fs-3 text-warning"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Real Examples</h6>
-                  <p class="small text-muted mb-0">Practical examples you can understand and apply instantly.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #e8faf0;">
-                <i class="bi bi-patch-check fs-3 text-success"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Practice &amp; Quizzes</h6>
-                  <p class="small text-muted mb-0">Test your knowledge with quizzes and hands-on exercises.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 rounded-4 h-100 d-flex gap-3" style="background: #fdeef4;">
-                <i class="bi bi-download fs-3 text-danger"></i>
-                <div>
-                  <h6 class="fw-bold mb-1">Resources &amp; PDFs</h6>
-                  <p class="small text-muted mb-0">Curated notes and downloadable study material.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="text-center mt-5">
-            <a href="/learn/{{ category_slug }}" class="btn btn-primary rounded-pill px-4 py-2 me-2">
-              <i class="bi bi-collection me-2"></i> Explore {{ category }}
-            </a>
-            <a href="/" class="btn btn-outline-primary rounded-pill px-4 py-2">
-              <i class="bi bi-arrow-left me-2"></i> Back to Home
-            </a>
-          </div>
+      <!-- CTA -->
+      <div class="text-center mt-4 p-4 rounded-4" style="background:#fff1f2;">
+        <h5 class="fw-bold" style="color:#1e1b4b;">You've completed all {{ lessons|length }} advanced lessons. You're now a frontend engineer.</h5>
+        <p class="text-muted mb-3">Practice your skills or return to the Web Development hub.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <a href="/learn/web-development/practice" class="btn btn-primary rounded-pill px-4" style="background:#e11d48;border-color:#e11d48;">
+            <i class="bi bi-collection me-2"></i>Practice Resources
+          </a>
+          <a href="/learn/web-development" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="bi bi-grid me-2"></i>Web Dev Hub
+          </a>
         </div>
-
       </div>
     </div>
   </div>
 </section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy'; }, 2000);
+    });
+  }
+  function toggleHint(btn) {
+    const box = btn.closest('.exercise-box').querySelector('.hint-box');
+    box.classList.toggle('d-none');
+    btn.textContent = box.classList.contains('d-none') ? 'Show Hint' : 'Hide Hint';
+  }
+  function toggleSolution(btn) {
+    const box = btn.closest('.exercise-box').querySelector('.solution-box');
+    box.classList.toggle('d-none');
+    btn.textContent = box.classList.contains('d-none') ? 'Show Solution' : 'Hide Solution';
+  }
+  function markComplete(btn) {
+    const card = btn.closest('.lesson-complete');
+    card.classList.add('done');
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Completed';
+    btn.classList.remove('btn-outline-success');
+    btn.classList.add('btn-success');
+    btn.disabled = true;
+  }
+</script>
 {% endblock %}
