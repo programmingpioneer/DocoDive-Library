@@ -15452,33 +15452,84 @@ def sitemap():
     books = cur.fetchall()
     cur.close()
 
+    # Base URL nikaalo (trailing slash ke baghair)
+    base = url_for("home", _external=True).rstrip("/")
+
     static_pages = [
-        {
-            "loc": url_for("home", _external=True),
-            "changefreq": "daily",
-            "priority": "1.0",
-        },
-        {
-            "loc": url_for("user_feedback", _external=True),
-            "changefreq": "weekly",
-            "priority": "0.7",
-        },
-        {
-            "loc": url_for("leaderboard", _external=True),
-            "changefreq": "daily",
-            "priority": "0.8",
-        },
+        (url_for("home", _external=True), "daily", "1.0"),
+        (url_for("user_feedback", _external=True), "weekly", "0.7"),
+        (url_for("leaderboard", _external=True), "daily", "0.8"),
+        (f"{base}/privacy", "yearly", "0.3"),
+        (f"{base}/terms", "yearly", "0.3"),
+        (f"{base}/data-deletion", "yearly", "0.3"),
     ]
+
+    # Sabhi learning hubs
+    learning_hubs = [
+        "python", "javascript", "java", "c-c", "web-development",
+        "data-science", "machine-learning", "algorithms", "databases",
+        "cyber-security", "mobile-apps", "devops", "ielts", "others",
+    ]
+
+    learning_urls = []
+
+    # Hubs ke liye
+    for hub in learning_hubs:
+        learning_urls.append((f"{base}/learn/{hub}", "weekly", "0.8"))
+
+    # IELTS modules
+    for module in ["listening", "reading", "writing", "speaking"]:
+        learning_urls.append((f"{base}/learn/ielts/{module}", "weekly", "0.8"))
+
+    # Mobile Apps modules
+    for module in ["beginner", "intermediate", "advanced", "practice"]:
+        learning_urls.append((f"{base}/learn/mobile-apps/{module}", "weekly", "0.8"))
+
+    # Baaki hubs ke generic modules
+    for hub in learning_hubs:
+        if hub in ("ielts", "mobile-apps"):
+            continue
+        for module in ["beginner", "intermediate", "advanced", "practice"]:
+            learning_urls.append((f"{base}/learn/{hub}/{module}", "weekly", "0.7"))
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    for page in static_pages:
-        xml += f'  <url>\n    <loc>{escape(page["loc"])}</loc>\n    <changefreq>{page["changefreq"]}</changefreq>\n    <priority>{page["priority"]}</priority>\n  </url>\n'
+
+    # Static pages
+    for loc, freq, prio in static_pages:
+        xml += (
+            f"  <url>\n    <loc>{escape(loc)}</loc>\n"
+            f"    <changefreq>{freq}</changefreq>\n"
+            f"    <priority>{prio}</priority>\n  </url>\n"
+        )
+
+    # Learning pages
+    for loc, freq, prio in learning_urls:
+        xml += (
+            f"  <url>\n    <loc>{escape(loc)}</loc>\n"
+            f"    <changefreq>{freq}</changefreq>\n"
+            f"    <priority>{prio}</priority>\n  </url>\n"
+        )
+
+    # Books
     for book in books:
         book_url = url_for("book_detail", book_id=book[0], _external=True)
-        xml += f"  <url>\n    <loc>{escape(book_url)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n"
+        xml += (
+            f"  <url>\n    <loc>{escape(book_url)}</loc>\n"
+            f"    <changefreq>weekly</changefreq>\n"
+            f"    <priority>0.8</priority>\n  </url>\n"
+        )
+
     xml += "</urlset>"
     return Response(xml, mimetype="application/xml")
+
+
+@app.route("/robots.txt")
+def robots():
+    content = (
+        f"User-agent: *\nAllow: /\nDisallow: /*?*\nSitemap: {url_for('sitemap', _external=True)}\n"
+    )
+    return Response(content, mimetype="text/plain")
 
 
 @app.route("/robots.txt")
