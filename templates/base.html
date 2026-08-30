@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}DocoDive | Free Digital Library{% endblock %}</title>
+    <title>
+      {% block title %}DocoDive | Free Digital Library{% endblock %}
+    </title>
 
     <link
       rel="icon"
@@ -26,7 +28,8 @@
       content="{% block meta_description %}Discover and download thousands of free books and documents on DocoDive. Programming, science, history, and more.{% endblock %}"
     />
 
-    {% if request.path in ['/user/login', '/user/signup', '/forgot-password', '/verify-code', '/reset-password'] %}
+    {% if request.path in ['/user/login', '/user/signup', '/forgot-password',
+    '/verify-code', '/reset-password'] %}
     <meta name="robots" content="noindex, follow" />
     {% else %}
     <meta name="robots" content="index, follow" />
@@ -37,7 +40,10 @@
       href="{% block canonical %}{{ request.base_url }}{% endblock %}"
     />
 
-    <meta name="google-site-verification" content="gNlRlPsL7QKq4doTDmxo7HTkFJ35BtsNu227g3BDHlQ" />
+    <meta
+      name="google-site-verification"
+      content="gNlRlPsL7QKq4doTDmxo7HTkFJ35BtsNu227g3BDHlQ"
+    />
     <meta name="msvalidate.01" content="314B1327B97988FB1B9BDA872B0A261E" />
 
     <meta property="og:title" content="{{ self.title() }}" />
@@ -99,7 +105,10 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
     />
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
     {% block extra_css %}{% endblock %}
     <style>
       :root {
@@ -355,7 +364,7 @@
           opacity: 1;
           transform: translateY(0) translateX(-50%);
         }
-                /* Logged-out navbar: compact Login button + proper spacing */
+        /* Logged-out navbar: compact Login button + proper spacing */
         .navbar .btn-outline-primary {
           padding: 6px 14px;
           font-size: 0.85rem;
@@ -1277,7 +1286,7 @@
       gtag("config", "G-3GC4V3QX2W");
     </script>
 
-        <!-- ================== BREVO CHAT WIDGET (HOME ONLY) ================== -->
+    <!-- ================== BREVO CHAT WIDGET (HOME ONLY) ================== -->
     {% if request.path == '/' %}
     <script>
       (function (d, w, c) {
@@ -1477,8 +1486,7 @@
                 padding: 4px 12px;
               "
             >
-                           {% set _av = session.get('avatar_url') or '' %}
-              {% if _av %}
+              {% set _av = session.get('avatar_url') or '' %} {% if _av %}
               <img
                 id="navbarAvatar"
                 src="{{ _av }}"
@@ -1488,11 +1496,16 @@
                 alt="Profile"
                 style="object-fit: cover; flex-shrink: 0"
                 loading="lazy"
-                onerror="this.onerror=null;this.parentNode.innerHTML='<span class=&quot;avatar-fallback&quot;><i class=&quot;bi bi-person-fill&quot;></i></span>';"
+                onerror="
+                  this.onerror = null;
+                  this.parentNode.innerHTML =
+                    '<span class=&quot;avatar-fallback&quot;><i class=&quot;bi bi-person-fill&quot;></i></span>';
+                "
               />
               {% else %}
               <span class="avatar-fallback">
-                {{ (session.get('user_display_name') or session.get('user_name') or 'U')[:1]|upper }}
+                {{ (session.get('user_display_name') or session.get('user_name')
+                or 'U')[:1]|upper }}
               </span>
               {% endif %}
               <span class="fw-semibold d-none d-md-inline">
@@ -2015,10 +2028,7 @@
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
     ></script>
     <script defer src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script
-      defer
-      src="{{ url_for('static', filename='js/main.js') }}?v=7"
-    ></script>
+    <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 
     <!-- ================== AUTH MODAL ================== -->
