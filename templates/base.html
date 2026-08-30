@@ -1286,21 +1286,36 @@
       gtag("config", "G-3GC4V3QX2W");
     </script>
 
-    <!-- ================== BREVO CHAT WIDGET (HOME ONLY) ================== -->
+
+        <!-- ================== BREVO CHAT WIDGET (LAZY LOAD ON INTERACTION) ================== -->
     {% if request.path == '/' %}
     <script>
-      (function (d, w, c) {
+      (function () {
+        var w = window;
         w.BrevoConversationsID = "6a551981edd95b5e7d08467b";
-        w[c] =
-          w[c] ||
-          function () {
-            (w[c].q = w[c].q || []).push(arguments);
-          };
-        var s = d.createElement("script");
-        s.async = true;
-        s.src = "https://conversations-widget.brevo.com/brevo-conversations.js";
-        if (d.head) d.head.appendChild(s);
-      })(document, window, "BrevoConversations");
+        w.BrevoConversations = w.BrevoConversations || function () {
+          (w.BrevoConversations.q = w.BrevoConversations.q || []).push(arguments);
+        };
+
+        var loaded = false;
+        function loadBrevo() {
+          if (loaded) return;
+          loaded = true;
+          var s = document.createElement("script");
+          s.async = true;
+          s.src = "https://conversations-widget.brevo.com/brevo-conversations.js";
+          if (document.head) document.head.appendChild(s);
+        }
+
+        // User interact kare tabhi load karo — Googlebot ko yeh resource fetch karna hi nahi padega
+        window.addEventListener("scroll", loadBrevo, { once: true, passive: true });
+        window.addEventListener("click", loadBrevo, { once: true });
+        window.addEventListener("touchstart", loadBrevo, { once: true, passive: true });
+        window.addEventListener("keydown", loadBrevo, { once: true });
+
+        // Fallback: agar 8 sec tak koi interaction nahi, phir bhi load ho jaye
+        setTimeout(loadBrevo, 8000);
+      })();
     </script>
     {% endif %}
   </head>
