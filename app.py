@@ -15531,15 +15531,6 @@ def robots():
     )
     return Response(content, mimetype="text/plain")
 
-
-@app.route("/robots.txt")
-def robots():
-    content = (
-        f"User-agent: *\nAllow: /\nDisallow: /*?*\nSitemap: {url_for('sitemap', _external=True)}\n"
-    )
-    return Response(content, mimetype="text/plain")
-
-
 # ================== SEARCH AUTOCOMPLETE ==================
 @app.route("/api/search/suggest")
 def search_suggest():
