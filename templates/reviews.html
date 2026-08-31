@@ -81,7 +81,6 @@ block extra_css %}
     white-space: nowrap;
   }
 
-  /* Category metrics */
   .rv-cat {
     background: var(--rv-bg);
     border: 1px solid var(--rv-border);
@@ -112,7 +111,6 @@ block extra_css %}
     margin-top: 4px;
   }
 
-  /* Review card */
   .rv-item {
     background: #fff;
     border: 1px solid var(--rv-border);
@@ -138,6 +136,8 @@ block extra_css %}
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
+    aspect-ratio: 1 / 1;
+    display: block;
   }
   .rv-avatar-fallback {
     width: 48px;
@@ -151,10 +151,18 @@ block extra_css %}
     font-weight: 700;
     font-size: 1.2rem;
     flex-shrink: 0;
+    aspect-ratio: 1 / 1;
   }
   .rv-name {
     font-weight: 700;
     color: var(--rv-dark);
+  }
+  .rv-name a {
+    color: var(--rv-dark);
+    text-decoration: none;
+  }
+  .rv-name a:hover {
+    text-decoration: underline;
   }
   .rv-time {
     color: var(--rv-muted);
@@ -163,13 +171,15 @@ block extra_css %}
   .rv-comment {
     color: #374151;
     line-height: 1.7;
-    margin-top: 10px;
+    margin-top: 12px;
     margin-bottom: 0;
+    word-break: break-word;
   }
   .rv-star-item {
     color: var(--rv-purple);
     font-size: 0.85rem;
     white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .rv-rating-badge {
@@ -184,7 +194,6 @@ block extra_css %}
     gap: 4px;
   }
 
-  /* Add review modal */
   #reviewRatingStars .star-btn {
     background: none;
     border: none;
@@ -203,7 +212,6 @@ block extra_css %}
     color: var(--rv-purple);
   }
 
-  /* Page-load animation */
   @keyframes rvFadeUp {
     from {
       opacity: 0;
@@ -256,6 +264,27 @@ block extra_css %}
     .rv-rating-big {
       font-size: 2.8rem;
     }
+    .rv-card {
+      padding: 1.25rem;
+    }
+    .rv-item {
+      padding: 1rem;
+    }
+    .rv-avatar,
+    .rv-avatar-fallback {
+      width: 40px;
+      height: 40px;
+      font-size: 1rem;
+    }
+    .rv-star-item {
+      white-space: normal;
+    }
+    .rv-comment {
+      font-size: 0.9rem;
+    }
+    .rv-header-title {
+      font-size: 1.6rem;
+    }
   }
 </style>
 {% endblock %} {% block content %}
@@ -307,9 +336,8 @@ block extra_css %}
 
       <div class="col-lg-8">
         <div class="rv-card h-100">
-          {# real_total ko loop se pehle ek baar define karo #} {% set
-          real_total = breakdown[5] + breakdown[4] + breakdown[3] + breakdown[2]
-          + breakdown[1] %} {% for star in [5, 4, 3, 2, 1] %}
+          {% set real_total = breakdown[5] + breakdown[4] + breakdown[3] +
+          breakdown[2] + breakdown[1] %} {% for star in [5, 4, 3, 2, 1] %}
           <div class="d-flex align-items-center gap-3 mb-2">
             <span class="rv-star-label d-inline-flex align-items-center">
               <i class="bi bi-star-fill text-primary me-1"></i>{{ star }}
@@ -374,18 +402,29 @@ block extra_css %}
       {% if reviews %} {% for r in reviews %}
       <div class="rv-item">
         <div class="d-flex align-items-start justify-content-between gap-3">
-          <div class="d-flex gap-3 flex-grow-1">
-            {% if r.avatar %}
-            <img
-              src="{{ r.avatar }}"
-              alt="{{ r.full_name }}"
-              class="rv-avatar"
-            />
-            {% else %}
-            <span class="rv-avatar-fallback">{{ r.full_name[:1]|upper }}</span>
-            {% endif %}
-            <div>
-              <div class="rv-name">{{ r.full_name }}</div>
+          <div class="d-flex gap-3 flex-grow-1 min-width-0">
+            <a
+              href="/user/profile/{{ r.username }}"
+              class="text-decoration-none flex-shrink-0"
+            >
+              {% if r.avatar %}
+              <img
+                src="{{ r.avatar }}"
+                alt="{{ r.full_name }}"
+                class="rv-avatar"
+              />
+              {% else %}
+              <span class="rv-avatar-fallback"
+                >{{ r.full_name[:1]|upper }}</span
+              >
+              {% endif %}
+            </a>
+            <div class="min-width-0">
+              <div class="rv-name">
+                <a href="/user/profile/{{ r.username }}">
+                  {{ r.full_name }}
+                </a>
+              </div>
               <div class="rv-time">
                 <i class="bi bi-clock me-1"></i>{{ r.created_at }}
               </div>
@@ -420,9 +459,7 @@ block extra_css %}
     </div>
 
     <!-- See More Button -->
-    {% set real_total = breakdown[5] + breakdown[4] + breakdown[3] +
-    breakdown[2] + breakdown[1] %} {% set shown = reviews|length %} {% if shown
-    < real_total %}
+    {% set shown = reviews|length %} {% if shown < real_total %}
     <div class="text-center mt-4 rv-anim rv-anim-delay-4">
       <a
         href="?offset={{ shown + 5 }}"
@@ -459,8 +496,6 @@ block extra_css %}
             </p>
 
             <form id="reviewForm">
-              <!-- Book select hata diya — server pehli approved book use karega -->
-
               <div class="text-center mb-3">
                 <div
                   class="d-inline-flex align-items-center justify-content-center rounded-4 mb-2"
@@ -486,7 +521,11 @@ block extra_css %}
                 >
                 <div id="reviewRatingStars">
                   {% for i in range(1, 6) %}
-                  <button type="button" class="star-btn" data-rating="{{ i }}">
+                  <button
+                    type="button"
+                    class="star-btn"
+                    data-rating="{{ i }}"
+                  >
                     <i class="bi bi-star-fill"></i>
                   </button>
                   {% endfor %}
@@ -523,149 +562,137 @@ block extra_css %}
         </div>
       </div>
     </div>
-    {% endblock %} {% block scripts %}
-    <script>
-        var USER_LOGGED_IN = document.body.dataset.userLoggedIn === "true";
-
-      // Agar form mein book select hai to usse use karo, warna pehli approved book auto-select
-      var defaultBookId = {{ (books[0].id if books and books|length > 0 else 1) }};
-
-      function openReviewModal() {
-        if (!USER_LOGGED_IN) {
-          if (typeof showAuthModal === "function") {
-            showAuthModal(window.location.href);
-          } else {
-            window.location.href = "/auth";
-          }
-          return;
-        }
-
-        // Modal khulne se pehle form reset
-        var commentBox = document.getElementById("reviewComment");
-        if (commentBox) commentBox.value = "";
-        updateStars(5);
-
-        var modalEl = document.getElementById("reviewModal");
-        if (modalEl) {
-          var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-          modal.show();
-        }
-      }
-
-      // ================== STAR RATING ==================
-      var starBtns = document.querySelectorAll("#reviewRatingStars .star-btn");
-      var ratingValue = document.getElementById("reviewRatingValue");
-
-      function updateStars(selected) {
-        starBtns.forEach(function (btn) {
-          var val = parseInt(btn.dataset.rating, 10);
-          btn.classList.toggle("active", val <= selected);
-        });
-        if (ratingValue) ratingValue.value = selected;
-      }
-
-      starBtns.forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          updateStars(parseInt(this.dataset.rating, 10));
-        });
-      });
-
-      // Default 5 stars
-      updateStars(5);
-
-      // ================== SUBMIT REVIEW ==================
-      var reviewForm = document.getElementById("reviewForm");
-      if (reviewForm) {
-        reviewForm.addEventListener("submit", function (e) {
-          e.preventDefault();
-
-          if (!USER_LOGGED_IN) {
-            showAuthModal(window.location.href);
-            return;
-          }
-
-          // Book selection (optional fallback)
-          var bookId = defaultBookId;
-          var bookSelect = document.getElementById("reviewBookSelect");
-          if (bookSelect && bookSelect.value) {
-            bookId = bookSelect.value;
-          }
-
-          var rating = ratingValue ? ratingValue.value : "5";
-          var comment = document.getElementById("reviewComment").value.trim();
-
-          if (!comment) {
-            showToast("Please write a review.", "error");
-            return;
-          }
-
-          var btn = this.querySelector("button[type='submit']");
-          if (!btn) return;
-
-          // Original button HTML save karo taake baad mein restore kar saken
-          var originalHTML = btn.innerHTML;
-          btn.disabled = true;
-          btn.innerHTML =
-            '<span class="spinner-border spinner-border-sm me-2"></span>Posting...';
-
-          fetch("/book/" + bookId + "/review", {
-            method: "POST",
-            headers: {
-              "X-Requested-With": "XMLHttpRequest",
-              "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body:
-              "rating=" +
-              encodeURIComponent(rating) +
-              "&comment=" +
-              encodeURIComponent(comment)
-          })
-            .then(function (r) {
-              return r.json();
-            })
-            .then(function (d) {
-              if (d.error) {
-                // Error — button wapas normal
-                btn.disabled = false;
-                btn.innerHTML = originalHTML;
-                showToast(d.error, "error");
-                return;
-              }
-
-              // Success — modal band, form reset, toast
-              showToast("Review posted successfully!", "success");
-
-              var modalEl = document.getElementById("reviewModal");
-              var modal = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
-              if (modal) modal.hide();
-
-              // Form reset
-              var commentBox = document.getElementById("reviewComment");
-              if (commentBox) commentBox.value = "";
-              updateStars(5);
-
-              // 1 second baad smooth reload
-              setTimeout(function () {
-                location.reload();
-              }, 1000);
-            })
-            .catch(function () {
-              btn.disabled = false;
-              btn.innerHTML = originalHTML;
-              showToast("Something went wrong. Please try again.", "error");
-            });
-        });
-      }
-
-      // ================== TOAST FALLBACK ==================
-      function showToast(message, type) {
-        if (typeof window.showToast === "function") {
-          window.showToast(message, type);
-          return;
-        }
-        alert(message);
-      }
-    </script>
-    {% endblock %}
   </div>
 </div>
+{% endblock %} {% block scripts %}
+<script>
+  var USER_LOGGED_IN = document.body.dataset.userLoggedIn === "true";
+
+  var defaultBookId = {{ (books[0].id if books and books|length > 0 else 1) }};
+
+  function openReviewModal() {
+    if (!USER_LOGGED_IN) {
+      if (typeof showAuthModal === "function") {
+        showAuthModal(window.location.href);
+      } else {
+        window.location.href = "/auth";
+      }
+      return;
+    }
+
+    var commentBox = document.getElementById("reviewComment");
+    if (commentBox) commentBox.value = "";
+    updateStars(5);
+
+    var modalEl = document.getElementById("reviewModal");
+    if (modalEl) {
+      var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.show();
+    }
+  }
+
+  var starBtns = document.querySelectorAll("#reviewRatingStars .star-btn");
+  var ratingValue = document.getElementById("reviewRatingValue");
+
+  function updateStars(selected) {
+    starBtns.forEach(function (btn) {
+      var val = parseInt(btn.dataset.rating, 10);
+      btn.classList.toggle("active", val <= selected);
+    });
+    if (ratingValue) ratingValue.value = selected;
+  }
+
+  starBtns.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      updateStars(parseInt(this.dataset.rating, 10));
+    });
+  });
+
+  updateStars(5);
+
+  var reviewForm = document.getElementById("reviewForm");
+  if (reviewForm) {
+    reviewForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      if (!USER_LOGGED_IN) {
+        showAuthModal(window.location.href);
+        return;
+      }
+
+      var bookId = defaultBookId;
+      var bookSelect = document.getElementById("reviewBookSelect");
+      if (bookSelect && bookSelect.value) {
+        bookId = bookSelect.value;
+      }
+
+      var rating = ratingValue ? ratingValue.value : "5";
+      var comment = document.getElementById("reviewComment").value.trim();
+
+      if (!comment) {
+        showToast("Please write a review.", "error");
+        return;
+      }
+
+      var btn = this.querySelector("button[type='submit']");
+      if (!btn) return;
+
+      var originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2"></span>Posting...';
+
+      fetch("/book/" + bookId + "/review", {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body:
+          "rating=" +
+          encodeURIComponent(rating) +
+          "&comment=" +
+          encodeURIComponent(comment)
+      })
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (d) {
+          if (d.error) {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            showToast(d.error, "error");
+            return;
+          }
+
+          showToast("Review posted successfully!", "success");
+
+          var modalEl = document.getElementById("reviewModal");
+          var modal = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+          if (modal) modal.hide();
+
+          var commentBox = document.getElementById("reviewComment");
+          if (commentBox) commentBox.value = "";
+          updateStars(5);
+
+          setTimeout(function () {
+            location.reload();
+          }, 1000);
+        })
+        .catch(function () {
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+          showToast("Something went wrong. Please try again.", "error");
+        });
+    });
+  }
+
+  function showToast(message, type) {
+    if (typeof window.showToast === "function") {
+      window.showToast(message, type);
+      return;
+    }
+    alert(message);
+  }
+</script>
+{% endblock %}

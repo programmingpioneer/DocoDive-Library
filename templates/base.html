@@ -9,13 +9,8 @@
 
     <link
       rel="icon"
-      type="image/jpeg"
-      href="{{ url_for('static', filename='images/Favicion.jpg') }}"
-    />
-    <link
-      rel="shortcut icon"
-      type="image/x-icon"
-      href="{{ url_for('static', filename='images/favicion.ico') }}"
+      type="image/png"
+      href="{{ url_for('static', filename='images/favicon.png') }}"
     />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -1286,16 +1281,19 @@
       gtag("config", "G-3GC4V3QX2W");
     </script>
 
-
-        <!-- ================== BREVO CHAT WIDGET (LAZY LOAD ON INTERACTION) ================== -->
+    <!-- ================== BREVO CHAT WIDGET (LAZY LOAD ON INTERACTION) ================== -->
     {% if request.path == '/' %}
     <script>
       (function () {
         var w = window;
         w.BrevoConversationsID = "6a551981edd95b5e7d08467b";
-        w.BrevoConversations = w.BrevoConversations || function () {
-          (w.BrevoConversations.q = w.BrevoConversations.q || []).push(arguments);
-        };
+        w.BrevoConversations =
+          w.BrevoConversations ||
+          function () {
+            (w.BrevoConversations.q = w.BrevoConversations.q || []).push(
+              arguments,
+            );
+          };
 
         var loaded = false;
         function loadBrevo() {
@@ -1303,14 +1301,21 @@
           loaded = true;
           var s = document.createElement("script");
           s.async = true;
-          s.src = "https://conversations-widget.brevo.com/brevo-conversations.js";
+          s.src =
+            "https://conversations-widget.brevo.com/brevo-conversations.js";
           if (document.head) document.head.appendChild(s);
         }
 
         // User interact kare tabhi load karo — Googlebot ko yeh resource fetch karna hi nahi padega
-        window.addEventListener("scroll", loadBrevo, { once: true, passive: true });
+        window.addEventListener("scroll", loadBrevo, {
+          once: true,
+          passive: true,
+        });
         window.addEventListener("click", loadBrevo, { once: true });
-        window.addEventListener("touchstart", loadBrevo, { once: true, passive: true });
+        window.addEventListener("touchstart", loadBrevo, {
+          once: true,
+          passive: true,
+        });
         window.addEventListener("keydown", loadBrevo, { once: true });
 
         // Fallback: agar 8 sec tak koi interaction nahi, phir bhi load ho jaye
@@ -1510,17 +1515,15 @@
                 height="30"
                 alt="Profile"
                 style="object-fit: cover; flex-shrink: 0"
-                loading="lazy"
                 onerror="
-                  this.onerror = null;
-                  this.parentNode.innerHTML =
-                    '<span class=&quot;avatar-fallback&quot;><i class=&quot;bi bi-person-fill&quot;></i></span>';
-                "
+    this.onerror = null;
+    this.src = '{{ url_for('static', filename='default-avatar.jpg') }}';
+  "
               />
               {% else %}
               <span class="avatar-fallback">
                 {{ (session.get('user_display_name') or session.get('user_name')
-                or 'U')[:1]|upper }}
+                or 'UU')[:2]|upper }}
               </span>
               {% endif %}
               <span class="fw-semibold d-none d-md-inline">
@@ -1778,9 +1781,7 @@
                   <a href="/#categories"
                     ><i class="bi bi-grid me-1"></i>Browse All Categories</a
                   >
-                  <a href="/#all-books"
-                    ><i class="bi bi-book me-1"></i>All Books</a
-                  >
+                  <a href="/books"><i class="bi bi-book me-1"></i>All Books</a>
                 </div>
               </div>
             </li>
@@ -1876,13 +1877,10 @@
           <div class="col-lg-3" data-aos="fade-right" data-aos-delay="0">
             <h6
               class="footer-heading d-flex justify-content-between align-items-center"
-              data-bs-toggle="collapse"
-              data-bs-target="#fBrand"
             >
               <span>DocoDive</span>
-              <i class="bi bi-chevron-down d-lg-none"></i>
             </h6>
-            <div id="fBrand" class="footer-collapse collapse d-lg-block">
+            <div id="fBrand" class="footer-collapse">
               <p class="footer-text small">
                 Free digital library for programming books, research papers, and
                 learning resources. Knowledge should be free.
@@ -1938,7 +1936,7 @@
               <span>Learning Hubs</span>
               <i class="bi bi-chevron-down d-lg-none"></i>
             </h6>
-            <div id="fHubs" class="footer-collapse collapse d-lg-block">
+            <div id="fHubs" class="footer-collapse">
               <ul class="footer-links list-unstyled mb-0">
                 <li><a href="/learn/python">Python</a></li>
                 <li><a href="/learn/javascript">JavaScript</a></li>
@@ -1968,7 +1966,7 @@
               <span>Community</span>
               <i class="bi bi-chevron-down d-lg-none"></i>
             </h6>
-            <div id="fCommunity" class="footer-collapse collapse d-lg-block">
+            <div id="fCommunity" class="footer-collapse">
               <ul class="footer-links list-unstyled mb-0">
                 <li><a href="/leaderboard">Leaderboard</a></li>
                 <li><a href="/#about">About Us</a></li>
@@ -1990,7 +1988,7 @@
               <span>Stay Updated</span>
               <i class="bi bi-chevron-down d-lg-none"></i>
             </h6>
-            <div id="fNews" class="footer-collapse collapse d-lg-block">
+            <div id="fNews" class="footer-collapse">
               <p class="footer-text small">
                 Get notified about new books — no spam.
               </p>

@@ -77,6 +77,14 @@ Every feature below was built incrementally, turning DocoDive into a robust, sel
 - **Inline Moderation on Book Pages** – Admins and the official account can delete any review or discussion comment and reply officially without leaving the page.
 - **Leaderboard Integrity** – Official accounts are excluded from the leaderboard; their personal stats (uploads, points) are hidden on their profile page, keeping the competition fair for standard users.
 
+### 🏅 Community Profile & Badge System
+
+- **Universal Clickable Profiles** – Every user avatar and name across leaderboard, reviews, and feedback pages now links directly to that user's public profile — visitors can explore any reader's library and achievements.
+- **Custom Display Badge** – Users can choose one unlocked achievement badge from their stats page to display directly on their profile picture for the entire community to see.
+- **Leaderboard Avatar Badge Circles** – Each leaderboard entry shows a golden badge circle on the avatar corner with the user's top achievement emoji.
+- **Responsive Avatar Rendering** – Perfect circular avatars across all screen sizes using aspect-ratio and flex-shrink constraints — no more squished or oval profile pictures.
+- **Session-Native Avatar Sync** – Navbar avatar now correctly reflects the logged-in user's profile picture, including graceful two-letter fallback for users without custom avatars.
+
 ### 💬 Live Chat & CRM Integration
 
 - **Brevo Conversations Widget** – Built-in live chat that captures visitor identity via a pre-chat form (name & email) before the conversation begins, automatically saving them as contacts in your Brevo CRM.
@@ -104,10 +112,11 @@ Every feature below was built incrementally, turning DocoDive into a robust, sel
 | 🔎 Smart Search Experience | 4 |
 | 🔐 Identity & Security | 5 |
 | 👑 Official Community & Moderation | 5 |
+| 🏅 Community Profile & Badge System | 5 |
 | 💬 Live Chat & CRM | 2 |
 | 🧠 Intelligent Automation | 3 |
 | 📊 Dashboard & Analytics | 3 |
-| **🚀 Total Implemented** | **28** |
+| **🚀 Total Implemented** | **33** |
 
 ---
 
@@ -119,6 +128,7 @@ Every feature below was built incrementally, turning DocoDive into a robust, sel
 4. **Smart Search Interaction:** User types a search query → Matching title/author suggestions appear dynamically → Results can be explored through the horizontal slider.
 5. **Binary Delivery:** PDF downloads route directly through Cloudflare R2 object storage with progress tracking.
 6. **Community Engagement:** Users leave reviews or upload documents → Submissions enter a pending moderation queue awaiting administrator approval.
+7. **Badge Selection:** Users pick their favorite unlocked badge from their stats page → The selected emoji is persisted and displayed on their public profile avatar.
 
 ---
 
@@ -164,6 +174,10 @@ DocoDive will continue evolving from a free programming library into a complete 
 - [x] **Community Moderation Panel**
 - [x] **Inline Book Page Moderation**
 - [x] **Leaderboard Integrity**
+- [x] **Universal Clickable User Profiles** – Every avatar/name across leaderboard, reviews, feedback links to public profile
+- [x] **Custom Display Badge System** – Users choose one unlocked badge to display on their profile picture
+- [x] **Leaderboard Avatar Badge Circles** – Golden badge emoji on avatar corner
+- [x] **Responsive Avatar Rendering** – Perfect circles on all devices
 - [x] **Brevo Conversations Live Chat**
 - [x] **Pre-Chat Form & CRM Contact Integration**
 - [x] **No Anonymous Chats**
@@ -194,82 +208,45 @@ DocoDive will continue evolving from a free programming library into a complete 
 ### 🚧 Planned & Future Features
 
 - [ ] **Full-text Search Engine Integration** – Advanced book and document search using Elasticsearch or TiDB full-text indexing.
-
 - [ ] **Online Courses & Digital Learning Marketplace** – Allow users to discover and purchase programming courses and digital learning content through secure online transactions.
-
 - [ ] **Worldwide Payment Support** – Support international payment methods for users around the world, enabling secure cross-border course and digital-content purchases.
-
 - [ ] **Pakistan Payment Integration** – Add locally accessible payment methods such as Easypaisa and Pakistani banking/payment gateways for users in Pakistan.
-
 - [ ] **Automated Donation & Sponsorship Module** – Allow the community to support DocoDive through donations and sponsorships.
-
 - [ ] **AI-Powered Semantic Recommendations** – Provide intelligent book and learning-content recommendations based on user interests, activity, and learning history.
-
 - [ ] **Programming Language Learning Hubs** – Create dedicated learning pages and resource collections for major programming languages such as Python, JavaScript, Java, C++, C#, PHP, Go, Rust, and others.
-
 - [ ] **Programming Practice Hub** – Build an interactive practice environment where users can solve programming problems, write code, test solutions, and improve their problem-solving skills.
-
 - [ ] **Practice Problems & Challenges** – Introduce categorized programming challenges ranging from beginner exercises to advanced algorithmic problems.
-
 - [ ] **Programming Language-Specific Practice** – Provide separate practice tracks for different programming languages so users can practice concepts using the language they are learning.
-
 - [ ] **Coding Progress Tracking** – Track solved problems, completed challenges, learning progress, and practice activity for each user.
-
 - [ ] **Streak Leaderboard** – Introduce a dedicated leaderboard for daily learning and coding streaks.
-
 - [ ] **Global Community Leaderboard** – Rank users based on meaningful community activity such as learning progress, practice achievements, reviews, contributions, and streaks.
-
 - [ ] **Updated Streaks & Leaderboard Pages** – Redesign and improve streak and leaderboard pages with better statistics, rankings, progress information, and user experience.
-
 - [ ] **Monthly Ranking Awards** – Introduce monthly community rankings with awards and recognition for top learners, contributors, and active community members.
-
 - [ ] **Achievement & Badge System** – Award badges for milestones such as completing learning tracks, solving programming challenges, maintaining streaks, contributing resources, and reaching ranking milestones.
-
 - [ ] **Monthly Community Awards** – Recognize outstanding users every month for categories such as Top Learner, Top Contributor, Coding Champion, and Community Star.
-
 - [ ] **Developer Profiles 2.0** – Expand user profiles into developer-focused profiles showing learning progress, programming skills, achievements, solved challenges, streaks, badges, and community contributions.
-
 - [ ] **Learning Progress Dashboard** – Provide users with a central dashboard for tracking books read, courses completed, problems solved, streaks, achievements, and overall learning progress.
-
 - [ ] **Personal Learning Paths** – Allow users to follow structured learning paths such as Python Beginner → Python Advanced → Data Structures → Algorithms → Projects.
-
 - [ ] **Course Progress & Certificates** – Track course completion and provide certificates or completion records for eligible learning programs.
-
 - [ ] **Project-Based Learning** – Add practical programming projects and guided project challenges so users can apply what they learn.
-
 - [ ] **Community Discussions** – Introduce dedicated discussions around books, programming languages, courses, coding problems, and learning topics.
-
 - [ ] **Code Sharing & Solutions** – Allow users to share programming solutions, explanations, and alternative approaches to practice problems.
-
 - [ ] **Mentorship & Community Learning** – Build features that allow experienced developers and advanced learners to help other members through community-based learning.
-
 - [ ] **Advanced Notifications Center** – Notify users about new courses, achievements, leaderboard positions, streak milestones, replies, awards, and important account activity.
-
 - [ ] **Personalized Home Dashboard** – Create a personalized homepage showing recommended books, courses, practice problems, active streaks, progress, and community rankings.
-
 - [ ] **Advanced Admin Analytics** – Expand the administration system with detailed analytics for users, books, courses, purchases, learning activity, practice activity, and community engagement.
-
 - [ ] **Course Creator System** – Allow approved instructors or administrators to create, manage, publish, and update programming courses.
-
 - [ ] **Instructor & Creator Profiles** – Introduce dedicated profiles for course creators and community educators.
-
 - [ ] **Secure Digital Content Delivery** – Protect purchased courses and digital learning materials with authenticated access and controlled content delivery.
-
 - [ ] **Multi-Language Learning Support** – Expand the platform to support learning resources and educational content in multiple languages.
-
 - [ ] **Mobile-First Learning Experience** – Further optimize reading, learning, practice, dashboards, and community features for mobile devices.
-
 - [ ] **DocoDive API** – Provide a secure API layer for future integrations, developer tools, educational applications, and third-party services.
-
 - [ ] **Developer Tools & Utilities Hub** – Add useful online tools for programmers such as formatters, converters, generators, validators, and other development utilities.
-
 - [ ] **Advanced Recommendation Engine** – Combine user activity, interests, learning progress, and community behavior to provide more relevant educational recommendations.
-
 - [ ] **AI Learning Assistant** – Introduce an AI-powered assistant that can help users understand programming concepts, explain errors, and guide them through learning resources.
-
 - [ ] **Scalable Cloud Infrastructure** – Continue improving the architecture for higher traffic, larger libraries, more users, and global availability.
-
 - [ ] **Internationalization & Global Expansion** – Prepare DocoDive for users, creators, and educational communities across different countries and regions.
+
 ---
 
 ## 🤝 Contributing
@@ -282,27 +259,3 @@ We welcome contributions that push the boundaries of open-source education:
 
    ```bash
    git checkout -b feature/amazing-feature
----
-## 👤 About the Creator
-
-<div align="center">
-
-### **Sufyan Khan**
-*Full-Stack Engineer & Open-Source Builder*
-
-</div>
-
-Yo! I’m **Sufyan Khan** — a developer who decided that instead of just waiting around for a degree to start building, I was going to roll up my sleeves and ship real production code. 
-
-Fresh out of my FSc studies, I architected and built **DocoDive** entirely from scratch. We're talking serverless databases, cloud-native object storage, automated email pipelines, and real security infrastructure—all engineered to solve a real problem without spending a single dollar on server costs.
-
-My mindset is simple: **Pure Discipline.** No excuses, no shortcuts, just relentless execution. If you want something built right, you build it yourself.
-
-> *"From studying FSc textbooks to architecting cloud-native systems—this is just chapter one."*
-
-<div align="center">
-
-[![GitHub Profile](https://img.shields.io/badge/GitHub-Sufyan_Khan-black?style=for-the-badge&logo=github&logoColor=white)](https://github.com/yourusername)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/yourusername)
-
-</div>

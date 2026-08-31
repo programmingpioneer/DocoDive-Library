@@ -817,6 +817,7 @@ def clear_login_backoff(ip, email):
     
     
 def setup_session(user_id):
+    session.clear()
     cur = mysql.connection.cursor()
     cur.execute(
         "SELECT username, first_name, last_name, avatar_url, email FROM users WHERE id = %s",
@@ -14874,16 +14875,26 @@ def home():
     featured_book = get_book_of_the_day()
 
     streak = longest = 0
+    user_downloads = user_favorites = user_reviews = 0
     if "user_id" in session:
+        uid = session["user_id"]
         cur = mysql.connection.cursor()
-        cur.execute(
-            "SELECT streak_count, longest_streak FROM user_streaks WHERE user_id = %s",
-            (session["user_id"],),
-        )
-        row = cur.fetchone()
-        if row:
-            streak, longest = row
-        cur.close()
+        try:
+            cur.execute(
+                "SELECT streak_count, longest_streak FROM user_streaks WHERE user_id = %s",
+                (uid,),
+            )
+            row = cur.fetchone()
+            if row:
+                streak, longest = row
+            cur.execute("SELECT COUNT(*) FROM download_history WHERE user_id = %s", (uid,))
+            user_downloads = cur.fetchone()[0] or 0
+            cur.execute("SELECT COUNT(*) FROM favorites WHERE user_id = %s", (uid,))
+            user_favorites = cur.fetchone()[0] or 0
+            cur.execute("SELECT COUNT(*) FROM reviews WHERE user_id = %s", (uid,))
+            user_reviews = cur.fetchone()[0] or 0
+        finally:
+            cur.close()
 
     recommended_books = []
     if "user_id" in session:
@@ -14955,6 +14966,9 @@ def home():
         total_categories=home_stats["total_categories"],
         recent_reviews=home_stats["recent_reviews"],
         total_reviews=home_stats["total_reviews"],
+        user_downloads=user_downloads,
+        user_favorites=user_favorites,
+        user_reviews=user_reviews,
     )
 
 
@@ -15072,6 +15086,159 @@ def python_practice():
         lessons=None,
         practice_items=PYTHON_PRACTICE,
         practice_projects=PYTHON_PROJECTS,
+    )
+    
+# ================== ALL BOOKS (Browse Everything) ==================
+@app.route("/books")
+@limiter.limit(PUBLIC_RATELIMIT)
+def all_books():
+    ensure_default_categories()
+
+    q = request.args.get("q", "").strip()
+    category_slug = request.args.get("category", "").strip()
+    sort = request.args.get("sort", "latest").strip()
+    page = max(1, request.args.get("page", 1, type=int))
+    per_page = 24
+
+    # Input validation
+    if len(q) > 200:
+        abort(400)
+    if len(category_slug) > 100:
+        abort(400)
+
+    cur = mysql.connection.cursor()
+    try:
+        # Resolve category slug -> level (invalid slug = sab books, 404 nahi)
+        category_name = slug_to_category_name(category_slug, cur) if category_slug else None
+        if category_name:
+            category_slug = category_to_slug(category_name)
+        else:
+            category_slug = ""
+
+        # --- Dynamic WHERE (parameterized, koi user input interpolation nahi) ---
+        where_parts = ["d.approved = 1"]
+        params = []
+
+        if q:
+            like = f"%{q}%"
+            where_parts.append("(d.title LIKE %s OR d.author LIKE %s OR d.description LIKE %s)")
+            params.extend([like, like, like])
+
+        if category_name:
+            where_parts.append("c.level = %s")
+            params.append(category_name)
+
+        where_clause = " AND ".join(where_parts)
+
+        # --- Sort whitelist (invalid -> latest) ---
+        sort_map = {
+            "latest": "d.created_at DESC",
+            "downloads": "d.download_count DESC",
+            "views": "d.view_count DESC",
+            "rating": "avg_r.avg_rating DESC",
+        }
+        order_clause = sort_map.get(sort, "d.created_at DESC")
+
+        # --- Total count ---
+        cur.execute(
+            f"""
+            SELECT COUNT(*)
+            FROM documents d
+            JOIN categories c ON d.category_id = c.id
+            LEFT JOIN (
+                SELECT book_id, AVG(rating) AS avg_rating FROM reviews GROUP BY book_id
+            ) avg_r ON d.id = avg_r.book_id
+            WHERE {where_clause}
+            """,
+            tuple(params),
+        )
+        total_books = cur.fetchone()[0]
+
+        total_pages = max(1, (total_books + per_page - 1) // per_page)
+        if page > total_pages:
+            page = total_pages
+        offset = (page - 1) * per_page
+
+        # --- Books fetch ---
+        cur.execute(
+            f"""
+            SELECT d.id, d.title, d.author, d.image_url, d.telegram_link,
+                   COALESCE(d.download_count, 0) AS download_count,
+                   COALESCE(d.view_count, 0) AS view_count,
+                   c.level,
+                   COALESCE(avg_r.avg_rating, 0) AS avg_rating
+            FROM documents d
+            JOIN categories c ON d.category_id = c.id
+            LEFT JOIN (
+                SELECT book_id, AVG(rating) AS avg_rating
+                FROM reviews
+                GROUP BY book_id
+            ) avg_r ON d.id = avg_r.book_id
+            WHERE {where_clause}
+            ORDER BY {order_clause}
+            LIMIT %s OFFSET %s
+            """,
+            tuple(params) + (per_page, offset),
+        )
+        rows = cur.fetchall()
+
+        # --- Categories with counts (learning_hub jaisa exact) ---
+        cur.execute("""
+            SELECT c.level, COUNT(d.id) AS total
+            FROM categories c
+            LEFT JOIN documents d ON c.id = d.category_id AND d.approved = 1
+            GROUP BY c.id, c.level
+            HAVING total > 0
+            ORDER BY total DESC
+        """)
+        all_categories = [
+            {"level": r[0], "count": r[1], "slug": category_to_slug(r[0])}
+            for r in cur.fetchall()
+        ]
+    finally:
+        cur.close()
+
+    books = [
+        {
+            "id": r[0],
+            "title": r[1],
+            "author": r[2],
+            "image_url": r[3],
+            "link": r[4],
+            "download_count": r[5] or 0,
+            "view_count": r[6] or 0,
+            "level": r[7],
+            "avg_rating": round(float(r[8]), 1) if r[8] else 0,
+        }
+        for r in rows
+    ]
+
+    books_jsonld = [
+        {
+            "@type": "ListItem",
+            "position": i,
+            "url": f"{request.host_url}book/{b['id']}",
+            "name": b["title"].replace("_", " "),
+        }
+        for i, b in enumerate(books, 1)
+    ]
+
+    return render_template(
+        "books.html",
+        books=books,
+        total_books=total_books,
+        page=page,
+        total_pages=total_pages,
+        q=q,
+        category_slug=category_slug,
+        category_name=category_name or "",
+        sort=sort,
+        all_categories=all_categories,
+        books_jsonld={
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "itemListElement": books_jsonld,
+        },
     )
 #================== LEARNING HUB MODULES PYTHON (Category + Module Pages) ==================
 @app.route("/learn/<slug>/<module>")
@@ -15357,7 +15524,8 @@ def book_detail(book_id):
 
     cur.execute(
         """
-        SELECT u.username, r.rating, r.comment, r.created_at, u.id, r.id
+        SELECT u.username, r.rating, r.comment, r.created_at, u.id, r.id,
+               u.avatar_url, u.first_name, u.last_name
         FROM reviews r JOIN users u ON r.user_id = u.id
         WHERE r.book_id = %s ORDER BY r.created_at DESC
     """,
@@ -15368,6 +15536,7 @@ def book_detail(book_id):
 
     reviews = []
     for r in reviews_raw:
+        display_name = ((r[7] or "") + " " + (r[8] or "")).strip() or r[0]
         reviews.append(
             {
                 "id": r[5],
@@ -15377,6 +15546,8 @@ def book_detail(book_id):
                 "created_at": r[3],
                 "user_id": r[4],
                 "is_official": is_official_user(r[4]),
+                "avatar": r[6],
+                "display_name": display_name,
             }
         )
 
@@ -15864,6 +16035,16 @@ def user_login():
         session["user_name"] = user[1]
         session["user_display_name"] = user[1]
         session["email"] = email
+        session["avatar_url"] = user[6] if len(user) > 6 else None
+                # Avatar URL session me set karo (aghar user ne lagayi hai)
+        try:
+            _cur = mysql.connection.cursor()
+            _cur.execute("SELECT avatar_url FROM users WHERE id = %s", (user[0],))
+            _avrow = _cur.fetchone()
+            session["avatar_url"] = _avrow[0] if _avrow else None
+            _cur.close()
+        except Exception:
+            session["avatar_url"] = None
         session.modified = True
 
         # Streak updates DB-dependent hain — DB down ho tab bhi login success rahe.
@@ -15928,8 +16109,7 @@ def verify_email(token):
 
 @app.route("/user/logout")
 def user_logout():
-    session.pop("user_id", None)
-    session.pop("user_name", None)
+    session.clear()
     return redirect(url_for("home"))
 
 
@@ -17669,7 +17849,7 @@ def user_profile(username):
     cur = mysql.connection.cursor()
     cur.execute(
         """
-        SELECT id, username, email, verified, created_at, avatar_url, bio, social_links, first_name, last_name
+        SELECT id, username, email, verified, created_at, avatar_url, bio, social_links, first_name, last_name, custom_badge
         FROM users WHERE username = %s
     """,
         (username,),
@@ -17698,6 +17878,16 @@ def user_profile(username):
     total_favorites = cur.fetchone()[0]
     cur.execute("SELECT SUM(points) FROM user_points WHERE user_id = %s", (uid,))
     total_points = cur.fetchone()[0] or 0
+    cur.execute("SELECT COUNT(*) FROM download_history WHERE user_id = %s", (uid,))
+    total_downloads = cur.fetchone()[0] or 0
+    streak = longest = 0
+    cur.execute(
+        "SELECT streak_count, longest_streak FROM user_streaks WHERE user_id = %s",
+        (uid,),
+    )
+    row = cur.fetchone()
+    if row:
+        streak, longest = row[0] or 0, row[1] or 0
     cur.close()
 
     return render_template(
@@ -17709,8 +17899,116 @@ def user_profile(username):
         total_points=total_points,
         social_links=social_links_dict,
         is_official=is_official,
+        total_downloads=total_downloads,
+        streak=streak,
+        longest=longest,
+        custom_badge=user[10] if len(user) > 10 else None,
     )
 
+# ================== BADGE DEFINITIONS ==================
+BADGE_DEFS = [
+    {"key": "first_download", "name": "First Download", "icon": "⬇️", "threshold": 1, "metric": "downloads"},
+    {"key": "book_collector", "name": "Book Collector", "icon": "📥", "threshold": 10, "metric": "downloads"},
+    {"key": "library_hoarder", "name": "Library Hoarder", "icon": "🏛️", "threshold": 50, "metric": "downloads"},
+    {"key": "favoriter", "name": "Favoriter", "icon": "❤️", "threshold": 5, "metric": "favorites"},
+    {"key": "reviewer", "name": "Reviewer", "icon": "⭐", "threshold": 3, "metric": "reviews"},
+    {"key": "book_lover", "name": "Book Lover", "icon": "🏅", "threshold": 7, "metric": "longest"},
+    {"key": "avid_reader", "name": "Avid Reader", "icon": "📚", "threshold": 30, "metric": "longest"},
+    {"key": "bookworm", "name": "Bookworm", "icon": "🐛", "threshold": 60, "metric": "longest"},
+    {"key": "legend", "name": "Legend", "icon": "👑", "threshold": 100, "metric": "longest"},
+]
+
+
+# ================== USER STATS ==================
+@app.route("/user/stats", methods=["GET", "POST"])
+def user_stats():
+    if "user_id" not in session:
+        return redirect(url_for("user_login"))
+    uid = session["user_id"]
+
+    cur = mysql.connection.cursor()
+    try:
+        # Downloads (download_history se)
+        cur.execute("SELECT COUNT(*) FROM download_history WHERE user_id = %s", (uid,))
+        downloads = cur.fetchone()[0] or 0
+
+        # Favorites
+        cur.execute("SELECT COUNT(*) FROM favorites WHERE user_id = %s", (uid,))
+        favorites = cur.fetchone()[0] or 0
+
+        # Reviews
+        cur.execute("SELECT COUNT(*) FROM reviews WHERE user_id = %s", (uid,))
+        reviews = cur.fetchone()[0] or 0
+
+        # Streak + longest
+        streak = 0
+        longest = 0
+        cur.execute(
+            "SELECT streak_count, longest_streak FROM user_streaks WHERE user_id = %s",
+            (uid,),
+        )
+        row = cur.fetchone()
+        if row:
+            streak, longest = row[0] or 0, row[1] or 0
+
+        # Current custom badge
+        cur.execute("SELECT custom_badge FROM users WHERE id = %s", (uid,))
+        badge_row = cur.fetchone()
+        current_badge = badge_row[0] if badge_row else None
+
+        # Unlocked badges compute karo
+        metric_map = {
+            "downloads": downloads,
+            "favorites": favorites,
+            "reviews": reviews,
+            "longest": longest,
+        }
+        unlocked_badges = []
+        for b in BADGE_DEFS:
+            val = metric_map.get(b["metric"], 0)
+            if val >= b["threshold"]:
+                unlocked_badges.append(
+                    {
+                        "name": b["name"],
+                        "icon": b["icon"],
+                        "threshold": b["threshold"],
+                    }
+                )
+
+        # POST — user apna badge select kar raha hai
+        if request.method == "POST":
+            selected = request.form.get("custom_badge", "").strip()
+            valid = any(b["icon"] == selected for b in unlocked_badges)
+            if valid:
+                cur.execute(
+                    "UPDATE users SET custom_badge = %s WHERE id = %s",
+                    (selected, uid),
+                )
+                mysql.connection.commit()
+                current_badge = selected
+            elif selected == "":
+                # Badge remove karo
+                cur.execute(
+                    "UPDATE users SET custom_badge = NULL WHERE id = %s",
+                    (uid,),
+                )
+                mysql.connection.commit()
+                current_badge = None
+
+    finally:
+        cur.close()
+
+    return render_template(
+        "user_stats.html",
+        downloads=downloads,
+        favorites=favorites,
+        reviews=reviews,
+        streak=streak,
+        longest=longest,
+        unlocked_badges=unlocked_badges,
+        current_badge=current_badge,
+    )
+    
 
 @app.route("/user/profile/edit", methods=["GET", "POST"])
 @limiter.limit(AUTH_RATELIMIT)
@@ -18056,35 +18354,47 @@ def delete_notification(notif_id):
     cur.close()
     return jsonify({"success": True})
 
+@app.route("/api/notifications/read-all", methods=["POST"])
+def mark_all_notifications_read():
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    cur = mysql.connection.cursor()
+    cur.execute(
+        "UPDATE notifications SET is_read=1 WHERE user_id=%s AND is_read=0",
+        (session["user_id"],),
+    )
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({"success": True})
 
 # ================== LEADERBOARD ==================
 @app.route("/leaderboard")
 def leaderboard():
     official_user_id = get_site_setting("official_user_id")
+    try:
+        official_user_id = int(official_user_id) if official_user_id else None
+    except (TypeError, ValueError):
+        official_user_id = None
 
     cur = mysql.connection.cursor()
+    query = """
+        SELECT u.id, u.username, u.first_name, u.last_name, u.avatar_url,
+               SUM(up.points) AS total_points,
+               (SELECT COUNT(*) FROM download_history dh WHERE dh.user_id = u.id) AS downloads,
+               (SELECT COUNT(*) FROM favorites f WHERE f.user_id = u.id) AS favorites,
+               (SELECT COUNT(*) FROM reviews r WHERE r.user_id = u.id) AS reviews,
+               COALESCE((SELECT longest_streak FROM user_streaks us WHERE us.user_id = u.id), 0) AS longest
+        FROM user_points up
+        JOIN users u ON up.user_id = u.id
+        {exclude}
+        GROUP BY u.id, u.username, u.first_name, u.last_name, u.avatar_url
+        ORDER BY total_points DESC
+        LIMIT 50
+    """
     if official_user_id:
-        cur.execute(
-            """
-            SELECT u.id, u.username, u.first_name, u.last_name, u.avatar_url, SUM(up.points) AS total_points
-            FROM user_points up
-            JOIN users u ON up.user_id = u.id
-            WHERE u.id != %s
-            GROUP BY u.id
-            ORDER BY total_points DESC
-            LIMIT 50
-        """,
-            (official_user_id,),
-        )
+        cur.execute(query.replace("{exclude}", "WHERE u.id != %s"), (official_user_id,))
     else:
-        cur.execute("""
-            SELECT u.id, u.username, u.first_name, u.last_name, u.avatar_url, SUM(up.points) AS total_points
-            FROM user_points up
-            JOIN users u ON up.user_id = u.id
-            GROUP BY u.id
-            ORDER BY total_points DESC
-            LIMIT 50
-        """)
+        cur.execute(query.replace("{exclude}", ""))
     rows = cur.fetchall()
     cur.close()
 
@@ -18093,6 +18403,29 @@ def leaderboard():
         full_name = ((row[2] or "") + " " + (row[3] or "")).strip()
         if not full_name:
             full_name = row[1]
+
+        downloads = row[6] or 0
+        favorites = row[7] or 0
+        reviews = row[8] or 0
+        longest = row[9] or 0
+
+        # Badge emojis compute karo
+        badges = []
+        if downloads >= 1:
+            badges.append("⬇️")
+        if downloads >= 10:
+            badges.append("📥")
+        if favorites >= 5:
+            badges.append("❤️")
+        if reviews >= 3:
+            badges.append("⭐")
+        if longest >= 7:
+            badges.append("🏅")
+        if longest >= 30:
+            badges.append("📚")
+        if longest >= 100:
+            badges.append("👑")
+
         leaderboard.append(
             {
                 "user_id": row[0],
@@ -18101,6 +18434,9 @@ def leaderboard():
                 "avatar_url": row[4],
                 "points": row[5],
                 "is_official": is_official_user(row[0]),
+                "badges": "".join(badges),
+                "badge_icon": badges[0] if badges else None,
+                "badge_count": len(badges),
             }
         )
 
@@ -18538,6 +18874,20 @@ def start_digest_scheduler():
     thread.start()
     app.logger.info("Digest scheduler started")
 
+# ================== LEGAL PAGES ==================
+@app.route("/privacy")
+def privacy_policy():
+    return render_template("privacy.html")
+
+
+@app.route("/terms")
+def terms_of_service():
+    return render_template("terms.html")
+
+
+@app.route("/data-deletion")
+def data_deletion():
+    return render_template("data_deletion.html")
 
 # ================== RUN ==================
 if __name__ == "__main__":

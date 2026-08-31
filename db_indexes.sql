@@ -19,3 +19,8 @@ CREATE INDEX idx_user_streaks_user_id ON user_streaks (user_id);
 
 -- Notifications: user notifications + unread count
 CREATE INDEX idx_notifications_user_is_read ON notifications (user_id, is_read);
+
+-- /books sort performance: compound (approved + sort column)
+CREATE INDEX idx_documents_approved_created ON documents (approved, created_at);
+CREATE INDEX idx_documents_approved_downloads ON documents (approved, download_count);
+CREATE INDEX idx_documents_approved_views ON documents (approved, view_count);

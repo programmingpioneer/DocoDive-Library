@@ -720,7 +720,7 @@
       right: -4px;
     }
   }
-  /* ===== CAROUSEL CENTER + DESKTOP WHITE SPACE FIX ===== */
+  /* ===== CAROUSEL CENTER + DESKTOP STABLE HEIGHT ===== */
   @media (min-width: 992px) {
     #recommendedCarousel .carousel-item .row,
     #newArrivalsCarousel .carousel-item .row {
@@ -744,12 +744,11 @@
       .product-card
       .d-flex.align-items-center.justify-content-center {
       height: auto !important;
-      min-height: 0 !important;
     }
 
     #recommendedCarousel .carousel-inner,
     #newArrivalsCarousel .carousel-inner {
-      min-height: 0 !important;
+      min-height: 340px !important;
     }
   }
   /* ===== BOOK COVER SIZE + CENTER + RESPONSIVE FIX ===== */
@@ -830,41 +829,43 @@
     transition: none !important;
   }
 
-  /* ===== CAROUSEL CARDS: SUBTLE FADE ONLY ===== */
-@keyframes fadeCardIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+  /* ===== CAROUSEL: SMOOTH + STABLE (no blink, no page jump) ===== */
 
-#recommendedCarousel .carousel-item.active .col-4,
-#newArrivalsCarousel .carousel-item.active .col-4 {
-  animation: fadeCardIn 0.45s ease-out both;
-}
+  /* Cards khud koi animation na karein — sirf carousel ki apni crossfade chalegi */
+  #recommendedCarousel .carousel-item .col-4,
+  #newArrivalsCarousel .carousel-item .col-4 {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 
-#recommendedCarousel .carousel-item.active .col-4:nth-child(1),
-#newArrivalsCarousel .carousel-item.active .col-4:nth-child(1) {
-  animation-delay: 0s;
-}
-#recommendedCarousel .carousel-item.active .col-4:nth-child(2),
-#newArrivalsCarousel .carousel-item.active .col-4:nth-child(2) {
-  animation-delay: 0.06s;
-}
-#recommendedCarousel .carousel-item.active .col-4:nth-child(3),
-#newArrivalsCarousel .carousel-item.active .col-4:nth-child(3) {
-  animation-delay: 0.12s;
-}
-
-/* Smooth crossfade + stable height (no page jump) */
-#recommendedCarousel .carousel-inner,
-#newArrivalsCarousel .carousel-inner {
-  min-height: 340px;
-}
-@media (max-width: 576px) {
+  /* Stable height — slide change par page kabhi upar/neeche na hile */
   #recommendedCarousel .carousel-inner,
   #newArrivalsCarousel .carousel-inner {
-    min-height: 300px;
+    min-height: 340px;
   }
-}
+
+  @media (max-width: 768px) {
+    #recommendedCarousel .carousel-inner,
+    #newArrivalsCarousel .carousel-inner {
+      min-height: 320px;
+    }
+  }
+
+  @media (max-width: 576px) {
+    #recommendedCarousel .carousel-inner,
+    #newArrivalsCarousel .carousel-inner {
+      min-height: 300px;
+    }
+  }
+
+  /* Reduced motion — animation band, koi bhi disturbance nahi */
+  @media (prefers-reduced-motion: reduce) {
+    #recommendedCarousel .carousel-item,
+    #newArrivalsCarousel .carousel-item {
+      transition: none !important;
+    }
+  }
   /* ===== ABOUT MODERN ===== */
   .founder-card {
     background: #fff;
@@ -978,7 +979,7 @@
       min-height: 320px;
     }
   }
-       /* ===== ABOUT CARDS: ANIMATED HOVER + RESPONSIVE ===== */
+  /* ===== ABOUT CARDS: ANIMATED HOVER + RESPONSIVE ===== */
   .stat-card,
   .mini-card,
   .feature-item,
@@ -1170,7 +1171,7 @@
     background: #4338ca;
     border-radius: 10px;
   }
-    /* ===== BOOK CARD COUNTS: FIXED BOTTOM-LEFT ===== */
+  /* ===== BOOK CARD COUNTS: FIXED BOTTOM-LEFT ===== */
   .book-card-inner {
     display: flex !important;
     flex-direction: column !important;
@@ -1187,44 +1188,62 @@
     justify-content: flex-start !important;
   }
   /* ========== BOOK DETAIL MODAL — TIGHT COVER ========== */
-#modalBookContent .col-md-5 {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-height: 0 !important;
-  padding: 12px !important;
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%) !important;
-}
-
-#modalBookContent .col-md-5 img {
-  width: auto !important;
-  max-width: 85% !important;
-  height: auto !important;
-  max-height: 320px !important;
-  object-fit: contain !important;
-  border-radius: 16px;
-  display: block !important;
-  margin: 0 auto !important;
-}
-/* Mobile */
-@media (max-width: 767px) {
-  #modalBookContent .row.g-0 {
-    flex-direction: column !important;
-  }
   #modalBookContent .col-md-5 {
-    width: 100% !important;
-    padding: 16px !important;
-    min-height: 220px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 0 !important;
+    padding: 12px !important;
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%) !important;
   }
+
   #modalBookContent .col-md-5 img {
-    height: 220px !important;
+    width: auto !important;
+    max-width: 85% !important;
+    height: auto !important;
+    max-height: 320px !important;
     object-fit: contain !important;
+    border-radius: 16px;
+    display: block !important;
+    margin: 0 auto !important;
   }
-  #modalBookContent .col-md-7 {
-    width: 100% !important;
-    padding: 20px !important;
+  /* Mobile */
+  @media (max-width: 767px) {
+    #modalBookContent .row.g-0 {
+      flex-direction: column !important;
+    }
+    #modalBookContent .col-md-5 {
+      width: 100% !important;
+      padding: 16px !important;
+      min-height: 220px !important;
+    }
+    #modalBookContent .col-md-5 img {
+      height: 220px !important;
+      object-fit: contain !important;
+    }
+    #modalBookContent .col-md-7 {
+      width: 100% !important;
+      padding: 20px !important;
+    }
   }
-}
+      /* ===== BOOK OF THE DAY — FULL COVER, NO CROP ===== */
+    .book-of-day-cover {
+      width: 100%;
+      height: auto !important;
+      max-height: 160px;
+      object-fit: contain !important;
+      object-position: center !important;
+      border-radius: 12px;
+      display: block;
+      margin: 0 auto;
+      background: #f1f5f9;
+    }
+
+    @media (max-width: 576px) {
+      .book-of-day-cover {
+        max-height: 120px;
+      }
+    }
 </style>
 {% endblock %} {% block content %}
 <!-- ========== HERO ========== -->
@@ -1737,7 +1756,7 @@
         {% if featured_book[4] and featured_book[4] != 'None' %}
         <img
           src="{{ featured_book[4] }}"
-          class="book-cover"
+          class="book-of-day-cover"
           alt="Cover"
           loading="lazy"
         />
@@ -1768,23 +1787,30 @@
 {% endif %}
 
 <!-- ==================== STREAK & BADGES ==================== -->
-{% if user_logged_in and streak > 0 %}
+{% if user_logged_in and (streak > 0 or user_downloads > 0 or user_favorites > 0 or user_reviews > 0) %}
 <div class="container mb-3" data-aos="fade-up" data-aos-delay="100">
-  <div class="d-flex justify-content-end align-items-center gap-3">
-    <span class="badge bg-success px-3 py-2 rounded-pill"
-      >🔥 {{ streak }} day streak</span
-    >
-    {% if longest >= 7 %}<span
-      class="badge bg-warning text-dark px-3 py-2 rounded-pill"
-      title="Longest streak: {{ longest }} days"
-      >🏅 Book Lover</span
-    >{% endif %} {% if longest >= 30 %}<span
-      class="badge bg-info text-dark px-3 py-2 rounded-pill"
-      >📚 Avid Reader</span
-    >{% endif %}
-    <a href="/user/stats" class="btn btn-sm btn-outline-primary rounded-pill"
-      ><i class="bi bi-graph-up"></i> My Stats</a
-    >
+  <div class="d-flex justify-content-end align-items-center gap-2 flex-wrap">
+    {% if streak > 0 %}
+    <span class="badge bg-success px-3 py-2 rounded-pill">🔥 {{ streak }} day streak</span>
+    {% endif %}
+    {% if user_downloads >= 1 %}
+    <span class="badge bg-primary px-3 py-2 rounded-pill">⬇️ {{ user_downloads }} downloads</span>
+    {% endif %}
+    {% if user_favorites >= 1 %}
+    <span class="badge bg-danger px-3 py-2 rounded-pill">❤️ {{ user_favorites }}</span>
+    {% endif %}
+    {% if user_reviews >= 1 %}
+    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">⭐ {{ user_reviews }}</span>
+    {% endif %}
+    {% if longest >= 7 %}
+    <span class="badge text-dark px-3 py-2 rounded-pill" style="background:#fde68a">🏅 Book Lover</span>
+    {% endif %}
+    {% if longest >= 30 %}
+    <span class="badge bg-info text-dark px-3 py-2 rounded-pill">📚 Avid Reader</span>
+    {% endif %}
+    <a href="/user/stats" class="btn btn-sm btn-outline-primary rounded-pill">
+      <i class="bi bi-graph-up"></i> My Stats
+    </a>
   </div>
 </div>
 {% endif %}
@@ -1903,7 +1929,7 @@
                   src="{{ book.image_url }}"
                   alt="Cover"
                   class="flat-book-cover"
-                  loading="lazy"
+                  loading="eager"
                 />
                 {% else %} {% set title_safe = book.title | default('Book',
                 true) | replace('_', ' ') %} {% set words = title_safe.split()
@@ -2072,7 +2098,7 @@
                   src="{{ pdf.image_url }}"
                   alt="Cover"
                   class="flat-book-cover"
-                  loading="lazy"
+                  loading="eager"
                 />
                 {% else %} {% set title_safe = pdf.title | default('Book', true)
                 | replace('_', ' ') %} {% set words = title_safe.split() %} {%
@@ -2213,7 +2239,18 @@
   class="container my-5 py-4 border-top"
   data-aos="fade-up"
 >
-  <h2 class="section-title mb-4 mb-md-5">📚 All Books</h2>
+ <h2 class="section-title mb-3">
+  <a href="/books" class="text-decoration-none">📚 All Books</a>
+</h2>
+<div class="mb-4 mb-md-5">
+  <a
+    href="/books"
+    class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill text-decoration-none"
+  >
+    View all {{ total_books }} books <i class="bi bi-arrow-right ms-1"></i>
+  </a>
+</div>
+  </p>
   <div class="row g-2 g-sm-3">
     {% if pdfs %} {% for pdf in pdfs %}
     <div
@@ -2517,7 +2554,12 @@
 
     <!-- Stats Row -->
     <div class="row g-3 g-md-4 text-center mb-5">
-      <div class="col-6 col-lg-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="0">
+      <div
+        class="col-6 col-lg-3"
+        data-aos="fade-up"
+        data-aos-duration="600"
+        data-aos-delay="0"
+      >
         <div class="stat-card">
           <i class="bi bi-book-half stat-icon"></i>
           <h3 class="stat-number" data-count="{{ total_books }}">
@@ -2526,7 +2568,12 @@
           <p class="stat-label">Books</p>
         </div>
       </div>
-      <div class="col-6 col-lg-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
+      <div
+        class="col-6 col-lg-3"
+        data-aos="fade-up"
+        data-aos-duration="600"
+        data-aos-delay="100"
+      >
         <div class="stat-card">
           <i class="bi bi-download stat-icon"></i>
           <h3 class="stat-number" data-count="{{ total_downloads }}">
@@ -2535,7 +2582,12 @@
           <p class="stat-label">Downloads</p>
         </div>
       </div>
-      <div class="col-6 col-lg-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
+      <div
+        class="col-6 col-lg-3"
+        data-aos="fade-up"
+        data-aos-duration="600"
+        data-aos-delay="200"
+      >
         <div class="stat-card">
           <i class="bi bi-people stat-icon"></i>
           <h3 class="stat-number" data-count="{{ total_users }}">
@@ -2544,7 +2596,12 @@
           <p class="stat-label">Users</p>
         </div>
       </div>
-      <div class="col-6 col-lg-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="300">
+      <div
+        class="col-6 col-lg-3"
+        data-aos="fade-up"
+        data-aos-duration="600"
+        data-aos-delay="300"
+      >
         <div class="stat-card">
           <i class="bi bi-grid stat-icon"></i>
           <h3 class="stat-number" data-count="{{ total_categories }}">
@@ -2557,7 +2614,12 @@
 
     <!-- Mission / Vision / Values -->
     <div class="row g-3 g-md-4 mb-5">
-      <div class="col-md-4" data-aos="fade-up" data-aos-duration="600" data-aos-delay="0">
+      <div
+        class="col-md-4"
+        data-aos="fade-up"
+        data-aos-duration="600"
+        data-aos-delay="0"
+      >
         <div class="mini-card h-100">
           <i class="bi bi-rocket-takeoff mini-icon"></i>
           <h6 class="fw-bold">Mission</h6>
@@ -2567,7 +2629,12 @@
           </p>
         </div>
       </div>
-      <div class="col-md-4" data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
+      <div
+        class="col-md-4"
+        data-aos="fade-up"
+        data-aos-duration="600"
+        data-aos-delay="100"
+      >
         <div class="mini-card h-100">
           <i class="bi bi-eye mini-icon"></i>
           <h6 class="fw-bold">Vision</h6>
@@ -2576,7 +2643,12 @@
           </p>
         </div>
       </div>
-      <div class="col-md-4" data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
+      <div
+        class="col-md-4"
+        data-aos="fade-up"
+        data-aos-duration="600"
+        data-aos-delay="200"
+      >
         <div class="mini-card h-100">
           <i class="bi bi-heart mini-icon"></i>
           <h6 class="fw-bold">Values</h6>
@@ -2587,30 +2659,50 @@
       </div>
     </div>
 
-        <!-- Why DocoDive -->
+    <!-- Why DocoDive -->
     <div class="row g-3 g-md-4 mb-5">
-      <div class="col-6 col-md-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="0">
+      <div
+        class="col-6 col-md-3"
+        data-aos="fade-up"
+        data-aos-duration="600"
+        data-aos-delay="0"
+      >
         <div class="feature-item text-center">
           <i class="bi bi-gift feature-icon text-success"></i>
           <h6 class="fw-bold mb-1">100% Free</h6>
           <p class="small text-muted mb-0">No hidden charges, ever.</p>
         </div>
       </div>
-      <div class="col-6 col-md-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="100">
+      <div
+        class="col-6 col-md-3"
+        data-aos="fade-up"
+        data-aos-duration="600"
+        data-aos-delay="100"
+      >
         <div class="feature-item text-center">
           <i class="bi bi-patch-check feature-icon text-primary"></i>
           <h6 class="fw-bold mb-1">Curated Quality</h6>
           <p class="small text-muted mb-0">Handpicked, not scraped.</p>
         </div>
       </div>
-      <div class="col-6 col-md-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="200">
+      <div
+        class="col-6 col-md-3"
+        data-aos="fade-up"
+        data-aos-duration="600"
+        data-aos-delay="200"
+      >
         <div class="feature-item text-center">
           <i class="bi bi-people feature-icon text-info"></i>
           <h6 class="fw-bold mb-1">Community Driven</h6>
           <p class="small text-muted mb-0">Built with reader feedback.</p>
         </div>
       </div>
-      <div class="col-6 col-md-3" data-aos="fade-up" data-aos-duration="600" data-aos-delay="300">
+      <div
+        class="col-6 col-md-3"
+        data-aos="fade-up"
+        data-aos-duration="600"
+        data-aos-delay="300"
+      >
         <div class="feature-item text-center">
           <i class="bi bi-shield-check feature-icon text-warning"></i>
           <h6 class="fw-bold mb-1">Copyright-Safe</h6>
@@ -2619,18 +2711,34 @@
       </div>
     </div>
 
-        <!-- Trust Badges -->
+    <!-- Trust Badges -->
     <div class="d-flex flex-wrap justify-content-center gap-2 gap-md-3 mb-5">
-      <span class="trust-badge" data-aos="zoom-in" data-aos-duration="500" data-aos-delay="0"
+      <span
+        class="trust-badge"
+        data-aos="zoom-in"
+        data-aos-duration="500"
+        data-aos-delay="0"
         ><i class="bi bi-lock-fill"></i> SSL Secure</span
       >
-      <span class="trust-badge" data-aos="zoom-in" data-aos-duration="500" data-aos-delay="100"
+      <span
+        class="trust-badge"
+        data-aos="zoom-in"
+        data-aos-duration="500"
+        data-aos-delay="100"
         ><i class="bi bi-activity"></i> 99.9% Uptime</span
       >
-      <span class="trust-badge" data-aos="zoom-in" data-aos-duration="500" data-aos-delay="200"
+      <span
+        class="trust-badge"
+        data-aos="zoom-in"
+        data-aos-duration="500"
+        data-aos-delay="200"
         ><i class="bi bi-shield-check"></i> Copyright-Safe</span
       >
-      <span class="trust-badge" data-aos="zoom-in" data-aos-duration="500" data-aos-delay="300"
+      <span
+        class="trust-badge"
+        data-aos="zoom-in"
+        data-aos-duration="500"
+        data-aos-delay="300"
         ><i class="bi bi-download"></i> Easy Downloads</span
       >
     </div>
@@ -3352,14 +3460,25 @@
                 <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 90px; height: 90px; font-size: 2.2rem; font-weight: 800;">${initials}</div>
                 <h5 class="fw-bold text-center">${book.title}</h5></div>`;
       }
-      let reviewsHTML = book.reviews?.length
-        ? book.reviews
+            const allReviews = book.reviews || [];
+      const visibleReviews = allReviews.slice(0, 1);
+      const extraCount = allReviews.length - 1;
+
+      let reviewsHTML = allReviews.length
+        ? visibleReviews
             .map(
               (r) => `
-            <div class="border-bottom pb-2 mb-2"><strong>${r.username}</strong> - ${r.rating} ⭐<p class="text-muted small mb-0">${r.comment || ""}</p></div>`,
+            <div class="pb-2"><strong>${r.username}</strong> - ${r.rating} ⭐<p class="text-muted small mb-0">${r.comment || ""}</p></div>`,
             )
             .join("")
         : '<p class="text-muted">No reviews yet. Be the first!</p>';
+
+      if (extraCount > 0) {
+        reviewsHTML += `
+          <a href="/book/${book.id}" class="btn btn-sm btn-link p-0 text-decoration-none">
+            + View all ${allReviews.length} reviews →
+          </a>`;
+      }
       const favIcon = book.is_favorite ? "bi-heart-fill" : "bi-heart";
       const favText = book.is_favorite ? "Favorited" : "Favorite";
       document.getElementById("modalBookContent").innerHTML = `

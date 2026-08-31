@@ -44,9 +44,8 @@
       {% if book.image_url and book.image_url != 'None' %}
       <img
         src="{{ book.image_url }}"
-        class="rounded-4 shadow-sm w-100"
+        class="rounded-4 shadow-sm w-100 book-detail-cover"
         alt="{{ book.title }}"
-        style="width: 100%; height: 420px; object-fit: cover"
         loading="lazy"
       />
       {% else %}
@@ -103,7 +102,7 @@
         >
           <i class="bi bi-qr-code me-2"></i> QR Code
         </button>
-                <button
+        <button
           class="btn btn-outline-info rounded-pill px-4 share-modal-btn"
           data-book-id="{{ book.id }}"
           data-book-title="{{ book.title }}"
@@ -133,7 +132,7 @@
             value="{{ session['_csrf_token'] }}"
           />
           <div class="row g-2 align-items-end">
-            <div class="col-md-3">
+            <div class="col-12 col-md-3">
               <label class="form-label small fw-semibold">Rating</label>
               <select name="rating" class="form-select" required>
                 <option value="5">5 - Excellent</option>
@@ -143,7 +142,7 @@
                 <option value="1">1 - Terrible</option>
               </select>
             </div>
-            <div class="col-md-7">
+            <div class="col-12 col-md-7">
               <label class="form-label small fw-semibold">Comment</label>
               <textarea
                 name="comment"
@@ -152,8 +151,8 @@
                 placeholder="Write your review..."
               ></textarea>
             </div>
-            <div class="col-md-2">
-              <button type="submit" class="btn btn-primary rounded-pill w-100">
+            <div class="col-12 col-md-2 d-grid">
+              <button type="submit" class="btn btn-primary rounded-pill">
                 Submit
               </button>
             </div>
@@ -178,38 +177,49 @@
       <div id="reviews">
         {% for r in reviews %}
         <div
-          class="border-bottom pb-2 mb-2 review-item"
+          class="review-item rounded-4 p-3 mb-3 border"
           data-review-id="{{ r.id }}"
           data-aos="fade-up"
           data-aos-duration="500"
-          data-aos-delay="{{ loop.index0 * 100 }}"
+          data-aos-delay="{{ loop.index0 * 50 }}"
         >
-          <div class="d-flex justify-content-between align-items-start">
-            <div class="d-flex align-items-center gap-1">
-              {% if r.is_official %}
+          <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
               <a
                 href="/user/profile/{{ r.username }}"
-                class="fw-bold text-decoration-none text-dark"
+                class="d-inline-flex align-items-center gap-2 text-decoration-none"
               >
-                {{ r.username }}
+                <img
+                  src="{{ r.avatar if r.avatar else url_for('static', filename='default-avatar.jpg') }}"
+                  class="rounded-circle border"
+                  width="32"
+                  height="32"
+                  style="object-fit: cover; width: 32px !important; height: 32px !important;"
+                  alt="{{ r.display_name }}"
+                  onerror="this.onerror=null;this.src='{{ url_for('static', filename='default-avatar.jpg') }}';"
+                />
+                <span class="fw-bold text-dark">{{ r.display_name }}</span>
+                {% if r.is_official %}
                 <i
-                  class="bi bi-patch-check-fill text-primary ms-1"
+                  class="bi bi-patch-check-fill text-primary"
                   title="Official Account"
                 ></i>
+                {% endif %}
               </a>
-              {% else %}
-              <strong>{{ r.username }}</strong>
-              {% endif %}
-              <span>- {{ r.rating }} ⭐</span>
+              <span class="text-warning small">
+                {% for i in range(r.rating|int) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                {% for i in range(5 - (r.rating|int)) %}<i class="bi bi-star text-muted"></i>{% endfor %}
+              </span>
             </div>
-            <div class="d-flex align-items-center gap-2">
-              {% if is_moderator %}
+
+            {% if is_moderator %}
+            <div class="d-flex align-items-center gap-1 flex-shrink-0">
               <button
                 class="btn btn-sm btn-outline-primary rounded-pill reply-official-review-btn"
                 data-review-id="{{ r.id }}"
                 title="Reply as Official"
               >
-                <i class="bi bi-reply-fill"></i> Reply
+                <i class="bi bi-reply-fill"></i><span class="d-none d-sm-inline ms-1">Reply</span>
               </button>
               <button
                 class="btn btn-sm btn-outline-danger rounded-pill delete-review-btn"
@@ -218,10 +228,12 @@
               >
                 <i class="bi bi-trash3"></i>
               </button>
-              {% endif %}
             </div>
+            {% endif %}
           </div>
-          <p class="text-muted small mb-0">{{ r.comment or '' }}</p>
+
+          <p class="text-muted small mb-0 mt-2">{{ r.comment or '' }}</p>
+
           {% if is_moderator %}
           <div
             class="official-review-reply-form d-none mt-2"
@@ -240,10 +252,8 @@
             </button>
           </div>
           {% endif %}
-          <div
-            class="review-replies ms-3 mt-1"
-            id="review-replies-{{ r.id }}"
-          ></div>
+
+          <div class="review-replies mt-2 ms-3" id="review-replies-{{ r.id }}"></div>
         </div>
         {% else %}
         <p class="text-muted">No reviews yet. Be the first to review!</p>
@@ -775,7 +785,7 @@
       .then(() => alert("✅ Link copied!"))
       .catch(() => alert("❌ Copy failed"));
   }
-    document.addEventListener("click", function (e) {
+  document.addEventListener("click", function (e) {
     if (e.target.closest(".share-modal-btn")) {
       const btn = e.target.closest(".share-modal-btn");
       const bookId = btn.dataset.bookId;
@@ -784,10 +794,12 @@
     }
   });
 </script>
-{% endblock %} {% block scripts %}
+{% endblock %}
+
+{% block scripts %}
 <meta name="is-moderator" content="{{ is_moderator|default(false)|tojson }}" />
 <style>
-     /* ========== RELATED BOOKS — FINAL COVER FIX ========== */
+  /* ========== RELATED BOOKS — FINAL COVER FIX ========== */
   .related-book-card {
     display: flex !important;
     flex-direction: column !important;
@@ -802,8 +814,6 @@
     transform: translateY(-4px) !important;
     box-shadow: 0 15px 30px rgba(30, 27, 75, 0.15) !important;
   }
-
-  /* Cover area — fixed height pakka */
   .related-book-card .book-cover-outer {
     height: 165px !important;
     min-height: 165px !important;
@@ -814,7 +824,6 @@
     justify-content: center !important;
     overflow: hidden !important;
   }
-
   .related-book-card .related-book-cover {
     width: 100% !important;
     max-width: 100% !important;
@@ -826,8 +835,6 @@
     border-radius: 8px !important;
     display: block !important;
   }
-
-  /* Letter fallback — same full box */
   .related-book-card .related-book-fallback {
     width: 100% !important;
     max-width: 100% !important;
@@ -842,18 +849,15 @@
     font-size: 1.5rem !important;
     border-radius: 8px !important;
   }
-
   .related-book-card .card-body {
     flex: 1 1 auto !important;
     display: flex !important;
     flex-direction: column !important;
     padding: 0.5rem 0.4rem !important;
   }
-
   .related-book-card .card-body .badge {
     font-size: 0.6rem !important;
   }
-
   .related-book-card .card-body h6 {
     min-height: 34px !important;
     line-height: 1.25 !important;
@@ -863,11 +867,9 @@
     overflow: hidden !important;
     white-space: normal !important;
   }
-
   .related-book-card .card-body p.small {
     min-height: 16px !important;
   }
-
   .related-book-card .counts-row {
     margin-top: auto !important;
     justify-content: flex-start !important;
@@ -880,15 +882,68 @@
       max-height: 130px !important;
     }
   }
+
+  /* ===== BOOK DETAIL COVER — FULL COVER, NO CROP ===== */
+  .book-detail-cover {
+    width: 100%;
+    height: auto !important;
+    max-height: 460px;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: #f1f5f9;
+    border-radius: 16px;
+    display: block;
+  }
+
+  @media (max-width: 576px) {
+    .book-detail-cover {
+      max-height: 320px;
+    }
+  }
+
+  /* ===== REVIEWS RESPONSIVE ===== */
+  .review-item {
+    background: #fff;
+    border-color: #e5e7eb !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .review-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(30, 27, 75, 0.06);
+  }
+
+  @media (max-width: 576px) {
     .book-cover-fallback {
       min-height: 200px !important;
     }
-    .btn {
-      width: 100%;
-      justify-content: center;
+    .review-item {
+      padding: 0.75rem !important;
     }
-    #reviewForm .row > div {
-      margin-bottom: 0.5rem;
+    .review-item .d-flex.justify-content-between {
+      flex-direction: column;
+      align-items: flex-start !important;
+    }
+    .review-item .btn {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.6rem;
+      width: auto;
+    }
+    #reviewForm .btn {
+      width: 100%;
+    }
+    #reviewForm select,
+    #reviewForm textarea {
+      font-size: 0.9rem;
+    }
+    #commentsContainer > div {
+      padding: 0.5rem !important;
+    }
+    #commentsContainer img {
+      width: 20px !important;
+      height: 20px !important;
+    }
+    #commentsContainer .ms-4 {
+      margin-left: 0.5rem !important;
     }
   }
 </style>
@@ -1018,7 +1073,9 @@
                             ${c.username}
                             <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
                         </a>`
-              : `<strong>${c.username}</strong>`;
+              : `<a href="/user/profile/${c.username}" class="text-decoration-none text-dark fw-semibold">
+                            ${c.username}
+                        </a>`;
 
             let modActions = "";
             if (isModerator) {
@@ -1087,13 +1144,14 @@
           const replies = reviewRepliesMap[reviewId] || [];
           let replyHTML = "";
           replies.forEach((c) => {
-            let userHTML = `<strong>${c.username}</strong>`;
-            if (c.is_official) {
-              userHTML = `<a href="/user/profile/${c.username}" class="fw-bold text-decoration-none text-dark">
+            let userHTML = c.is_official
+              ? `<a href="/user/profile/${c.username}" class="fw-bold text-decoration-none text-dark">
                                     ${c.username}
                                     <i class="bi bi-patch-check-fill text-primary ms-1"></i>
+                                </a>`
+              : `<a href="/user/profile/${c.username}" class="fw-semibold text-decoration-none text-dark">
+                                    ${c.username}
                                 </a>`;
-            }
             replyHTML += `<div class="ms-2 mt-1 p-1 border-start border-primary">
                               <img src="${c.avatar_url || "/static/default-avatar.png"}" class="rounded-circle" width="20" height="20">
                               ${userHTML} <small class="text-muted">${c.created_at}</small>

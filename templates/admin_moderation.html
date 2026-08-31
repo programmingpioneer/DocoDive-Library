@@ -193,8 +193,13 @@
           >
             {{ c.username }} <i class="bi bi-patch-check-fill text-primary"></i>
           </a>
-          {% else %}
-          <span class="fw-semibold small">{{ c.username }}</span>
+                    {% else %}
+          <a
+            href="/user/profile/{{ c.username }}"
+            class="text-decoration-none text-dark fw-semibold small"
+          >
+            {{ c.username }}
+          </a>
           {% endif %}
           <small class="text-muted ms-2">{{ c.created_at }}</small>
         </div>
