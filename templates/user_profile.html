@@ -14,22 +14,42 @@
         ></div>
         <!-- Avatar & Info -->
         <div class="text-center px-3 px-md-4" style="margin-top: -60px">
-          <img
-            src="{{ user[5] or url_for('static', filename='default-avatar.png') }}"
-            class="rounded-circle border-4 border-white shadow d-block mx-auto"
-            width="120"
-            height="120"
-            style="
-              width: 120px !important;
-              height: 120px !important;
-              object-fit: cover;
-              object-position: center;
-              border-radius: 50% !important;
-              display: block;
-              margin: 0 auto;
-            "
-            alt="Avatar"
-          />
+          <!-- Achievements computed before wrapper -->
+          {% set profile_badges = [] %} {% if total_downloads >= 1 %}{% set
+          profile_badges = profile_badges + ["⬇️"] %}{% endif %} {% if
+          total_downloads >= 10 %}{% set profile_badges = profile_badges +
+          ["📥"] %}{% endif %} {% if total_favorites >= 5 %}{% set
+          profile_badges = profile_badges + ["❤️"] %}{% endif %} {% if
+          total_reviews >= 3 %}{% set profile_badges = profile_badges + ["⭐"]
+          %}{% endif %} {% if longest >= 7 %}{% set profile_badges =
+          profile_badges + ["🏅"] %}{% endif %} {% if longest >= 30 %}{% set
+          profile_badges = profile_badges + ["📚"] %}{% endif %} {% if longest
+          >= 100 %}{% set profile_badges = profile_badges + ["👑"] %}{% endif %}
+
+          <div class="position-relative d-inline-block avatar-wrapper">
+            <img
+              src="{{ user[5] or url_for('static', filename='default-avatar.jpg') }}"
+              class="rounded-circle border-4 border-white shadow d-block mx-auto"
+              width="120"
+              height="120"
+              style="
+                width: 120px !important;
+                height: 120px !important;
+                object-fit: cover;
+                object-position: center;
+                border-radius: 50% !important;
+                display: block;
+                margin: 0 auto;
+              "
+              alt="Avatar"
+            />
+
+            {% if custom_badge %}
+            <span class="avatar-custom-badge" title="Custom display badge">
+              {{ custom_badge }}
+            </span>
+            {% endif %}
+          </div>
 
           <!-- Show full name if available, otherwise username -->
           {% set first_name = user[8] or '' %} {% set last_name = user[9] or ''
@@ -131,10 +151,95 @@
         </div>
       </div>
 
+      <!-- ========== ACHIEVEMENTS (MODERN) ========== -->
+      {% if not is_official %} {% set badges = [ {"name": "First Download",
+      "threshold": 1, "current": total_downloads, "icon": "⬇️", "color":
+      "primary"}, {"name": "Book Collector", "threshold": 10, "current":
+      total_downloads, "icon": "📥", "color": "info"}, {"name": "Favoriter",
+      "threshold": 5, "current": total_favorites, "icon": "❤️", "color":
+      "danger"}, {"name": "Reviewer", "threshold": 3, "current": total_reviews,
+      "icon": "⭐", "color": "warning"}, {"name": "Book Lover", "threshold": 7,
+      "current": longest, "icon": "🏅", "color": "warning"}, {"name": "Avid
+      Reader", "threshold": 30, "current": longest, "icon": "📚", "color":
+      "info"}, {"name": "Legend", "threshold": 100, "current": longest, "icon":
+      "👑", "color": "success"} ] %} {% set unlocked_count = 0 %} {% for b in
+      badges %}{% if b.current >= b.threshold %}{% set unlocked_count =
+      unlocked_count + 1 %}{% endif %}{% endfor %}
+
+      <div class="card border-0 shadow-sm rounded-4 mt-4 p-4 p-md-5">
+        <div
+          class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2"
+        >
+          <h5 class="fw-bold mb-0" style="color: #1e1b4b">
+            <i class="bi bi-award me-2 text-warning"></i>Achievements
+          </h5>
+          <span
+            class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2"
+          >
+            {{ unlocked_count }} / {{ badges|length }} unlocked
+          </span>
+        </div>
+
+        <div class="row g-3">
+          {% for b in badges %} {% set unlocked = b.current >= b.threshold %} {%
+          set progress = [100, (b.current / b.threshold * 100) | int] | min %}
+          <div
+            class="col-12 col-md-6"
+            data-aos="fade-up"
+            data-aos-delay="{{ loop.index0 * 60 }}"
+          >
+            <div
+              class="achievement-item rounded-3 p-3 {% if unlocked %}unlocked{% else %}locked{% endif %}"
+            >
+              <div class="d-flex align-items-start gap-3">
+                <div class="achievement-icon fs-3">{{ b.icon }}</div>
+                <div class="flex-grow-1">
+                  <div
+                    class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1"
+                  >
+                    <span class="fw-semibold" style="color: #1e1b4b"
+                      >{{ b.name }}</span
+                    >
+                    {% if unlocked %}
+                    <span class="badge bg-success rounded-pill">
+                      <i class="bi bi-check-circle-fill me-1"></i>Unlocked
+                    </span>
+                    {% else %}
+                    <span class="badge bg-light text-muted border rounded-pill">
+                      <i class="bi bi-lock-fill me-1"></i>{{ b.threshold }}
+                    </span>
+                    {% endif %}
+                  </div>
+                  <div class="progress" style="height: 8px">
+                    <div
+                      class="progress-bar {% if unlocked %}bg-{{ b.color }}{% else %}bg-secondary{% endif %}"
+                      style="width: {{ progress }}%"
+                      role="progressbar"
+                      aria-valuenow="{{ progress }}"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                    ></div>
+                  </div>
+                  <small class="text-muted d-block mt-1">
+                    {% if unlocked %} {{ b.current }}/{{ b.threshold }} achieved
+                    ✓ {% else %} {{ b.current }}/{{ b.threshold }} — {{
+                    b.threshold - b.current }} more to go {% endif %}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       <!-- Additional Info Card -->
       <div class="card border-0 shadow-sm rounded-4 mt-4 p-4">
         <h5 class="fw-bold mb-3">Account Info</h5>
+        {% if session.get('user_id') == user[0] %}
         <p class="mb-1"><i class="bi bi-envelope me-2"></i> {{ user[2] }}</p>
+        {% endif %}
         <p class="mb-1">
           <i class="bi bi-calendar3 me-2"></i> Joined {{ user[4].strftime('%B
           %d, %Y') if user[4] else 'N/A' }}
@@ -155,8 +260,104 @@
     transform: translateY(-3px);
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
   }
-  /* Responsive tweaks for mobile */
+
+  /* ===== Avatar achievement badge ===== */
+  .avatar-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+  .avatar-achievement-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffb703, #f59e0b);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    box-shadow: 0 4px 12px rgba(255, 183, 3, 0.45);
+    z-index: 2;
+    animation: badgePop 0.5s ease;
+  }
+  /* ===== Avatar custom badge (user-chosen emoji) ===== */
+  .avatar-custom-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffb703, #f59e0b);
+    color: #fff;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    box-shadow: 0 4px 12px rgba(255, 183, 3, 0.45);
+    z-index: 2;
+    animation: badgePop 0.5s ease;
+    line-height: 1;
+  }
+  @keyframes badgePop {
+    0% {
+      transform: scale(0);
+    }
+    70% {
+      transform: scale(1.15);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* ===== Achievement items ===== */
+  .achievement-item {
+    background: #f8faff;
+    border: 1px solid #e0e7ff;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .achievement-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(30, 27, 75, 0.08);
+  }
+  .achievement-item.unlocked {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+  .achievement-item.locked {
+    opacity: 0.72;
+  }
+  .achievement-icon {
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
   @media (max-width: 576px) {
+    .avatar-achievement-badge {
+      width: 28px;
+      height: 28px;
+      font-size: 0.7rem;
+      top: -4px;
+      right: -4px;
+      border-width: 2px;
+      .avatar-custom-badge {
+        width: 30px;
+        height: 30px;
+        font-size: 1rem;
+        top: -4px;
+        right: -4px;
+        border-width: 2px;
+      }
+    }
     .card .text-center img {
       width: 90px !important;
       height: 90px !important;

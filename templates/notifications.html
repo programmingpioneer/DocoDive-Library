@@ -108,17 +108,26 @@
 
 {% block scripts %}
 <script>
+  const CSRF_TOKEN = "{{ session['_csrf_token'] }}";
+
   async function markNotifRead(id, el) {
-    const res = await fetch(`/api/notifications/${id}/read`, {
-      method: "POST",
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-    });
-    if (res.ok) {
-      const card = el.closest(".notif-item");
-      if (card) {
-        card.classList.remove("notif-unread");
-        el.style.display = "none";
+    try {
+      const res = await fetch(`/api/notifications/${id}/read`, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": CSRF_TOKEN,
+        },
+      });
+      if (res.ok) {
+        const card = el.closest(".notif-item");
+        if (card) {
+          card.classList.remove("notif-unread");
+          el.style.display = "none";
+        }
       }
+    } catch (err) {
+      console.error("Mark read failed:", err);
     }
   }
 
@@ -126,7 +135,10 @@
     if (!confirm("Delete this notification?")) return;
     const res = await fetch(`/api/notifications/${id}/delete`, {
       method: "POST",
-      headers: { "X-Requested-With": "XMLHttpRequest" },
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "X-CSRFToken": CSRF_TOKEN,
+      },
     });
     if (res.ok) {
       const card = el.closest(".notif-item");
@@ -137,18 +149,27 @@
   async function markAllRead() {
     const cards = document.querySelectorAll(".notif-item");
     const unreadIds = [];
+
     cards.forEach((card) => {
-      if (card.classList.contains("notif-unread")) unreadIds.push(card.dataset.id);
+      if (card.classList.contains("notif-unread")) {
+        unreadIds.push(card.dataset.id);
+      }
     });
+
     if (unreadIds.length === 0) return;
+
     await Promise.all(
       unreadIds.map((id) =>
         fetch(`/api/notifications/${id}/read`, {
           method: "POST",
-          headers: { "X-Requested-With": "XMLHttpRequest" },
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRFToken": CSRF_TOKEN,
+          },
         }),
       ),
     );
+
     cards.forEach((card) => {
       card.classList.remove("notif-unread");
       const checkBtn = card.querySelector(".mark-read-btn");

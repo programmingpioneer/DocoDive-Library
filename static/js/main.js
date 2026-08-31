@@ -365,9 +365,19 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   } catch (e) { }
 
-  // ================== NOTIFICATIONS ==================
-  window.updateNotifications = function () { };
-  window.markAllRead = function () { };
+    // ================== NOTIFICATIONS ==================
+    window.markAllRead = function () {
+      fetch('/api/notifications/read-all', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+        .then(function () {
+          location.reload();
+        })
+        .catch(function () {
+          location.reload();
+        });
+    };
 
   try {
     window.timeAgo = function (dateString) {
@@ -432,13 +442,15 @@ document.addEventListener('DOMContentLoaded', function () {
       } catch (e) { }
     };
 
-    window.markAllRead = function () {
-      fetch('/api/notifications').then(function (r) { return r.json(); }).then(function (list) {
-        var unread = list.filter(function (n) { return !n.is_read; });
-        Promise.all(unread.map(function (n) {
-          return fetch('/api/notifications/' + n.id + '/read', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        })).then(function () { window.updateNotifications(); });
-      }).catch(function () { });
+     window.markAllRead = function () {
+      fetch('/api/notifications/read-all', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      }).then(function () {
+        location.reload();
+      }).catch(function () {
+        location.reload();
+      });
     };
 
     window.updateNotifications();
@@ -522,9 +534,16 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   } catch (e) { console.warn('Preview buttons setup failed:', e); }
 
-  // ================== SCROLL REVEAL ==================
+    // ================== SCROLL REVEAL (once + safe fallback) ==================
   try {
     var revealCards = document.querySelectorAll('.anim-card');
+
+    function revealAllCards() {
+      revealCards.forEach(function (card) {
+        card.classList.add('revealed');
+      });
+    }
+
     if (revealCards.length && typeof IntersectionObserver !== 'undefined') {
       var observer = new IntersectionObserver(function (entries, obs) {
         entries.forEach(function (entry) {
@@ -533,24 +552,23 @@ document.addEventListener('DOMContentLoaded', function () {
             obs.unobserve(entry.target);
           }
         });
-      }, { threshold: 0.15 });
-      revealCards.forEach(function (card) { observer.observe(card); });
-    }
-  } catch (e) { console.warn('Scroll reveal failed:', e); }
+      }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
 
-  // ================== SCROLL PROGRESS BAR ==================
-  try {
-    var progressBar = document.createElement('div');
-    progressBar.id = 'scrollProgressBar';
-    progressBar.style.cssText = 'position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,#4338ca,#818cf8);width:0;z-index:9999;transition:width .1s linear;';
-    document.body.appendChild(progressBar);
-    window.addEventListener('scroll', function () {
-      var h = document.documentElement;
-      var max = h.scrollHeight - h.clientHeight;
-      var pct = max > 0 ? ((h.scrollTop || document.body.scrollTop) / max) * 100 : 0;
-      progressBar.style.width = pct + '%';
-    }, { passive: true });
-  } catch (e) { console.warn('Scroll progress failed:', e); }
+      revealCards.forEach(function (card) {
+        observer.observe(card);
+      });
+
+      // SAFETY NET: jo cards miss ho jayen, 2 second baad sab force-reveal
+      setTimeout(revealAllCards, 2000);
+    } else {
+      revealAllCards();
+    }
+  } catch (e) {
+    document.querySelectorAll('.anim-card').forEach(function (c) {
+      c.classList.add('revealed');
+    });
+    console.warn('Scroll reveal failed:', e);
+  }
 
   // ================== BACK TO TOP ==================
   try {

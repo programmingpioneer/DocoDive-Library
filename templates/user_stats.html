@@ -1,165 +1,758 @@
-{% extends 'base.html' %} {% block content %}
-<div class="container py-5">
-  <!-- Page Header -->
-  <div
-    class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3"
-  >
-    <h2 class="fw-bold text-primary mb-0">
-      <i class="bi bi-graph-up me-2"></i> My Library Stats
-    </h2>
-    <a href="/" class="btn btn-outline-secondary rounded-pill px-4">
-      <i class="bi bi-arrow-left me-1"></i> Back to Library
-    </a>
-  </div>
+{% extends 'base.html' %} {% block title %}My Stats | DocoDive{% endblock %} {%
+block content %}
+<div class="container py-4 py-md-5">
+  <!-- ========== HERO / SUMMARY ========== -->
+  <section class="stats-hero rounded-4 p-4 p-md-5 mb-4" data-aos="fade-up">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-8">
+        <h1 class="fw-bold mb-2" style="color: #1e1b4b">
+          <i class="bi bi-graph-up-arrow me-2 text-primary"></i>My Library Stats
+        </h1>
 
-  <!-- Stats Cards -->
-  <div class="row g-4 mb-5">
-    <!-- Downloads -->
-    <div class="col-6 col-sm-6 col-lg-3">
-      <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
-        <div class="mb-3">
-          <span
-            class="d-inline-flex align-items-center justify-content-center rounded-4"
-            style="
-              width: 70px;
-              height: 70px;
-              background: linear-gradient(135deg, #4338ca, #818cf8);
-              box-shadow: 0 8px 20px rgba(67, 56, 202, 0.2);
-            "
-          >
-            <i class="bi bi-download text-white fs-2"></i>
-          </span>
-        </div>
-        <h3 class="fw-bold display-6 mb-1" style="color: #1e1b4b">
-          {{ downloads }}
-        </h3>
-        <p class="text-muted small mb-0">Downloads</p>
-      </div>
-    </div>
+        {% set total_activity = downloads + favorites + reviews %}
 
-    <!-- Favorites -->
-    <div class="col-6 col-sm-6 col-lg-3">
-      <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
-        <div class="mb-3">
-          <span
-            class="d-inline-flex align-items-center justify-content-center rounded-4"
-            style="
-              width: 70px;
-              height: 70px;
-              background: linear-gradient(135deg, #ef4444, #f87171);
-              box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
-            "
-          >
-            <i class="bi bi-heart-fill text-white fs-2"></i>
-          </span>
-        </div>
-        <h3 class="fw-bold display-6 mb-1" style="color: #1e1b4b">
-          {{ favorites }}
-        </h3>
-        <p class="text-muted small mb-0">Favorites</p>
-      </div>
-    </div>
+        <!-- Rank title -->
+        {% if total_activity >= 100 or longest >= 30 %} {% set rank_title = "👑
+        Library Legend" %} {% set rank_color = "#8b5cf6" %} {% elif
+        total_activity >= 50 or longest >= 7 %} {% set rank_title = "🚀 Power
+        Reader" %} {% set rank_color = "#f59e0b" %} {% elif total_activity >= 20
+        %} {% set rank_title = "📚 Regular Reader" %} {% set rank_color =
+        "#3b82f6" %} {% elif total_activity >= 1 %} {% set rank_title = "🌱 New
+        Explorer" %} {% set rank_color = "#10b981" %} {% else %} {% set
+        rank_title = "💤 Getting Started" %} {% set rank_color = "#6b7280" %} {%
+        endif %}
 
-    <!-- Reviews -->
-    <div class="col-6 col-sm-6 col-lg-3">
-      <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
-        <div class="mb-3">
-          <span
-            class="d-inline-flex align-items-center justify-content-center rounded-4"
-            style="
-              width: 70px;
-              height: 70px;
-              background: linear-gradient(135deg, #f59e0b, #fbbf24);
-              box-shadow: 0 8px 20px rgba(245, 158, 11, 0.2);
-            "
-          >
-            <i class="bi bi-star-fill text-white fs-2"></i>
-          </span>
-        </div>
-        <h3 class="fw-bold display-6 mb-1" style="color: #1e1b4b">
-          {{ reviews }}
-        </h3>
-        <p class="text-muted small mb-0">Reviews</p>
-      </div>
-    </div>
+        <span
+          class="rank-badge d-inline-flex align-items-center gap-2 rounded-pill px-3 py-2 mb-3"
+          style="background: {{ rank_color }}; color: #fff; font-weight: 700"
+        >
+          {{ rank_title }}
+        </span>
 
-    <!-- Current Streak -->
-    <div class="col-6 col-sm-6 col-lg-3">
-      <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
-        <div class="mb-3">
-          <span
-            class="d-inline-flex align-items-center justify-content-center rounded-4"
-            style="
-              width: 70px;
-              height: 70px;
-              background: linear-gradient(135deg, #10b981, #34d399);
-              box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
-            "
-          >
-            <i class="bi bi-fire text-white fs-2"></i>
-          </span>
-        </div>
-        <h3 class="fw-bold display-6 mb-1" style="color: #1e1b4b">
-          {{ streak }}
-        </h3>
-        <p class="text-muted small mb-0">Day Streak</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Streak Detail & Badges -->
-  <div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-      <div class="card border-0 shadow-sm rounded-4 p-4">
-        <h5 class="fw-bold mb-3">
-          <i class="bi bi-award me-2"></i> Your Achievements
-        </h5>
-        <div class="d-flex flex-wrap gap-3 align-items-center">
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-success px-3 py-2 rounded-pill fs-6">
-              🔥 {{ streak }} day streak
-            </span>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <span
-              class="badge {% if longest >= 7 %}bg-warning text-dark{% else %}bg-light text-muted{% endif %} px-3 py-2 rounded-pill fs-6"
-            >
-              {% if longest >= 7 %}🏅 Book Lover{% else %}🔒 Book Lover (reach 7
-              days){% endif %}
-            </span>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <span
-              class="badge {% if longest >= 30 %}bg-info text-dark{% else %}bg-light text-muted{% endif %} px-3 py-2 rounded-pill fs-6"
-            >
-              {% if longest >= 30 %}📚 Avid Reader{% else %}🔒 Avid Reader
-              (reach 30 days){% endif %}
-            </span>
-          </div>
-        </div>
-        <hr class="my-3" />
-        <p class="text-muted small mb-0">
-          Longest streak ever: <strong>{{ longest }}</strong> days. <br />
-          Keep reading every day to unlock more badges!
+        <p class="text-muted mb-3">
+          Your reading journey at a glance. Keep exploring, keep learning! 🚀
         </p>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="hero-chip">
+            <i class="bi bi-lightning-charge-fill text-warning"></i>
+            {{ streak }} day streak
+          </span>
+          <span class="hero-chip">
+            <i class="bi bi-trophy-fill text-success"></i>
+            {{ total_activity }} total interactions
+          </span>
+          <span class="hero-chip">
+            <i class="bi bi-clock-history text-info"></i>
+            ~{{ (downloads * 2) }} hrs reading
+          </span>
+        </div>
+      </div>
+      <div
+        class="col-lg-4 text-lg-end d-flex flex-column gap-2 align-items-lg-end"
+      >
+        <a href="/" class="btn btn-outline-secondary rounded-pill px-4">
+          <i class="bi bi-arrow-left me-1"></i> Back to Library
+        </a>
+        <button
+          class="btn btn-primary rounded-pill px-4 share-stats-btn"
+          data-stats="📊 My DocoDive Stats: {{ downloads }} downloads · {{ favorites }} favorites · {{ reviews }} reviews · 🔥 {{ streak }} day streak. Join me!"
+        >
+          <i class="bi bi-share-fill me-1"></i> Share My Stats
+        </button>
       </div>
     </div>
-  </div>
+  </section>
+
+  <!-- ========== STAT CARDS ========== -->
+  <section class="row g-3 g-md-4 mb-4">
+    <div class="col-6 col-lg-3" data-aos="zoom-in" data-aos-delay="0">
+      <div class="stat-card">
+        <div
+          class="stat-icon"
+          style="background: linear-gradient(135deg, #4338ca, #818cf8)"
+        >
+          <i class="bi bi-download"></i>
+        </div>
+        <h3 class="stat-num" data-count="{{ downloads }}">0</h3>
+        <p class="stat-label">Downloads</p>
+      </div>
+    </div>
+
+    <div class="col-6 col-lg-3" data-aos="zoom-in" data-aos-delay="80">
+      <div class="stat-card">
+        <div
+          class="stat-icon"
+          style="background: linear-gradient(135deg, #ef4444, #f87171)"
+        >
+          <i class="bi bi-heart-fill"></i>
+        </div>
+        <h3 class="stat-num" data-count="{{ favorites }}">0</h3>
+        <p class="stat-label">Favorites</p>
+      </div>
+    </div>
+
+    <div class="col-6 col-lg-3" data-aos="zoom-in" data-aos-delay="160">
+      <div class="stat-card">
+        <div
+          class="stat-icon"
+          style="background: linear-gradient(135deg, #f59e0b, #fbbf24)"
+        >
+          <i class="bi bi-star-fill"></i>
+        </div>
+        <h3 class="stat-num" data-count="{{ reviews }}">0</h3>
+        <p class="stat-label">Reviews</p>
+      </div>
+    </div>
+
+    <div class="col-6 col-lg-3" data-aos="zoom-in" data-aos-delay="240">
+      <div class="stat-card">
+        <div
+          class="stat-icon"
+          style="background: linear-gradient(135deg, #10b981, #34d399)"
+        >
+          <i class="bi bi-fire"></i>
+        </div>
+        <h3 class="stat-num" data-count="{{ streak }}">0</h3>
+        <p class="stat-label">Day Streak</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ACHIEVEMENTS / BADGES ========== -->
+  <section
+    class="card border-0 shadow-sm rounded-4 p-4 p-md-5"
+    data-aos="fade-up"
+    data-aos-delay="100"
+  >
+    <h5 class="fw-bold mb-4" style="color: #1e1b4b">
+      <i class="bi bi-award me-2 text-warning"></i>Your Achievements
+    </h5>
+
+    {% set badges = [ {"name": "First Download", "threshold": 1, "current":
+    downloads, "icon": "⬇️", "color": "primary"}, {"name": "Book Collector",
+    "threshold": 10, "current": downloads, "icon": "📥", "color": "info"},
+    {"name": "Library Hoarder", "threshold": 50, "current": downloads, "icon":
+    "🏛️", "color": "success"}, {"name": "Favoriter", "threshold": 5, "current":
+    favorites, "icon": "❤️", "color": "danger"}, {"name": "Reviewer",
+    "threshold": 3, "current": reviews, "icon": "⭐", "color": "warning"},
+    {"name": "Book Lover", "threshold": 7, "current": longest, "icon": "🏅",
+    "color": "warning"}, {"name": "Avid Reader", "threshold": 30, "current":
+    longest, "icon": "📚", "color": "info"}, {"name": "Bookworm", "threshold":
+    60, "current": longest, "icon": "🐛", "color": "primary"}, {"name":
+    "Legend", "threshold": 100, "current": longest, "icon": "👑", "color":
+    "success"} ] %}
+
+    <div class="row g-3">
+      {% for b in badges %} {% set unlocked = b.current >= b.threshold %} {% set
+      progress = [100, (b.current / b.threshold * 100) | int] | min %}
+      <div class="col-12 col-md-6 col-lg-4">
+        <div
+          class="badge-item d-flex align-items-start gap-3 p-3 rounded-3 {% if unlocked %}unlocked{% else %}locked{% endif %}"
+        >
+          <div class="badge-emoji fs-3">{{ b.icon }}</div>
+          <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-semibold" style="color: #1e1b4b"
+                >{{ b.name }}</span
+              >
+              <span
+                class="badge {{ 'bg-' + b.color if unlocked else 'bg-light text-muted' }} rounded-pill"
+              >
+                {% if unlocked %}<i class="bi bi-check-circle-fill me-1"></i
+                >Unlocked{% else %}{{ b.threshold }}{% endif %}
+              </span>
+            </div>
+            <div class="progress" style="height: 8px">
+              <div
+                class="progress-bar {{ 'bg-' + b.color if unlocked else 'bg-secondary' }}"
+                style="width: {{ progress }}%"
+                role="progressbar"
+                aria-valuenow="{{ progress }}"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              ></div>
+            </div>
+            <small class="text-muted d-block mt-1">
+              {% if unlocked %} {{ b.current }}/{{ b.threshold }} ✓ {% else %}
+              {{ b.current }}/{{ b.threshold }} — {{ b.threshold - b.current }}
+              more to go {% endif %}
+            </small>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <hr class="my-4" />
+
+    <p class="text-muted small mb-0 text-center">
+      <i class="bi bi-info-circle me-1"></i>
+      Longest streak ever: <strong>{{ longest }}</strong> day{{ 's' if longest
+      != 1 else '' }}. Login daily, download books, and write reviews to unlock
+      everything!
+    </p>
+  </section>
+
+  <!-- ========== PICK YOUR DISPLAY BADGE ========== -->
+  <section
+    class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mt-4"
+    data-aos="fade-up"
+    data-aos-delay="150"
+  >
+    <h5 class="fw-bold mb-3" style="color: #1e1b4b">
+      <i class="bi bi-patch-check-fill me-2 text-primary"></i>Pick Your Display
+      Badge
+    </h5>
+    <p class="text-muted small mb-4">
+      Choose one unlocked badge to show next to your profile picture. It appears
+      on your profile for everyone to see.
+    </p>
+
+    {% if unlocked_badges and unlocked_badges|length > 0 %}
+    <form method="POST" action="/user/stats" id="badgePickForm">
+      <input
+        type="hidden"
+        name="_csrf_token"
+        value="{{ session.get('_csrf_token', '') }}"
+      />
+      <input
+        type="hidden"
+        name="custom_badge"
+        id="selectedBadgeInput"
+        value="{{ current_badge or '' }}"
+      />
+
+      <div class="d-flex flex-wrap gap-3 mb-4">
+        {% for b in unlocked_badges %}
+        <button
+          type="button"
+          class="badge-pick-btn {% if current_badge == b.icon %}selected{% endif %}"
+          data-icon="{{ b.icon }}"
+          title="{{ b.name }} ({{ b.threshold }}+)"
+        >
+          <span class="badge-pick-emoji">{{ b.icon }}</span>
+          <span class="badge-pick-name">{{ b.name }}</span>
+          {% if current_badge == b.icon %}
+          <i class="bi bi-check-circle-fill badge-pick-check"></i>
+          {% endif %}
+        </button>
+        {% endfor %} {% if current_badge %}
+        <button
+          type="button"
+          class="badge-pick-btn badge-pick-remove"
+          data-icon=""
+          title="Remove badge"
+        >
+          <span class="badge-pick-emoji">✖️</span>
+          <span class="badge-pick-name">None</span>
+        </button>
+        {% endif %}
+      </div>
+
+      <div class="d-flex gap-2 flex-wrap">
+        <button type="submit" class="btn btn-primary rounded-pill px-5">
+          <i class="bi bi-check2-circle me-1"></i> Save Badge
+        </button>
+        <span class="text-muted small align-self-center">
+          <i class="bi bi-info-circle me-1"></i>Only unlocked badges are
+          available.
+        </span>
+      </div>
+    </form>
+    {% else %}
+    <div class="text-center py-4">
+      <div class="fs-1 mb-2">🔒</div>
+      <p class="text-muted mb-0">
+        No badges unlocked yet. Download books, write reviews, or maintain a
+        streak to unlock your first badge!
+      </p>
+    </div>
+    {% endif %}
+  </section>
 </div>
 
+<!-- ========== SHARE STATS MODAL ========== -->
+<div
+  id="shareStatsModal"
+  style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  "
+>
+  <div
+    style="
+      background: #fff;
+      border-radius: 24px;
+      max-width: 420px;
+      width: 100%;
+      padding: 28px 24px;
+      position: relative;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+      animation: sharePopIn 0.3s ease;
+    "
+  >
+    <button
+      onclick="closeShareStats()"
+      style="
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        background: #f3f4f6;
+        border: none;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: #6b7280;
+        line-height: 1;
+      "
+      aria-label="Close"
+    >
+      ×
+    </button>
+
+    <div style="text-align: center; margin-bottom: 20px">
+      <div
+        style="
+          width: 56px;
+          height: 56px;
+          background: linear-gradient(135deg, #4338ca, #818cf8);
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.6rem;
+          margin-bottom: 12px;
+        "
+      >
+        📊
+      </div>
+      <h5 class="fw-bold mb-1" style="color: #1e1b4b">Share Your Stats</h5>
+      <p class="text-muted small mb-0">
+        Show off your reading journey with friends!
+      </p>
+    </div>
+
+    <div
+      id="sharePreview"
+      class="rounded-3 p-3 mb-3 text-center"
+      style="background: #f8faff; border: 1px solid #e0e7ff; font-size: 0.85rem"
+    ></div>
+
+    <div class="d-grid gap-2 mb-2">
+      <button
+        class="share-social-btn whatsapp"
+        onclick="shareToSocial('whatsapp')"
+      >
+        <i class="bi bi-whatsapp"></i> WhatsApp
+      </button>
+      <button
+        class="share-social-btn twitter"
+        onclick="shareToSocial('twitter')"
+      >
+        <i class="bi bi-twitter-x"></i> X (Twitter)
+      </button>
+      <button
+        class="share-social-btn facebook"
+        onclick="shareToSocial('facebook')"
+      >
+        <i class="bi bi-facebook"></i> Facebook
+      </button>
+      <button
+        class="share-social-btn telegram"
+        onclick="shareToSocial('telegram')"
+      >
+        <i class="bi bi-telegram"></i> Telegram
+      </button>
+    </div>
+
+    <button class="copy-link-btn w-100" onclick="copyStatsLink()">
+      <i class="bi bi-link-45deg"></i> Copy Link
+    </button>
+  </div>
+</div>
+{% endblock %} {% block extra_css %}
 <style>
-  /* Responsive tweaks */
+  :root {
+    --edox-purple: #4338ca;
+    --edox-dark: #1e1b4b;
+    --edox-light: #f8faff;
+  }
+
+  .stats-hero {
+    background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%);
+    border: 1px solid rgba(67, 56, 202, 0.08);
+    position: relative;
+    overflow: hidden;
+  }
+  .stats-hero::after {
+    content: "";
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    background: rgba(255, 183, 3, 0.12);
+    border-radius: 50%;
+    top: -100px;
+    right: -60px;
+    z-index: 0;
+  }
+  .stats-hero > * {
+    position: relative;
+    z-index: 1;
+  }
+  .hero-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #fff;
+    border: 1px solid #e0e7ff;
+    border-radius: 30px;
+    color: #1e1b4b;
+    font-weight: 600;
+    font-size: 0.85rem;
+    box-shadow: 0 3px 10px rgba(30, 27, 75, 0.05);
+  }
+  .rank-badge {
+    font-size: 1rem;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .stat-card {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: 20px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    height: 100%;
+    box-shadow: 0 5px 20px rgba(30, 27, 75, 0.04);
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 35px rgba(30, 27, 75, 0.12);
+  }
+  .stat-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  }
+  .stat-icon i {
+    color: #fff;
+    font-size: 1.6rem;
+  }
+  .stat-num {
+    font-weight: 800;
+    font-size: 2rem;
+    color: #1e1b4b;
+    margin-bottom: 0.15rem;
+    line-height: 1.1;
+  }
+  .stat-label {
+    color: #6b7280;
+    font-size: 0.8rem;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .badge-item {
+    background: #f8faff;
+    border: 1px solid #e0e7ff;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .badge-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(30, 27, 75, 0.08);
+  }
+  .badge-item.unlocked {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+  .badge-item.locked {
+    opacity: 0.72;
+  }
+  .badge-emoji {
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  /* ===== BADGE PICKER ===== */
+  .badge-pick-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8faff;
+    border: 2px solid #e0e7ff;
+    border-radius: 14px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      border-color 0.2s ease,
+      background 0.2s ease;
+  }
+  .badge-pick-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(30, 27, 75, 0.1);
+    border-color: #4338ca;
+  }
+  .badge-pick-btn.selected {
+    background: #eef2ff;
+    border-color: #4338ca;
+    box-shadow: 0 8px 20px rgba(67, 56, 202, 0.15);
+  }
+  .badge-pick-btn.badge-pick-remove {
+    border-style: dashed;
+    border-color: #d1d5db;
+  }
+  .badge-pick-btn.badge-pick-remove:hover {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+  .badge-pick-emoji {
+    font-size: 1.6rem;
+    line-height: 1;
+  }
+  .badge-pick-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #1e1b4b;
+  }
+  .badge-pick-check {
+    color: #4338ca;
+    font-size: 1rem;
+    margin-left: 2px;
+  }
+
   @media (max-width: 576px) {
-    .display-6 {
+    .stat-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+    }
+    .stat-icon i {
+      font-size: 1.3rem;
+    }
+    .stat-num {
       font-size: 1.5rem;
     }
-    .card .rounded-4 {
-      width: 50px !important;
-      height: 50px !important;
+    .hero-chip {
+      font-size: 0.75rem;
+      padding: 6px 12px;
     }
-    .card .rounded-4 i {
-      font-size: 1.4rem !important;
+    .rank-badge {
+      font-size: 0.85rem;
     }
   }
+  /* ===== SHARE MODAL ===== */
+  @keyframes sharePopIn {
+    from {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  .share-social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+    color: #fff;
+  }
+  .share-social-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+  }
+  .share-social-btn i {
+    font-size: 1.2rem;
+  }
+  .share-social-btn.whatsapp {
+    background: #25d366;
+  }
+  .share-social-btn.twitter {
+    background: #000;
+  }
+  .share-social-btn.facebook {
+    background: #1877f2;
+  }
+  .share-social-btn.telegram {
+    background: #0088cc;
+  }
+  .copy-link-btn {
+    background: #f3f4f6;
+    border: 1px solid #e0e7ff;
+    border-radius: 14px;
+    padding: 11px 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #1e1b4b;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .copy-link-btn:hover {
+    background: #e5e7eb;
+  }
+  .copy-link-btn i {
+    margin-right: 6px;
+  }
 </style>
+{% endblock %} {% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Count-up animation
+    const counters = document.querySelectorAll(".stat-num[data-count]");
+    const animate = (el) => {
+      const target = parseInt(el.dataset.count, 10) || 0;
+      const duration = 900;
+      const start = performance.now();
+      const step = (now) => {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        el.textContent = Math.floor(progress * target).toLocaleString();
+        if (progress < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+    if ("IntersectionObserver" in window) {
+      const obs = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              animate(entry.target);
+              obs.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.4 },
+      );
+      counters.forEach((c) => obs.observe(c));
+    } else {
+      counters.forEach(animate);
+    }
+
+    // ===== BADGE PICKER =====
+    const badgePickBtns = document.querySelectorAll(".badge-pick-btn");
+    const selectedBadgeInput = document.getElementById("selectedBadgeInput");
+
+    badgePickBtns.forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const icon = this.dataset.icon;
+        if (selectedBadgeInput) selectedBadgeInput.value = icon;
+
+        // Selection highlight update
+        badgePickBtns.forEach((b) => {
+          b.classList.remove("selected");
+          const check = b.querySelector(".badge-pick-check");
+          if (check) check.remove();
+        });
+        if (icon) {
+          this.classList.add("selected");
+          if (!this.querySelector(".badge-pick-check")) {
+            const checkIcon = document.createElement("i");
+            checkIcon.className = "bi bi-check-circle-fill badge-pick-check";
+            this.appendChild(checkIcon);
+          }
+        }
+      });
+    });
+
+    // Share stats button
+    // ===== SHARE STATS — MODAL + SOCIAL =====
+    const shareText =
+      "📊 My DocoDive Stats: {{ downloads }} downloads · {{ favorites }} favorites · {{ reviews }} reviews · 🔥 {{ streak }} day streak!";
+    const shareUrl = window.location.origin + "/";
+
+    function openShareStats() {
+      document.getElementById("sharePreview").textContent = shareText;
+      document.getElementById("shareStatsModal").style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+    function closeShareStats() {
+      document.getElementById("shareStatsModal").style.display = "none";
+      document.body.style.overflow = "";
+    }
+    window.closeShareStats = closeShareStats;
+
+    document.querySelectorAll(".share-stats-btn").forEach((btn) => {
+      btn.addEventListener("click", openShareStats);
+    });
+
+    // Outside click se close
+    document
+      .getElementById("shareStatsModal")
+      .addEventListener("click", function (e) {
+        if (e.target === this) closeShareStats();
+      });
+
+    // ESC se close
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeShareStats();
+    });
+
+    // Social share functions
+    window.shareToSocial = function (platform) {
+      const text = encodeURIComponent(shareText);
+      const url = encodeURIComponent(shareUrl);
+      let link = "";
+      if (platform === "whatsapp") {
+        link = "https://wa.me/?text=" + text;
+      } else if (platform === "twitter") {
+        link = "https://twitter.com/intent/tweet?text=" + text + "&url=" + url;
+      } else if (platform === "facebook") {
+        link =
+          "https://www.facebook.com/sharer/sharer.php?u=" +
+          url +
+          "&quote=" +
+          text;
+      } else if (platform === "telegram") {
+        link = "https://t.me/share/url?url=" + url + "&text=" + text;
+      }
+      if (link) window.open(link, "_blank", "noopener,width=600,height=500");
+      closeShareStats();
+    };
+
+    // Copy link
+    window.copyStatsLink = function () {
+      const fullText = shareText + " " + shareUrl;
+      navigator.clipboard
+        .writeText(fullText)
+        .then(() => alert("✅ Stats + link copied!"))
+        .catch(() => alert("❌ Copy failed"));
+      closeShareStats();
+    };
+  });
+</script>
 {% endblock %}

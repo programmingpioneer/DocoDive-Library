@@ -1,0 +1,684 @@
+{% extends 'base.html' %}
+
+{% block title %}All Books | DocoDive{% endblock %}
+{% block meta_description %}Browse all free books and study materials on DocoDive. Search by title or author, filter by category, and sort by latest, downloads, views, or rating.{% endblock %}
+{% block canonical %}{{ request.base_url }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --edox-purple: #4338ca;
+    --edox-orange: #ffb703;
+    --edox-dark: #1e1b4b;
+    --edox-light: #f8faff;
+    --edox-white: #ffffff;
+  }
+
+  body {
+    background: #f5f7ff;
+  }
+
+  /* ===== HERO ===== */
+  .ab-hero {
+    background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%);
+    border-bottom: 1px solid rgba(67, 56, 202, 0.08);
+    position: relative;
+    overflow: hidden;
+    padding: 2.5rem 0;
+  }
+  .ab-hero::before {
+    content: "";
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    background: rgba(255, 183, 3, 0.12);
+    border-radius: 50%;
+    top: -120px;
+    right: -80px;
+    z-index: 0;
+  }
+  .ab-hero::after {
+    content: "";
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    background: rgba(67, 56, 202, 0.1);
+    border-radius: 50%;
+    bottom: -140px;
+    left: -60px;
+    z-index: 0;
+  }
+  .ab-hero .container {
+    position: relative;
+    z-index: 1;
+  }
+  .ab-hero h1 {
+    font-weight: 800;
+    font-size: 2.8rem;
+    color: #1e1b4b;
+    letter-spacing: -0.5px;
+    margin-bottom: 0.5rem;
+  }
+  .ab-hero p {
+    color: #6b7280;
+    font-size: 1.05rem;
+    max-width: 620px;
+  }
+
+  /* ===== VISIBLE BREADCRUMB ===== */
+  .ab-breadcrumb .breadcrumb-item a {
+    color: #4338ca;
+    font-weight: 600;
+  }
+  .ab-breadcrumb .breadcrumb-item.active {
+    color: #6b7280;
+  }
+
+  /* ===== SEARCH + SORT BAR ===== */
+  .ab-toolbar {
+    background: #fff;
+    border: 1px solid #e0e7ff;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(30, 27, 75, 0.06);
+    padding: 1rem 1.25rem;
+  }
+  .ab-toolbar .form-control,
+  .ab-toolbar .form-select {
+    border: 1px solid #e0e7ff;
+    border-radius: 12px;
+    background: #f8faff;
+  }
+  .ab-toolbar .form-control:focus,
+  .ab-toolbar .form-select:focus {
+    border-color: #4338ca;
+    box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
+  }
+
+  /* ===== CATEGORY CHIPS ===== */
+  .ab-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #fff;
+    border: 1px solid #e0e7ff;
+    border-radius: 30px;
+    color: #1e1b4b;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: 0.2s;
+    box-shadow: 0 3px 10px rgba(30, 27, 75, 0.04);
+  }
+  .ab-chip:hover {
+    background: #4338ca;
+    border-color: #4338ca;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(67, 56, 202, 0.2);
+  }
+  .ab-chip.active {
+    background: #4338ca;
+    border-color: #4338ca;
+    color: #fff;
+  }
+  .ab-chip .badge {
+    background: #ffb703;
+    color: #1e1b4b;
+    font-size: 0.65rem;
+    border-radius: 20px;
+  }
+  .ab-chip.active .badge {
+    background: #fff;
+    color: #4338ca;
+  }
+
+  /* ===== CATEGORY CHIPS: MOBILE HORIZONTAL SCROLL ===== */
+  .ab-chips-row {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .ab-chips-row .ab-chip {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* ===== BOOK COVER FLAT ===== */
+  .book-cover-outer {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: hidden;
+    padding: 8px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .flat-book-cover {
+    width: 100% !important;
+    max-width: 150px !important;
+    height: auto !important;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 10px;
+    display: block;
+    margin: 0 auto;
+  }
+  .books-grid-card .product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+  }
+  .books-grid-card .flat-book-cover {
+    transform: none !important;
+    transition: none;
+  }
+  .books-grid-card:hover .flat-book-cover {
+    transform: none !important;
+  }
+  .book-fallback-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  .book-fallback-title {
+    font-size: 0.7rem;
+  }
+
+  /* ===== PAGINATION ===== */
+  .pagination .page-link {
+    border: none;
+    color: #4338ca;
+    font-weight: 600;
+    padding: 0.5rem 0.9rem;
+    border-radius: 10px;
+    margin: 0 3px;
+    transition: 0.2s;
+  }
+  .pagination .page-item.active .page-link {
+    background: #4338ca;
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(67, 56, 202, 0.3);
+  }
+  .pagination .page-link:hover {
+    background: #e0e7ff;
+    color: #1e1b4b;
+  }
+
+  /* ===== CARD COUNTS BOTTOM-LEFT ===== */
+  .book-card-inner {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+  }
+  .book-card-inner .card-body {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .book-card-inner .card-body .d-flex.align-items-center.gap-2.mt-1 {
+    margin-top: auto !important;
+    justify-content: flex-start !important;
+  }
+
+  @media (max-width: 576px) {
+    .ab-hero h1 {
+      font-size: 1.8rem;
+    }
+    .ab-hero p {
+      font-size: 0.9rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "{{ request.host_url }}"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "All Books",
+        "item": "{{ request.host_url }}books"
+      }
+      {% if category_name %}
+      ,
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "{{ category_name }}",
+        "item": "{{ request.host_url }}books?category={{ category_slug }}"
+      }
+      {% endif %}
+    ]
+  }
+</script>
+
+{% if books_jsonld %}
+<script type="application/ld+json">{{ books_jsonld | tojson | safe }}</script>
+{% endif %}
+
+<!-- ========== VISIBLE BREADCRUMB ========== -->
+<nav
+  aria-label="breadcrumb"
+  class="container pt-3 ab-breadcrumb"
+  style="font-size: 0.85rem"
+>
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item">
+      <a href="/" class="text-decoration-none">Home</a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">All Books</li>
+    {% if category_name %}
+    <li class="breadcrumb-item text-muted">{{ category_name }}</li>
+    {% endif %}
+  </ol>
+</nav>
+
+<!-- ========== HERO ========== -->
+<section class="ab-hero">
+  <div class="container">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-8">
+        <h1>📚 All <span style="color: #ffb703">Books</span></h1>
+        <p>
+          Browse every free book on DocoDive. Search by title or author, filter
+          by category, and sort the way you like.
+        </p>
+      </div>
+      <div class="col-lg-4">
+        <div
+          class="text-center"
+          style="
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 16px;
+            padding: 1rem 1.4rem;
+            box-shadow: 0 8px 24px rgba(30, 27, 75, 0.06);
+          "
+        >
+          <div
+            style="
+              font-size: 1.5rem;
+              font-weight: 800;
+              color: #4338ca;
+            "
+          >
+            {{ total_books }}
+          </div>
+          <div
+            style="
+              font-size: 0.75rem;
+              color: #6b7280;
+              text-transform: uppercase;
+              letter-spacing: 0.4px;
+            "
+          >
+            Books
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TOOLBAR: SEARCH + SORT ========== -->
+<section class="container py-4">
+  <form action="/books" method="GET" class="ab-toolbar">
+    <div class="row g-2 g-sm-3 align-items-center">
+      <div class="col-12 col-md-6">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-0">
+            <i class="bi bi-search text-primary"></i>
+          </span>
+          <input
+            type="text"
+            name="q"
+            value="{{ q }}"
+            class="form-control border-0"
+            placeholder="Search by title, author, or description..."
+            maxlength="200"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+      <div class="col-8 col-md-4">
+        <select name="sort" class="form-select" onchange="this.form.submit()">
+          <option value="latest" {% if sort == 'latest' %}selected{% endif %}>
+            Latest
+          </option>
+          <option value="downloads" {% if sort == 'downloads' %}selected{% endif %}>
+            Most Downloaded
+          </option>
+          <option value="views" {% if sort == 'views' %}selected{% endif %}>
+            Most Viewed
+          </option>
+          <option value="rating" {% if sort == 'rating' %}selected{% endif %}>
+            Highest Rated
+          </option>
+        </select>
+      </div>
+      <div class="col-4 col-md-2 d-grid">
+        <button type="submit" class="btn btn-primary rounded-3">
+          <i class="bi bi-funnel-fill me-1"></i> Apply
+        </button>
+      </div>
+      <input type="hidden" name="category" value="{{ category_slug }}" />
+    </div>
+  </form>
+</section>
+
+<!-- ========== CATEGORY CHIPS ========== -->
+<section class="container pb-3">
+  <div class="d-flex gap-2 ab-chips-row">
+    <a
+      href="/books{% if q %}?q={{ q|urlencode }}{% endif %}"
+      class="ab-chip {% if not category_slug %}active{% endif %}"
+    >
+      All
+      <span class="badge">{{ total_books }}</span>
+    </a>
+    {% for c in all_categories %}
+    <a
+      href="/books?category={{ c.slug }}{% if q %}&q={{ q|urlencode }}{% endif %}"
+      class="ab-chip {% if c.slug == category_slug %}active{% endif %}"
+    >
+      {{ c.level }}
+      <span class="badge">{{ c.count }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ========== RESULTS HEADER ========== -->
+<section class="container pb-3">
+  <p class="text-muted mb-0" style="font-size: 0.9rem">
+    <strong>{{ total_books }}</strong> book{{ 's' if total_books != 1 else '' }}
+
+    {% if q or category_slug %}
+      found
+      {% if q %}for <strong>"{{ q }}"</strong>{% endif %}
+      {% if category_name %}in <strong>{{ category_name }}</strong>{% endif %}
+      <a href="/books" class="text-danger text-decoration-none ms-2">
+        <i class="bi bi-x-circle-fill me-1"></i>Clear filters
+      </a>
+    {% else %}
+      available
+    {% endif %}
+
+    <span class="ms-2 text-secondary">
+      · Sorted by:
+      <strong>
+        {% if sort == 'downloads' %}Most Downloaded
+        {% elif sort == 'views' %}Most Viewed
+        {% elif sort == 'rating' %}Highest Rated
+        {% else %}Latest{% endif %}
+      </strong>
+    </span>
+  </p>
+</section>
+
+<!-- ========== BOOKS GRID ========== -->
+<section class="container pb-5">
+  {% if books %}
+  <div class="row g-2 g-sm-3">
+    {% for book in books %}
+    <div
+      class="col-6 col-sm-4 col-md-3 col-lg-2"
+      data-aos="fade-up"
+      data-aos-delay="{{ loop.index0 * 40 }}"
+    >
+      <div
+        class="card product-card border-0 shadow-sm h-100 book-card-inner books-grid-card"
+      >
+        <div
+          class="book-cover-outer d-flex align-items-center justify-content-center"
+        >
+          {% if book.image_url and book.image_url != 'None' and
+          book.image_url.strip() != '' %}
+          <img
+            src="{{ book.image_url }}"
+            alt="Cover"
+            class="flat-book-cover"
+            loading="lazy"
+          />
+          {% else %} {% set title_safe = book.title | default('Book', true) |
+          replace('_', ' ') %} {% set words = title_safe.split() %} {% set
+          short_name = (words[0][:2])|upper if words|length == 1 else
+          (words[0][0] ~ words[1][0])|upper %}
+          <div
+            class="d-flex flex-column justify-content-center align-items-center w-100 h-100"
+            style="
+              background: linear-gradient(135deg, #a5b4fc, #818cf8);
+              color: white;
+            "
+          >
+            <div
+              class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-2 book-fallback-icon"
+            >
+              {{ short_name }}
+            </div>
+            <h6 class="fw-bold text-center px-2 book-fallback-title">
+              {{ title_safe }}
+            </h6>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="badge bg-light text-muted" style="font-size: 0.6rem"
+              >{{ book.level }}</span
+            >
+            <span class="fw-bold text-warning" style="font-size: 0.7rem"
+              >FREE</span
+            >
+          </div>
+          <h6
+            class="fw-bold text-truncate mb-1"
+            style="font-size: 0.8rem; color: #1e1b4b"
+          >
+            {{ book.title | replace('_', ' ') }}
+          </h6>
+          <p class="text-muted small mb-1" style="font-size: 0.65rem">
+            By {{ book.author }}
+          </p>
+          {% if book.avg_rating and book.avg_rating > 0 %}
+          <div class="text-warning small mb-1">
+            {% set full = book.avg_rating|int %} {% set half = 1 if
+            (book.avg_rating - full) >= 0.5 else 0 %} {% for i in range(full)
+            %}<i class="bi bi-star-fill"></i>{% endfor %} {% if half %}<i
+              class="bi bi-star-half"
+            ></i
+            >{% endif %} {% for i in range(5 - full - half) %}<i
+              class="bi bi-star"
+            ></i
+            >{% endfor %}
+            <span class="text-muted ms-1">({{ book.avg_rating }})</span>
+          </div>
+          {% endif %}
+          <div class="d-flex justify-content-end gap-1">
+            <a
+              href="/book/{{ book.id }}"
+              class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
+              style="
+                width: 24px;
+                height: 24px;
+                padding: 0;
+                text-decoration: none;
+              "
+              title="View Details"
+            >
+              <i class="bi bi-info-circle" style="font-size: 0.65rem"></i>
+            </a>
+            <button
+              class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 preview-trigger"
+              data-book-id="{{ book.id }}"
+              style="width: 24px; height: 24px; padding: 0"
+              title="Quick Preview"
+            >
+              <i class="bi bi-search" style="font-size: 0.65rem"></i>
+            </button>
+          </div>
+          <div class="d-flex align-items-center gap-2 mt-1">
+            <span
+              class="d-inline-flex align-items-center gap-1"
+              style="
+                background: rgba(67, 56, 202, 0.08);
+                border-radius: 20px;
+                padding: 2px 8px;
+                font-size: 0.65rem;
+                color: #4338ca;
+                font-weight: 600;
+              "
+            >
+              <i class="bi bi-download" style="font-size: 0.7rem"></i>
+              <span class="download-count-live" data-book-id="{{ book.id }}"
+                >{{ book.download_count }}</span
+              >
+            </span>
+            <span
+              class="d-inline-flex align-items-center gap-1"
+              style="
+                background: rgba(255, 183, 3, 0.1);
+                border-radius: 20px;
+                padding: 2px 8px;
+                font-size: 0.65rem;
+                color: #b8860b;
+                font-weight: 600;
+              "
+            >
+              <i class="bi bi-eye-fill" style="font-size: 0.7rem"></i>
+              <span class="view-count-live" data-book-id="{{ book.id }}"
+                >{{ book.view_count }}</span
+              >
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if total_pages > 1 %}
+  {% set base_params = '' %}
+  {% if q %} {% set base_params = base_params ~ '&q=' ~ q|urlencode %} {% endif %}
+  {% if category_slug %} {% set base_params = base_params ~ '&category=' ~ category_slug|urlencode %} {% endif %}
+  {% if sort and sort != 'latest' %} {% set base_params = base_params ~ '&sort=' ~ sort %} {% endif %}
+  <nav class="mt-5">
+    <ul class="pagination justify-content-center flex-wrap">
+      {% if page > 1 %}
+      <li class="page-item">
+        <a class="page-link" href="/books?page={{ page-1 }}{{ base_params }}">Prev</a>
+      </li>
+      {% endif %} {% set window = 2 %} {% set start = [page - window, 1] | max
+      %} {% set end = [page + window, total_pages] | min %} {% if start > 1 %}
+      <li class="page-item">
+        <a class="page-link" href="/books?page=1{{ base_params }}">1</a>
+      </li>
+      {% if start > 2 %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %} {% endif %} {% for p in range(start, end + 1) %}
+      <li class="page-item {% if p == page %}active{% endif %}">
+        <a class="page-link" href="/books?page={{ p }}{{ base_params }}"
+          >{{ p }}</a
+        >
+      </li>
+      {% endfor %} {% if end < total_pages %} {% if end < total_pages - 1 %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+      <li class="page-item">
+        <a class="page-link" href="/books?page={{ total_pages }}{{ base_params }}"
+          >{{ total_pages }}</a
+        >
+      </li>
+      {% endif %} {% if page < total_pages %}
+      <li class="page-item">
+        <a class="page-link" href="/books?page={{ page+1 }}{{ base_params }}"
+          >Next</a
+        >
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %} {% else %}
+  <div class="text-center py-5">
+    <i class="bi bi-inbox display-4 text-muted"></i>
+    <h5 class="mt-3">📭 No books found</h5>
+    <p class="text-muted">Try changing your search or filters.</p>
+    <a href="/books" class="btn btn-primary rounded-pill px-4 mt-2"
+      >Clear Filters</a
+    >
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  {% if page > 1 %}
+  document.addEventListener("DOMContentLoaded", function () {
+    var m = document.querySelector('meta[name="robots"]');
+    if (m) m.setAttribute("content", "noindex, follow");
+  });
+  {% endif %}
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // Live counts for this page's books
+    function refreshCounters() {
+      const els = document.querySelectorAll(
+        ".download-count-live, .view-count-live",
+      );
+      const ids = [...new Set([...els].map((el) => el.dataset.bookId))];
+      ids.forEach((id) => {
+        fetch("/api/book/" + id + "/counts")
+          .then((r) => r.json())
+          .then((d) => {
+            const dl = document.querySelector(
+              '.download-count-live[data-book-id="' + id + '"]',
+            );
+            const vw = document.querySelector(
+              '.view-count-live[data-book-id="' + id + '"]',
+            );
+            if (dl) dl.textContent = (d.download_count || 0).toLocaleString();
+            if (vw) vw.textContent = (d.view_count || 0).toLocaleString();
+          })
+          .catch(() => {});
+      });
+    }
+    refreshCounters();
+
+    // Press "/" to focus search
+    document.addEventListener("keydown", function (e) {
+      if (
+        e.key === "/" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)
+      ) {
+        e.preventDefault();
+        const q = document.querySelector('input[name="q"]');
+        if (q) q.focus();
+      }
+    });
+
+    // Preview trigger (same as index / learning_hub)
+    document.addEventListener("click", function (e) {
+      const trigger = e.target.closest(".preview-trigger");
+      if (trigger && window.openBookModal) {
+        e.preventDefault();
+        openBookModal(trigger.dataset.bookId);
+      }
+    });
+  });
+</script>
+{% endblock %}

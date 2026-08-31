@@ -108,45 +108,18 @@ endblock %} {% block content %}
                 <i class="bi bi-clock-history me-2 text-info"></i>Email
                 Frequency
               </label>
-              <select
+                            <select
                 name="email_frequency"
                 id="emailFrequency"
                 class="form-select rounded-3"
               >
-                <option
-                  value="daily"
-                  {%
-                  if
-                  pref.email_frequency=""
-                  ="daily"
-                  %}selected{%
-                  endif
-                  %}
-                >
+                <option value="daily" {% if pref.email_frequency == "daily" %}selected{% endif %}>
                   Daily
                 </option>
-                <option
-                  value="weekly"
-                  {%
-                  if
-                  pref.email_frequency=""
-                  ="weekly"
-                  %}selected{%
-                  endif
-                  %}
-                >
+                <option value="weekly" {% if pref.email_frequency == "weekly" %}selected{% endif %}>
                   Weekly (Recommended)
                 </option>
-                <option
-                  value="off"
-                  {%
-                  if
-                  pref.email_frequency=""
-                  ="off"
-                  %}selected{%
-                  endif
-                  %}
-                >
+                <option value="off" {% if pref.email_frequency == "off" %}selected{% endif %}>
                   Off
                 </option>
               </select>

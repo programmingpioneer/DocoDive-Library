@@ -331,9 +331,7 @@
   let existingLinks = {};
   try {
     var rawLinks = JSON.parse('{{ profile.social_links | tojson | safe }}');
-    if (rawLinks) {
-      existingLinks = rawLinks;
-    }
+    if (rawLinks) existingLinks = rawLinks;
   } catch (e) {
     existingLinks = {};
   }
@@ -365,9 +363,7 @@
     container.insertAdjacentHTML("beforeend", html);
 
     var row = container.querySelector('[data-idx="' + idx + '"]');
-    if (url) {
-      validateRow(row.querySelector(".link-input"));
-    }
+    if (url) validateRow(row.querySelector(".link-input"));
   }
 
   // Pre-populate existing links
@@ -383,18 +379,11 @@
   // Delete row (event delegation)
   document.getElementById("socialLinksContainer").addEventListener("click", function (e) {
     var removeBtn = e.target.closest(".link-remove-btn");
-    if (removeBtn) {
-      removeBtn.closest(".social-link-row").remove();
-    }
+    if (removeBtn) removeBtn.closest(".social-link-row").remove();
   });
 
   function isValidUrl(string) {
-    try {
-      new URL(string);
-      return true;
-    } catch (_) {
-      return false;
-    }
+    try { new URL(string); return true; } catch (_) { return false; }
   }
 
   function validateRow(element) {
@@ -429,16 +418,32 @@
     }
   }
 
+  // ============ ADVANCED FEEDBACK (clean popup hamesha) ============
   function showProfileFlash(message, type) {
     var flash = document.getElementById("profileFlash");
-    if (!flash) return;
-    flash.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show rounded-3" role="alert">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
-    setTimeout(function () {
-      flash.innerHTML = "";
-    }, 4000);
+    if (flash) {
+      flash.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show rounded-3" role="alert">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+      setTimeout(function () { flash.innerHTML = ""; }, 5000);
+    }
+
+    if (window.showToast) {
+      window.showToast(message, type === 'success' ? 'success' : 'error');
+    } else {
+      // Fallback toast agar main.js load na hua ho
+      var toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' +
+        (type === 'success' ? '#198754' : '#dc3545') +
+        ';color:#fff;padding:12px 22px;border-radius:50px;z-index:99999;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:opacity .3s;';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(function () {
+        toast.style.opacity = '0';
+        setTimeout(function () { toast.remove(); }, 300);
+      }, 3500);
+    }
   }
 
-  // Form submit (XHR with upload progress)
+  // ============ FORM SUBMIT (XHR with upload progress) ============
   document.getElementById("editProfileForm").addEventListener("submit", function (e) {
     e.preventDefault();
 
@@ -492,16 +497,36 @@
         if (xhr.status === 200 && data.success) {
           if (progressWrap) progressWrap.classList.add("d-none");
           if (avatarStatus) {
-            avatarStatus.textContent = "✅ Avatar updated successfully";
+            avatarStatus.textContent = "✅ Profile updated";
             avatarStatus.className = "text-success small mt-1";
             setTimeout(function () { avatarStatus.textContent = ""; }, 3000);
           }
+
           if (data.avatar_url) {
             var cacheBust = "?t=" + Date.now();
-            document.getElementById("avatarPreview").src = data.avatar_url + cacheBust;
+            var newUrl = data.avatar_url + cacheBust;
+            document.getElementById("avatarPreview").src = newUrl;
+
+            // Navbar avatar — primary ID + fallback selectors
             var navImg = document.getElementById("navbarAvatar");
-            if (navImg) navImg.src = data.avatar_url + cacheBust;
+            if (navImg) {
+              navImg.src = newUrl;
+              navImg.onerror = function () {
+                this.src = "{{ url_for('static', filename='default-avatar.jpg') }}";
+                this.onerror = null;
+              };
+            }
+            document.querySelectorAll('.navbar img, img.rounded-circle').forEach(function (img) {
+              if (img.id !== "avatarPreview") {
+                img.src = newUrl;
+                img.onerror = function () {
+                  this.src = "{{ url_for('static', filename='default-avatar.jpg') }}";
+                  this.onerror = null;
+                };
+              }
+            });
           }
+
           showProfileFlash(data.message || "Profile updated successfully!", "success");
         } else {
           if (progressWrap) progressWrap.classList.add("d-none");
