@@ -126,14 +126,28 @@ USER_ACTION_RATELIMIT = os.getenv("RATELIMIT_USER_ACTION", "20 per minute")
 
 app.config["CACHE_TYPE"] = "SimpleCache"
 app.config["CACHE_DEFAULT_TIMEOUT"] = 300
+
+# Force HTTPS URLs for canonical, sitemap, and external url_for — SEO ke liye zaroori
+app.config["PREFERRED_URL_SCHEME"] = "https"
+
 cache = Cache(app)
 
 @app.before_request
 def enforce_canonical_host():
-    """www -> non-www redirect (single canonical domain for SEO)."""
+    """www -> non-www + http -> https redirect (single canonical domain for SEO)."""
     host = request.host
+    url = request.url
+
+    # www -> non-www
     if host.startswith("www."):
-        return redirect(request.url.replace("://www.", "://", 1), code=301)
+        url = url.replace("://www.", "://", 1)
+        return redirect(url, code=301)
+
+    # http -> https (sirf production me, local dev me nahi)
+    is_production = not request.host.startswith(("127.0.0.1", "localhost"))
+    if is_production and request.scheme == "http":
+        url = url.replace("http://", "https://", 1)
+        return redirect(url, code=301)
 
 @app.after_request
 def add_cache_headers(response):
@@ -15644,25 +15658,18 @@ def sitemap():
 
     learning_urls = []
 
-    # Hubs ke liye
+    # Hubs ke liye (home pages)
     for hub in learning_hubs:
         learning_urls.append((f"{base}/learn/{hub}", "weekly", "0.8"))
 
-    # IELTS modules
+    # IELTS modules (exist karte hain — verified)
     for module in ["listening", "reading", "writing", "speaking"]:
         learning_urls.append((f"{base}/learn/ielts/{module}", "weekly", "0.8"))
 
-    # Mobile Apps modules
+    # Mobile Apps modules (exist karte hain — verified)
     for module in ["beginner", "intermediate", "advanced", "practice"]:
         learning_urls.append((f"{base}/learn/mobile-apps/{module}", "weekly", "0.8"))
-
-    # Baaki hubs ke generic modules
-    for hub in learning_hubs:
-        if hub in ("ielts", "mobile-apps"):
-            continue
-        for module in ["beginner", "intermediate", "advanced", "practice"]:
-            learning_urls.append((f"{base}/learn/{hub}/{module}", "weekly", "0.7"))
-
+        
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
 
@@ -15698,7 +15705,13 @@ def sitemap():
 @app.route("/robots.txt")
 def robots():
     content = (
-        f"User-agent: *\nAllow: /\nDisallow: /*?*\nSitemap: {url_for('sitemap', _external=True)}\n"
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /user/\n"
+        "Disallow: /admin\n"
+        "Disallow: /moderation\n"
+        "Disallow: /verify-code\n"
+        f"Sitemap: {url_for('sitemap', _external=True)}\n"
     )
     return Response(content, mimetype="text/plain")
 
