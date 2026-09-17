@@ -17,7 +17,7 @@
     <div class="col-md-8 col-lg-7">
       <div class="card border-0 shadow-lg p-4">
         <div class="card-body">
-          <form id="uploadForm" enctype="multipart/form-data">
+          <form id="uploadForm" method="POST" enctype="multipart/form-data">
             <input
               type="hidden"
               name="_csrf_token"
@@ -84,9 +84,9 @@
                       <circle cx="30" cy="18" r="4" fill="#DBEAFE" />
                     </svg>
                     <div class="flying-files">
-                      <span class="pdf-file-icon">📄</span>
-                      <span class="pdf-file-icon delay1">📄</span>
-                      <span class="pdf-file-icon delay2">📄</span>
+                      <span class="pdf-file-icon">ðŸ“„</span>
+                      <span class="pdf-file-icon delay1">ðŸ“„</span>
+                      <span class="pdf-file-icon delay2">ðŸ“„</span>
                     </div>
                   </div>
                   <div class="connection-lines"></div>
@@ -196,10 +196,10 @@
                 ><i class="bi bi-info-circle-fill me-1"></i> Disclaimer:</strong
               ><br />
               <span id="disclaimerContent">
-                • Only <strong>PDF files</strong> are accepted (max 500 MB).<br />
-                • Cover image is optional but recommended (max 5 MB).<br />
-                • Do not upload copyrighted material without permission.<br />
-                • Your upload will be <strong>hidden until approved</strong> by
+                â€¢ Only <strong>PDF files</strong> are accepted (max 500 MB).<br />
+                â€¢ Cover image is optional but recommended (max 5 MB).<br />
+                â€¢ Do not upload copyrighted material without permission.<br />
+                â€¢ Your upload will be <strong>hidden until approved</strong> by
                 an admin.
               </span>
             </div>
@@ -301,7 +301,7 @@
     font-weight: 600;
   }
   .lang-option.selected::after {
-    content: "✓";
+    content: "âœ“";
     float: right;
     color: #4338ca;
     font-weight: bold;
@@ -491,51 +491,7 @@
     div.textContent = str || "";
     return div.innerHTML;
   }
-
-  // ========== LANGUAGE SEARCHABLE DROPDOWN ==========
-  const langSearchInput = document.getElementById("langSearchInput");
-  const langHiddenInput = document.getElementById("langHiddenInput");
-  const langDropdown = document.getElementById("langDropdown");
-  const allLangOptions = Array.from(
-    langDropdown.querySelectorAll(".lang-option"),
-  );
-
-  langSearchInput.addEventListener("focus", () => {
-    langDropdown.classList.remove("d-none");
-    filterLanguages("");
-  });
-  langSearchInput.addEventListener("input", () => {
-    filterLanguages(langSearchInput.value.toLowerCase());
-  });
-
-  function filterLanguages(query) {
-    allLangOptions.forEach((opt) => {
-      const match = opt.dataset.value.toLowerCase().includes(query);
-      opt.style.display = match ? "block" : "none";
-    });
-  }
-
-  allLangOptions.forEach((opt) => {
-    opt.addEventListener("click", () => {
-      langHiddenInput.value = opt.dataset.value;
-      langSearchInput.value = opt.dataset.value;
-      allLangOptions.forEach((o) => o.classList.remove("selected"));
-      opt.classList.add("selected");
-      langDropdown.classList.add("d-none");
-    });
-  });
-
-  // Close dropdown on outside click
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".language-selector")) {
-      langDropdown.classList.add("d-none");
-    }
-  });
-
-  // Set default
-  langSearchInput.value = "English";
-
-  // ========== FORM SUBMISSION ==========
+// ========== FORM SUBMISSION ==========
   const uploadForm = document.getElementById("uploadForm");
   uploadForm.addEventListener("submit", function (e) {
     e.preventDefault();

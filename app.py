@@ -1800,10 +1800,11 @@ def user_upload():
         dl_count = random.randint(1000, 3000)
         vw_count = random.randint(2000, 5000)
 
+        new_slug = unique_slug(slugify(display_title), cur)
         cur.execute(
             """
-            INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, approved, uploaded_by, download_count, view_count)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s, %s, %s)
+            INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, slug, approved, uploaded_by, download_count, view_count)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0, %s, %s, %s)
         """,
             (
                 cat_id,
@@ -1813,6 +1814,7 @@ def user_upload():
                 description,
                 image_url,
                 "English",
+                new_slug,
                 session["user_id"],
                 dl_count,
                 vw_count,
@@ -16580,10 +16582,11 @@ def admin():
         dl_count = random.randint(1000, 3000)
         vw_count = random.randint(2000, 5000)
 
+        new_slug = unique_slug(slugify(display_title), cur)
         cur.execute(
             """
-            INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, approved, uploaded_by, download_count, view_count)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s, %s, %s)
+            INSERT INTO documents (category_id, title, telegram_link, author, description, image_url, language, slug, approved, uploaded_by, download_count, view_count)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0, %s, %s, %s)
         """,
             (
                 cat_id,
@@ -16593,6 +16596,7 @@ def admin():
                 description,
                 image_url,
                 "English",
+                new_slug,
                 session["user_id"],
                 dl_count,
                 vw_count,
