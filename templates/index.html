@@ -1470,7 +1470,7 @@
             {% endif %}
             <div class="d-flex justify-content-end gap-1">
               <a
-                href="/book/{{ pdf.id }}"
+                href="/book/{{ pdf.slug or pdf.id }}/{{ pdf.id }}"
                 class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
                 style="
                   width: 24px;
@@ -1617,7 +1617,7 @@
           {% endif %}
           <div class="d-flex justify-content-end gap-1">
             <a
-              href="/book/{{ pdf.id }}"
+              href="/book/{{ pdf.slug or pdf.id }}/{{ pdf.id }}"
               class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
               style="
                 width: 24px;
@@ -1776,7 +1776,7 @@
           <span class="badge bg-secondary">{{ featured_book[3] }}</span>
         </p>
         <a
-          href="/book/{{ featured_book[0] }}"
+          href="/book/{{ featured_book[11] if featured_book|length > 11 else featured_book[0] }}/{{ featured_book[0] }}"
           class="btn btn-primary btn-sm rounded-pill px-3 px-md-4"
           >View Details</a
         >
@@ -1878,6 +1878,24 @@
             ></i>
             {% elif cat.level == 'IELTS' %}<i
               class="bi bi-globe2 text-info"
+            ></i>
+            {% elif cat.level == 'Mathematics' %}<i
+              class="bi bi-calculator text-primary"
+            ></i>
+            {% elif cat.level == 'Functional Programming' %}<i
+              class="bi bi-code-square text-success"
+            ></i>
+            {% elif cat.level == 'Embedded Systems' %}<i
+              class="bi bi-cpu-fill text-danger"
+            ></i>
+            {% elif cat.level == 'Operating Systems' %}<i
+              class="bi bi-terminal text-dark"
+            ></i>
+            {% elif cat.level == 'Software Architecture' %}<i
+              class="bi bi-diagram-2 text-info"
+            ></i>
+            {% elif cat.level == 'Theoretical CS' %}<i
+              class="bi bi-infinity text-secondary"
             ></i>
             {% else %}<i class="bi bi-collection text-dark"></i>{% endif %}
           </div>
@@ -1988,7 +2006,7 @@
                 {% endif %}
                 <div class="d-flex justify-content-end gap-1">
                   <a
-                    href="/book/{{ book.id }}"
+                    href="/book/{{ book.slug or book.id }}/{{ book.id }}"
                     class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
                     style="
                       width: 24px;
@@ -2157,7 +2175,7 @@
                 {% endif %}
                 <div class="d-flex justify-content-end gap-1">
                   <a
-                    href="/book/{{ pdf.id }}"
+                    href="/book/{{ pdf.slug or pdf.id }}/{{ pdf.id }}"
                     class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
                     style="
                       width: 24px;
@@ -2328,7 +2346,7 @@
           {% endif %}
           <div class="d-flex justify-content-end gap-1">
             <a
-              href="/book/{{ pdf.id }}"
+              href="/book/{{ pdf.slug or pdf.id }}/{{ pdf.id }}"
               class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
               style="
                 width: 24px;
@@ -2841,7 +2859,7 @@
     </button>
     <button
       class="btn btn-sm btn-primary rounded-pill"
-      onclick="window.showShareModal(currentBookId)"
+      onclick="window.showShareModal(currentBookId, currentBookSlug)"
     >
       <i class="bi bi-share-fill me-1"></i> Share
     </button>
@@ -3543,12 +3561,11 @@
         window.open(`/book/${book.id}/read`, "_blank");
       });
       protectModalButton(".modal-qr", function () {
-        window.currentBookId = book.id;
-        document.getElementById("qrImage").src = `/book/${book.id}/qr`;
+        document.getElementById("qrImage").src = "/book/" + (book.slug || book.id) + "/" + book.id + "/qr";
         document.getElementById("qrPopup").style.display = "block";
       });
       protectModalButton(".modal-share", function () {
-        window.showShareModal(book.id);
+        window.showShareModal(book.id, book.slug);
       });
       if (document.querySelector(".modal-fav")) {
         protectModalButton(".modal-fav", async function () {
@@ -3591,8 +3608,8 @@
         });
     }
 
-    window.showShareModal = function (bookId) {
-      const shareUrl = window.location.origin + "/book/" + bookId;
+    window.showShareModal = function (bookId, bookSlug) {
+      const shareUrl = window.location.origin + "/book/" + (bookSlug || bookId) + "/" + bookId;
       document.getElementById("shareLinkInput").value = shareUrl;
       document.getElementById("shareFacebook").href =
         "https://www.facebook.com/sharer/sharer.php?u=" +

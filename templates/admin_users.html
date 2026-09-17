@@ -65,8 +65,9 @@
       const btn = e.target.closest(".delete-user-btn");
       const userId = btn.dataset.userId;
       if (
-        !confirm(
+        !await toast.confirm(
           "Are you sure you want to permanently delete this user and all their data? This action cannot be undone.",
+          { title: "Delete User", confirmText: "Delete User", type: "danger" },
         )
       )
         return;

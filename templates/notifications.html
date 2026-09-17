@@ -3,106 +3,92 @@
 
 {% block content %}
 <div class="container py-4 py-md-5">
-  <!-- Header -->
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
-    <h2 class="fw-bold mb-0" style="color: var(--edox-dark)">
-      <i class="bi bi-bell-fill me-2" style="color: var(--edox-purple)"></i>All Notifications
-    </h2>
-    {% if notifications %}
-    <button class="btn btn-outline-primary rounded-pill px-4" onclick="markAllRead()">
-      <i class="bi bi-check-all me-2"></i>Mark all as read
-    </button>
-    {% endif %}
-  </div>
+  <div class="notif-page-card">
+    <div class="notif-page-head">
+      <h2 class="notif-page-title">
+        <i class="bi bi-bell-fill"></i> Notifications
+      </h2>
+      {% if notifications %}
+      <button class="notif-mark-all" onclick="markAllRead()">
+        <i class="bi bi-check2-all"></i> Mark all as read
+      </button>
+      {% endif %}
+    </div>
 
-  {% if notifications %}
-  <div class="row g-3">
-    {% for notif in notifications %}
-    <div class="col-12">
-      <div
-        class="notif-item {% if not notif.is_read %}notif-unread{% endif %}"
-        data-id="{{ notif.id }}"
-      >
-        <!-- Avatar -->
-        <div class="notif-avatar">
-          {% if notif.avatar_url %}
-          <img src="{{ notif.avatar_url }}" alt="avatar" loading="lazy" />
+    {% if notifications %}
+    <div class="notif-list">
+      {% for notif in notifications %}
+      <div class="notif-row {% if not notif.is_read %}is-unread{% endif %}" data-id="{{ notif.id }}">
+        <div class="notif-visual">
+          {% if notif.type in ('approval', 'rejection') and notif.book_cover %}
+          <img src="{{ notif.book_cover }}" alt="Book cover" loading="lazy" class="notif-book-cover" />
+          {% elif notif.type in ('general_comment', 'reply') and notif.avatar_url %}
+          <img src="{{ notif.avatar_url }}" alt="Avatar" loading="lazy" class="notif-avatar-round" />
           {% else %}
-          <div class="notif-avatar-fallback">
-            <i class="bi bi-bell"></i>
+          <div class="notif-visual-fallback fb-{{ notif.type }}">
+            {% if notif.type == 'approval' %}<i class="bi bi-check-circle-fill"></i>
+            {% elif notif.type == 'rejection' %}<i class="bi bi-x-circle-fill"></i>
+            {% elif notif.type == 'general_comment' %}<i class="bi bi-chat-fill"></i>
+            {% elif notif.type == 'reply' %}<i class="bi bi-reply-fill"></i>
+            {% else %}<i class="bi bi-bell-fill"></i>{% endif %}
           </div>
           {% endif %}
         </div>
 
-        <!-- Body -->
-        <div class="notif-body">
-          <!-- Title + date -->
-          <div class="notif-head">
-            <strong class="notif-type">
-              {% if notif.type == 'approval' %}
-              <span class="text-success">📗 Book Approved</span>
-              {% elif notif.type == 'rejection' %}
-              <span class="text-danger">📕 Book Rejected</span>
-              {% elif notif.type == 'general_comment' %}
-              <span class="text-info">💬 Comment</span>
-              {% elif notif.type == 'reply' %}
-              <span class="text-info">↩️ Reply</span>
-              {% else %}
-              Notification
-              {% endif %}
-            </strong>
-            <span class="notif-date">
-              {{ notif.created_at.strftime('%d %b %Y, %H:%M') if notif.created_at else '' }}
+        <div class="notif-content">
+          <div class="notif-line1">
+            <span class="notif-name">
+              {% if notif.actor_name %}{{ notif.actor_name }}{% else %}DocoDive{% endif %}
+            </span>
+            <span class="notif-time">
+              {{ notif.created_at.strftime('%d %b, %H:%M') if notif.created_at else '' }}
             </span>
           </div>
 
-          <!-- Actor name -->
-          {% if notif.type in ('general_comment', 'reply') and notif.actor_name %}
-          <div class="notif-actor">
-            by
-            {% if notif.is_official_actor %}
-            <a href="/user/profile/{{ notif.actor_name }}" class="notif-actor-link">
-              {{ notif.actor_name }}
-              <i class="bi bi-patch-check-fill text-primary ms-1" title="Official Account"></i>
-            </a>
+          <div class="notif-line2">
+            {% if notif.type == 'approval' %}
+              <span class="notif-status notif-status-success">Your book was approved by DocoDive</span>
+            {% elif notif.type == 'rejection' %}
+              <span class="notif-status notif-status-danger">Your book was declined by DocoDive</span>
+            {% elif notif.type == 'general_comment' %}
+              <span class="notif-status">commented on your book</span>
+            {% elif notif.type == 'reply' %}
+              <span class="notif-status">replied to your comment</span>
             {% else %}
-            <span class="fw-semibold">{{ notif.actor_name }}</span>
+              <span class="notif-status">You have a new notification</span>
             {% endif %}
           </div>
+
+          {% if notif.message and notif.type not in ('approval', 'rejection') %}
+          <p class="notif-msg">{{ notif.message|safe }}</p>
           {% endif %}
 
-          <!-- Message -->
-          <p class="notif-msg">{{ notif.message|safe }}</p>
-
           {% if notif.link %}
-          <a href="{{ notif.link }}" class="btn btn-sm btn-outline-primary rounded-pill mt-1">
-            <i class="bi bi-box-arrow-up-right me-1"></i>View details
+          <a href="{{ notif.link }}" class="notif-view-btn">
+            View details <i class="bi bi-arrow-right-short"></i>
           </a>
           {% endif %}
         </div>
 
-        <!-- Actions -->
-        <div class="notif-actions">
+        <div class="notif-right">
           {% if not notif.is_read %}
-          <span class="notif-action mark-read-btn" title="Mark as read" data-id="{{ notif.id }}">
-            <i class="bi bi-check-circle"></i>
-          </span>
+          <span class="notif-dot" title="Unread"></span>
           {% endif %}
-          <span class="notif-action delete-btn" title="Delete notification" data-id="{{ notif.id }}">
-            <i class="bi bi-trash"></i>
-          </span>
+          <button class="notif-delete" title="Delete" data-id="{{ notif.id }}">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
       </div>
+      {% endfor %}
     </div>
-    {% endfor %}
+    {% else %}
+    <div class="notif-empty">
+      <i class="bi bi-bell-slash"></i>
+      <h4>No notifications yet</h4>
+      <p>When you receive notifications, they will appear here.</p>
+    </div>
+    {% endif %}
   </div>
-  {% else %}
-  <div class="text-center py-5">
-    <i class="bi bi-bell-slash display-1 text-muted"></i>
-    <h4 class="mt-3 text-muted">No notifications yet</h4>
-    <p class="text-muted">When you receive notifications, they'll appear here.</p>
-  </div>
-  {% endif %}
 </div>
 {% endblock %}
 
@@ -110,228 +96,269 @@
 <script>
   const CSRF_TOKEN = "{{ session['_csrf_token'] }}";
 
-  async function markNotifRead(id, el) {
+  async function markNotifRead(id, row) {
     try {
       const res = await fetch(`/api/notifications/${id}/read`, {
         method: "POST",
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "X-CSRFToken": CSRF_TOKEN,
-        },
+        headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": CSRF_TOKEN },
       });
       if (res.ok) {
-        const card = el.closest(".notif-item");
-        if (card) {
-          card.classList.remove("notif-unread");
-          el.style.display = "none";
-        }
+        row.classList.remove("is-unread");
+        const dot = row.querySelector(".notif-dot");
+        if (dot) dot.remove();
       }
-    } catch (err) {
-      console.error("Mark read failed:", err);
-    }
+    } catch (err) { console.error(err); }
   }
 
-  async function deleteNotif(id, el) {
-    if (!confirm("Delete this notification?")) return;
+  async function deleteNotif(id, row) {
+    if (!await toast.confirm("Delete this notification?", { title: "Confirm Delete", confirmText: "Delete", type: "danger" })) return;
     const res = await fetch(`/api/notifications/${id}/delete`, {
       method: "POST",
-      headers: {
-        "X-Requested-With": "XMLHttpRequest",
-        "X-CSRFToken": CSRF_TOKEN,
-      },
+      headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": CSRF_TOKEN },
     });
-    if (res.ok) {
-      const card = el.closest(".notif-item");
-      if (card) card.remove();
-    }
+    if (res.ok) row.remove();
   }
 
   async function markAllRead() {
-    const cards = document.querySelectorAll(".notif-item");
-    const unreadIds = [];
-
-    cards.forEach((card) => {
-      if (card.classList.contains("notif-unread")) {
-        unreadIds.push(card.dataset.id);
-      }
-    });
-
-    if (unreadIds.length === 0) return;
-
-    await Promise.all(
-      unreadIds.map((id) =>
-        fetch(`/api/notifications/${id}/read`, {
-          method: "POST",
-          headers: {
-            "X-Requested-With": "XMLHttpRequest",
-            "X-CSRFToken": CSRF_TOKEN,
-          },
-        }),
-      ),
-    );
-
-    cards.forEach((card) => {
-      card.classList.remove("notif-unread");
-      const checkBtn = card.querySelector(".mark-read-btn");
-      if (checkBtn) checkBtn.style.display = "none";
+    const rows = document.querySelectorAll(".notif-row.is-unread");
+    if (!rows.length) return;
+    await Promise.all([...rows].map(r =>
+      fetch(`/api/notifications/${r.dataset.id}/read`, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": CSRF_TOKEN },
+      })
+    ));
+    rows.forEach(r => {
+      r.classList.remove("is-unread");
+      const dot = r.querySelector(".notif-dot");
+      if (dot) dot.remove();
     });
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll(".mark-read-btn").forEach((btn) => {
-      btn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        markNotifRead(this.dataset.id, this);
+    document.querySelectorAll(".notif-row").forEach((row) => {
+      const id = row.dataset.id;
+      row.addEventListener("click", (e) => {
+        if (e.target.closest(".notif-delete") || e.target.closest("a")) return;
+        if (row.classList.contains("is-unread")) markNotifRead(id, row);
       });
-    });
-    document.querySelectorAll(".delete-btn").forEach((btn) => {
-      btn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        deleteNotif(this.dataset.id, this);
-      });
+      const delBtn = row.querySelector(".notif-delete");
+      if (delBtn) {
+        delBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          deleteNotif(id, row);
+        });
+      }
     });
   });
 </script>
 
 <style>
-  /* ====== NOTIFICATION CARD LAYOUT ====== */
-  .notif-item {
+  .notif-page-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 28px rgba(30, 27, 75, 0.08);
+    border: 1px solid rgba(30, 27, 75, 0.05);
+    overflow: hidden;
+  }
+  .notif-page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 20px 24px;
+    border-bottom: 1px solid #f1f3f7;
+  }
+  .notif-page-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--edox-dark, #1e1b4b);
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .notif-page-title i { color: var(--edox-purple, #4338ca); }
+  .notif-mark-all {
+    background: transparent;
+    border: none;
+    color: var(--edox-purple, #4338ca);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 8px 14px;
+    border-radius: 10px;
+    transition: background 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .notif-mark-all:hover { background: rgba(67, 56, 202, 0.08); }
+
+  .notif-list { display: flex; flex-direction: column; }
+  .notif-row {
     display: flex;
     align-items: flex-start;
-    gap: 14px;
-    background: #fff;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    border-left: 4px solid transparent;
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 5px 18px rgba(30, 27, 75, 0.05);
-    transition: all 0.25s ease;
+    gap: 16px;
+    padding: 18px 24px;
+    border-bottom: 1px solid #f5f6fa;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    position: relative;
   }
-  .notif-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(30, 27, 75, 0.1);
-  }
-  .notif-unread {
-    border-left-color: #4338ca;
-    background: #faf9ff;
-  }
+  .notif-row:last-child { border-bottom: none; }
+  .notif-row:hover { background: #fafaff; }
+  .notif-row.is-unread { background: #f7f7ff; }
 
-  /* Avatar — hamesha perfect circle */
-  .notif-avatar {
-    flex-shrink: 0;
+  .notif-visual { flex-shrink: 0; }
+  .notif-book-cover {
     width: 52px;
-    height: 52px;
+    height: 72px;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgba(30, 27, 75, 0.12);
+    display: block;
   }
-  .notif-avatar img,
-  .notif-avatar-fallback {
+  .notif-avatar-round {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+  }
+  .notif-visual-fallback {
     width: 52px;
-    height: 52px;
-    border-radius: 50% !important;
-    object-fit: cover !important;
+    height: 72px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    color: var(--edox-purple, #4338ca);
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    font-size: 1.4rem;
   }
-  .notif-avatar-fallback {
-    background: linear-gradient(135deg, #4338ca, #818cf8);
-    color: #fff;
-    font-size: 1.2rem;
+  .notif-visual-fallback.fb-approval {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #059669;
+  }
+  .notif-visual-fallback.fb-rejection {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #dc2626;
   }
 
-  /* Body */
-  .notif-body {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-  .notif-head {
+  .notif-content { flex: 1 1 auto; min-width: 0; }
+  .notif-line1 {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 2px;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 4px;
   }
-  .notif-type {
-    font-size: 0.98rem;
-    color: #1e1b4b;
+  .notif-name {
     font-weight: 700;
+    color: var(--edox-dark, #1e1b4b);
+    font-size: 0.98rem;
+    line-height: 1.3;
   }
-  .notif-date {
-    color: #8b90a0;
-    font-size: 0.75rem;
+  .notif-time {
+    color: #9aa1b0;
+    font-size: 0.78rem;
     white-space: nowrap;
+    flex-shrink: 0;
   }
-  .notif-actor {
-    font-size: 0.82rem;
-    color: #6b7280;
-    margin-top: 2px;
+  .notif-line2 { margin-bottom: 6px; }
+  .notif-status {
+    color: #4b5563;
+    font-size: 0.92rem;
+    line-height: 1.5;
   }
-  .notif-actor-link {
-    color: #1e1b4b;
-    font-weight: 600;
-    text-decoration: none;
-  }
-  .notif-actor-link:hover {
-    color: #4338ca;
-  }
+  .notif-status-success { color: #059669; font-weight: 600; }
+  .notif-status-danger { color: #dc2626; font-weight: 600; }
   .notif-msg {
-    color: #1e1b4b;
+    color: #6b7280;
+    font-size: 0.88rem;
     line-height: 1.55;
     margin: 6px 0 0;
-    font-size: 0.92rem;
     word-wrap: break-word;
   }
+  .notif-view-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-top: 8px;
+    color: var(--edox-purple, #4338ca);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 8px;
+    transition: background 0.15s ease;
+  }
+  .notif-view-btn:hover { background: rgba(67, 56, 202, 0.08); }
 
-  /* Actions */
-  .notif-actions {
+  .notif-right {
     display: flex;
     align-items: center;
     gap: 10px;
     flex-shrink: 0;
+    padding-top: 4px;
   }
-  .notif-action {
+  .notif-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+  @keyframes dotPulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15); }
+    50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.1); }
+  }
+  .notif-delete {
+    background: transparent;
+    border: none;
+    color: #cbd0da;
+    font-size: 0.85rem;
     cursor: pointer;
-    font-size: 1.2rem;
-    transition: transform 0.15s ease;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+    line-height: 1;
   }
-  .notif-action:hover {
-    transform: scale(1.15);
-  }
-  .mark-read-btn {
-    color: #4338ca;
-  }
-  .delete-btn {
-    color: #dc2626;
-  }
+  .notif-delete:hover { color: #dc2626; background: #fef2f2; }
 
-  /* ====== MOBILE RESPONSIVE ====== */
+  .notif-empty {
+    text-align: center;
+    padding: 60px 24px;
+    color: #9aa1b0;
+  }
+  .notif-empty i {
+    font-size: 3rem;
+    color: #cbd0da;
+    display: block;
+    margin-bottom: 12px;
+  }
+  .notif-empty h4 {
+    color: var(--edox-dark, #1e1b4b);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .notif-empty p { margin: 0; }
+
   @media (max-width: 576px) {
-    .notif-item {
-      flex-wrap: wrap;
-      padding: 14px 12px;
-      gap: 10px;
-    }
-    .notif-avatar,
-    .notif-avatar img,
-    .notif-avatar-fallback {
-      width: 42px;
-      height: 42px;
-    }
-    .notif-body {
-      flex-basis: calc(100% - 52px);
-    }
-    .notif-head {
-      flex-direction: column;
-      gap: 2px;
-    }
-    .notif-date {
-      white-space: normal;
-    }
-    .notif-actions {
-      width: 100%;
-      justify-content: flex-end;
-      margin-top: 4px;
-    }
+    .notif-page-head { padding: 16px; }
+    .notif-page-title { font-size: 1.15rem; }
+    .notif-mark-all { font-size: 0.82rem; padding: 6px 10px; }
+    .notif-row { padding: 14px 16px; gap: 12px; }
+    .notif-book-cover { width: 44px; height: 60px; }
+    .notif-avatar-round { width: 40px; height: 40px; }
+    .notif-visual-fallback { width: 44px; height: 60px; font-size: 1.1rem; }
+    .notif-name { font-size: 0.92rem; }
+    .notif-time { font-size: 0.72rem; }
+    .notif-status { font-size: 0.86rem; }
+    .notif-msg { font-size: 0.82rem; }
   }
 </style>
 {% endblock %}

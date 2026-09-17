@@ -40,7 +40,7 @@
     <div
       class="col-6 col-sm-4 col-md-3 col-lg-2 pending-card"
       data-title="{{ book.title.lower() }}"
-      data-author="{{ book.author.lower() }}"
+      data-author="{{ (book.author or '') | lower }}"
     >
       <div class="card product-card border-0 shadow-sm h-100 book-card-inner">
         <!-- 3D Cover or fallback -->
@@ -110,7 +110,7 @@
           <!-- Action Buttons -->
           <div class="d-flex justify-content-center gap-1 flex-wrap mt-2">
             <a
-              href="/book/{{ book.id }}"
+              href="/book/{{ book.slug or book.id }}/{{ book.id }}"
               target="_blank"
               class="btn btn-sm btn-outline-primary rounded-pill px-2"
               style="font-size: 0.7rem"
@@ -187,16 +187,16 @@
 
     // Bind single buttons
     document.querySelectorAll(".approve-btn").forEach((btn) => {
-      btn.addEventListener("click", function () {
+      btn.addEventListener("click", async function () {
         const id = this.dataset.bookId;
-        if (confirm("Approve this book?")) approveBook(id);
+        if (await toast.confirm("Approve this book?", { title: "Approve Book", confirmText: "Approve", type: "default" })) approveBook(id);
       });
     });
 
     document.querySelectorAll(".reject-btn").forEach((btn) => {
-      btn.addEventListener("click", function () {
+      btn.addEventListener("click", async function () {
         const id = this.dataset.bookId;
-        if (confirm("Reject this book?")) rejectBook(id);
+        if (await toast.confirm("Reject this book?", { title: "Reject Book", confirmText: "Reject", type: "danger" })) rejectBook(id);
       });
     });
 
@@ -204,7 +204,7 @@
     document
       .getElementById("approveAllBtn")
       ?.addEventListener("click", async function () {
-        if (!confirm("Approve ALL pending books?")) return;
+        if (!await toast.confirm("Approve ALL pending books?", { title: "Approve All", confirmText: "Approve All", type: "default" })) return;
         const ids = [...document.querySelectorAll(".approve-btn")].map(
           (b) => b.dataset.bookId,
         );
@@ -231,7 +231,7 @@
     document
       .getElementById("rejectAllBtn")
       ?.addEventListener("click", async function () {
-        if (!confirm("Reject ALL pending books?")) return;
+        if (!await toast.confirm("Reject ALL pending books?", { title: "Reject All", confirmText: "Reject All", type: "danger" })) return;
         const ids = [...document.querySelectorAll(".reject-btn")].map(
           (b) => b.dataset.bookId,
         );

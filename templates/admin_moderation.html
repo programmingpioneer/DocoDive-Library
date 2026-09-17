@@ -118,10 +118,11 @@
     <div class="d-flex justify-content-between align-items-start">
       <div>
         <a
-          href="/book/{{ r.book_id }}"
+          href="/book/{{ r.book_slug or r.book_id }}/{{ r.book_id }}"
           class="fw-semibold text-decoration-none text-dark"
         >
           {{ r.book_title }}
+          <small class="text-muted ms-1" style="font-size:0.7rem"><code>{{ r.book_slug or "" }}</code></small>
         </a>
         <div class="d-flex align-items-center gap-2 mt-1">
           <img
@@ -174,10 +175,11 @@
     <div class="d-flex justify-content-between align-items-start">
       <div>
         <a
-          href="/book/{{ c.book_id }}"
+          href="/book/{{ c.book_slug or c.book_id }}/{{ c.book_id }}"
           class="fw-semibold text-decoration-none text-dark"
         >
           {{ c.book_title }}
+          <small class="text-muted ms-1" style="font-size:0.7rem"><code>{{ c.book_slug or "" }}</code></small>
         </a>
         <div class="d-flex align-items-center gap-2 mt-1">
           <img
@@ -285,7 +287,7 @@
     if (e.target.closest(".delete-review-btn")) {
       const btn = e.target.closest(".delete-review-btn");
       const reviewId = btn.dataset.reviewId;
-      if (!confirm("Delete this review?")) return;
+      if (!await toast.confirm("Delete this review?", { title: "Delete Review", confirmText: "Delete", type: "danger" })) return;
       const res = await fetch(`/api/review/${reviewId}/delete`, {
         method: "POST",
         headers: { "X-Requested-With": "XMLHttpRequest" },
@@ -301,7 +303,7 @@
     if (e.target.closest(".delete-comment-btn")) {
       const btn = e.target.closest(".delete-comment-btn");
       const commentId = btn.dataset.commentId;
-      if (!confirm("Delete this comment?")) return;
+      if (!await toast.confirm("Delete this comment?", { title: "Delete Comment", confirmText: "Delete", type: "danger" })) return;
       const res = await fetch(`/api/comment/${commentId}/delete`, {
         method: "POST",
         headers: { "X-Requested-With": "XMLHttpRequest" },

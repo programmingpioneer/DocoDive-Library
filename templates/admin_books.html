@@ -12,6 +12,7 @@
           <th>Category</th>
           <th>Author</th>
           <th>Language</th>
+          <th>Slug</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -23,6 +24,9 @@
           <td><span class="badge bg-primary">{{ book.level }}</span></td>
           <td>{{ book.author }}</td>
           <td>{{ book.language }}</td>
+          <td>
+            <code style="font-size: 0.75rem; color: #6366f1">{{ book.slug or '—' }}</code>
+          </td>
           <td>
             <div class="d-flex gap-2">
               <a
