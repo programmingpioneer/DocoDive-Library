@@ -12,12 +12,15 @@ import requests
 import threading
 import time
 import sentry_sdk
+from bs4 import BeautifulSoup
 from sentry_sdk.integrations.flask import FlaskIntegration
 from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from functools import wraps
 from html import escape
 import hashlib, hmac, base64, json
 from flask import request, jsonify
+from jinja2 import TemplateNotFound
 from flask import (
     Flask,
     render_template,
@@ -246,7 +249,12 @@ if ssl_ca:
     )
 
 
-pool = MySQLConnectionPool(pool_name="mypool", pool_size=20, **db_config)
+pool = MySQLConnectionPool(
+    pool_name="mypool",
+    pool_size=20,
+    pool_reset_session=True,
+    **db_config
+)
 
 class MySQLWrapper:
     def __init__(self, app_config):
@@ -1399,6 +1407,36 @@ def official_admin_required(f):
     return decorated_function
 
 
+def slugify(text, max_length=200):
+    """SEO-friendly URL slug. 'Automate the Boring Stuff! (2nd Ed.)' -> 'automate-the-boring-stuff-2nd-ed'"""
+    if not text:
+        return ""
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
+    text = re.sub(r"[-\s]+", "-", text)
+    text = text.strip("-")
+    return text[:max_length].rstrip("-")
+
+
+def unique_slug(base_slug, cur, exclude_id=None):
+    """Agar slug exist karta ho to '-2', '-3' suffix lagao."""
+    if not base_slug:
+        base_slug = "resource"
+    slug = base_slug
+    counter = 2
+    while True:
+        if exclude_id:
+            cur.execute("SELECT id FROM documents WHERE slug = %s AND id != %s", (slug, exclude_id))
+        else:
+            cur.execute("SELECT id FROM documents WHERE slug = %s", (slug,))
+        if not cur.fetchone():
+            return slug
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+        if counter > 100:
+            return f"{base_slug}-{secrets.token_hex(4)}"
+
+
 @app.context_processor
 def inject_common():
     return dict(
@@ -1509,7 +1547,7 @@ def lazy_trickle(book_id):
 
     created_at = book[0]
     last_trickle = book[1]
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     if not created_at or created_at < now - timedelta(days=7):
         cur.close()
@@ -1538,12 +1576,12 @@ def lazy_trickle(book_id):
 
 # ================== R2 HELPER FUNCTIONS (Required) ==================
 def extract_r2_key(url):
-    """Extract the R2 object key from a public URL."""
+    """Extract the R2 object key from a public URL. Returns None for non-R2 URLs."""
     if not url:
         return None
     if R2_PUBLIC_BASE and url.startswith(R2_PUBLIC_BASE + "/"):
         return url.replace(R2_PUBLIC_BASE + "/", "", 1)
-    return url
+    return None
 
 
 def get_presigned_url(key, expiration=300):
@@ -2381,7 +2419,8 @@ def not_found(e):
         cur.execute("""
             SELECT d.id, d.title, d.author, c.level, d.image_url, d.telegram_link,
                    COALESCE(d.download_count, 0) as download_count,
-                   COALESCE(d.view_count, 0) as view_count
+                   COALESCE(d.view_count, 0) as view_count,
+                   d.slug
             FROM documents d
             JOIN categories c ON d.category_id = c.id
             WHERE d.approved = 1
@@ -2401,6 +2440,7 @@ def not_found(e):
                     "link": r[5],
                     "download_count": r[6] or 0,
                     "view_count": r[7] or 0,
+                    "slug": r[8],
                 }
             )
     except Exception as e:
@@ -14818,7 +14858,7 @@ def home():
     offset = (page - 1) * per_page
 
     cur = mysql.connection.cursor()
-    conditions = ["d.approved = 1"]
+    conditions = ["d.approved = 1", "COALESCE(d.resource_type, 'pdf') = 'pdf'"]
     params = []
     if search_query:
         conditions.append("(d.title LIKE %s OR d.author LIKE %s)")
@@ -14847,7 +14887,8 @@ def home():
         SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language,
                COALESCE(d.download_count, 0) as download_count,
                COALESCE(d.view_count, 0) as view_count,
-               COALESCE(avg_r.avg_rating, 0) as avg_rating
+               COALESCE(avg_r.avg_rating, 0) as avg_rating,
+               d.slug
         FROM documents d
         JOIN categories c ON d.category_id = c.id
         LEFT JOIN (
@@ -14860,7 +14901,7 @@ def home():
 
     cur.execute("""
         SELECT c.id, c.level, COUNT(d.id) AS total
-        FROM categories c LEFT JOIN documents d ON c.id = d.category_id AND d.approved = 1
+        FROM categories c LEFT JOIN documents d ON c.id = d.category_id AND d.approved = 1 AND COALESCE(d.resource_type, 'pdf') = 'pdf'
         GROUP BY c.id ORDER BY c.id
     """)
     cat_data = cur.fetchall()
@@ -14879,6 +14920,7 @@ def home():
             "download_count": r[8] or 0,
             "view_count": r[9] or 0,
             "avg_rating": round(float(r[10]), 1) if r[10] else 0,
+            "slug": r[11],
         }
         for r in books_data
     ]
@@ -14932,7 +14974,8 @@ def home():
                 SELECT d.id, d.title, d.author, c.level, d.image_url, d.telegram_link,
                        COALESCE(d.download_count, 0) as download_count,
                        COALESCE(d.view_count, 0) as view_count,
-                       COALESCE(avg_r.avg_rating, 0) as avg_rating
+                       COALESCE(avg_r.avg_rating, 0) as avg_rating,
+                       d.slug
                 FROM documents d
                 JOIN categories c ON d.category_id = c.id
                 LEFT JOIN (
@@ -14956,6 +14999,7 @@ def home():
                         "download_count": r[6] or 0,
                         "view_count": r[7] or 0,
                         "avg_rating": round(float(r[8]), 1) if r[8] else 0,
+                        "slug": r[9],
                     }
                 )
         cur.close()
@@ -15023,7 +15067,8 @@ def learning_hub(category_slug):
                COALESCE(d.download_count, 0) AS download_count,
                COALESCE(d.view_count, 0) AS view_count,
                c.level,
-               COALESCE(avg_r.avg_rating, 0) AS avg_rating
+               COALESCE(avg_r.avg_rating, 0) AS avg_rating,
+               d.slug
         FROM documents d
         JOIN categories c ON d.category_id = c.id
         LEFT JOIN (
@@ -15053,7 +15098,7 @@ def learning_hub(category_slug):
     cur.execute("""
         SELECT c.level, COUNT(d.id) AS total
         FROM categories c
-        LEFT JOIN documents d ON c.id = d.category_id AND d.approved = 1
+        LEFT JOIN documents d ON c.id = d.category_id AND d.approved = 1 AND COALESCE(d.resource_type, 'pdf') = 'pdf'
         GROUP BY c.id, c.level
         HAVING total > 0
         ORDER BY total DESC
@@ -15075,6 +15120,7 @@ def learning_hub(category_slug):
             "view_count": r[6] or 0,
             "level": r[7],
             "avg_rating": round(float(r[8]), 1) if r[8] else 0,
+            "slug": r[9],
         }
         for r in rows
     ]
@@ -15130,7 +15176,7 @@ def all_books():
             category_slug = ""
 
         # --- Dynamic WHERE (parameterized, koi user input interpolation nahi) ---
-        where_parts = ["d.approved = 1"]
+        where_parts = ["d.approved = 1", "COALESCE(d.resource_type, 'pdf') = 'pdf'"]
         params = []
 
         if q:
@@ -15180,7 +15226,8 @@ def all_books():
                    COALESCE(d.download_count, 0) AS download_count,
                    COALESCE(d.view_count, 0) AS view_count,
                    c.level,
-                   COALESCE(avg_r.avg_rating, 0) AS avg_rating
+                   COALESCE(avg_r.avg_rating, 0) AS avg_rating,
+                   d.slug
             FROM documents d
             JOIN categories c ON d.category_id = c.id
             LEFT JOIN (
@@ -15223,6 +15270,7 @@ def all_books():
             "view_count": r[6] or 0,
             "level": r[7],
             "avg_rating": round(float(r[8]), 1) if r[8] else 0,
+            "slug": r[9],
         }
         for r in rows
     ]
@@ -15231,7 +15279,7 @@ def all_books():
         {
             "@type": "ListItem",
             "position": i,
-            "url": f"{request.host_url}book/{b['id']}",
+            "url": f"{request.host_url}book/{b.get('slug') or b['id']}/{b['id']}",
             "name": b["title"].replace("_", " "),
         }
         for i, b in enumerate(books, 1)
@@ -15400,25 +15448,36 @@ def category_module(slug, module):
         practice_items = MOBILE_APPS_PRACTICE_CHALLENGES
         practice_projects = MOBILE_APPS_PRACTICE_PROJECTS
         capstone = MOBILE_APPS_CAPSTONE
-    return render_template(
-        f"{folder}/{module}.html",
-        category=category,
-        category_slug=slug,
-        lessons=lessons,
-        writing_practice=writing_practice,
-        practice_items=practice_items,
-        practice_projects=practice_projects,
-        task1_structures=task1_structures,
-        task2_practice=task2_practice,
-        band_guide=band_guide,
-        mistakes=mistakes,
-        tips=tips,
-        practice=practice,
-        info=module_info,
-        practice_quizzes=practice_quizzes,
-        debugging_challenges=debugging_challenges,
-        capstone=capstone,
-    )
+    try:
+        return render_template(
+            f"{folder}/{module}.html",
+            category=category,
+            category_slug=slug,
+            lessons=lessons,
+            writing_practice=writing_practice,
+            practice_items=practice_items,
+            practice_projects=practice_projects,
+            task1_structures=task1_structures,
+            task2_practice=task2_practice,
+            band_guide=band_guide,
+            mistakes=mistakes,
+            tips=tips,
+            practice=practice,
+            info=module_info,
+            practice_quizzes=practice_quizzes,
+            debugging_challenges=debugging_challenges,
+            capstone=capstone,
+        )
+    except TemplateNotFound:
+        UNIVERSAL = {"beginner", "intermediate", "advanced", "practice"}
+        if module in UNIVERSAL:
+            return render_template(
+                f"learn_universal/{module}.html",
+                category=category,
+                category_slug=slug,
+                info=module_info,
+            )
+        raise
 
 # ================== PRACTICE CHALLENGE API ==================
 @app.route("/api/practice/challenges")
@@ -15515,14 +15574,18 @@ def ielts_module(module):
 
 # ================== BOOK DETAIL ==================
 @app.route("/book/<int:book_id>")
-def book_detail(book_id):
+@app.route("/book/<slug>/<int:book_id>")
+
+def book_detail(book_id, slug=None):
     cur = mysql.connection.cursor()
     cur.execute(
         """
-        SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language, d.category_id
+        SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description,
+               d.image_url, d.language, d.category_id,
+               d.resource_type, d.external_url, d.slug, d.icon_name, d.created_at
         FROM documents d JOIN categories c ON d.category_id = c.id
         WHERE d.id = %s AND d.approved = 1
-    """,
+        """,
         (book_id,),
     )
     book = cur.fetchone()
@@ -15531,88 +15594,125 @@ def book_detail(book_id):
         cur.close()
         abort(404)
 
+    # ========== SLUG + PREFIX REDIRECT LOGIC ==========
+    db_slug = book[11] or str(book_id)
+    rtype = book[9] or "pdf"
+    expected_prefix = "resources" if rtype != "pdf" else "book"
+    current_prefix = request.path.split("/")[1]
+
+    if slug != db_slug or current_prefix != expected_prefix:
+        cur.close()
+        return redirect(f"/{expected_prefix}/{db_slug}/{book_id}", code=301)
+    # ==================================================
+
+    # Increment view count
     cur.execute(
         "UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book_id,)
     )
     mysql.connection.commit()
 
+    # Fetch reviews
     cur.execute(
         """
         SELECT u.username, r.rating, r.comment, r.created_at, u.id, r.id,
                u.avatar_url, u.first_name, u.last_name
         FROM reviews r JOIN users u ON r.user_id = u.id
         WHERE r.book_id = %s ORDER BY r.created_at DESC
-    """,
+        """,
         (book_id,),
     )
     reviews_raw = cur.fetchall()
+
+    # Is this resource favorited by current user?
+    is_favorite = False
+    if session.get("user_id"):
+        cur.execute(
+            "SELECT id FROM favorites WHERE user_id = %s AND book_id = %s",
+            (session["user_id"], book_id),
+        )
+        is_favorite = cur.fetchone() is not None
+
     cur.close()
 
     reviews = []
     for r in reviews_raw:
         display_name = ((r[7] or "") + " " + (r[8] or "")).strip() or r[0]
-        reviews.append(
-            {
-                "id": r[5],
-                "username": r[0],
-                "rating": r[1],
-                "comment": r[2],
-                "created_at": r[3],
-                "user_id": r[4],
-                "is_official": is_official_user(r[4]),
-                "avatar": r[6],
-                "display_name": display_name,
-            }
-        )
+        reviews.append({
+            "id": r[5], "username": r[0], "rating": r[1], "comment": r[2],
+            "created_at": r[3], "user_id": r[4],
+            "is_official": is_official_user(r[4]),
+            "avatar": r[6], "display_name": display_name,
+        })
 
     lazy_trickle(book_id)
 
+    # Related resources (same category)
     related_books = []
-    cat_id = book[8] if len(book) > 8 else None
+    cat_id = book[8]
     if cat_id:
         cur = mysql.connection.cursor()
         cur.execute(
             """
             SELECT d.id, d.title, d.author, c.level, d.image_url, d.telegram_link,
-                   COALESCE(d.download_count, 0) as download_count,
-                   COALESCE(d.view_count, 0) as view_count
+                   COALESCE(d.download_count, 0), COALESCE(d.view_count, 0),
+                   d.resource_type, d.slug
             FROM documents d
             JOIN categories c ON d.category_id = c.id
             WHERE d.approved = 1 AND d.category_id = %s AND d.id != %s
             ORDER BY d.download_count DESC
             LIMIT 4
-        """,
+            """,
             (cat_id, book_id),
         )
         rel_rows = cur.fetchall()
         cur.close()
         for r in rel_rows:
-            related_books.append(
-                {
-                    "id": r[0],
-                    "title": r[1],
-                    "author": r[2],
-                    "level": r[3],
-                    "image_url": r[4],
-                    "link": r[5],
-                    "download_count": r[6] or 0,
-                    "view_count": r[7] or 0,
-                }
-            )
+            related_books.append({
+                "id": r[0], "title": r[1], "author": r[2], "level": r[3],
+                "image_url": r[4], "link": r[5],
+                "download_count": r[6] or 0, "view_count": r[7] or 0,
+                "resource_type": r[8] or "pdf",
+                "slug": r[9],
+            })
 
+    # PDF-only flow (resource branch removed)
     book_data = {
-        "id": book[0],
-        "title": book[1],
-        "level": book[2],
-        "link": book[3],
-        "author": book[4],
-        "description": book[5],
-        "image_url": book[6],
-        "language": book[7],
+        "id": book[0], "title": book[1], "level": book[2],
+        "link": book[3], "author": book[4], "description": book[5],
+        "image_url": book[6], "language": book[7],
+        "slug": book[11],
     }
     return render_template(
-        "book_detail.html", book=book_data, reviews=reviews, related_books=related_books
+        "book_detail.html",
+        book=book_data,
+        reviews=reviews,
+        related_books=related_books,
     )
+
+
+@app.route("/book/<slug>/<int:book_id>/qr")
+@app.route("/book/<int:book_id>/qr")
+def book_qr(book_id, slug=None):
+    """Generate QR code PNG for a book/resource URL."""
+    import qrcode
+    from io import BytesIO
+
+    # Resolve slug (fallback to id)
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT slug FROM documents WHERE id = %s AND approved = 1", (book_id,))
+    row = cur.fetchone()
+    cur.close()
+    if not row:
+        abort(404)
+    db_slug = row[0] or str(book_id)
+    qr_url = f"{request.host_url.rstrip(chr(47))}/book/{db_slug}/{book_id}"
+
+    img = qrcode.make(qr_url)
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return send_file(buf, mimetype="image/png")
+
 
 @app.route("/api/book/<int:book_id>/counts")
 def book_counts(book_id):
@@ -15633,7 +15733,7 @@ def book_counts(book_id):
 @app.route("/sitemap.xml")
 def sitemap():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT id, title FROM documents WHERE approved = 1 ORDER BY id DESC")
+    cur.execute("SELECT id, title, slug, COALESCE(resource_type, 'pdf') FROM documents WHERE approved = 1 ORDER BY id DESC")
     books = cur.fetchall()
     cur.close()
 
@@ -15689,11 +15789,12 @@ def sitemap():
             f"    <priority>{prio}</priority>\n  </url>\n"
         )
 
-    # Books
-    for book in books:
-        book_url = url_for("book_detail", book_id=book[0], _external=True)
+    # Books (resource_type routing removed)
+    for doc in books:
+        _slug = doc[2] or str(doc[0])
+        doc_url = f"{base}/book/{_slug}/{doc[0]}"
         xml += (
-            f"  <url>\n    <loc>{escape(book_url)}</loc>\n"
+            f"  <url>\n    <loc>{escape(doc_url)}</loc>\n"
             f"    <changefreq>weekly</changefreq>\n"
             f"    <priority>0.8</priority>\n  </url>\n"
         )
@@ -15709,7 +15810,9 @@ def robots():
         "Allow: /\n"
         "Disallow: /user/\n"
         "Disallow: /admin\n"
+        "Disallow: /admin/\n"
         "Disallow: /moderation\n"
+        "Disallow: /moderation/\n"
         "Disallow: /verify-code\n"
         f"Sitemap: {url_for('sitemap', _external=True)}\n"
     )
@@ -15761,7 +15864,7 @@ def api_book_detail(book_id):
     cur = mysql.connection.cursor()
     cur.execute(
         """
-        SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language
+        SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language, d.slug
         FROM documents d JOIN categories c ON d.category_id = c.id
         WHERE d.id = %s AND d.approved = 1
     """,
@@ -15808,6 +15911,7 @@ def api_book_detail(book_id):
         "description": book[5],
         "image_url": book[6],
         "language": book[7],
+        "slug": book[8],
         "reviews": [
             {"username": r[0], "rating": r[1], "comment": r[2], "created_at": str(r[3])}
             for r in reviews
@@ -16134,7 +16238,7 @@ def user_favorites():
     cur = mysql.connection.cursor()
     cur.execute(
         """
-        SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language
+        SELECT d.id, d.title, c.level, d.telegram_link, d.author, d.description, d.image_url, d.language, d.slug
         FROM favorites f JOIN documents d ON f.book_id = d.id JOIN categories c ON d.category_id = c.id
         WHERE f.user_id = %s
     """,
@@ -16152,6 +16256,7 @@ def user_favorites():
             "description": r[5],
             "image_url": r[6],
             "language": r[7],
+            "slug": r[8],
         }
         for r in books
     ]
@@ -16238,8 +16343,10 @@ def track_download_route(book_id):
 
 # ================== REVIEWS ==================
 @app.route("/book/<int:book_id>/review", methods=["POST"])
+@app.route("/book/<slug>/<int:book_id>/review", methods=["POST"])
 @limiter.limit(AUTH_RATELIMIT)
-def add_review(book_id):
+def add_review(book_id, slug=None):
+    
     if "user_id" not in session:
         return jsonify({"error": "Login required"}), 401
     rating = request.form.get("rating", type=int)
@@ -16260,7 +16367,8 @@ def add_review(book_id):
 
 # -------------------- PROTECTED DOWNLOAD & READ ONLINE --------------------
 @app.route("/book/<int:book_id>/download")
-def download_book(book_id):
+@app.route("/book/<slug>/<int:book_id>/download")
+def download_book(book_id, slug=None):
     if "user_id" not in session:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify({"error": "Login required"}), 401
@@ -16269,7 +16377,7 @@ def download_book(book_id):
 
     cur = mysql.connection.cursor()
     cur.execute(
-        "SELECT telegram_link FROM documents WHERE id = %s AND approved = 1", (book_id,)
+        "SELECT telegram_link, slug FROM documents WHERE id = %s AND approved = 1", (book_id,)
     )
     book = cur.fetchone()
     if not book:
@@ -16282,7 +16390,7 @@ def download_book(book_id):
     mysql.connection.commit()
     cur.close()
 
-    r2_key = extract_r2_key(book[0])
+    r2_key = extract_r2_key(book[0]) or f"docodive/uploads/{book[1]}.pdf"
     if not r2_key:
         flash("Download not available.", "danger")
         return redirect(url_for("home"))
@@ -16305,14 +16413,15 @@ def download_book(book_id):
 
 
 @app.route("/book/<int:book_id>/read")
-def read_online(book_id):
+@app.route("/book/<slug>/<int:book_id>/read")
+def read_book(book_id, slug=None):
     if "user_id" not in session:
         flash("Please login to read books online.", "danger")
         return redirect(url_for("user_login"))
 
     cur = mysql.connection.cursor()
     cur.execute(
-        "SELECT telegram_link, title FROM documents WHERE id = %s AND approved = 1",
+        "SELECT telegram_link, title, slug FROM documents WHERE id = %s AND approved = 1",
         (book_id,),
     )
     book = cur.fetchone()
@@ -16325,7 +16434,7 @@ def read_online(book_id):
     mysql.connection.commit()
     cur.close()
 
-    r2_key = extract_r2_key(book[0])
+    r2_key = extract_r2_key(book[0]) or f"docodive/uploads/{book[2]}.pdf"
     if not r2_key:
         flash("Read online not available.", "danger")
         return redirect(url_for("home"))
@@ -16336,7 +16445,7 @@ def read_online(book_id):
         return redirect(url_for("home"))
 
     return render_template(
-        "read_online.html", pdf_url=presigned, book_title=book[1], book_id=book_id
+        "read_online.html", pdf_url=presigned, book_title=book[1], book_id=book_id, book_slug=book[2]
     )
 
 
@@ -16346,6 +16455,7 @@ def read_online(book_id):
 @cache.cached(timeout=600, unless=lambda: request.method == "POST")
 def admin():
     if request.method == "POST":
+        # ========== EXISTING PDF FLOW (below, unchanged) ==========
         if "pdf_file" not in request.files:
             return jsonify({"error": "No file part"}), 400
         file = request.files["pdf_file"]
@@ -16525,7 +16635,10 @@ def admin():
     cur.execute("SELECT level FROM categories ORDER BY level")
     categories = [row[0] for row in cur.fetchall()]
     cur.close()
-    return render_template("admin.html", categories=categories)
+    return render_template(
+        "admin.html",
+        categories=categories,
+    )
 
 
 @app.route("/admin/pending/count")
@@ -16545,7 +16658,7 @@ def pending_count():
 def pending_books():
     cur = mysql.connection.cursor()
     cur.execute("""
-        SELECT d.id, d.title, c.level, d.author, d.created_at, d.telegram_link
+        SELECT d.id, d.title, c.level, d.author, d.created_at, d.telegram_link, d.slug
         FROM documents d JOIN categories c ON d.category_id = c.id
         WHERE d.approved = 0 AND d.status = 'pending' ORDER BY d.id DESC
     """)
@@ -16559,6 +16672,7 @@ def pending_books():
             "author": b[3],
             "created_at": str(b[4]) if b[4] else "",
             "link": b[5],
+            "slug": b[6],
         }
         for b in books
     ]
@@ -16578,6 +16692,12 @@ def approve_book(book_id):
         cur.close()
         return jsonify({"error": "Book not found"}), 404
     title, uploader_id = row
+
+    # NAYA: Fetch slug for URL
+    cur.execute("SELECT slug FROM documents WHERE id = %s", (book_id,))
+    slug_row = cur.fetchone()
+    book_slug = slug_row[0] if slug_row and slug_row[0] else str(book_id)
+
     cur.execute(
         "UPDATE documents SET approved = 1, status = 'approved', approved_at = NOW() WHERE id = %s AND status = 'pending'",
         (book_id,),
@@ -16600,7 +16720,7 @@ def approve_book(book_id):
                 uploader_id,
                 "approval",
                 f"<strong>{title}</strong> has been approved ✅",
-                url_for("book_detail", book_id=book_id),
+                f"/book/{book_slug}/{book_id}",
                 {"book_id": book_id, "action_by": "admin", "uploader_id": uploader_id},
             )
     cur.close()
@@ -16670,7 +16790,7 @@ def admin_books_list():
     cur = mysql.connection.cursor()
     cur.execute("""
         SELECT d.id, d.title, d.category_id, d.telegram_link, d.author,
-               d.description, d.image_url, d.language, c.level
+               d.description, d.image_url, d.language, c.level, d.slug
         FROM documents d
         JOIN categories c ON d.category_id = c.id
         ORDER BY d.id DESC
@@ -16688,6 +16808,7 @@ def admin_books_list():
             "image_url": b[6],
             "language": b[7],
             "level": b[8],
+            "slug": b[9],
         }
         for b in books
     ]
@@ -16917,7 +17038,7 @@ def live_category_counts():
     cur = mysql.connection.cursor()
     cur.execute("""
         SELECT c.id, c.level, COUNT(d.id) AS total
-        FROM categories c LEFT JOIN documents d ON c.id = d.category_id AND d.approved = 1
+        FROM categories c LEFT JOIN documents d ON c.id = d.category_id AND d.approved = 1 AND COALESCE(d.resource_type, 'pdf') = 'pdf'
         GROUP BY c.id ORDER BY c.id
     """)
     data = cur.fetchall()
@@ -17157,7 +17278,7 @@ def moderation_panel():
 
     cur.execute(
         """
-        SELECT r.id, u.username, u.avatar_url, d.title, d.id AS book_id,
+        SELECT r.id, u.username, u.avatar_url, d.title, d.id AS book_id, d.slug AS book_slug,
                r.rating, r.comment, r.created_at, u.id
         FROM reviews r
         JOIN users u ON r.user_id = u.id
@@ -17178,17 +17299,18 @@ def moderation_panel():
                 "avatar": row[2],
                 "book_title": row[3],
                 "book_id": row[4],
-                "rating": row[5],
-                "comment": row[6],
-                "created_at": row[7].strftime("%b %d, %Y %H:%M") if row[7] else "",
-                "user_id": row[8],
-                "is_official": is_official_user(row[8]),
+                "book_slug": row[5],
+                "rating": row[6],
+                "comment": row[7],
+                "created_at": row[8].strftime("%b %d, %Y %H:%M") if row[8] else "",
+                "user_id": row[9],
+                "is_official": is_official_user(row[9]),
             }
         )
 
     cur.execute(
         """
-        SELECT c.id, u.username, u.avatar_url, d.title, d.id AS book_id,
+        SELECT c.id, u.username, u.avatar_url, d.title, d.id AS book_id, d.slug AS book_slug,
                c.comment, c.created_at, u.id
         FROM book_comments c
         JOIN users u ON c.user_id = u.id
@@ -17210,10 +17332,11 @@ def moderation_panel():
                 "avatar": row[2],
                 "book_title": row[3],
                 "book_id": row[4],
-                "comment": row[5],
-                "created_at": row[6].strftime("%b %d, %Y %H:%M") if row[6] else "",
-                "user_id": row[7],
-                "is_official": is_official_user(row[7]),
+                "book_slug": row[5],
+                "comment": row[6],
+                "created_at": row[7].strftime("%b %d, %Y %H:%M") if row[7] else "",
+                "user_id": row[8],
+                "is_official": is_official_user(row[8]),
             }
         )
         comment_ids.append(row[0])
@@ -17386,8 +17509,8 @@ def user_feedback():
                 "like_count": row[4] if row[4] else 0,
                 "official_reply": row[5],
                 "official_replied_at": row[6],
-                "username": row[7],
-                "avatar_url": row[8],
+                "username": row[7] or "Deleted User",
+                "avatar_url": row[8] or "",
                 "user_id": row[9],
                 "is_liked": is_liked,
             }
@@ -18224,16 +18347,33 @@ def user_notifications():
         }
         if notif["type"] in ("approval", "rejection"):
             uid = notif["metadata"].get("uploader_id")
+            bid = notif["metadata"].get("book_id")
+            notif["book_cover"] = None
+            notif["actor_name"] = None
             if uid:
                 cur = mysql.connection.cursor()
-                cur.execute("SELECT avatar_url FROM users WHERE id = %s", (uid,))
-                av = cur.fetchone()
+                cur.execute(
+                    "SELECT first_name, last_name, username, avatar_url FROM users WHERE id = %s",
+                    (uid,),
+                )
+                u = cur.fetchone()
                 cur.close()
-                notif["avatar_url"] = av[0] if av else None
+                if u:
+                    full = f"{(u[0] or chr(32)).strip()} {(u[1] or chr(32)).strip()}".strip()
+                    notif["actor_name"] = full or (u[2] or "User")
+                    notif["avatar_url"] = u[3]
+                else:
+                    notif["avatar_url"] = None
                 notif["is_official_actor"] = is_official_user(uid)
             else:
                 notif["avatar_url"] = None
                 notif["is_official_actor"] = False
+            if bid:
+                cur = mysql.connection.cursor()
+                cur.execute("SELECT image_url FROM documents WHERE id = %s", (bid,))
+                b = cur.fetchone()
+                cur.close()
+                notif["book_cover"] = b[0] if b else None
         elif notif["type"] in ("general_comment", "reply"):
             uid = notif["metadata"].get("actor_user_id")
             if uid:
@@ -18303,30 +18443,44 @@ def get_notifications():
             "metadata": json.loads(row[6]) if row[6] else {},
         }
         if notif["type"] in ("approval", "rejection"):
-            uploader_id = notif["metadata"].get("uploader_id")
-            if uploader_id:
-                cur = mysql.connection.cursor()
-                cur.execute(
-                    "SELECT avatar_url FROM users WHERE id = %s", (uploader_id,)
-                )
-                img = cur.fetchone()
-                cur.close()
-                notif["image_url"] = img[0] if img else None
-                notif["is_official_actor"] = is_official_user(uploader_id)
+            uid = session["user_id"]
+            bid = notif["metadata"].get("book_id")
+            cur = mysql.connection.cursor()
+            cur.execute(
+                "SELECT first_name, last_name, username FROM users WHERE id = %s",
+                (uid,),
+            )
+            me = cur.fetchone()
+            if me:
+                full = f"{(me[0] or chr(32)).strip()} {(me[1] or chr(32)).strip()}".strip()
+                notif["actor_name"] = full or (me[2] or "You")
             else:
-                notif["image_url"] = None
-                notif["is_official_actor"] = False
+                notif["actor_name"] = "You"
+            if bid:
+                cur.execute("SELECT image_url FROM documents WHERE id = %s", (bid,))
+                b = cur.fetchone()
+                notif["book_cover"] = b[0] if b else None
+            else:
+                notif["book_cover"] = None
+            cur.close()
+            notif["is_official_actor"] = False
         elif notif["type"] in ("general_comment", "reply"):
             actor_id = notif["metadata"].get("actor_user_id")
             if actor_id:
                 cur = mysql.connection.cursor()
                 cur.execute(
-                    "SELECT username, avatar_url FROM users WHERE id = %s", (actor_id,)
+                    "SELECT first_name, last_name, username, avatar_url FROM users WHERE id = %s",
+                    (actor_id,),
                 )
                 user = cur.fetchone()
                 cur.close()
-                notif["actor_name"] = user[0] if user else "Unknown"
-                notif["actor_avatar"] = user[1] if user and user[1] else None
+                if user:
+                    full = f"{(user[0] or chr(32)).strip()} {(user[1] or chr(32)).strip()}".strip()
+                    notif["actor_name"] = full or (user[2] or "Someone")
+                    notif["actor_avatar"] = user[3]
+                else:
+                    notif["actor_name"] = "Unknown"
+                    notif["actor_avatar"] = None
                 notif["is_official_actor"] = is_official_user(actor_id)
             else:
                 notif["actor_name"] = "Someone"
@@ -18501,8 +18655,9 @@ def leaderboard():
 
 # ================== BOOK COMMENTS ==================
 @app.route("/book/<int:book_id>/comments", methods=["GET"])
+@app.route("/book/<slug>/<int:book_id>/comments", methods=["GET"])
 @limiter.limit(USER_ACTION_RATELIMIT)
-def get_comments(book_id):
+def get_comments(book_id, slug=None):
     cur = mysql.connection.cursor()
     cur.execute(
         """
@@ -18531,8 +18686,9 @@ def get_comments(book_id):
 
 
 @app.route("/book/<int:book_id>/comments", methods=["POST"])
+@app.route("/book/<slug>/<int:book_id>/comments", methods=["POST"])
 @limiter.limit(USER_ACTION_RATELIMIT)
-def add_comment(book_id):
+def add_comment(book_id, slug=None):
     if "user_id" not in session:
         return jsonify({"error": "Login required"}), 401
     data = request.get_json()
@@ -18555,13 +18711,14 @@ def add_comment(book_id):
     if not parent_id:
         cur = mysql.connection.cursor()
         cur.execute(
-            "SELECT uploaded_by, title FROM documents WHERE id = %s", (book_id,)
+            "SELECT uploaded_by, title, slug FROM documents WHERE id = %s", (book_id,)
         )
         book_info = cur.fetchone()
         cur.close()
         if book_info and book_info[0] and book_info[0] != session["user_id"]:
             uploader_id = book_info[0]
             book_title = book_info[1]
+            book_slug = book_info[2] or str(book_id)
             snippet = comment[:60] + ("..." if len(comment) > 60 else "")
             msg = f'💬 New comment on <em>{book_title}</em><br><small class="text-muted">&ldquo;{snippet}&rdquo;</small>'
             metadata = {
@@ -18573,14 +18730,14 @@ def add_comment(book_id):
                 uploader_id,
                 "general_comment",
                 msg,
-                url_for("book_detail", book_id=book_id, _anchor="discussion"),
+                f"/book/{book_slug}/{book_id}#discussion",
                 metadata,
             )
     else:
         cur = mysql.connection.cursor()
         cur.execute(
             """
-            SELECT c.user_id, d.title
+            SELECT c.user_id, d.title, d.slug
             FROM book_comments c
             JOIN documents d ON c.book_id = d.id
             WHERE c.id = %s
@@ -18592,6 +18749,7 @@ def add_comment(book_id):
         if parent_info and parent_info[0] != session["user_id"]:
             parent_author_id = parent_info[0]
             book_title = parent_info[1]
+            book_slug = parent_info[2] or str(book_id)
             reply_username = session.get("user_name")
             snippet = comment[:60] + ("..." if len(comment) > 60 else "")
             msg = f'<strong>{reply_username}</strong> replied to your comment on <em>{book_title}</em><br><small class="text-muted">&ldquo;{snippet}&rdquo;</small>'
@@ -18605,7 +18763,7 @@ def add_comment(book_id):
                 parent_author_id,
                 "reply",
                 msg,
-                url_for("book_detail", book_id=book_id, _anchor="discussion"),
+                url_for("book_detail", slug=book_slug, book_id=book_id, _anchor="discussion"),
                 metadata,
             )
 
@@ -18793,7 +18951,7 @@ def make_digest_email(books):
                         <p style="margin:10px 0 0;color:#4B5563;font-size:13px;line-height:20px;">
                           {_safe(book.get('description', ''))}
                         </p>
-                        <a href="{url_for('book_detail', book_id=book.get('id'), _external=True)}"
+                        <a href="{f"{request.host_url.rstrip('/')}/book/{book.get('slug') or book.get('id')}/{book.get('id')}"}"
                            style="display:inline-block;margin-top:14px;padding:11px 18px;background:{BRAND_COLOR};color:#FFFFFF;border-radius:9px;text-decoration:none;font-size:12px;line-height:16px;font-weight:800;">
                           Explore Book →
                         </a>
@@ -18869,7 +19027,7 @@ def make_digest_email(books):
 def _digest_scheduler_loop():
     """Background scheduler: daily 8 PM PKT, weekly Sunday 8 PM PKT."""
     while True:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         if now.hour == 15 and now.minute == 0:
             try:
                 with app.app_context():
@@ -18902,7 +19060,26 @@ def terms_of_service():
 def data_deletion():
     return render_template("data_deletion.html")
 
+
 # ================== RUN ==================
+@app.before_request
+def redirect_legacy_resources():
+    """301: legacy /resources/* URLs -> /book/* (SEO canonical)."""
+    p = request.path
+    if p != "/resources" and not p.startswith("/resources/"):
+        return
+    tail = p[len("/resources"):]
+    if tail.startswith("/"):
+        segs = tail.lstrip("/").split("/", 2)
+        if len(segs) >= 2 and segs[1].isdigit():
+            rest = ("/" + segs[2]) if len(segs) == 3 else ""
+            new_url = f"/book/{segs[0]}/{segs[1]}{rest}"
+            if request.query_string:
+                new_url += "?" + request.query_string.decode()
+            return redirect(new_url, code=301)
+    return redirect("/books", code=301)
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"

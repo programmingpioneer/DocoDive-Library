@@ -70,6 +70,7 @@
             <button
               class="btn btn-sm btn-light rounded-circle preview-trigger"
               data-book-id="{{ pdf.id }}"
+              data-book-slug="{{ pdf.slug or pdf.id }}"
               style="width: 24px; height: 24px; padding: 0"
             >
               <i class="bi bi-search" style="font-size: 0.65rem"></i>
@@ -98,7 +99,7 @@
       if (typeof openBookModal === "function") {
         openBookModal(trigger.dataset.bookId);
       } else {
-        window.location.href = "/book/" + trigger.dataset.bookId;
+        window.location.href = "/book/" + (trigger.dataset.bookSlug || trigger.dataset.bookId) + "/" + trigger.dataset.bookId;
       }
     }
   });

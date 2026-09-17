@@ -1,0 +1,74 @@
+﻿{% extends 'base.html' %}
+{% block title %}{{ category|default('Learning Hub') }} — Advanced | DocoDive{% endblock %}
+{% block content %}
+<style>
+  .mu-hero{background:linear-gradient(135deg,#f8faff 0%,#e0e7ff 100%);padding:2.5rem 0;border-bottom:1px solid rgba(67,56,202,.08)}
+  .mu-back{display:inline-flex;align-items:center;gap:6px;color:#4338ca;text-decoration:none;font-weight:600;font-size:.9rem;margin-bottom:1rem;padding:6px 14px;background:#fff;border-radius:50px;box-shadow:0 4px 12px rgba(30,27,75,.06);transition:.2s}
+  .mu-back:hover{background:#4338ca;color:#fff;transform:translateX(-2px)}
+  .mu-hero-inner{display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap}
+  .mu-hero-icon{width:72px;height:72px;border-radius:20px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#dc2626;box-shadow:0 12px 30px rgba(220,38,38,.15);flex-shrink:0}
+  .mu-hero h1{font-weight:800;color:#1e1b4b;margin:0;font-size:1.9rem;line-height:1.15}
+  .mu-hero .sub{color:#6b7280;font-size:.95rem;margin-top:4px}
+  .mu-badge{display:inline-block;background:rgba(255,183,3,.15);color:#b8860b;font-weight:700;font-size:.75rem;padding:4px 12px;border-radius:50px;margin-left:auto;white-space:nowrap}
+  .mu-body{padding:2.5rem 0 4rem}
+  .cs-card{background:#fff;border-radius:24px;padding:2.5rem;box-shadow:0 15px 40px rgba(30,27,75,.08);text-align:center;border:1px solid rgba(220,38,38,.06)}
+  .cs-icon{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#fee2e2,#fecaca);display:inline-flex;align-items:center;justify-content:center;font-size:2.2rem;color:#dc2626;margin-bottom:1rem}
+  .cs-card h2{font-weight:800;color:#1e1b4b;margin-bottom:.75rem;font-size:1.5rem}
+  .cs-card p{color:#6b7280;max-width:520px;margin:0 auto 1.5rem;line-height:1.65}
+  .cs-progress{max-width:400px;margin:1.5rem auto;background:#f1f5f9;height:8px;border-radius:50px;overflow:hidden}
+  .cs-progress-fill{height:100%;width:70%;background:linear-gradient(90deg,#dc2626,#f87171);border-radius:50px;animation:csPulse 2s ease-in-out infinite}
+  @keyframes csPulse{0%,100%{opacity:.7}50%{opacity:1}}
+  .cs-btn{display:inline-flex;align-items:center;gap:8px;background:#dc2626;color:#fff;padding:12px 26px;border-radius:50px;font-weight:600;text-decoration:none;box-shadow:0 10px 25px rgba(220,38,38,.3);transition:.25s;border:none;font-size:.95rem}
+  .cs-btn:hover{background:#b91c1c;color:#fff;transform:translateY(-2px);box-shadow:0 15px 32px rgba(220,38,38,.4)}
+  .mu-mini{background:#fff;border-radius:18px;padding:1.25rem;box-shadow:0 6px 20px rgba(30,27,75,.05);height:100%;border:1px solid rgba(220,38,38,.06)}
+  .mu-mini i{font-size:1.6rem;color:#dc2626;display:block;margin-bottom:.5rem}
+  .mu-mini h6{font-weight:700;color:#1e1b4b;margin-bottom:.35rem;font-size:.9rem}
+  .mu-mini p{color:#6b7280;font-size:.82rem;line-height:1.55;margin:0}
+  .mu-side{background:#fff;border-radius:20px;padding:1.25rem;box-shadow:0 8px 24px rgba(30,27,75,.05);border:1px solid rgba(220,38,38,.06)}
+  .mu-side h6{font-weight:700;color:#1e1b4b;font-size:.85rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.75rem}
+  .mu-side a{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:12px;color:#1e1b4b;text-decoration:none;font-weight:500;font-size:.9rem;transition:.2s}
+  .mu-side a:hover{background:#fef2f2;color:#dc2626}
+  .mu-side a.active{background:#dc2626;color:#fff}
+  .mu-side a i{font-size:.8rem;opacity:.6}
+  @media (max-width:576px){.mu-hero h1{font-size:1.4rem}.mu-hero-icon{width:56px;height:56px;font-size:1.5rem}.cs-card{padding:1.75rem 1.25rem}.cs-icon{width:64px;height:64px;font-size:1.6rem}}
+</style>
+<section class="mu-hero">
+  <div class="container">
+    <a href="/learn/{{ category_slug|default('') }}" class="mu-back"><i class="bi bi-arrow-left"></i> Back to {{ category|default('Hub') }}</a>
+    <div class="mu-hero-inner">
+      <div class="mu-hero-icon"><i class="bi bi-rocket-takeoff-fill"></i></div>
+      <div><h1>{{ category|default('Learning Hub') }} — Advanced</h1><div class="sub">Master the field. Expert-level material.</div></div>
+      <span class="mu-badge">🚧 Coming Soon</span>
+    </div>
+  </div>
+</section>
+<section class="mu-body">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="cs-card">
+          <div class="cs-icon"><i class="bi bi-hourglass-split"></i></div>
+          <h2>We're crafting this track</h2>
+          <p>Expert material, performance work, and systems-level thinking for <strong>{{ category|default('this topic') }}</strong> are on the way. Meanwhile, dive into our curated books.</p>
+          <div class="cs-progress"><div class="cs-progress-fill"></div></div>
+          <a href="/learn/{{ category_slug|default('') }}" class="cs-btn"><i class="bi bi-book-half"></i> Browse {{ category|default('') }} Books</a>
+        </div>
+        <div class="row g-3 mt-4">
+          <div class="col-md-4"><div class="mu-mini"><i class="bi bi-cpu"></i><h6>Systems thinking</h6><p>Understand how everything fits at scale — the pieces, the trade-offs.</p></div></div>
+          <div class="col-md-4"><div class="mu-mini"><i class="bi bi-speedometer2"></i><h6>Performance</h6><p>Profile, benchmark, and optimize. Go beyond "it works" to "it works fast".</p></div></div>
+          <div class="col-md-4"><div class="mu-mini"><i class="bi bi-trophy"></i><h6>Track progress</h6><p>Earn badges, keep your streak, and see how far you've come.</p></div></div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="mu-side">
+          <h6>Other Tracks</h6>
+          <a href="/learn/{{ category_slug|default('') }}/beginner"><span><i class="bi bi-flag me-2"></i>Beginner</span><i class="bi bi-chevron-right"></i></a>
+          <a href="/learn/{{ category_slug|default('') }}/intermediate"><span><i class="bi bi-bar-chart me-2"></i>Intermediate</span><i class="bi bi-chevron-right"></i></a>
+          <a href="/learn/{{ category_slug|default('') }}/advanced" class="active"><span><i class="bi bi-rocket me-2"></i>Advanced</span><i class="bi bi-chevron-right"></i></a>
+          <a href="/learn/{{ category_slug|default('') }}/practice"><span><i class="bi bi-pencil-square me-2"></i>Practice</span><i class="bi bi-chevron-right"></i></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

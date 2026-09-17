@@ -7,3 +7,7 @@ __pycache__/
 .env
 ssl/
 instance/
+.env
+.env.*
+!.env.example
+*.backup

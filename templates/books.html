@@ -1,5 +1,22 @@
 {% extends 'base.html' %}
 
+{% block structured_data %}
+{{ super() }}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "All Books — DocoDive",
+  "url": {{ request.url|tojson }},
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "DocoDive",
+    "url": {{ request.url_root|tojson }}
+  }
+}
+</script>
+{% endblock %}
+
 {% block title %}All Books | DocoDive{% endblock %}
 {% block meta_description %}Browse all free books and study materials on DocoDive. Search by title or author, filter by category, and sort by latest, downloads, views, or rating.{% endblock %}
 {% block canonical %}{{ request.base_url }}{% endblock %}
@@ -510,7 +527,7 @@
           {% endif %}
           <div class="d-flex justify-content-end gap-1">
             <a
-              href="/book/{{ book.id }}"
+              href="/book/{{ book.slug or book.id }}/{{ book.id }}"
               class="btn btn-sm btn-light rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
               style="
                 width: 24px;

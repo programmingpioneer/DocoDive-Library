@@ -4,115 +4,67 @@
     class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2"
   >
     <h2 class="fw-bold mb-0 text-primary">
-      <i class="bi bi-cloud-arrow-up-fill me-2"></i> Auto PDF Upload
+      <i class="bi bi-cloud-arrow-up-fill me-2"></i> Upload Content
     </h2>
     <div class="d-flex flex-column flex-md-row align-items-center gap-2">
-      <!-- Only Back to Library button -->
-      <a
-        href="/"
-        class="btn btn-outline-secondary rounded-pill px-4 d-block d-md-inline-block"
-      >
+      <a href="/" class="btn btn-outline-secondary rounded-pill px-4">
         <i class="bi bi-house-door me-1"></i> Back to Library
       </a>
     </div>
   </div>
 
   <div class="row justify-content-center">
-    <div class="col-md-7 col-lg-6">
+    <div class="col-md-8 col-lg-7">
       <div class="card border-0 shadow-lg p-4">
         <div class="card-body">
-          <!-- 📄 PDF Upload Zone -->
           <form id="uploadForm" enctype="multipart/form-data">
             <input
               type="hidden"
               name="_csrf_token"
               value="{{ session._csrf_token }}"
             />
-            <div
-              class="mb-4 p-4 border border-2 border-primary rounded bg-light upload-zone"
-            >
-              <i
-                class="bi bi-file-earmark-pdf text-danger"
-                style="font-size: 3rem"
-              ></i>
-              <h5 class="mt-2 fw-bold">Select PDF from your System</h5>
-              <p class="text-muted small mb-2">
-                Title, category, author & description will be auto‑detected.
-              </p>
-              <input
-                type="file"
-                name="pdf_file"
-                id="pdfFileInput"
-                class="form-control mt-3"
-                accept=".pdf"
-                required
-              />
-            </div>
 
-            <!-- 🗂️ Manual Category Dropdown -->
-            <div class="mb-3">
-              <label for="categorySelect" class="form-label fw-semibold">
-                <i class="bi bi-tag me-1"></i> Category
-              </label>
-              <select class="form-select" id="categorySelect" name="category">
-                <option value="">Auto‑Detect (from PDF)</option>
-                {% for cat in categories %}
-                <option value="{{ cat }}">{{ cat }}</option>
-                {% endfor %}
-              </select>
-              <div class="form-text">
-                Choose a category or leave it for auto‑detection.
-              </div>
-            </div>
 
-            <!-- 🖼️ Cover Image Upload -->
-            <div class="mb-4">
-              <label for="coverImageInput" class="form-label fw-semibold">
-                <i class="bi bi-image me-1"></i> Cover Image (optional)
-              </label>
-              <input
-                type="file"
-                name="cover_image"
-                id="coverImageInput"
-                class="form-control"
-                accept="image/*"
-                onchange="previewCoverImage(this)"
-              />
-              <div class="form-text">
-                Recommended: square image, max 5 MB · JPG, PNG, GIF, WEBP
-                allowed
-              </div>
-              <div class="mt-2" id="coverPreview" style="display: none">
-                <img
-                  style="width: 100%; height: 180px; object-fit: cover; border-radius: 10px;"
-                  src=""
-                  alt="Cover preview"
-                  class="img-thumbnail"
-                  style="max-height: 150px"
+            <!-- ========== PDF ZONE (SHOW WHEN PDF) ========== -->
+            <div id="pdfZone">
+              <div
+                class="mb-4 p-4 border border-2 border-primary rounded bg-light upload-zone"
+              >
+                <i
+                  class="bi bi-file-earmark-pdf text-danger"
+                  style="font-size: 3rem"
+                ></i>
+                <h5 class="mt-2 fw-bold">Select PDF from your System</h5>
+                <p class="text-muted small mb-2">
+                  Title, category, author & description will be auto-detected.
+                </p>
+                <input
+                  type="file"
+                  name="pdf_file"
+                  id="pdfFileInput"
+                  class="form-control mt-3"
+                  accept=".pdf"
                 />
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary ms-2"
-                  onclick="removeCover()"
-                >
-                  <i class="bi bi-x-circle"></i> Remove
-                </button>
+              </div>
+
+              <div class="mb-3">
+                <label for="categorySelect" class="form-label fw-semibold">
+                  <i class="bi bi-tag me-1"></i> Category
+                </label>
+                <select class="form-select" id="categorySelect" name="category">
+                  <option value="">Auto-Detect (from PDF)</option>
+                  {% for cat in categories %}
+                  <option value="{{ cat }}">{{ cat }}</option>
+                  {% endfor %}
+                </select>
+                <div class="form-text">
+                  Choose a category or leave it for auto-detection.
+                </div>
               </div>
             </div>
 
-            <!-- ⚠️ Disclaimer -->
-            <div class="disclaimer mb-4">
-              <strong
-                ><i class="bi bi-info-circle-fill me-1"></i> Disclaimer:</strong
-              ><br />
-              • Only <strong>PDF files</strong> are accepted (max 500 MB).<br />
-              • Cover image is optional but recommended (max 5 MB).<br />
-              • Do not upload copyrighted material without permission.<br />
-              • Your upload will be <strong>hidden until approved</strong> by a
-              admin.
-            </div>
 
-            <!-- ========== PREMIUM PROGRESS CARD (GLASSMORPHISM) ========== -->
+            <!-- ========== PREMIUM PROGRESS CARD (PDF only) ========== -->
             <div id="progressCard" class="d-none">
               <div class="progress-glass-card">
                 <div class="progress-top-icons">
@@ -185,7 +137,6 @@
                   </div>
                 </div>
 
-                <!-- Circular Progress Ring -->
                 <div class="circular-progress-container">
                   <svg class="progress-ring" width="120" height="120">
                     <circle
@@ -213,7 +164,6 @@
                   <div class="progress-text" id="progressPercent">0%</div>
                 </div>
 
-                <!-- Stats -->
                 <div class="progress-stats">
                   <div class="stat-item">
                     <span class="stat-label">File Size</span>
@@ -234,10 +184,25 @@
               </div>
             </div>
 
+
             <div
               id="statusMessage"
               class="text-center fw-bold mb-3 d-none"
             ></div>
+
+            <!-- Disclaimer -->
+            <div class="disclaimer mb-4" id="disclaimerBox">
+              <strong
+                ><i class="bi bi-info-circle-fill me-1"></i> Disclaimer:</strong
+              ><br />
+              <span id="disclaimerContent">
+                • Only <strong>PDF files</strong> are accepted (max 500 MB).<br />
+                • Cover image is optional but recommended (max 5 MB).<br />
+                • Do not upload copyrighted material without permission.<br />
+                • Your upload will be <strong>hidden until approved</strong> by
+                an admin.
+              </span>
+            </div>
 
             <button
               type="submit"
@@ -245,7 +210,8 @@
               class="btn btn-primary w-100 fw-bold py-3"
               style="border-radius: 12px"
             >
-              <i class="bi bi-rocket-fill me-2"></i> Upload File & Publish
+              <i class="bi bi-rocket-fill me-2"></i>
+              <span id="submitBtnText">Upload File & Publish</span>
             </button>
           </form>
         </div>
@@ -254,7 +220,7 @@
   </div>
 </div>
 
-<!-- Toast notification (center‑top) -->
+<!-- Toast notification (center-top) -->
 <div
   aria-live="polite"
   aria-atomic="true"
@@ -299,7 +265,49 @@
     background: #e9f0ff !important;
   }
 
-  /* ========== PREMIUM PROGRESS GLASSMORPHISM ========== */
+  /* ========== LANGUAGE SELECTOR ========== */
+  .language-selector {
+    position: relative;
+  }
+  .language-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    max-height: 280px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e0e7ff;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(30, 27, 75, 0.15);
+    margin-top: 6px;
+    animation: fadeDown 0.2s ease-out;
+  }
+  .lang-option {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.15s;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .lang-option:last-child {
+    border-bottom: none;
+  }
+  .lang-option:hover,
+  .lang-option.selected {
+    background: #eef2ff;
+    color: #4338ca;
+    font-weight: 600;
+  }
+  .lang-option.selected::after {
+    content: "✓";
+    float: right;
+    color: #4338ca;
+    font-weight: bold;
+  }
+
+  /* ========== PREMIUM PROGRESS (unchanged) ========== */
   .progress-glass-card {
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(20px);
@@ -439,158 +447,200 @@
     pointer-events: none !important;
   }
 
-  /* Responsive fix for action buttons */
+  /* ========== RESPONSIVE ========== */
   @media (max-width: 767.98px) {
     .d-md-inline-block {
       display: block !important;
       width: 100%;
+    }
+    .card-body {
+      padding: 1rem !important;
+    }
+    .progress-top-icons {
+      gap: 15px;
+    }
+    .progress-stats {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .stat-item {
+      min-width: 80px;
     }
   }
 </style>
 
 <script>
   const MAX_FILE_SIZE = 500 * 1024 * 1024;
+  const MAX_COVER_SIZE = 5 * 1024 * 1024;
 
-  // PDF size validation
-  document
-    .getElementById("pdfFileInput")
-    .addEventListener("change", function () {
-      const file = this.files[0];
-      if (file && file.size > MAX_FILE_SIZE) {
-        showToast("File too large! Maximum 500 MB allowed.", "danger");
-        this.value = "";
-      }
-    });
+  const pdfZone = document.getElementById("pdfZone");
+  const pdfFileInput = document.getElementById("pdfFileInput");
+  const submitBtnText = document.getElementById("submitBtnText");
+  const disclaimerContent = document.getElementById("disclaimerContent");
 
-  // Cover image preview
-  function previewCoverImage(input) {
-    const preview = document.getElementById("coverPreview");
-    const thumb = document.getElementById("coverThumb");
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
-      if (file.size > 5 * 1024 * 1024) {
-        showToast("Cover image must be less than 5 MB.", "danger");
-        input.value = "";
-        preview.style.display = "none";
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        thumb.src = e.target.result;
-        preview.style.display = "flex";
-        preview.style.alignItems = "center";
-      };
-      reader.readAsDataURL(file);
+  // ========== PDF SIZE VALIDATION ==========
+  pdfFileInput.addEventListener("change", function () {
+    const file = this.files[0];
+    if (file && file.size > MAX_FILE_SIZE) {
+      showToast("File too large! Maximum 500 MB allowed.", "danger");
+      this.value = "";
     }
+  });
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str || "";
+    return div.innerHTML;
   }
 
-  function removeCover() {
-    document.getElementById("coverImageInput").value = "";
-    document.getElementById("coverPreview").style.display = "none";
-  }
+  // ========== LANGUAGE SEARCHABLE DROPDOWN ==========
+  const langSearchInput = document.getElementById("langSearchInput");
+  const langHiddenInput = document.getElementById("langHiddenInput");
+  const langDropdown = document.getElementById("langDropdown");
+  const allLangOptions = Array.from(
+    langDropdown.querySelectorAll(".lang-option"),
+  );
 
-  // Form submission with premium progress
-  document
-    .getElementById("uploadForm")
-    .addEventListener("submit", function (e) {
-      e.preventDefault();
+  langSearchInput.addEventListener("focus", () => {
+    langDropdown.classList.remove("d-none");
+    filterLanguages("");
+  });
+  langSearchInput.addEventListener("input", () => {
+    filterLanguages(langSearchInput.value.toLowerCase());
+  });
 
-      const fileInput = document.getElementById("pdfFileInput");
-      const file = fileInput.files[0];
-      if (!file) return;
-
-      if (file.size > MAX_FILE_SIZE) {
-        showToast("File too large! Maximum 500 MB allowed.", "danger");
-        return;
-      }
-
-      let formData = new FormData(this);
-      const progressCard = document.getElementById("progressCard");
-      const statusMsg = document.getElementById("statusMessage");
-      const uploadBtn = document.getElementById("uploadBtn");
-      const ringFg = document.querySelector(".ring-fg");
-      const progressPercent = document.getElementById("progressPercent");
-      const statSize = document.getElementById("statSize");
-      const statSpeed = document.getElementById("statSpeed");
-      const statETA = document.getElementById("statETA");
-      const progressStatus = document.getElementById("progressStatus");
-
-      progressCard.classList.remove("d-none");
-      uploadBtn.disabled = true;
-      statusMsg.classList.add("d-none");
-
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-      statSize.textContent = sizeMB + " MB";
-
-      let startTime = Date.now();
-      let xhr = new XMLHttpRequest();
-      xhr.open("POST", "/admin", true);
-
-      xhr.upload.onprogress = function (e) {
-        if (e.lengthComputable) {
-          let percent = Math.round((e.loaded / e.total) * 100);
-          let offset = 327 - (327 * percent) / 100;
-          ringFg.style.strokeDashoffset = offset;
-          progressPercent.textContent = percent + "%";
-
-          let elapsed = (Date.now() - startTime) / 1000;
-          let speed = elapsed > 0 ? e.loaded / elapsed : 0;
-          statSpeed.textContent = formatSpeed(speed);
-
-          let remaining = e.total - e.loaded;
-          let eta = speed > 0 ? remaining / speed : 0;
-          statETA.textContent = formatTime(eta);
-
-          if (percent < 25)
-            progressStatus.textContent = "Reading PDF metadata...";
-          else if (percent < 50)
-            progressStatus.textContent = "Uploading to cloud...";
-          else if (percent < 75)
-            progressStatus.textContent = "Processing cover image...";
-          else if (percent < 100) progressStatus.textContent = "Finalizing...";
-          else progressStatus.textContent = "Almost done!";
-        }
-      };
-
-      xhr.onload = function () {
-        progressCard.classList.add("d-none");
-        if (xhr.status === 200) {
-          let data = JSON.parse(xhr.responseText);
-          showToast(data.message, "success");
-          if (data.warning) showToast(data.warning, "danger");
-
-          const channel = new BroadcastChannel("docodive_upload");
-          channel.postMessage("refresh");
-          channel.close();
-
-          statusMsg.classList.remove("d-none");
-          statusMsg.innerHTML =
-            "<span class='text-success'>Upload Successful!</span>";
-          document.getElementById("uploadForm").reset();
-          removeCover();
-          uploadBtn.disabled = false;
-        } else {
-          let errorMsg = "Upload Failed.";
-          try {
-            let data = JSON.parse(xhr.responseText);
-            errorMsg = data.error || errorMsg;
-          } catch (e) {}
-          showToast(errorMsg, "danger");
-          statusMsg.classList.remove("d-none");
-          statusMsg.innerHTML = `<span class='text-danger'>${errorMsg}</span>`;
-          uploadBtn.disabled = false;
-        }
-      };
-
-      xhr.onerror = function () {
-        progressCard.classList.add("d-none");
-        showToast("Network error.", "danger");
-        uploadBtn.disabled = false;
-      };
-
-      xhr.send(formData);
+  function filterLanguages(query) {
+    allLangOptions.forEach((opt) => {
+      const match = opt.dataset.value.toLowerCase().includes(query);
+      opt.style.display = match ? "block" : "none";
     });
+  }
 
+  allLangOptions.forEach((opt) => {
+    opt.addEventListener("click", () => {
+      langHiddenInput.value = opt.dataset.value;
+      langSearchInput.value = opt.dataset.value;
+      allLangOptions.forEach((o) => o.classList.remove("selected"));
+      opt.classList.add("selected");
+      langDropdown.classList.add("d-none");
+    });
+  });
+
+  // Close dropdown on outside click
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".language-selector")) {
+      langDropdown.classList.add("d-none");
+    }
+  });
+
+  // Set default
+  langSearchInput.value = "English";
+
+  // ========== FORM SUBMISSION ==========
+  const uploadForm = document.getElementById("uploadForm");
+  uploadForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    handlePdfUpload();
+  });
+
+  // ---------- PDF UPLOAD (existing flow) ----------
+  function handlePdfUpload() {
+    const file = pdfFileInput.files[0];
+    if (!file) {
+      showToast("Please select a PDF file.", "danger");
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      showToast("File too large! Maximum 500 MB allowed.", "danger");
+      return;
+    }
+
+    let formData = new FormData(uploadForm);
+    const progressCard = document.getElementById("progressCard");
+    const statusMsg = document.getElementById("statusMessage");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const ringFg = document.querySelector(".ring-fg");
+    const progressPercent = document.getElementById("progressPercent");
+    const statSize = document.getElementById("statSize");
+    const statSpeed = document.getElementById("statSpeed");
+    const statETA = document.getElementById("statETA");
+    const progressStatus = document.getElementById("progressStatus");
+
+    progressCard.classList.remove("d-none");
+    uploadBtn.disabled = true;
+    statusMsg.classList.add("d-none");
+
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    statSize.textContent = sizeMB + " MB";
+
+    let startTime = Date.now();
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", "/admin", true);
+
+    xhr.upload.onprogress = function (e) {
+      if (e.lengthComputable) {
+        let percent = Math.round((e.loaded / e.total) * 100);
+        let offset = 327 - (327 * percent) / 100;
+        ringFg.style.strokeDashoffset = offset;
+        progressPercent.textContent = percent + "%";
+
+        let elapsed = (Date.now() - startTime) / 1000;
+        let speed = elapsed > 0 ? e.loaded / elapsed : 0;
+        statSpeed.textContent = formatSpeed(speed);
+
+        let remaining = e.total - e.loaded;
+        let eta = speed > 0 ? remaining / speed : 0;
+        statETA.textContent = formatTime(eta);
+
+        if (percent < 25)
+          progressStatus.textContent = "Reading PDF metadata...";
+        else if (percent < 50)
+          progressStatus.textContent = "Uploading to cloud...";
+        else if (percent < 75)
+          progressStatus.textContent = "Processing cover image...";
+        else if (percent < 100) progressStatus.textContent = "Finalizing...";
+        else progressStatus.textContent = "Almost done!";
+      }
+    };
+
+    xhr.onload = function () {
+      progressCard.classList.add("d-none");
+      if (xhr.status === 200) {
+        let data = JSON.parse(xhr.responseText);
+        showToast(data.message, "success");
+        if (data.warning) showToast(data.warning, "danger");
+
+        const channel = new BroadcastChannel("docodive_upload");
+        channel.postMessage("refresh");
+        channel.close();
+
+        statusMsg.classList.remove("d-none");
+        statusMsg.innerHTML =
+          "<span class='text-success'>Upload Successful!</span>";
+        uploadForm.reset();
+        removeCover();
+        uploadBtn.disabled = false;
+      } else {
+        let errorMsg = "Upload Failed.";
+        try {
+          let data = JSON.parse(xhr.responseText);
+          errorMsg = data.error || errorMsg;
+        } catch (e) {}
+        showToast(errorMsg, "danger");
+        statusMsg.classList.remove("d-none");
+        statusMsg.innerHTML = `<span class='text-danger'>${errorMsg}</span>`;
+        uploadBtn.disabled = false;
+      }
+    };
+
+    xhr.onerror = function () {
+      progressCard.classList.add("d-none");
+      showToast("Network error.", "danger");
+      uploadBtn.disabled = false;
+    };
+
+    xhr.send(formData);
+  }
+  // ========== HELPERS ==========
   function formatSpeed(bytesPerSec) {
     if (bytesPerSec > 1024 * 1024)
       return (bytesPerSec / (1024 * 1024)).toFixed(1) + " MB/s";
@@ -604,6 +654,18 @@
     let mins = Math.floor(seconds / 60);
     let secs = Math.ceil(seconds % 60);
     return mins + "m " + secs + "s";
+  }
+
+  function previewCoverImage(input) {
+    // legacy function kept for backward compat with old form
+    return;
+  }
+
+  function removeCover() {
+    const ci = document.getElementById("coverImageInput");
+    const cp = document.getElementById("coverPreview");
+    if (ci) ci.value = "";
+    if (cp) cp.style.display = "none";
   }
 
   function showToast(message, type) {

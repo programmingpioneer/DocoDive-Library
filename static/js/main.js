@@ -424,20 +424,57 @@ document.addEventListener('DOMContentLoaded', function () {
             var html = '';
             list.forEach(function (n) {
               var ago = window.timeAgo(n.created_at);
-              var heading = 'Notification', snippet = n.message || '';
-              if (n.type === 'approval') heading = '📗 Book Approved';
-              else if (n.type === 'rejection') heading = '📕 Book Rejected';
-              else if (n.type === 'general_comment') heading = '💬 Comment';
-              else if (n.type === 'reply') heading = '↩️ Reply';
-              snippet = snippet.replace(/<[^>]*>/g, '');
               var targetUrl = n.link || '/user/notifications';
-              html += '<div class="d-flex align-items-center p-2 border-bottom notif-card-item ' + (!n.is_read ? 'bg-purple-light' : '') + '">' +
-                '<div class="flex-grow-1" onclick="window.goToNotif(\'' + targetUrl + '\')" style="cursor:pointer;">' +
-                '<strong class="small">' + heading + '</strong>' +
-                '<small class="text-muted ms-2">' + ago + '</small>' +
-                '<div class="text-muted small text-truncate">' + snippet + '</div></div></div>';
+              var name = n.actor_name || 'DocoDive';
+              var statusText = 'New notification';
+              var statusClass = '';
+              if (n.type === 'approval') {
+                statusText = 'Your book was approved by DocoDive';
+                statusClass = 'notif-dd-success';
+              } else if (n.type === 'rejection') {
+                statusText = 'Your book was declined by DocoDive';
+                statusClass = 'notif-dd-danger';
+              } else if (n.type === 'general_comment') {
+                statusText = 'commented on your book';
+              } else if (n.type === 'reply') {
+                statusText = 'replied to your comment';
+              }
+
+              var visual = '';
+              if ((n.type === 'approval' || n.type === 'rejection') && n.book_cover) {
+                visual = '<img src="' + n.book_cover + '" alt="" class="notif-dd-cover" loading="lazy">';
+              } else if ((n.type === 'general_comment' || n.type === 'reply') && n.actor_avatar) {
+                visual = '<img src="' + n.actor_avatar + '" alt="" class="notif-dd-avatar" loading="lazy">';
+              } else {
+                var icon = 'bi-bell-fill';
+                var fbClass = '';
+                if (n.type === 'approval') { icon = 'bi-check-circle-fill'; fbClass = 'fb-ok'; }
+                else if (n.type === 'rejection') { icon = 'bi-x-circle-fill'; fbClass = 'fb-no'; }
+                else if (n.type === 'general_comment') { icon = 'bi-chat-fill'; }
+                else if (n.type === 'reply') { icon = 'bi-reply-fill'; }
+                visual = '<div class="notif-dd-fallback ' + fbClass + '"><i class="bi ' + icon + '"></i></div>';
+              }
+
+              var dot = !n.is_read ? '<span class="notif-dd-dot"></span>' : '';
+
+              html += '<div class="notif-dd-row ' + (!n.is_read ? 'is-unread' : '') + '" data-url="' + targetUrl + '">' +
+                '<div class="notif-dd-visual">' + visual + '</div>' +
+                '<div class="notif-dd-body">' +
+                  '<div class="notif-dd-head">' +
+                    '<span class="notif-dd-name">' + name + '</span>' +
+                    '<span class="notif-dd-time">' + ago + '</span>' +
+                  '</div>' +
+                  '<div class="notif-dd-status ' + statusClass + '">' + statusText + '</div>' +
+                '</div>' +
+                '<div class="notif-dd-right">' + dot + '</div>' +
+              '</div>';
             });
             container.innerHTML = html;
+            container.querySelectorAll('.notif-dd-row').forEach(function(row) {
+              row.addEventListener('click', function() {
+                window.goToNotif(row.dataset.url);
+              });
+            });
           }).catch(function () { });
       } catch (e) { }
     };

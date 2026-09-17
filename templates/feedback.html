@@ -671,21 +671,21 @@
   }
 
   async function deleteFeedback(feedbackId) {
-      if (!confirm('Delete this suggestion?')) return;
+      if (!await toast.confirm('Delete this suggestion?', { title: 'Delete Suggestion', confirmText: 'Delete', type: 'danger' })) return;
       const res = await fetch(`/feedback/${feedbackId}/delete`, { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} });
       if (res.ok) location.reload();
       else alert('Failed to delete.');
   }
 
   async function deleteOfficialReply(feedbackId) {
-      if (!confirm('Remove official reply?')) return;
+      if (!await toast.confirm('Remove official reply?', { title: 'Remove Reply', confirmText: 'Remove', type: 'danger' })) return;
       const res = await fetch(`/feedback/${feedbackId}/official-reply/delete`, { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} });
       if (res.ok) location.reload();
       else alert('Failed to delete.');
   }
 
   async function deleteReply(replyId) {
-      if (!confirm('Delete this reply?')) return;
+      if (!await toast.confirm('Delete this reply?', { title: 'Delete Reply', confirmText: 'Delete', type: 'danger' })) return;
       const res = await fetch(`/feedback/reply/${replyId}/delete`, { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} });
       if (res.ok) location.reload();
       else alert('Failed to delete.');

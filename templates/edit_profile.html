@@ -512,7 +512,7 @@
             if (navImg) {
               navImg.src = newUrl;
               navImg.onerror = function () {
-                this.src = "{{ url_for('static', filename='default-avatar.jpg') }}";
+                this.src = "{{ url_for('static', filename='images/default-avatar.jpg') }}";
                 this.onerror = null;
               };
             }
@@ -520,7 +520,7 @@
               if (img.id !== "avatarPreview") {
                 img.src = newUrl;
                 img.onerror = function () {
-                  this.src = "{{ url_for('static', filename='default-avatar.jpg') }}";
+                  this.src = "{{ url_for('static', filename='images/default-avatar.jpg') }}";
                   this.onerror = null;
                 };
               }

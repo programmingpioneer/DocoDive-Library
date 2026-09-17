@@ -48,7 +48,7 @@
       content="{% block og_image %}{{ url_for('static', filename='images/docodive-og.jpg', _external=True) }}{% endblock %}"
     />
     <meta property="og:url" content="{{ request.url }}" />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}" />
     <meta property="og:site_name" content="DocoDive" />
 
     <meta name="twitter:card" content="summary_large_image" />
@@ -418,6 +418,356 @@
       }
       .bg-purple-light {
         background-color: #f0eeff;
+      }
+
+      /* ========== GITHUB STAR PILL ========== */
+      .gh-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        color: #1e1b4b;
+        text-decoration: none;
+        font-size: 0.82rem;
+        font-weight: 600;
+        line-height: 1;
+        transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+      }
+      .gh-pill::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(77, 107, 254, 0.08), rgba(67, 56, 202, 0.03));
+        opacity: 0;
+        transition: opacity 0.22s ease;
+        pointer-events: none;
+      }
+      .gh-pill:hover {
+        transform: translateY(-1px);
+        border-color: #4d6bfe;
+        background: #eef2ff;
+        color: #4338ca;
+        box-shadow: 0 6px 16px rgba(77, 107, 254, 0.22);
+      }
+      .gh-pill:hover::before { opacity: 1; }
+      .gh-pill:hover .gh-pill-gh { transform: rotate(-8deg) scale(1.1); }
+      .gh-pill-gh {
+        font-size: 1rem;
+        transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        z-index: 1;
+      }
+      .gh-pill-sep {
+        width: 1px;
+        height: 14px;
+        background: #d1d5db;
+        opacity: 0.7;
+        position: relative;
+        z-index: 1;
+      }
+      .gh-star-icon {
+        color: #f59e0b;
+        font-size: 0.85rem;
+        animation: ghStarPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        z-index: 1;
+      }
+      .gh-pill:hover .gh-star-icon {
+        animation: ghStarSpin 0.6s ease;
+      }
+      @keyframes ghStarPop {
+        0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+        70% { transform: scale(1.25) rotate(10deg); opacity: 1; }
+        100% { transform: scale(1) rotate(0); opacity: 1; }
+      }
+      @keyframes ghStarSpin {
+        0% { transform: scale(1) rotate(0); }
+        50% { transform: scale(1.3) rotate(180deg); }
+        100% { transform: scale(1) rotate(360deg); }
+      }
+      .gh-star-count {
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum";
+        min-width: 12px;
+        text-align: right;
+        position: relative;
+        z-index: 1;
+        transition: color 0.2s ease;
+      }
+      .gh-star-count[data-loaded="1"] {
+        animation: ghCountFade 0.4s ease;
+      }
+      @keyframes ghCountFade {
+        from { opacity: 0; transform: translateY(-3px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @media (max-width: 576px) {
+        .gh-pill { padding: 5px 9px; font-size: 0.75rem; gap: 4px; }
+        .gh-pill-gh { font-size: 0.9rem; }
+        .gh-star-icon { font-size: 0.75rem; }
+        .gh-pill-sep { height: 12px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .gh-pill,
+        .gh-pill-gh,
+        .gh-star-icon,
+        .gh-star-count { transition: none; animation: none !important; }
+        .gh-pill:hover { transform: none; }
+      }
+
+      /* === NOTIFICATION DROPDOWN ROW (new) === */
+      .notif-dd-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        position: relative;
+      }
+      .notif-dd-row:hover { background: #f7f7ff; }
+      .notif-dd-row.is-unread { background: #f5f4ff; }
+
+      .notif-dd-visual { flex-shrink: 0; }
+      .notif-dd-cover {
+        width: 36px; height: 50px;
+        border-radius: 6px;
+        object-fit: cover;
+        display: block;
+        box-shadow: 0 3px 8px rgba(30, 27, 75, 0.15);
+      }
+      .notif-dd-avatar {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        display: block;
+      }
+      .notif-dd-fallback {
+        width: 36px; height: 50px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+        color: #4338ca;
+        font-size: 1rem;
+      }
+      .notif-dd-fallback.fb-ok { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #059669; }
+      .notif-dd-fallback.fb-no { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #dc2626; }
+
+      .notif-dd-body { flex: 1 1 auto; min-width: 0; }
+      .notif-dd-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 2px;
+      }
+      .notif-dd-name {
+        font-weight: 700;
+        color: #1e1b4b;
+        font-size: 0.86rem;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .notif-dd-time {
+        color: #9aa1b0;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .notif-dd-status {
+        color: #6b7280;
+        font-size: 0.78rem;
+        line-height: 1.35;
+      }
+      .notif-dd-status.notif-dd-success { color: #059669; font-weight: 600; }
+      .notif-dd-status.notif-dd-danger { color: #dc2626; font-weight: 600; }
+
+      .notif-dd-right {
+        display: flex;
+        align-items: flex-start;
+        flex-shrink: 0;
+        padding-top: 4px;
+      }
+      .notif-dd-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+      }
+
+
+      /* ========== TOAST SYSTEM ========== */
+      .toast-container {
+        position: fixed;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+        max-width: 400px;
+      }
+      .toast-container.toast-top-right { top: 20px; right: 20px; }
+      .toast-container.toast-top-center { top: 20px; left: 50%; transform: translateX(-50%); }
+      .toast-container.toast-top-left { top: 20px; left: 20px; }
+      .toast-container.toast-bottom-right { bottom: 20px; right: 20px; flex-direction: column-reverse; }
+      .toast-container.toast-bottom-center { bottom: 20px; left: 50%; transform: translateX(-50%); flex-direction: column-reverse; }
+      .toast-container.toast-bottom-left { bottom: 20px; left: 20px; flex-direction: column-reverse; }
+
+      .toast-item {
+        pointer-events: auto;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        background: #fff;
+        border-radius: 12px;
+        padding: 14px 16px;
+        box-shadow: 0 8px 30px rgba(30, 27, 75, 0.15);
+        border-left: 4px solid #4d6bfe;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        min-width: 280px;
+        max-width: 400px;
+      }
+      .toast-item.toast-in { opacity: 1; transform: translateX(0); }
+      .toast-item.toast-out { opacity: 0; transform: translateX(100%); }
+
+      .toast-item.toast-success { border-left-color: #059669; }
+      .toast-item.toast-error { border-left-color: #dc2626; }
+      .toast-item.toast-warning { border-left-color: #f59e0b; }
+      .toast-item.toast-info { border-left-color: #4d6bfe; }
+      .toast-item.toast-loading { border-left-color: #4338ca; }
+
+      .toast-icon { flex-shrink: 0; font-size: 1.2rem; line-height: 1; padding-top: 2px; }
+      .toast-success .toast-icon { color: #059669; }
+      .toast-error .toast-icon { color: #dc2626; }
+      .toast-warning .toast-icon { color: #f59e0b; }
+      .toast-info .toast-icon { color: #4d6bfe; }
+      .toast-loading .toast-icon { color: #4338ca; animation: toastSpin 1s linear infinite; }
+      @keyframes toastSpin { to { transform: rotate(360deg); } }
+
+      .toast-body { flex: 1 1 auto; min-width: 0; }
+      .toast-title { font-weight: 700; font-size: 0.9rem; color: #1e1b4b; margin-bottom: 2px; }
+      .toast-msg { font-size: 0.85rem; color: #4b5563; line-height: 1.4; word-wrap: break-word; }
+
+      .toast-close {
+        flex-shrink: 0;
+        background: transparent;
+        border: none;
+        font-size: 1.2rem;
+        line-height: 1;
+        color: #9ca3af;
+        cursor: pointer;
+        padding: 0 2px;
+        transition: color 0.15s;
+      }
+      .toast-close:hover { color: #1e1b4b; }
+
+      .toast-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 12, 41, 0.5);
+        backdrop-filter: blur(2px);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        padding: 20px;
+      }
+      .toast-modal-backdrop.toast-modal-in { opacity: 1; }
+      .toast-modal-backdrop.toast-modal-out { opacity: 0; }
+
+      .toast-modal {
+        background: #fff;
+        border-radius: 18px;
+        padding: 28px 26px 22px;
+        max-width: 420px;
+        width: 100%;
+        box-shadow: 0 25px 60px rgba(15, 12, 41, 0.35);
+        text-align: center;
+        transform: scale(0.92);
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .toast-modal-backdrop.toast-modal-in .toast-modal { transform: scale(1); }
+
+      .toast-modal-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        margin: 0 auto 16px;
+        background: #eef2ff;
+        color: #4d6bfe;
+      }
+      .toast-modal-icon.toast-modal-danger { background: #fee2e2; color: #dc2626; }
+      .toast-modal-icon.toast-modal-warning { background: #fef3c7; color: #d97706; }
+
+      .toast-modal-title { font-weight: 800; font-size: 1.15rem; color: #1e1b4b; margin-bottom: 8px; }
+      .toast-modal-msg { color: #4b5563; font-size: 0.92rem; line-height: 1.5; margin-bottom: 20px; }
+      .toast-modal-actions { display: flex; gap: 10px; justify-content: center; }
+      .toast-modal-cancel,
+      .toast-modal-confirm {
+        padding: 10px 22px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 1px solid transparent;
+        min-width: 110px;
+      }
+      .toast-modal-cancel { background: #fff; color: #1e1b4b; border-color: #d1d5db; }
+      .toast-modal-cancel:hover { background: #f9fafb; }
+      .toast-modal-confirm { background: #4d6bfe; color: #fff; border-color: #4d6bfe; }
+      .toast-modal-confirm:hover { background: #3d5ce0; }
+      .toast-modal-confirm-danger { background: #dc2626; border-color: #dc2626; }
+      .toast-modal-confirm-danger:hover { background: #b91c1c; }
+      .toast-modal-confirm-warning { background: #f59e0b; border-color: #f59e0b; }
+      .toast-modal-confirm-warning:hover { background: #d97706; }
+
+      @media (max-width: 576px) {
+        .toast-container.toast-top-right,
+        .toast-container.toast-top-left { left: 12px; right: 12px; max-width: none; }
+        .toast-container.toast-top-center { left: 12px; right: 12px; transform: none; }
+        .toast-item { min-width: 0; }
+        .toast-modal { padding: 22px 20px 18px; }
+        .toast-modal-actions { flex-direction: column-reverse; }
+        .toast-modal-cancel,
+        .toast-modal-confirm { width: 100%; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .toast-item,
+        .toast-modal,
+        .toast-modal-backdrop,
+        .toast-item.toast-in,
+        .toast-item.toast-out { transition: none; }
+        .toast-loading .toast-icon { animation: none; }
+      }
+
+      @media (max-width: 576px) {
+        .notif-dd-row { padding: 8px 10px; gap: 8px; }
+        .notif-dd-cover { width: 32px; height: 44px; }
+        .notif-dd-avatar { width: 32px; height: 32px; }
+        .notif-dd-fallback { width: 32px; height: 44px; font-size: 0.9rem; }
+        .notif-dd-name { font-size: 0.82rem; }
+        .notif-dd-time { font-size: 0.66rem; }
+        .notif-dd-status { font-size: 0.74rem; }
       }
 
       @media (max-width: 576px) {
@@ -866,7 +1216,7 @@
       .lamp-glow {
         fill: #ffb703;
         opacity: 0;
-        animation: glowPulse 1s ease 1.2s infinite alternate;
+        animation: glowPulse 1s ease 0.3s infinite alternate;
       }
       @keyframes glowPulse {
         from {
@@ -882,8 +1232,8 @@
         fill: #ffb703;
         opacity: 0;
         animation:
-          coneFade 1s ease 1.2s forwards,
-          conePulse 2s ease 2.2s infinite alternate;
+          coneFade 1s ease 0.3s forwards,
+          conePulse 2s ease 0.6s infinite alternate;
       }
       @keyframes coneFade {
         to {
@@ -901,7 +1251,7 @@
       .bulb-fill {
         fill: #ffb703;
         opacity: 0;
-        animation: fadeIn 0.4s ease 1.2s forwards;
+        animation: fadeIn 0.3s ease 0.3s forwards;
       }
       .loader-brand {
         font-family: "Poppins", sans-serif;
@@ -912,8 +1262,8 @@
         margin-top: 16px;
         opacity: 0;
         animation:
-          fadeIn 0.5s ease 1.6s forwards,
-          brandPulse 2s ease 2.2s infinite alternate;
+          fadeIn 0.3s ease 0.5s forwards,
+          brandPulse 2s ease 0.7s infinite alternate;
       }
       @keyframes brandPulse {
         from {
@@ -1414,6 +1764,19 @@
         </a>
 
         <div class="d-flex align-items-center gap-2 order-lg-last">
+          <a
+            href="https://github.com/programmingpioneer/DocoDive-Library"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="gh-pill"
+            title="View on GitHub — star us!"
+            aria-label="View source on GitHub"
+          >
+            <i class="bi bi-github gh-pill-gh"></i>
+            <span class="gh-pill-sep" aria-hidden="true"></span>
+            <i class="bi bi-star-fill gh-star-icon" aria-hidden="true"></i>
+            <span id="ghStarCount" class="gh-star-count" data-loaded="0">—</span>
+          </a>
           {% if session.get('user_id') %}
           <!-- Notification Bell -->
           <div class="dropdown">
@@ -1517,7 +1880,7 @@
                 style="object-fit: cover; flex-shrink: 0"
                 onerror="
     this.onerror = null;
-    this.src = '{{ url_for('static', filename='default-avatar.jpg') }}';
+    this.src = '{{ url_for('static', filename='images/default-avatar.jpg') }}';
   "
               />
               {% else %}
@@ -1767,6 +2130,60 @@
                       ><span class="mega-sub">More resources</span></span
                     >
                   </a>
+                  <a class="mega-item" href="/learn/mathematics">
+                    <span class="mega-icon"
+                      ><i class="bi bi-calculator text-primary"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Mathematics</span
+                      ><span class="mega-sub">Linear algebra & calc</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/functional-programming">
+                    <span class="mega-icon"
+                      ><i class="bi bi-code-square text-success"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Functional Programming</span
+                      ><span class="mega-sub">Haskell, Lisp, etc.</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/embedded-systems">
+                    <span class="mega-icon"
+                      ><i class="bi bi-cpu-fill text-danger"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Embedded Systems</span
+                      ><span class="mega-sub">Arduino, Pi, MCU</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/operating-systems">
+                    <span class="mega-icon"
+                      ><i class="bi bi-terminal text-dark"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Operating Systems</span
+                      ><span class="mega-sub">Linux & kernels</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/software-architecture">
+                    <span class="mega-icon"
+                      ><i class="bi bi-diagram-2 text-info"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Software Architecture</span
+                      ><span class="mega-sub">Patterns & design</span></span
+                    >
+                  </a>
+                  <a class="mega-item" href="/learn/theoretical-cs">
+                    <span class="mega-icon"
+                      ><i class="bi bi-infinity text-secondary"></i
+                    ></span>
+                    <span class="mega-text"
+                      ><span class="mega-title">Theoretical CS</span
+                      ><span class="mega-sub">Automata & theory</span></span
+                    >
+                  </a>
                   <a class="mega-item" href="/reviews">
                     <span class="mega-icon"
                       ><i class="bi bi-star-fill text-warning"></i
@@ -1785,6 +2202,7 @@
                 </div>
               </div>
             </li>
+
 
             <li class="nav-item dropdown">
               <a
@@ -2041,6 +2459,7 @@
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
     ></script>
     <script defer src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 
@@ -2363,7 +2782,7 @@
             if (l.parentNode) l.parentNode.removeChild(l);
           }, 500);
         }
-      }, 4000);
+      }, 800);
     </script>
 
     <!-- ================== ANIMATION STABILITY FIX ================== -->
@@ -2452,5 +2871,67 @@
         }
       });
     </script>
-  </body>
+      <script defer src="/static/js/toast.js"></script>
+
+    <!-- ================== FLASH → TOAST HOOK ================== -->
+    <script id="__flashes" type="application/json">
+      {{ get_flashed_messages(with_categories=true) | tojson }}
+    </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        try {
+          var el = document.getElementById("__flashes");
+          if (!el || !window.toast) return;
+          var arr = JSON.parse(el.textContent || "[]");
+          arr.forEach(function (pair) {
+            var cat = pair[0], msg = pair[1];
+            var t = cat === "danger" ? "error"
+                  : cat === "warning" ? "warning"
+                  : cat === "success" ? "success" : "info";
+            if (window.toast[t]) window.toast[t](msg);
+          });
+        } catch (e) { console.warn("Flash toast failed:", e); }
+      });
+    </script>
+
+
+    <!-- ================== GITHUB STAR COUNT ================== -->
+    <script>
+      (function () {
+        var el = document.getElementById("ghStarCount");
+        if (!el) return;
+        var KEY = "gh_stars_DocoDive_Library_v1";
+        var CACHE_MS = 60 * 60 * 1000;
+        try {
+          var raw = sessionStorage.getItem(KEY);
+          if (raw) {
+            var c = JSON.parse(raw);
+            if (c && c.t && Date.now() - c.t < CACHE_MS) {
+              el.textContent = c.n;
+              el.setAttribute("data-loaded", "1");
+              return;
+            }
+          }
+        } catch (e) {}
+        fetch("https://api.github.com/repos/programmingpioneer/DocoDive-Library", {
+          headers: { Accept: "application/vnd.github+json" },
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (d && typeof d.stargazers_count === "number") {
+              el.textContent = d.stargazers_count;
+              el.setAttribute("data-loaded", "1");
+              try {
+                sessionStorage.setItem(
+                  KEY,
+                  JSON.stringify({ n: d.stargazers_count, t: Date.now() })
+                );
+              } catch (e) {}
+            }
+          })
+          .catch(function () {});
+      })();
+    </script>
+
+</body>
 </html>

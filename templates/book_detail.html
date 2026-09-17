@@ -1,38 +1,44 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} {% block title %}{{ book.title }} - DocoDive{%
+endblock %} {% block canonical %}{{ request.url_root.rstrip('/') }}/book/{{ book.slug or book.id }}/{{ book.id }}{% endblock %} {% block meta_description %}{{ book.description[:160]
+if book.description else 'Read ' + book.title + ' by ' + book.author + ' on
+DocoDive. Free PDF download available.' }}{% endblock %} {% block og_image %}{{
+book.image_url if book.image_url and book.image_url != 'None' else
+url_for('static', filename='images/docodive-og.png', _external=True) }}{%
+endblock %} {% block og_type %}book{% endblock %}
 
-{% block title %}{{ book.title }} - DocoDive{% endblock %}
-
-{% block canonical %}{{ request.url_root.rstrip('/') }}/book/{{ book.id }}{% endblock %}
-
-{% block meta_description %}{{ book.description[:160] if book.description else 'Read ' + book.title + ' by ' + book.author + ' on DocoDive. Free PDF download available.' }}{% endblock %}
-
-{% block og_image %}{{ book.image_url if book.image_url and book.image_url != 'None' else url_for('static', filename='images/docodive-og.png', _external=True) }}{% endblock %}
-
-{% block structured_data %}
-{{ super() }}
+{% block structured_data %} {{ super() }}
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Book",
+    "name": {{ book.title|tojson }},
+    "author": { "@type": "Person", "name": {{ book.author|tojson }} },
+    "description": {{ (book.description[:200] if book.description else '')|tojson }},
+    "image": {{ (book.image_url if book.image_url and book.image_url != 'None' else '')|tojson }},
+    "url": {{ request.url|tojson }},
+    "inLanguage": {{ book.language|tojson }},
+    "genre": {{ book.level|tojson }},
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock"
+    },
+    "publisher": { "@type": "Organization", "name": "DocoDive" }
+  }
+</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "Book",
-  "name": {{ book.title|tojson }},
-  "author": { "@type": "Person", "name": {{ book.author|tojson }} },
-  "description": {{ (book.description[:200] if book.description else '')|tojson }},
-  "image": {{ (book.image_url if book.image_url and book.image_url != 'None' else '')|tojson }},
-  "url": {{ request.url|tojson }},
-  "inLanguage": {{ book.language|tojson }},
-  "genre": {{ book.level|tojson }},
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "USD",
-    "availability": "https://schema.org/InStock"
-  },
-  "publisher": { "@type": "Organization", "name": "DocoDive" }
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Home", "item": {{ request.url_root|tojson }}},
+    {"@type": "ListItem", "position": 2, "name": {{ book.level|tojson }}},
+    {"@type": "ListItem", "position": 3, "name": {{ book.title|tojson }}, "item": {{ request.url|tojson }}}
+  ]
 }
 </script>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <div class="container py-4 py-md-5">
   <div class="row g-4">
     <!-- Book Cover -->
@@ -99,6 +105,7 @@
         <button
           class="btn btn-outline-dark rounded-pill px-4 qr-btn"
           data-book-id="{{ book.id }}"
+          data-book-slug="{{ book.slug or book.id }}"
         >
           <i class="bi bi-qr-code me-2"></i> QR Code
         </button>
@@ -183,20 +190,26 @@
           data-aos-duration="500"
           data-aos-delay="{{ loop.index0 * 50 }}"
         >
-          <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+          <div
+            class="d-flex justify-content-between align-items-start gap-2 flex-wrap"
+          >
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <a
                 href="/user/profile/{{ r.username }}"
                 class="d-inline-flex align-items-center gap-2 text-decoration-none"
               >
                 <img
-                  src="{{ r.avatar if r.avatar else url_for('static', filename='default-avatar.jpg') }}"
+                  src="{{ r.avatar if r.avatar else url_for('static', filename='images/default-avatar.jpg') }}"
                   class="rounded-circle border"
                   width="32"
                   height="32"
-                  style="object-fit: cover; width: 32px !important; height: 32px !important;"
+                  style="
+                    object-fit: cover;
+                    width: 32px !important;
+                    height: 32px !important;
+                  "
                   alt="{{ r.display_name }}"
-                  onerror="this.onerror=null;this.src='{{ url_for('static', filename='default-avatar.jpg') }}';"
+                  onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/default-avatar.jpg') }}';"
                 />
                 <span class="fw-bold text-dark">{{ r.display_name }}</span>
                 {% if r.is_official %}
@@ -207,8 +220,11 @@
                 {% endif %}
               </a>
               <span class="text-warning small">
-                {% for i in range(r.rating|int) %}<i class="bi bi-star-fill"></i>{% endfor %}
-                {% for i in range(5 - (r.rating|int)) %}<i class="bi bi-star text-muted"></i>{% endfor %}
+                {% for i in range(r.rating|int) %}<i class="bi bi-star-fill"></i
+                >{% endfor %} {% for i in range(5 - (r.rating|int)) %}<i
+                  class="bi bi-star text-muted"
+                ></i
+                >{% endfor %}
               </span>
             </div>
 
@@ -219,7 +235,8 @@
                 data-review-id="{{ r.id }}"
                 title="Reply as Official"
               >
-                <i class="bi bi-reply-fill"></i><span class="d-none d-sm-inline ms-1">Reply</span>
+                <i class="bi bi-reply-fill"></i
+                ><span class="d-none d-sm-inline ms-1">Reply</span>
               </button>
               <button
                 class="btn btn-sm btn-outline-danger rounded-pill delete-review-btn"
@@ -253,7 +270,10 @@
           </div>
           {% endif %}
 
-          <div class="review-replies mt-2 ms-3" id="review-replies-{{ r.id }}"></div>
+          <div
+            class="review-replies mt-2 ms-3"
+            id="review-replies-{{ r.id }}"
+          ></div>
         </div>
         {% else %}
         <p class="text-muted">No reviews yet. Be the first to review!</p>
@@ -307,7 +327,7 @@
     <div class="row g-3">
       {% for related in related_books %}
       <div class="col-6 col-md-4 col-lg-3">
-        <a href="/book/{{ related.id }}" class="text-decoration-none">
+        <a href="/book/{{ related.slug or related.id }}/{{ related.id }}" class="text-decoration-none">
           <div class="card border-0 shadow-sm h-100 related-book-card">
             <div
               class="book-cover-outer d-flex align-items-center justify-content-center"
@@ -388,565 +408,194 @@
   </section>
   {% endif %}
 </div>
-<!-- ================== QR & SHARE POPUPS ================== -->
-<div
-  id="qrPopup"
-  style="
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 28px 24px 20px;
-    border-radius: 24px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-    z-index: 9999;
-    text-align: center;
-    max-width: 320px;
-    width: 90%;
-  "
->
-  <img
-    id="qrImage"
-    src=""
-    style="
-      width: 200px;
-      height: 200px;
-      border-radius: 16px;
-      display: block;
-      margin: 0 auto;
-    "
-  />
-  <p
-    style="
-      margin: 16px 0 8px;
-      font-size: 0.85rem;
-      color: #4b5563;
-      line-height: 1.5;
-    "
-  >
-    📱 <strong>Scan QR code</strong> to open this book on your phone.
-  </p>
-  <div
-    style="display: flex; gap: 10px; justify-content: center; margin-top: 10px"
-  >
-    <button
-      class="btn btn-sm btn-outline-primary rounded-pill"
-      onclick="document.getElementById('qrPopup').style.display = 'none'"
-    >
-      <i class="bi bi-x-circle me-1"></i> Close
-    </button>
-    <button
-      class="btn btn-sm btn-primary rounded-pill share-modal-btn"
-      data-book-id="{{ book.id }}"
-    >
-      <i class="bi bi-share-fill me-1"></i> Share
-    </button>
+
+<!-- ================== QR POPUP ================== -->
+<div id="qrPopup" class="qr-popup-overlay">
+  <div class="qr-popup-card">
+    <img id="qrImage" src="" alt="QR Code" class="qr-popup-img" />
+    <p class="qr-popup-text">
+      <i class="bi bi-phone me-1"></i><strong>Scan QR code</strong> to open this book on your phone.
+    </p>
+    <div class="qr-popup-buttons">
+      <button class="btn btn-sm btn-primary rounded-pill px-4" onclick="closeQrPopup()">
+        <i class="bi bi-x-circle me-1"></i> Close
+      </button>
+    </div>
   </div>
 </div>
 
-<div
-  id="shareModal"
-  style="
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 10000;
-    align-items: center;
-    justify-content: center;
-  "
->
-  <div
-    style="
-      background: white;
-      border-radius: 24px;
-      max-width: 420px;
-      width: 90%;
-      padding: 32px 24px;
-      position: relative;
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
-    "
-  >
-    <button
-      onclick="closeShareModal()"
-      style="
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        cursor: pointer;
-        color: #9ca3af;
-      "
-    >
-      &times;
-    </button>
-    <div style="display: flex; justify-content: center; margin-bottom: 16px">
-      <div
-        style="
-          width: 60px;
-          height: 60px;
-          background: #f3f4f6;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.8rem;
-        "
-      >
-        🔗
-      </div>
-    </div>
-    <h2
-      style="
-        text-align: center;
-        font-weight: 700;
-        color: #1f2937;
-        margin-bottom: 4px;
-      "
-    >
-      Share with Friends
-    </h2>
-    <p
-      style="
-        text-align: center;
-        color: #6b7280;
-        font-size: 0.9rem;
-        margin-bottom: 24px;
-      "
-    >
-      Reading is better together! Share this book with your network.
-    </p>
-    <div style="margin-bottom: 20px">
-      <label
-        style="
-          font-weight: 600;
-          font-size: 0.85rem;
-          color: #374151;
-          margin-bottom: 6px;
-          display: block;
-        "
-        >Share your link</label
-      >
-      <div
-        style="
-          display: flex;
-          background: #f9fafb;
-          border-radius: 12px;
-          overflow: hidden;
-          border: 1px solid #e5e7eb;
-        "
-      >
-        <input
-          id="shareLinkInput"
-          type="text"
-          readonly
-          value=""
-          style="
-            flex: 1;
-            border: none;
-            padding: 12px;
-            background: transparent;
-            font-size: 0.9rem;
-            color: #111827;
-          "
-        />
-        <button
-          onclick="copyShareLink()"
-          style="
-            background: #4f46e5;
-            border: none;
-            color: white;
-            padding: 12px 16px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-          "
-        >
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
+<!-- ================== SHARE MODAL ================== -->
+<div id="shareModal" class="share-modal-overlay">
+  <div class="share-modal-card">
+    <button class="share-close-btn" onclick="closeShareModal()">&times;</button>
+    <div class="share-icon-wrapper"><div class="share-icon">🔗</div></div>
+    <h2 class="share-title">Share with Friends</h2>
+    <p class="share-subtitle">Reading is better together! Share this book with your network.</p>
+    <div class="share-input-group">
+      <label class="share-label">Share your link</label>
+      <div class="share-input-row">
+        <input id="shareLinkInput" type="text" readonly value="" />
+        <button onclick="copyShareLink()"><i class="bi bi-clipboard"></i> Copy</button>
       </div>
     </div>
     <div>
-      <label
-        style="
-          font-weight: 600;
-          font-size: 0.85rem;
-          color: #374151;
-          margin-bottom: 10px;
-          display: block;
-        "
-        >Share to</label
-      >
-      <div
-        style="
-          display: flex;
-          justify-content: space-around;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 16px;
-        "
-      >
-        <a
-          id="shareFacebook"
-          href="#"
-          target="_blank"
-          rel="noopener"
-          style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: #1877f2;
-          "
-          ><div
-            style="
-              width: 44px;
-              height: 44px;
-              background: #1877f2;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              font-size: 1.4rem;
-            "
-          >
-            <i class="bi bi-facebook"></i>
-          </div>
-          <span style="font-size: 0.7rem; margin-top: 4px; font-weight: 500"
-            >Facebook</span
-          ></a
-        >
-        <a
-          id="shareTwitter"
-          href="#"
-          target="_blank"
-          rel="noopener"
-          style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: #000;
-          "
-          ><div
-            style="
-              width: 44px;
-              height: 44px;
-              background: #000;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              font-size: 1.2rem;
-            "
-          >
-            <i class="bi bi-twitter-x"></i>
-          </div>
-          <span style="font-size: 0.7rem; margin-top: 4px; font-weight: 500"
-            >X</span
-          ></a
-        >
-        <a
-          id="shareWhatsapp"
-          href="#"
-          target="_blank"
-          rel="noopener"
-          style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: #25d366;
-          "
-          ><div
-            style="
-              width: 44px;
-              height: 44px;
-              background: #25d366;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              font-size: 1.4rem;
-            "
-          >
-            <i class="bi bi-whatsapp"></i>
-          </div>
-          <span style="font-size: 0.7rem; margin-top: 4px; font-weight: 500"
-            >WhatsApp</span
-          ></a
-        >
-        <a
-          id="shareTelegram"
-          href="#"
-          target="_blank"
-          rel="noopener"
-          style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: #0088cc;
-          "
-          ><div
-            style="
-              width: 44px;
-              height: 44px;
-              background: #0088cc;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              font-size: 1.4rem;
-            "
-          >
-            <i class="bi bi-telegram"></i>
-          </div>
-          <span style="font-size: 0.7rem; margin-top: 4px; font-weight: 500"
-            >Telegram</span
-          ></a
-        >
-        <a
-          id="shareLinkedin"
-          href="#"
-          target="_blank"
-          rel="noopener"
-          style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: #0a66c2;
-          "
-          ><div
-            style="
-              width: 44px;
-              height: 44px;
-              background: #0a66c2;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              font-size: 1.4rem;
-            "
-          >
-            <i class="bi bi-linkedin"></i>
-          </div>
-          <span style="font-size: 0.7rem; margin-top: 4px; font-weight: 500"
-            >LinkedIn</span
-          ></a
-        >
+      <label class="share-label" style="margin-bottom: 10px;">Share to</label>
+      <div class="share-social-row">
+        <a id="shareFacebook" href="#" target="_blank" rel="noopener" class="share-social facebook">
+          <div><i class="bi bi-facebook"></i></div><span>Facebook</span>
+        </a>
+        <a id="shareTwitter" href="#" target="_blank" rel="noopener" class="share-social twitter">
+          <div><i class="bi bi-twitter-x"></i></div><span>X</span>
+        </a>
+        <a id="shareWhatsapp" href="#" target="_blank" rel="noopener" class="share-social whatsapp">
+          <div><i class="bi bi-whatsapp"></i></div><span>WhatsApp</span>
+        </a>
+        <a id="shareTelegram" href="#" target="_blank" rel="noopener" class="share-social telegram">
+          <div><i class="bi bi-telegram"></i></div><span>Telegram</span>
+        </a>
+        <a id="shareLinkedin" href="#" target="_blank" rel="noopener" class="share-social linkedin">
+          <div><i class="bi bi-linkedin"></i></div><span>LinkedIn</span>
+        </a>
       </div>
     </div>
   </div>
 </div>
 
-<script>
-  function showShareModal(bookId, bookTitle) {
-    const shareUrl = window.location.origin + "/book/" + bookId;
-    document.getElementById("shareLinkInput").value = shareUrl;
-    document.getElementById("shareFacebook").href =
-      "https://www.facebook.com/sharer/sharer.php?u=" +
-      encodeURIComponent(shareUrl);
-    document.getElementById("shareTwitter").href =
-      "https://twitter.com/intent/tweet?url=" + encodeURIComponent(shareUrl);
-    document.getElementById("shareWhatsapp").href =
-      "https://wa.me/?text=" + encodeURIComponent((bookTitle ? bookTitle + " — " : "") + shareUrl);
-    document.getElementById("shareTelegram").href =
-      "https://t.me/share/url?url=" + encodeURIComponent(shareUrl);
-    document.getElementById("shareLinkedin").href =
-      "https://www.linkedin.com/sharing/share-offsite/?url=" +
-      encodeURIComponent(shareUrl);
-    document.getElementById("shareModal").style.display = "block";
-  }
-  function closeShareModal() {
-    document.getElementById("shareModal").style.display = "none";
-  }
-  function copyShareLink() {
-    const input = document.getElementById("shareLinkInput");
-    input.select();
-    input.setSelectionRange(0, 99999);
-    navigator.clipboard
-      .writeText(input.value)
-      .then(() => alert("✅ Link copied!"))
-      .catch(() => alert("❌ Copy failed"));
-  }
-  document.addEventListener("click", function (e) {
-    if (e.target.closest(".share-modal-btn")) {
-      const btn = e.target.closest(".share-modal-btn");
-      const bookId = btn.dataset.bookId;
-      const bookTitle = btn.dataset.bookTitle || "";
-      showShareModal(bookId, bookTitle);
-    }
-  });
-</script>
-{% endblock %}
-
-{% block scripts %}
-<meta name="is-moderator" content="{{ is_moderator|default(false)|tojson }}" />
 <style>
-  /* ========== RELATED BOOKS — FINAL COVER FIX ========== */
-  .related-book-card {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    border-radius: 16px !important;
-    overflow: hidden !important;
-    transition:
-      transform 0.3s ease,
-      box-shadow 0.3s ease !important;
+  /* ========== QR POPUP ========== */
+  .qr-popup-overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
   }
-  .related-book-card:hover {
-    transform: translateY(-4px) !important;
-    box-shadow: 0 15px 30px rgba(30, 27, 75, 0.15) !important;
-  }
-  .related-book-card .book-cover-outer {
-    height: 165px !important;
-    min-height: 165px !important;
-    max-height: 165px !important;
-    padding: 0.4rem !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    overflow: hidden !important;
-  }
-  .related-book-card .related-book-cover {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 100% !important;
-    max-height: 100% !important;
-    object-fit: contain !important;
-    object-position: center !important;
-    background: #f1f5f9 !important;
-    border-radius: 8px !important;
-    display: block !important;
-  }
-  .related-book-card .related-book-fallback {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 100% !important;
-    max-height: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: linear-gradient(135deg, #a5b4fc, #818cf8) !important;
-    color: #fff !important;
-    font-weight: 700 !important;
-    font-size: 1.5rem !important;
-    border-radius: 8px !important;
-  }
-  .related-book-card .card-body {
-    flex: 1 1 auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    padding: 0.5rem 0.4rem !important;
-  }
-  .related-book-card .card-body .badge {
-    font-size: 0.6rem !important;
-  }
-  .related-book-card .card-body h6 {
-    min-height: 34px !important;
-    line-height: 1.25 !important;
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important;
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-    white-space: normal !important;
-  }
-  .related-book-card .card-body p.small {
-    min-height: 16px !important;
-  }
-  .related-book-card .counts-row {
-    margin-top: auto !important;
-    justify-content: flex-start !important;
-  }
-
-  @media (max-width: 576px) {
-    .related-book-card .book-cover-outer {
-      height: 130px !important;
-      min-height: 130px !important;
-      max-height: 130px !important;
-    }
-  }
-
-  /* ===== BOOK DETAIL COVER — FULL COVER, NO CROP ===== */
-  .book-detail-cover {
-    width: 100%;
-    height: auto !important;
-    max-height: 460px;
-    object-fit: contain !important;
-    object-position: center !important;
-    background: #f1f5f9;
-    border-radius: 16px;
-    display: block;
-  }
-
-  @media (max-width: 576px) {
-    .book-detail-cover {
-      max-height: 320px;
-    }
-  }
-
-  /* ===== REVIEWS RESPONSIVE ===== */
-  .review-item {
+  .qr-popup-overlay.show { opacity: 1; visibility: visible; }
+  .qr-popup-card {
     background: #fff;
-    border-color: #e5e7eb !important;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 24px;
+    max-width: 340px; width: 90%;
+    padding: 28px 24px 22px;
+    text-align: center;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+    transform: scale(0.85) translateY(10px);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  .review-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(30, 27, 75, 0.06);
+  .qr-popup-overlay.show .qr-popup-card { transform: scale(1) translateY(0); }
+  .qr-popup-img {
+    width: 200px; height: 200px;
+    border-radius: 12px;
+    display: block; margin: 0 auto;
+  }
+  .qr-popup-text {
+    margin: 16px 0 8px;
+    font-size: 0.85rem;
+    color: #4b5563;
+    line-height: 1.5;
+  }
+  .qr-popup-buttons {
+    display: flex; gap: 10px;
+    justify-content: center;
+    margin-top: 16px;
   }
 
-  @media (max-width: 576px) {
-    .book-cover-fallback {
-      min-height: 200px !important;
-    }
-    .review-item {
-      padding: 0.75rem !important;
-    }
-    .review-item .d-flex.justify-content-between {
-      flex-direction: column;
-      align-items: flex-start !important;
-    }
-    .review-item .btn {
-      font-size: 0.75rem;
-      padding: 0.3rem 0.6rem;
-      width: auto;
-    }
-    #reviewForm .btn {
-      width: 100%;
-    }
-    #reviewForm select,
-    #reviewForm textarea {
-      font-size: 0.9rem;
-    }
-    #commentsContainer > div {
-      padding: 0.5rem !important;
-    }
-    #commentsContainer img {
-      width: 20px !important;
-      height: 20px !important;
-    }
-    #commentsContainer .ms-4 {
-      margin-left: 0.5rem !important;
-    }
+  /* ========== SHARE MODAL ========== */
+  .share-modal-overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+  }
+  .share-modal-overlay.show { opacity: 1; visibility: visible; }
+  .share-modal-card {
+    background: white;
+    border-radius: 24px;
+    max-width: 420px;
+    width: 90%;
+    padding: 32px 24px;
+    position: relative;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+    transform: scale(0.9);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .share-modal-overlay.show .share-modal-card { transform: scale(1); }
+  .share-close-btn {
+    position: absolute; top: 16px; right: 16px;
+    background: none; border: none;
+    font-size: 1.5rem; cursor: pointer;
+    color: #9ca3af;
+  }
+  .share-icon-wrapper { display: flex; justify-content: center; margin-bottom: 16px; }
+  .share-icon {
+    width: 60px; height: 60px;
+    background: #f3f4f6; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+  }
+  .share-title {
+    text-align: center; font-weight: 700;
+    color: #1f2937; margin-bottom: 4px;
+  }
+  .share-subtitle {
+    text-align: center; color: #6b7280;
+    font-size: 0.9rem; margin-bottom: 24px;
+  }
+  .share-input-group { margin-bottom: 20px; }
+  .share-label {
+    font-weight: 600; font-size: 0.85rem;
+    color: #374151; margin-bottom: 6px; display: block;
+  }
+  .share-input-row {
+    display: flex; background: #f9fafb;
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid #e5e7eb;
+  }
+  .share-input-row input {
+    flex: 1; border: none; padding: 12px;
+    background: transparent; font-size: 0.9rem; color: #111827;
+  }
+  .share-input-row button {
+    background: #4f46e5; border: none; color: white;
+    padding: 12px 16px; cursor: pointer; font-size: 0.9rem;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .share-social-row {
+    display: flex; justify-content: space-around;
+    align-items: center; flex-wrap: wrap; gap: 16px;
+  }
+  .share-social {
+    display: flex; flex-direction: column;
+    align-items: center; text-decoration: none;
+    color: #000;
+  }
+  .share-social > div {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 1.4rem;
+  }
+  .share-social.facebook > div { background: #1877f2; }
+  .share-social.twitter > div { background: #000; font-size: 1.2rem; }
+  .share-social.whatsapp > div { background: #25d366; }
+  .share-social.telegram > div { background: #0088cc; }
+  .share-social.linkedin > div { background: #0a66c2; }
+  .share-social span {
+    font-size: 0.7rem; margin-top: 4px; font-weight: 500;
   }
 </style>
+
 <script>
   // ==================== SAFE USER_LOGGED_IN ====================
   const USER_LOGGED_IN = document.body.dataset.userLoggedIn === "true";
@@ -975,26 +624,68 @@
     });
   }
 
-  // ================== APPLY TO STATIC BUTTONS ==================
-  const downloadLink = document.querySelector("a.download-btn");
-  if (downloadLink)
-    protectedAction(downloadLink, () => {
-      fetch(`/api/download/{{ book.id }}`, { method: "POST" });
-      window.location.href = downloadLink.href;
-    });
-
-  const readLink = document.querySelector("a.read-btn");
-  if (readLink)
-    protectedAction(readLink, () => window.open(readLink.href, "_blank"));
+  // ================== QR POPUP ==================
+  function closeQrPopup() {
+    document.getElementById("qrPopup").classList.remove("show");
+  }
+  document.getElementById("qrPopup")?.addEventListener("click", function (e) {
+    if (e.target.id === "qrPopup") closeQrPopup();
+  });
 
   const qrBtn = document.querySelector(".qr-btn");
   if (qrBtn)
     protectedAction(qrBtn, () => {
       const bookId = qrBtn.dataset.bookId;
-      document.getElementById("qrImage").src = `/book/${bookId}/qr`;
-      document.getElementById("qrPopup").style.display = "block";
+      const bookSlug = qrBtn.dataset.bookSlug || bookId;
+      document.getElementById("qrImage").src =
+        "/book/" + bookSlug + "/" + bookId + "/qr";
+      document.getElementById("qrPopup").classList.add("show");
     });
 
+  // ================== SHARE MODAL ==================
+  function showShareModal(bookId, bookTitle) {
+    const shareUrl = window.location.href.split("?")[0].split("#")[0];
+    document.getElementById("shareLinkInput").value = shareUrl;
+    document.getElementById("shareFacebook").href =
+      "https://www.facebook.com/sharer/sharer.php?u=" +
+      encodeURIComponent(shareUrl);
+    document.getElementById("shareTwitter").href =
+      "https://twitter.com/intent/tweet?url=" + encodeURIComponent(shareUrl);
+    document.getElementById("shareWhatsapp").href =
+      "https://wa.me/?text=" +
+      encodeURIComponent((bookTitle ? bookTitle + " — " : "") + shareUrl);
+    document.getElementById("shareTelegram").href =
+      "https://t.me/share/url?url=" + encodeURIComponent(shareUrl);
+    document.getElementById("shareLinkedin").href =
+      "https://www.linkedin.com/sharing/share-offsite/?url=" +
+      encodeURIComponent(shareUrl);
+    document.getElementById("shareModal").classList.add("show");
+  }
+  function closeShareModal() {
+    document.getElementById("shareModal").classList.remove("show");
+  }
+  document.getElementById("shareModal")?.addEventListener("click", function (e) {
+    if (e.target.id === "shareModal") closeShareModal();
+  });
+  function copyShareLink() {
+    const input = document.getElementById("shareLinkInput");
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard
+      .writeText(input.value)
+      .then(() => alert("✅ Link copied!"))
+      .catch(() => alert("❌ Copy failed"));
+  }
+  document.addEventListener("click", function (e) {
+    if (e.target.closest(".share-modal-btn")) {
+      const btn = e.target.closest(".share-modal-btn");
+      const bookId = btn.dataset.bookId;
+      const bookTitle = btn.dataset.bookTitle || "";
+      showShareModal(bookId, bookTitle);
+    }
+  });
+
+  // ================== FAVORITE ==================
   const favBtn = document.querySelector(".favorite-btn");
   if (favBtn)
     protectedAction(favBtn, async () => {
@@ -1183,7 +874,7 @@
   loadComments();
 
   // ================== PROTECTED REPLY BUTTON (for discussions) ==================
-  document.addEventListener("click", function (e) {
+  document.addEventListener("click", async function (e) {
     if (e.target.matches(".replyBtn") || e.target.closest(".replyBtn")) {
       const btn = e.target.closest(".replyBtn");
       if (!USER_LOGGED_IN) {
@@ -1244,7 +935,7 @@
     if (e.target.closest(".delete-review-btn")) {
       const btn = e.target.closest(".delete-review-btn");
       const reviewId = btn.dataset.reviewId;
-      if (!confirm("Delete this review?")) return;
+      if (!await toast.confirm("Delete this review?", { title: "Delete Review", confirmText: "Delete", type: "danger" })) return;
       fetch(`/api/review/${reviewId}/delete`, {
         method: "POST",
         headers: { "X-Requested-With": "XMLHttpRequest" },
@@ -1257,7 +948,7 @@
     if (e.target.closest(".delete-comment-btn")) {
       const btn = e.target.closest(".delete-comment-btn");
       const commentId = btn.dataset.commentId;
-      if (!confirm("Delete this comment?")) return;
+      if (!await toast.confirm("Delete this comment?", { title: "Delete Comment", confirmText: "Delete", type: "danger" })) return;
       fetch(`/api/comment/${commentId}/delete`, {
         method: "POST",
         headers: { "X-Requested-With": "XMLHttpRequest" },
@@ -1319,4 +1010,129 @@
       if (res.ok) location.reload();
     });
 </script>
+{% endblock %} {% block scripts %}
+<meta name="is-moderator" content="{{ is_moderator|default(false)|tojson }}" />
+<style>
+  /* ========== RELATED BOOKS ========== */
+  .related-book-card {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+  }
+  .related-book-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 15px 30px rgba(30, 27, 75, 0.15) !important;
+  }
+  .related-book-card .book-cover-outer {
+    height: 165px !important;
+    min-height: 165px !important;
+    max-height: 165px !important;
+    padding: 0.4rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+  }
+  .related-book-card .related-book-cover {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: #f1f5f9 !important;
+    border-radius: 8px !important;
+    display: block !important;
+  }
+  .related-book-card .related-book-fallback {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: linear-gradient(135deg, #a5b4fc, #818cf8) !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+    font-size: 1.5rem !important;
+    border-radius: 8px !important;
+  }
+  .related-book-card .card-body {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0.5rem 0.4rem !important;
+  }
+  .related-book-card .card-body .badge { font-size: 0.6rem !important; }
+  .related-book-card .card-body h6 {
+    min-height: 34px !important;
+    line-height: 1.25 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    white-space: normal !important;
+  }
+  .related-book-card .card-body p.small { min-height: 16px !important; }
+  .related-book-card .counts-row {
+    margin-top: auto !important;
+    justify-content: flex-start !important;
+  }
+  @media (max-width: 576px) {
+    .related-book-card .book-cover-outer {
+      height: 130px !important;
+      min-height: 130px !important;
+      max-height: 130px !important;
+    }
+  }
+
+  /* ===== BOOK DETAIL COVER — FULL COVER, NO CROP ===== */
+  .book-detail-cover {
+    width: 100%;
+    height: auto !important;
+    max-height: 460px;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: #f1f5f9;
+    border-radius: 16px;
+    display: block;
+  }
+  @media (max-width: 576px) { .book-detail-cover { max-height: 320px; } }
+
+  /* ===== REVIEWS RESPONSIVE ===== */
+  .review-item {
+    background: #fff;
+    border-color: #e5e7eb !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .review-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(30, 27, 75, 0.06);
+  }
+  @media (max-width: 576px) {
+    .book-cover-fallback { min-height: 200px !important; }
+    .review-item { padding: 0.75rem !important; }
+    .review-item .d-flex.justify-content-between {
+      flex-direction: column;
+      align-items: flex-start !important;
+    }
+    .review-item .btn {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.6rem;
+      width: auto;
+    }
+    #reviewForm .btn { width: 100%; }
+    #reviewForm select, #reviewForm textarea { font-size: 0.9rem; }
+    #commentsContainer > div { padding: 0.5rem !important; }
+    #commentsContainer img {
+      width: 20px !important;
+      height: 20px !important;
+    }
+    #commentsContainer .ms-4 { margin-left: 0.5rem !important; }
+  }
+</style>
 {% endblock %}

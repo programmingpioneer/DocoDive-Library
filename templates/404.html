@@ -464,7 +464,7 @@
         </h2>
         <div class="trending-grid">
           {% for book in trending_books %}
-          <a href="/book/{{ book.id }}" class="trending-card">
+          <a href="/book/{{ book.slug or book.id }}/{{ book.id }}" class="trending-card">
             {% if book.image_url and book.image_url != 'None' %}
             <img
               src="{{ book.image_url }}"
