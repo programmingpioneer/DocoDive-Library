@@ -11,3 +11,6 @@ instance/
 .env.*
 !.env.example
 *.backup
+.env.prod
+slug_backup_prod.json
+*.bak.*
