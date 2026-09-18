@@ -15748,7 +15748,11 @@ def book_counts(book_id):
 @app.route("/sitemap.xml")
 def sitemap():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT id, title, slug, COALESCE(resource_type, 'pdf') FROM documents WHERE approved = 1 ORDER BY id DESC")
+    cur.execute("""
+        SELECT id, title, slug, COALESCE(resource_type, 'pdf'),
+               image_url, approved_at
+        FROM documents WHERE approved = 1 ORDER BY id DESC
+    """)
     books = cur.fetchall()
     cur.close()
 
@@ -15786,7 +15790,7 @@ def sitemap():
         learning_urls.append((f"{base}/learn/mobile-apps/{module}", "weekly", "0.8"))
         
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n'
 
     # Static pages
     for loc, freq, prio in static_pages:
@@ -15807,11 +15811,30 @@ def sitemap():
     # Books (resource_type routing removed)
     for doc in books:
         _slug = doc[2] or str(doc[0])
+        _image = doc[4] if len(doc) > 4 else None
+        _approved = doc[5] if len(doc) > 5 else None
         doc_url = f"{base}/book/{_slug}/{doc[0]}"
+
+        lastmod_xml = ""
+        if _approved:
+            lastmod_xml = f"    <lastmod>{_approved.strftime('%Y-%m-%d')}</lastmod>\n"
+
+        image_xml = ""
+        if _image:
+            image_xml = (
+                f"    <image:image>\n"
+                f"      <image:loc>{escape(_image)}</image:loc>\n"
+                f"      <image:title>{escape(doc[1])}</image:title>\n"
+                f"    </image:image>\n"
+            )
+
         xml += (
             f"  <url>\n    <loc>{escape(doc_url)}</loc>\n"
+            f"{lastmod_xml}"
             f"    <changefreq>weekly</changefreq>\n"
-            f"    <priority>0.8</priority>\n  </url>\n"
+            f"    <priority>0.8</priority>\n"
+            f"{image_xml}"
+            f"  </url>\n"
         )
 
     xml += "</urlset>"
