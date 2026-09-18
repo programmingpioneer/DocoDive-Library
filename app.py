@@ -207,20 +207,20 @@ app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
 app.config["FACEBOOK_APP_SECRET"] = os.getenv("FACEBOOK_CLIENT_SECRET")
 
 # ================== DATABASE CONFIGURATION (MYSQL_* with DB_* fallback) ==================
-app.config["MYSQL_HOST"] = os.environ.get("MYSQL_HOST") or os.environ.get(
-    "DB_HOST", "localhost"
+app.config["MYSQL_HOST"] = os.environ.get("DB_HOST") or os.environ.get(
+    "MYSQL_HOST", "localhost"
 )
 app.config["MYSQL_PORT"] = int(
-    os.environ.get("MYSQL_PORT") or os.environ.get("DB_PORT", "3306")
+    os.environ.get("DB_PORT") or os.environ.get("MYSQL_PORT", "3306")
 )
-app.config["MYSQL_USER"] = os.environ.get("MYSQL_USER") or os.environ.get(
-    "DB_USER", "root"
+app.config["MYSQL_USER"] = os.environ.get("DB_USER") or os.environ.get(
+    "MYSQL_USER", "root"
 )
-app.config["MYSQL_PASSWORD"] = os.environ.get("MYSQL_PASSWORD") or os.environ.get(
-    "DB_PASSWORD", ""
+app.config["MYSQL_PASSWORD"] = os.environ.get("DB_PASSWORD") or os.environ.get(
+    "MYSQL_PASSWORD", ""
 )
-app.config["MYSQL_DB"] = os.environ.get("MYSQL_DB") or os.environ.get(
-    "DB_NAME", "docodive_dev"
+app.config["MYSQL_DB"] = os.environ.get("DB_NAME") or os.environ.get(
+    "MYSQL_DB", "docodive_dev"
 )
 
 app.config["MYSQL_SSL_CA"] = os.environ.get("MYSQL_SSL_CA") or os.path.join(
