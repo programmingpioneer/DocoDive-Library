@@ -1,16 +1,26 @@
-static/uploads/
-static/covers/
-venv/
+# Python
 __pycache__/
 *.pyc
 *.pyo
-.env
-ssl/
+venv/
 instance/
+
+# Env / secrets
 .env
 .env.*
 !.env.example
+
+# Local backups / exports
 *.backup
-.env.prod
-slug_backup_prod.json
 *.bak.*
+slug_backup_prod.json
+ssl/
+
+# Static uploads
+static/uploads/
+static/covers/
+
+# Migration local artifacts
+migrations/.backup/
+migrations/*.local.sql
+migrations/*.bak
