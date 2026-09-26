@@ -1,0 +1,34 @@
+﻿# flyctl launch added from .gitignore
+# Python
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/venv
+**/instance
+
+# Env / secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Local backups / exports
+**/*.backup
+**/*.bak.*
+**/slug_backup_prod.json
+ssl/*
+!ssl/isrgrootx1.pem
+!ssl/isrgrootx.pem
+# Static uploads
+**/static/uploads
+**/static/covers
+
+# Migration local artifacts
+**/migrations/.backup
+**/migrations/*.local.sql
+**/migrations/*.bak
+fly.toml
+
+
+.git
+.gitignore
+.gitattributes
