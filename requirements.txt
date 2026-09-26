@@ -24,7 +24,6 @@ Flask-Caching==2.4.1
 Flask-Limiter==4.1.1
 Flask-Mail==0.9.1
 Flask-Migrate==4.1.0
-Flask-MySQLdb==2.0.0
 Flask-SQLAlchemy==3.1.1
 flask-talisman==1.1.0
 fonttools==4.63.0
@@ -52,7 +51,6 @@ limits==5.8.0
 Mako==1.4.1
 MarkupSafe==3.0.3
 mysql-connector-python==9.7.0
-mysqlclient==2.2.8
 ordered-set==4.1.0
 packaging==26.2
 pillow==12.3.0
@@ -66,7 +64,6 @@ pydantic==2.13.4
 pydantic_core==2.46.4
 pydyf==0.12.1
 pymupdf==1.28.0
-PyMySQL==1.2.0
 pyparsing==3.3.2
 pypdf==6.15.0
 pyphen==0.17.2
