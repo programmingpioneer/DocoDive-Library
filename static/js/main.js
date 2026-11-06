@@ -365,17 +365,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   } catch (e) { }
 
-  // ================== QR CODE POPUP ==================
-  try {
-    var qrPopup = document.getElementById('qrPopup');
-    if (qrPopup) {
-      var qrCloseBtn = qrPopup.querySelector('button');
-      if (qrCloseBtn) {
-        qrCloseBtn.addEventListener('click', function () { qrPopup.style.display = 'none'; });
-      }
-    }
-  } catch (e) { }
-
   // ================== SERVICE WORKER ==================
   try {
     if ('serviceWorker' in navigator) {

@@ -130,10 +130,8 @@
   </a>
   <span class="title" title="{{ book_title }}">📖 {{ book_title }}</span>
   <a
-    href="{{ pdf_url }}"
+    href="/book/{{ book_id }}/download"
     class="btn btn-primary btn-sm rounded-pill px-3"
-    download
-    onclick="fetch('/api/download/{{ book_id }}',{method:'POST'});"
   >
     <i class="bi bi-download me-1"></i> Download
   </a>
@@ -149,8 +147,9 @@
 </div>
 
 <div class="reader-container">
-  <iframe src="{{ pdf_url }}" id="pdfIframe" allowfullscreen></iframe>
+  <iframe src="{{ pdf_url }}" id="pdfIframe" title="PDF reader: {{ book_title }}" allowfullscreen></iframe>
 </div>
+<p class="reader-fallback" style="max-width:1100px;margin:.75rem auto;padding:0 1rem;color:var(--ui-muted)">PDF not displaying? <a href="{{ pdf_url }}" target="_blank" rel="noopener">Open PDF in a new tab</a>.</p>
 
 <script>
   function toggleFullscreen() {
@@ -162,9 +161,5 @@
     }
   }
 
-  // Track download
-  document.querySelector("a[download]").addEventListener("click", function () {
-    fetch("/api/download/{{ book_id }}", { method: "POST" });
-  });
 </script>
 {% endblock %}

@@ -17,6 +17,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from html import escape
+from urllib.parse import quote
 import hashlib
 import hmac
 from jinja2 import TemplateNotFound
@@ -43,6 +44,7 @@ from flask import send_file
 
 import boto3
 from botocore.config import Config
+from pdf_delivery import PDFDeliveryError, open_pdf_object, resolve_r2_key, trusted_public_pdf_url
 from pypdf import PdfReader
 import mysql.connector as mysql_connector_module
 from werkzeug.utils import secure_filename
@@ -400,7 +402,8 @@ r2_client = boto3.client(
     endpoint_url=os.getenv("R2_ENDPOINT_URL"),
     aws_access_key_id=os.getenv("R2_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("R2_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3v4"),
+    config=Config(signature_version="s3v4", connect_timeout=5, read_timeout=30,
+                  retries={"max_attempts": 1, "mode": "standard"}),
     region_name="auto",
 )
 R2_BUCKET = os.getenv("R2_BUCKET_NAME", "docodive")
@@ -1551,12 +1554,9 @@ def lazy_trickle(book_id):
 
 
 def extract_r2_key(url):
-    """Extract the R2 object key from a public URL. Returns None for non-R2 URLs."""
-    if not url:
-        return None
-    if R2_PUBLIC_BASE and url.startswith(R2_PUBLIC_BASE + "/"):
-        return url.replace(R2_PUBLIC_BASE + "/", "", 1)
-    return None
+    """Resolve stored keys/known storage URLs without guessing object filenames."""
+    return resolve_r2_key(url, public_base=R2_PUBLIC_BASE, bucket=R2_BUCKET,
+                          endpoint_url=r2_client.meta.endpoint_url)
 
 
 def get_presigned_url(key, expiration=300):
@@ -4157,52 +4157,100 @@ def add_review(book_id=None, slug=None):
 
 
 # -------------------- PROTECTED DOWNLOAD & READ ONLINE --------------------
-@app.route("/book/<int:book_id>/download")
-@app.route("/book/<slug>/<int:book_id>/download")
-def download_book(book_id, slug=None):
+def _pdf_error_response(status_code=503):
+    if status_code == 416:
+        return Response(status=416, headers={"Cache-Control": "private, no-store"})
+    return render_template("user/pdf_unavailable.html", pdf_error_code=str(status_code)), status_code
+
+
+def _pdf_filename(title, book_id):
+    name = re.sub(r"[\x00-\x1f\x7f/\\]+", "_", str(title or "")).strip(" .")[:150]
+    name = name or f"book-{book_id}"
+    if not name.lower().endswith(".pdf"):
+        name += ".pdf"
+    return name, secure_filename(name) or f"book-{book_id}.pdf"
+
+
+def _serve_book_pdf(book_id, slug=None, attachment=False):
     if "user_id" not in session:
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        if not attachment or request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify({"error": "Login required"}), 401
         flash("Please login to download books.", "danger")
         return redirect(url_for("user_login"))
-
     cur = mysql.connection.cursor()
-    cur.execute(
-        "SELECT telegram_link, slug FROM documents WHERE id = %s AND approved = 1",
-        (book_id,),
-    )
-    book = cur.fetchone()
+    try:
+        cur.execute("SELECT telegram_link, title, slug FROM documents WHERE id = %s AND approved = 1", (book_id,))
+        book = cur.fetchone()
+    finally:
+        cur.close()
     if not book:
-        cur.close()
         abort(404)
-    cur.execute(
-        "UPDATE documents SET download_count = download_count + 1 WHERE id = %s",
-        (book_id,),
-    )
-    mysql.connection.commit()
-    cur.close()
-
-    r2_key = extract_r2_key(book[0]) or f"docodive/uploads/{book[1]}.pdf"
-    if not r2_key:
-        flash("Download not available.", "danger")
-        return redirect(url_for("home"))
-
-    presigned = get_presigned_url(r2_key, expiration=300)
-    if not presigned:
-        flash("Could not generate download link.", "danger")
-        return redirect(url_for("home"))
-
-    if "user_id" in session:
-        cur = mysql.connection.cursor()
-        cur.execute(
-            "INSERT INTO download_history (user_id, book_id) VALUES (%s, %s)",
-            (session["user_id"], book_id),
+    key = extract_r2_key(book[0])
+    if not key or not key.lower().endswith(".pdf") or not key.startswith("docodive/uploads/"):
+        return _pdf_error_response(404)
+    try:
+        resource = open_pdf_object(
+            r2_client, R2_BUCKET, key,
+            # Serve a full object for If-Range, rather than joining different versions.
+            range_header=None if "If-Range" in request.headers else request.headers.get("Range"),
+            head=request.method == "HEAD",
+            public_url=trusted_public_pdf_url(book[0], R2_PUBLIC_BASE, key),
         )
-        mysql.connection.commit()
-        cur.close()
+    except PDFDeliveryError as error:
+        app.logger.warning("PDF delivery unavailable for book %s (%s)", book_id, error.category)
+        response = app.make_response(_pdf_error_response(error.status_code))
+        if error.status_code == 416:
+            response.headers.update(error.headers)
+        return response
 
-    g.download_recorded = True
-    return redirect(presigned)
+    # Record full download initiations after storage accepts the request.
+    # Reader ranges, HEAD checks and failed storage access are not downloads.
+    if attachment and request.method == "GET" and not request.headers.get("Range"):
+        cur = None
+        try:
+            cur = mysql.connection.cursor()
+            cur.execute("UPDATE documents SET download_count = download_count + 1 WHERE id = %s", (book_id,))
+            cur.execute("INSERT INTO download_history (user_id, book_id) VALUES (%s, %s)", (session["user_id"], book_id))
+            mysql.connection.commit()
+            g.download_recorded = True
+        except Exception:
+            app.logger.warning("Download activity recording unavailable for book %s", book_id)
+        finally:
+            if cur is not None:
+                try:
+                    cur.close()
+                except Exception:
+                    app.logger.warning("Download activity cursor cleanup unavailable for book %s", book_id)
+
+    name, ascii_name = _pdf_filename(book[1], book_id)
+    headers = dict(resource.headers)
+    mode = "attachment" if attachment else "inline"
+    headers.update({
+        "Content-Type": "application/pdf",
+        "Content-Disposition": "{}; filename=\"{}\"; filename*=UTF-8''{}".format(mode, ascii_name, quote(name, safe="")),
+        "Cache-Control": "private, no-store",
+        "Accept-Ranges": "bytes",
+        "X-Content-Type-Options": "nosniff",
+    })
+    if request.method == "HEAD":
+        resource.close()
+        response = Response(status=resource.status_code, headers=headers)
+    else:
+        response = Response(resource.iter_chunks(), status=resource.status_code, headers=headers)
+    response.call_on_close(resource.close)
+    return response
+
+
+@app.route("/book/<int:book_id>/download")
+@app.route("/book/<slug>/<int:book_id>/download")
+def download_book(book_id, slug=None):
+    return _serve_book_pdf(book_id, slug, attachment=True)
+
+
+@app.route("/book/<int:book_id>/pdf", methods=["GET", "HEAD"])
+@app.route("/book/<slug>/<int:book_id>/pdf", methods=["GET", "HEAD"])
+def book_pdf(book_id, slug=None):
+    return _serve_book_pdf(book_id, slug)
 
 
 @app.route("/book/<int:book_id>/read")
@@ -4211,38 +4259,20 @@ def read_book(book_id, slug=None):
     if "user_id" not in session:
         flash("Please login to read books online.", "danger")
         return redirect(url_for("user_login"))
-
     cur = mysql.connection.cursor()
-    cur.execute(
-        "SELECT telegram_link, title, slug FROM documents WHERE id = %s AND approved = 1",
-        (book_id,),
-    )
-    book = cur.fetchone()
-    if not book:
+    try:
+        cur.execute("SELECT telegram_link, title, slug FROM documents WHERE id = %s AND approved = 1", (book_id,))
+        book = cur.fetchone()
+        if book and request.method == "GET":
+            cur.execute("UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book_id,))
+            mysql.connection.commit()
+    finally:
         cur.close()
+    if not book:
         abort(404)
-    cur.execute(
-        "UPDATE documents SET view_count = view_count + 1 WHERE id = %s", (book_id,)
-    )
-    mysql.connection.commit()
-    cur.close()
-
-    r2_key = extract_r2_key(book[0]) or f"docodive/uploads/{book[2]}.pdf"
-    if not r2_key:
-        flash("Read online not available.", "danger")
-        return redirect(url_for("home"))
-
-    presigned = get_presigned_url(r2_key, expiration=600)
-    if not presigned:
-        flash("Could not generate reading link.", "danger")
-        return redirect(url_for("home"))
-
     return render_template(
-        "user/read_online.html",
-        pdf_url=presigned,
-        book_title=book[1],
-        book_id=book_id,
-        book_slug=book[2],
+        "user/read_online.html", pdf_url=url_for("book_pdf", book_id=book_id),
+        book_title=book[1], book_id=book_id, book_slug=book[2],
     )
 
 

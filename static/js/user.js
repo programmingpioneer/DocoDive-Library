@@ -16,6 +16,90 @@ document.addEventListener('click',event=>{
   if(button){event.preventDefault();window.openBookModal(button.dataset.bookId,button);}
 });
 
+// One native popup, inside an open preview's focus trap when there is one.
+(() => {
+  let popup, state, revision = 0;
+  const watchedContainers = new WeakSet();
+  const make = (tag, className, text) => {
+    const element = document.createElement(tag);
+    element.className = className || '';
+    if (text != null) element.textContent = text;
+    return element;
+  };
+  const close = () => { if (popup?.dialog.open) popup.dialog.close(); };
+  window.closeBookQr = close;
+  function loadImage() {
+    const current = ++revision;
+    const image = make('img', 'book-qr-image');
+    image.alt = 'QR code to open ' + (state.title || 'this book');
+    image.width = 232; image.height = 232; image.hidden = true;
+    popup.dialog.setAttribute('aria-busy', 'true');
+    popup.status.textContent = 'Loading QR code…';
+    popup.retry.hidden = true;
+    const ownsImage = () => current === revision && popup.dialog.open;
+    image.addEventListener('load', () => {
+      if (!ownsImage()) return;
+      image.hidden = false;
+      popup.status.textContent = 'Scan with your phone camera to open this book.';
+      popup.dialog.setAttribute('aria-busy', 'false');
+    });
+    image.addEventListener('error', () => {
+      if (!ownsImage()) return;
+      popup.status.textContent = 'Unable to load the QR code. Please try again.';
+      popup.retry.hidden = false;
+      popup.dialog.setAttribute('aria-busy', 'false');
+    });
+    popup.frame.replaceChildren(image);
+    image.src = '/book/' + state.id + '/qr';
+  }
+  function createPopup() {
+    const dialog = make('dialog', 'book-qr-dialog');
+    dialog.id = 'book-qr-dialog';
+    dialog.setAttribute('aria-labelledby', 'book-qr-heading');
+    dialog.setAttribute('aria-describedby', 'book-qr-book-title book-qr-status');
+    const card = make('div', 'book-qr-card');
+    const closeButton = make('button', 'book-qr-close', '×');
+    closeButton.type = 'button'; closeButton.setAttribute('aria-label', 'Close QR code');
+    const heading = make('h2', 'book-qr-heading', 'Open on your phone'); heading.id = 'book-qr-heading';
+    const title = make('p', 'book-qr-book-title'); title.id = 'book-qr-book-title';
+    const frame = make('div', 'book-qr-frame');
+    const status = make('p', 'book-qr-status'); status.id = 'book-qr-status';
+    status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+    const retry = make('button', 'btn btn-outline-primary book-qr-retry', 'Try again'); retry.type = 'button'; retry.hidden = true;
+    closeButton.addEventListener('click', close); retry.addEventListener('click', loadImage);
+    dialog.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault(); event.stopPropagation(); close();
+    });
+    dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
+    dialog.addEventListener('click', event => { if (event.target === dialog) close(); });
+    dialog.addEventListener('close', () => {
+      if (dialog.open) return; // An earlier close event may arrive after another book opens.
+      revision += 1;
+      const opener = state?.opener; state = null;
+      if (opener?.isConnected) opener.focus({preventScroll:true});
+    });
+    card.append(closeButton, heading, title, frame, status, retry); dialog.append(card);
+    return {dialog, title, frame, status, retry, closeButton};
+  }
+  window.openBookQr = (id, options = {}) => {
+    if (!/^\d+$/.test(String(id))) return false;
+    popup ||= createPopup();
+    const container = options.container || document.body;
+    if (popup.dialog.open && popup.dialog.parentElement !== container) close();
+    if (popup.dialog.parentElement !== container) container.append(popup.dialog);
+    if (options.container && !watchedContainers.has(container)) {
+      container.addEventListener('hide.bs.modal', () => { if (popup.dialog.parentElement === container) close(); });
+      watchedContainers.add(container);
+    }
+    state = {id:String(id), title:options.title || 'This book', opener:options.opener || document.activeElement};
+    popup.title.textContent = state.title;
+    if (!popup.dialog.open) popup.dialog.showModal();
+    loadImage(); popup.closeButton.focus({preventScroll:true});
+    return true;
+  };
+})();
+
 function sharedPreviewScrollController(modal, body) {
   if (sharedPreviewScrollControllers.has(modal)) return sharedPreviewScrollControllers.get(modal);
   const controls = modal.querySelector('.shared-preview-scroll-controls');
@@ -133,8 +217,13 @@ function renderSharedBookPreview(body, book, id, requestRevision) {
   actionLink('download', 'Download', '/book/' + id + '/download', 'btn-primary');
   const read = actionLink('read', 'Read Online', '/book/' + id + '/read', 'btn-outline-primary');
   read.target = '_blank'; read.rel = 'noopener';
-  const qr = actionLink('qr', 'QR Code', '/book/' + id + '/qr', 'btn-outline-secondary');
-  qr.target = '_blank'; qr.rel = 'noopener';
+  const qr = make('button', 'btn btn-outline-secondary rounded-pill shared-preview-qr');
+  labelAction(qr,'qr','QR Code'); qr.type = 'button'; qr.ariaHasPopup = 'dialog';
+  qr.onclick = event => {
+    event.preventDefault();
+    if (gate(event)) window.openBookQr(id, {title:book.title, opener:qr, container:document.getElementById('shared-book-preview')});
+  };
+  actions.append(qr);
   const feedback = make('p', 'shared-preview-feedback'); feedback.role = 'status';
   const confirmedMutation = async (response, event, failureMessage) => {
     if (!current()) return false;
@@ -253,6 +342,7 @@ function renderSharedBookPreview(body, book, id, requestRevision) {
 }
 window.openBookModal = async function (id, opener) {
   if (!/^\d+$/.test(String(id))) return;
+  window.closeBookQr();
   if (!window.bootstrap) { location.href='/book/'+id; return; }
   let modal=document.getElementById('shared-book-preview');
   if (!modal) {

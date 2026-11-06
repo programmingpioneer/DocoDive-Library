@@ -1,6 +1,6 @@
 (() => {
 // ================== DOCODIVE SERVICE WORKER (FIXED) ==================
-const CACHE_VERSION = 'v1.0.21';
+const CACHE_VERSION = 'v1.0.22';
 const STATIC_CACHE = `docodive-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `docodive-images-${CACHE_VERSION}`;
 // DEV: Service worker temporarily disabled

@@ -51,7 +51,9 @@ async function metadataAndGuestGate(){
   assert.equal(f.all().filter(element=>element.tagName==='img').length,0,'Unsafe cover schemes must be rejected');
   for(const name of ['download','read','qr']){
     const control=f.find('shared-preview-'+name);assert.ok(control,name+' action is present');
-    assert.ok(control.href.startsWith('/book/12/'));const click=event();control.onclick(click);
+    if(name==='qr'){assert.equal(control.tagName,'button');assert.equal(control.ariaHasPopup,'dialog');}
+    else assert.ok(control.href.startsWith('/book/12/'));
+    const click=event();control.onclick(click);
     assert.equal(click.prevented,true);assert.equal(f.requests.length,1,'Guests must not invoke a protected action');
   }
   assert.equal(f.auth.length,3);assert.equal(f.find('shared-preview-review-form'),undefined);

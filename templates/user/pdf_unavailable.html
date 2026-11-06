@@ -1,0 +1,5 @@
+{% extends 'user/_error_base.html' %}
+{% set error_code = pdf_error_code|default('503') %}
+{% set error_title = 'PDF temporarily unavailable' %}
+{% set error_message = 'We could not load this book right now. Please try again in a moment, or contact support if the problem continues.' %}
+{% set error_icon = 'book' %}

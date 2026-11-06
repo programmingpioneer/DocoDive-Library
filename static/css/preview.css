@@ -82,3 +82,21 @@
   .shared-preview-actions .btn { padding-inline: .45rem; white-space: normal; }
 }
 .shared-preview-glyph{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;flex:0 0 17px;vertical-align:middle}.shared-preview-glyph svg{display:block;width:100%;height:100%}.shared-preview-monogram .shared-preview-glyph{width:32px;height:32px;flex-basis:32px}.shared-preview-favorite[aria-pressed=true] .shared-preview-glyph svg{fill:currentColor}
+
+.book-qr-dialog { width: min(calc(100% - 2rem),24rem); max-height: calc(100dvh - 2rem); margin: auto; padding: 0; border: 1px solid var(--ui-line); border-radius: 1.3rem; color: var(--ui-text); background: var(--ui-surface); box-shadow: var(--ui-shadow); overflow: auto; overscroll-behavior: contain; }
+.book-qr-dialog[open] { animation: book-qr-enter .23s ease-out; }
+.book-qr-dialog::backdrop { background: var(--ui-dialog-backdrop); animation: book-qr-backdrop .18s ease-out; }
+.book-qr-card { position: relative; padding: 2rem 1.5rem 1.5rem; text-align: center; }
+.book-qr-close { position: absolute; top: .3rem; right: .3rem; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 0; border-radius: 50%; background: transparent; color: var(--ui-muted); font: inherit; font-size: 1.75rem; line-height: 1; }
+.book-qr-close:hover { background: var(--ui-surface-alt); color: var(--ui-text); }
+.book-qr-heading { margin: .5rem 0; color: var(--ui-text); font-size: 1.3rem; font-weight: 750; }
+.book-qr-book-title { margin: 0 0 1rem; color: var(--ui-muted); font-size: .9rem; overflow-wrap: anywhere; }
+.book-qr-frame { display: grid; place-items: center; width: min(100%,15.5rem); aspect-ratio: 1; padding: .5rem; margin: auto; background: var(--ui-qr-paper); border: 1px solid var(--ui-qr-paper-line); border-radius: .75rem; }
+.book-qr-image { display: block; width: 100%; height: auto; object-fit: contain; }
+.book-qr-image[hidden],.book-qr-retry[hidden] { display: none !important; }
+.book-qr-status { color: var(--ui-muted); min-height: 3em; margin: 1rem 0 0; font-size: .85rem; line-height: 1.6; }
+.book-qr-retry { margin-top: .75rem; min-height: 2.75rem; }
+.book-qr-dialog :is(button,a):focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 2px; }
+@keyframes book-qr-enter { from { opacity: 0; transform: translateY(.75rem) scale(.95); } to { opacity: 1; transform: none; } }
+@keyframes book-qr-backdrop { from { opacity: 0; } to { opacity: 1; } }
+@media(prefers-reduced-motion:reduce) { .book-qr-dialog[open],.book-qr-dialog::backdrop { animation: none; } }

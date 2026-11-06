@@ -2,7 +2,8 @@
 import sys
 from pathlib import Path
 from datetime import datetime
-from flask import render_template, render_template_string, session, redirect, abort, request, jsonify, flash
+from io import BytesIO
+from flask import render_template, render_template_string, session, redirect, abort, request, jsonify, flash, send_file, url_for
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ui_preview import app, values
@@ -35,7 +36,7 @@ PAGES = {
     'guidelines':'community_guidelines','accessibility':'accessibility',
     '404':'404','400':'400','401':'401','403':'403','429':'429','500':'500',
     '503':'503','connection':'connection_error',
-    'learning':'learning_hub','reader':'read_online',
+    'learning':'learning_hub','reader':'read_online','pdf-error':'pdf_unavailable',
     'recovery-sent':'password_recovery_sent','deletion-requested':'deletion_requested',
 }
 
@@ -74,7 +75,7 @@ def page(name):
         context.update(downloads=12,favorites=2,reviews=3,
                        unlocked_badges=[dict(key=b['key'],name=b['name'],icon='preview-'+b['key'],threshold=b['threshold']) for b in context['achievements']['items'] if b['unlocked']])
     if name == 'reader':
-        context.update(book_title=sample_book['title'],book_id=4,pdf_url='about:blank')
+        context.update(book_title=sample_book['title'],book_id=4,pdf_url=url_for('book_pdf',book_id=4))
     if name == 'leaderboard':
         context.update(leaderboard=rank_leaders([
             dict(user_id=i,username='sample_reader_'+str(i),name=n,avatar_url=None,points=points,
@@ -210,6 +211,33 @@ app.view_functions['api_book_detail']=lambda book_id:jsonify(dict(
     id=book_id,language='English',is_logged_in=bool(session.get('user_id')),is_favorite=False,
     reviews=[dict(username='sample_reader',rating=5,comment='A synthetic review for preview layout verification.')],
     description='A sample book preview. This fixture does not update views, downloads or any real record.'))
+
+def fixture_pdf(book_id, slug=None, attachment=False):
+    import fitz
+    with fitz.open() as document:
+        page=document.new_page()
+        page.insert_text((60,80),'DocoDive synthetic PDF fixture',fontsize=18)
+        page.insert_text((60,120),'Local sample only. No storage or database was contacted.')
+        payload=document.tobytes()
+    return send_file(BytesIO(payload),mimetype='application/pdf',as_attachment=attachment,
+                     download_name='synthetic-book.pdf',conditional=True)
+app.view_functions['book_pdf']=fixture_pdf
+app.view_functions['download_book']=lambda book_id,slug=None:fixture_pdf(book_id,slug,attachment=True)
+
+def fixture_book_qr(book_id, slug=None):
+    import qrcode
+    image=qrcode.make('https://example.test/book/fixture/'+str(book_id))
+    payload=BytesIO();image.save(payload,format='PNG');payload.seek(0)
+    return send_file(payload,mimetype='image/png')
+app.view_functions['book_qr']=fixture_book_qr
+
+# The isolated route builder keeps only the first decorator for each view.
+# Include the numeric aliases used by the real reader and shared preview.
+for rule, endpoint in (('/book/<int:book_id>/pdf','book_pdf'),
+                       ('/book/<int:book_id>/download','download_book'),
+                       ('/book/<int:book_id>/qr','book_qr')):
+    if not any(str(existing)==rule for existing in app.url_map.iter_rules()):
+        app.add_url_rule(rule,endpoint=endpoint,view_func=app.view_functions[endpoint])
 
 # The practice endpoints are pure content filters. Run their real isolated bodies
 # against the supplied lesson bank; never import the configured application.

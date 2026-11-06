@@ -1,5 +1,8 @@
 /* Semantic colour roles. Components consume roles instead of defining palettes. */
 :root {
+  --ui-dialog-backdrop: #1118278c;
+  --ui-qr-paper: #ffffff;
+  --ui-qr-paper-line: #d7dee8;
   --ui-bg: #f8fafc;
   --ui-surface: #ffffff;
   --ui-surface-alt: #f1f5f9;
