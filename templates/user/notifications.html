@@ -1,0 +1,35 @@
+{% extends 'user/base.html' %}
+{% from 'user/_icons.html' import icon %}
+{% block title %}Notifications | DocoDive{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static',filename='css/notifications.css',v='20261105-final-2') }}">{% endblock %}
+{% block content %}
+{% set unread = notifications|rejectattr('is_read')|list|length %}
+<section class="inbox-page container" data-notification-inbox>
+  <header class="inbox-heading">
+    <span class="inbox-heading-icon">{{ icon('bell') }}</span>
+    <div><p class="inbox-kicker">YOUR UPDATES</p><h1>Notifications</h1><p>Book updates and conversations, all together.</p></div>
+    <a class="inbox-preferences" href="/user/preferences">{{ icon('sliders') }}<span>Preferences</span></a>
+  </header>
+  <div class="inbox-panel">
+    <div class="inbox-toolbar"><div class="inbox-totals"><strong><span data-inbox-unread>{{ unread }}</span> unread</strong><span><span data-inbox-total>{{ notifications|length }}</span> in your inbox</span></div><button class="inbox-mark-all" type="button" data-notification-action="read-all"{% if not unread %} disabled{% endif %}>{{ icon('check') }} Mark all read</button></div>
+    <nav class="inbox-filters" aria-label="Filter notifications"><button type="button" data-notification-filter="all" aria-pressed="true">All</button><button type="button" data-notification-filter="unread" aria-pressed="false">Unread</button><button type="button" data-notification-filter="library" aria-pressed="false">{{ icon('book') }} Library</button><button type="button" data-notification-filter="community" aria-pressed="false">{{ icon('message') }} Community</button></nav>
+    <p class="inbox-status" role="status" aria-live="polite" data-inbox-status hidden></p>
+    <div class="inbox-list">
+      {% for n in notifications %}
+      <article class="inbox-row{% if not n.is_read %} is-unread{% endif %}" data-notification-row data-id="{{ n.id }}" data-category="{{ 'library' if n.type in ('approval','rejection') else 'community' if n.type in ('general_comment','reply') else 'account' }}">
+        <div class="inbox-visual inbox-visual-{{ n.type }}">{% if n.type == 'approval' %}{{ icon('check-circle') }}{% elif n.type == 'rejection' %}{{ icon('info') }}{% elif n.type == 'reply' %}{{ icon('reply') }}{% elif n.type == 'general_comment' %}{{ icon('message') }}{% else %}{{ icon('bell') }}{% endif %}</div>
+        <div class="inbox-content">
+          <div class="inbox-meta"><span class="inbox-sender">{{ n.actor_name or 'DocoDive' }}</span><time{% if n.created_at %} datetime="{{ n.created_at.isoformat() }}"{% endif %}>{{ n.created_at.strftime('%d %b, %H:%M') if n.created_at else '' }}</time><span class="inbox-unread-label" data-unread-label{% if n.is_read %} hidden{% endif %}>New</span></div>
+          <h2>{% if n.type == 'approval' %}Your book is ready for readers{% elif n.type == 'rejection' %}An update about your submission{% elif n.type == 'reply' %}A reply to your comment{% elif n.type == 'general_comment' %}A new comment on your book{% else %}An update for you{% endif %}</h2>
+          {% if n.message %}<p>{{ n.message|striptags }}</p>{% endif %}
+          {% if n.link and n.link.startswith('/') and not n.link.startswith('//') and '\\' not in n.link %}<a class="inbox-details" href="{{ n.link }}">View details {{ icon('arrow-right') }}</a>{% endif %}
+        </div>
+        <div class="inbox-actions"><button type="button" class="inbox-read" data-read-button data-notification-action="read"{% if n.is_read %} hidden{% endif %}>{{ icon('check') }}<span>Mark read</span></button><button type="button" class="inbox-delete" data-notification-action="delete" aria-label="Delete notification: {{ n.actor_name or 'DocoDive' }}" title="Delete notification">{{ icon('trash') }}</button></div>
+      </article>
+      {% endfor %}
+    </div>
+    <div class="inbox-empty" data-inbox-empty{% if notifications %} hidden{% endif %}><span>{{ icon('bell') }}</span><h2>No notifications here</h2><p>New book updates and conversations will appear in your inbox.</p><a href="/books">Explore the library {{ icon('arrow-right') }}</a></div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='js/notifications.js',v='20261105-reader-1') }}" defer></script>{% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'user/base.html' %}
+{% from 'user/_icons.html' import icon %}
+{% from 'shared/_skeleton.html' import list_skeleton %}
+{% block title %}Upload a Book | DocoDive{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static',filename='css/upload.css',v='20261105-final-2') }}">{% endblock %}
+{% block content %}
+<div class="container upload-page" id="readerUploadPage">
+  <a class="upload-back" href="/books">{{ icon('arrow-left') }} Back to the library</a>
+  <header class="upload-heading"><div class="upload-heading-icon">{{ icon('upload') }}</div><div><p class="upload-kicker">SHARE SOMETHING WORTH READING</p><h1>Upload a Book</h1><p>Help another learner find their next great read.</p></div><a class="upload-button upload-button-light" href="#your-uploads">{{ icon('clock') }} Your uploads</a></header>
+  {% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<p class="upload-flash" role="alert">{{ message }}</p>{% endfor %}{% endwith %}
+  <div class="upload-workspace">
+    <form id="uploadForm" action="/user/upload" method="post" enctype="multipart/form-data" data-ajax>
+      <input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}">
+      <section class="upload-form-section" aria-labelledby="uploadFileTitle">
+        <div class="upload-section-heading"><span>01</span><div><h2 id="uploadFileTitle">Start with your PDF</h2><p>A book, tutorial or research paper you have permission to share.</p></div></div>
+        <div class="upload-dropzone" id="uploadDropzone">
+          <span class="upload-drop-icon">{{ icon('file') }}<small>PDF</small></span>
+          <label for="pdf_file">Choose a PDF to share</label>
+          <p class="upload-drop-instruction">Drop it here, or choose a file from your device.</p>
+          <input class="upload-native-file" type="file" name="pdf_file" id="pdf_file" accept=".pdf,application/pdf" required aria-describedby="pdfHelp">
+          <button class="upload-button" type="button" id="choosePdfBtn" hidden>{{ icon('plus') }} <span id="choosePdfLabel">Choose PDF</span></button>
+          <p class="upload-format" id="pdfHelp">PDF only · 500 MB total upload limit</p>
+        </div>
+        <div class="upload-file-selection" id="pdfSelection" hidden><span class="upload-selection-icon">{{ icon('file') }}</span><div><strong id="pdfName"></strong><span id="pdfSize"></span></div><button class="upload-icon-button" type="button" id="clearPdfBtn" aria-label="Remove selected PDF" title="Remove selected PDF">{{ icon('close') }}</button></div>
+        <p class="upload-help upload-metadata-note">{{ icon('info') }} The title and author are read from your PDF when available.</p>
+      </section>
+
+      <section class="upload-form-section upload-options" aria-labelledby="uploadOptionsTitle">
+        <div class="upload-section-heading"><span>02</span><div><h2 id="uploadOptionsTitle">Make it easy to discover</h2><p>Choose a category and add a cover, if you have one.</p></div></div>
+        <label class="upload-field-label" for="categorySelect">{{ icon('grid') }} Category <span>Optional</span></label>
+        <select class="form-select" id="categorySelect" name="category" aria-describedby="categoryHelp"><option value="">Auto-detect from PDF</option>{% for cat in categories %}<option value="{{ cat }}">{{ cat }}</option>{% endfor %}</select>
+        <p class="upload-help" id="categoryHelp">Leave this on auto-detect, or choose the best match.</p>
+        <div class="upload-cover-field"><label class="upload-field-label" for="cover_image">{{ icon('image') }} Cover image <span>Optional</span></label>
+          <div class="upload-cover-pick"><span class="upload-cover-symbol">{{ icon('image') }}</span><div><strong>Add your own cover</strong><p>JPG, PNG, GIF or WebP · Up to 10 MB</p><button class="upload-button upload-button-small upload-button-light" type="button" id="chooseCoverBtn" hidden>{{ icon('plus') }} Choose image</button></div></div>
+          <input class="upload-native-file" type="file" id="cover_image" name="cover_image" accept=".jpg,.jpeg,.png,.gif,.webp" aria-describedby="coverHelp">
+          <div class="upload-cover-preview" id="coverPreview" hidden><img id="coverThumb" alt="Selected book cover preview" width="66" height="88"><div><strong id="coverName"></strong><span id="coverSize"></span><button type="button" class="upload-text-button" id="removeCoverBtn">{{ icon('trash') }} Remove cover</button></div></div>
+          <p class="upload-help" id="coverHelp">No cover? We'll create one from the first page of your PDF.</p>
+        </div>
+      </section>
+
+      <div id="progressCard" class="upload-progress-card" hidden>
+        <div class="upload-progress-heading"><span>{{ icon('upload') }}</span><div><strong id="progressStatus" aria-live="polite">Sending your files</strong><p>Keep this page open until your submission is confirmed.</p></div><span id="progressPercent" aria-hidden="true">0%</span></div>
+        <div id="uploadProgress" class="upload-progress-track" role="progressbar" aria-label="File transfer progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progressBar"></span></div>
+        <div class="upload-transfer-stats"><span>Size <strong id="statSize">—</strong></span><span>Speed <strong id="statSpeed">—</strong></span><span>Remaining <strong id="statETA">—</strong></span></div>
+      </div>
+      <p id="statusMessage" class="upload-form-status" role="alert" tabindex="-1" hidden></p>
+      <div class="upload-submit-row"><p>{{ icon('lock') }} Hidden from the library until an admin approves it.</p><button type="submit" class="upload-button upload-submit" id="uploadBtn">{{ icon('upload') }} <span id="uploadBtnLabel">Upload for Review</span></button></div>
+      <p class="upload-total-limit">Keep the PDF and optional cover below 500 MB combined.</p>
+      <noscript><p class="upload-help">Choose your files above and submit this form normally. Live progress, cover preview and upload history need JavaScript.</p></noscript>
+    </form>
+
+    <aside class="upload-sidebar" aria-label="Submission guide">
+      <section class="upload-summary" id="uploadSummary" data-upload-summary hidden><div class="upload-summary-heading"><span>{{ icon('book') }}</span><div><p class="upload-kicker">READY TO SHARE</p><h2>Your submission</h2></div></div><dl><div><dt>{{ icon('file') }} PDF</dt><dd id="uploadSummaryFile">No PDF selected</dd></div><div><dt>{{ icon('grid') }} Category</dt><dd id="uploadSummaryCategory">Auto-detect from PDF</dd></div><div><dt>{{ icon('image') }} Cover</dt><dd id="uploadSummaryCover">Create from first page</dd></div></dl><p class="upload-summary-note">{{ icon('check-circle') }} Every submission is reviewed before it goes public.</p></section>
+      <details class="upload-review-guide"><summary>What happens next? <span>{{ icon('arrow-right') }}</span></summary><ol><li><span>1</span><div><strong>Submit your PDF</strong><p>We'll read its details and prepare the cover.</p></div></li><li><span>2</span><div><strong>An admin reviews it</strong><p>Your submission stays hidden during review.</p></div></li><li><span>3</span><div><strong>Follow the decision</strong><p>Check Your Uploads below. You'll also receive a decision email.</p></div></li></ol></details>
+      <section class="upload-rights-note"><span>{{ icon('shield') }}</span><h2>Respect for authors</h2><p>Share only work you own or have permission to distribute.</p><a href="/community-guidelines">Community guidelines {{ icon('arrow-right') }}</a><a href="/contact">Report a rights concern</a></section>
+    </aside>
+  </div>
+
+  <section class="upload-history" id="your-uploads" aria-labelledby="yourUploadsTitle"><header><div><p class="upload-kicker">YOUR CONTRIBUTIONS</p><h2 id="yourUploadsTitle">Your Uploads <span id="uploadsCount" aria-live="polite"></span></h2><p>Refresh to see the latest review status.</p></div><button class="upload-button upload-button-light" type="button" id="refreshUploadsBtn" data-refresh-uploads>{{ icon('refresh') }} Refresh</button></header><div class="upload-status-key"><span class="upload-status-pending">{{ icon('clock') }} Pending review</span><span class="upload-status-approved">{{ icon('check-circle') }} Approved</span><span class="upload-status-rejected">{{ icon('info') }} Rejected</span></div><p id="uploadsListStatus" class="upload-list-status" role="status" hidden></p><div id="pending-uploads-list" class="upload-history-list" aria-live="polite">{{ list_skeleton(3) }}<span class="experience-sr-only">Loading your uploads…</span></div><noscript><p class="upload-help">Enable JavaScript to view your submission history here.</p></noscript></section>
+  <template id="uploadRowIcon">{{ icon('file') }}</template><template id="uploadEmptyIcon">{{ icon('upload') }}</template>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='js/upload.js',v='20261101-1') }}" defer></script>{% endblock %}

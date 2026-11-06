@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+{% include 'shared/_experience_init.html' %}<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="csrf-token" content="{{ session.get('_csrf_token','') }}">
+<title>{% block title %}Admin Studio · DocoDive{% endblock %}</title>
+<link rel="icon" href="{{ url_for('static',filename='images/favicon.png') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+{% block extra_css %}{% endblock %}
+<link rel="stylesheet" href="{{ url_for('static',filename='css/admin.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='css/toast.css') }}">
+<script src="{{ url_for('static',filename='js/csrf.js') }}"></script>
+{% include 'shared/_experience_assets.html' %}
+</head>
+<body class="studio-app" data-studio-page="{{ request.endpoint }}">
+{% include 'shared/_page_skeleton.html' %}
+{% set nav_groups=[('Workspace',[('admin.admin_dashboard','Overview','grid'),('admin.list_users','Users','people'),('admin.pending_deletions','Pending deletions','person-dash'),('admin.tracking','User tracking','activity')]),('Library',[('admin.admin_books_list','Books','book'),('admin.admin','Upload book','cloud-upload'),('admin.pending_books','Approvals','inbox'),('admin.learning_manage','Learning Hub','mortarboard'),('admin.leaderboard_manage','Leaderboard','trophy')]),('Community & insights',[('admin.moderation_panel','Reviews & comments','chat-square-text'),('admin.suggestions_manage','Suggestions','lightbulb'),('admin.admin_analytics','Analytics','bar-chart'),('admin.settings','Site content & settings','sliders')])] %}
+{% set page_title=namespace(value='Workspace') %}
+{% for group,items in nav_groups %}{% for endpoint,label,icon in items %}{% if request.endpoint==endpoint %}{% set page_title.value=label %}{% endif %}{% endfor %}{% endfor %}
+{% if request.endpoint=='admin.admin_official_profile' %}{% set page_title.value='Official account' %}{% endif %}
+<a class="studio-skip" href="#studio-main">Skip to content</a>
+<button class="studio-menu-scrim" type="button" aria-label="Close navigation" tabindex="-1"></button>
+<aside class="studio-sidebar" id="studio-sidebar" aria-label="Studio navigation">
+  <a class="studio-brand" href="{{ url_for('admin.admin_dashboard') }}"><span class="studio-brand-mark" aria-hidden="true">D<span>.</span></span><span>DocoDive <small>STUDIO</small></span></a>
+  <nav>{% for group,items in nav_groups %}<div class="studio-nav-group"><span class="studio-nav-label">{{ group }}</span>{% for endpoint,label,icon in items %}<a href="{{ url_for(endpoint) }}" {% if request.endpoint==endpoint %}aria-current="page"{% endif %}><i class="bi bi-{{ icon }}" aria-hidden="true"></i><span>{{ label }}</span>{% if request.endpoint==endpoint %}<span class="studio-nav-dot" aria-hidden="true"></span>{% endif %}</a>{% endfor %}</div>{% endfor %}
+  {% if studio_user and studio_user.owner %}<a href="{{ url_for('admin.admin_official_profile') }}" {% if request.endpoint=='admin.admin_official_profile' %}aria-current="page"{% endif %}><i class="bi bi-person-badge" aria-hidden="true"></i><span>Official account</span></a>{% endif %}</nav>
+  <div class="studio-sidebar-footer"><a class="studio-public" href="{{ url_for('home') }}"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>Open public website</a><div class="studio-user-chip"><span class="studio-avatar">{{ (studio_user.username if studio_user else 'A')[:1]|upper }}</span><div><strong>{{ studio_user.username if studio_user else 'Administrator' }}</strong><small>{{ 'Studio owner' if studio_user and studio_user.owner else 'Administrator' }}</small></div></div></div>
+</aside>
+<div class="studio-shell">
+  <header class="studio-topbar">
+    <div class="studio-breadcrumb"><button type="button" id="studio-menu" aria-controls="studio-sidebar" aria-expanded="false" aria-label="Toggle navigation"><i class="bi bi-list" aria-hidden="true"></i></button><span>Studio</span><i class="bi bi-chevron-right" aria-hidden="true"></i><strong>{{ page_title.value }}</strong></div>
+    <form class="studio-global-search" role="search" action="{{ url_for('admin.admin_books_list') }}"><i class="bi bi-search" aria-hidden="true"></i><label for="studio-catalog-search" class="visually-hidden">Search books</label><input id="studio-catalog-search" name="q" type="search" placeholder="Search books in your catalogue" maxlength="100"><button type="submit" aria-label="Search books"><i class="bi bi-arrow-return-left" aria-hidden="true"></i></button></form>
+    <div class="studio-account">{% include 'shared/_theme_toggle.html' %}<span class="studio-workspace-badge"><span aria-hidden="true"></span>Admin workspace</span><form action="{{ url_for('admin.logout') }}" method="post"><input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}"><button class="studio-signout" type="submit" aria-label="Sign out"><i class="bi bi-box-arrow-right" aria-hidden="true"></i><span>Sign out</span></button></form></div>
+  </header>
+  <main id="studio-main" class="studio-main" tabindex="-1">
+  {% if config.get('UI_PREVIEW') %}<div class="studio-preview-notice">DESIGN PREVIEW · Synthetic data · No database connected</div>{% endif %}
+  {% for category,message in get_flashed_messages(with_categories=true) %}<div role="status" class="alert alert-{{ category if category in ['success','warning','danger','info'] else 'info' }}">{{ message }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+  <footer class="studio-page-footer"><span>DocoDive Studio</span><span>A considered space for your library.</span></footer>
+  </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static',filename='js/toast.js') }}"></script>
+<script src="{{ url_for('static',filename='js/admin.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static',filename='js/insights.js',v='20261105-final-2') }}"></script>
+{% block scripts %}{% endblock %}
+</body></html>

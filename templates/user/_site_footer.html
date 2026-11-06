@@ -1,0 +1,22 @@
+{% from 'user/_icons.html' import icon %}
+<footer class="site-footer company-footer mt-auto">
+  <div class="container">
+    <div class="company-footer-intro"><div><span class="company-footer-eyebrow">A LITTLE MORE TO DISCOVER</span><h2>Keep learning. Keep exploring.</h2></div><a class="company-footer-browse" href="/books">Explore the library {{ icon('arrow-right') }}</a></div>
+    <div class="company-footer-grid">
+      <section class="company-footer-about">
+        <a class="company-footer-brand" href="/"><span>{{ icon('book') }}</span>DocoDive</a>
+        <p>A community library of books and learning resources. Find your next read and learn at your own pace.</p>
+        <span class="company-footer-social-label">CONNECT WITH US</span>
+        <div class="company-footer-social"><a href="https://github.com/programmingpioneer" target="_blank" rel="noopener noreferrer">{{ icon('github') }} GitHub</a><a href="https://www.linkedin.com/in/sufyan-khans/" target="_blank" rel="noopener noreferrer">{{ icon('linkedin') }} LinkedIn</a><a href="https://x.com/programerPioner" target="_blank" rel="noopener noreferrer">{{ icon('x') }} X</a></div>
+      </section>
+      <nav aria-label="Explore DocoDive"><h2>Explore</h2><a href="/books">All books</a><a href="/learn/python">Learning Hubs</a><a href="/leaderboard">Leaderboard</a><a href="/reviews">Reader reviews</a><a href="/#about">About DocoDive</a></nav>
+      <nav aria-label="Help and account"><h2>Help &amp; account</h2><a href="/contact">Contact</a><a href="/feedback">Feedback</a><a href="/community-guidelines">Community guidelines</a><a href="/accessibility">Accessibility</a><a href="/user/settings">Account settings</a><a href="/forgot-password">Reset password</a></nav>
+      <nav aria-label="Legal and privacy"><h2>Legal &amp; privacy</h2><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a><a href="/cookies">Cookie Policy</a><button type="button" data-cookie-settings>Cookie preferences</button><a href="/data-deletion">Account &amp; data deletion</a></nav>
+    </div>
+    <section class="company-footer-updates" aria-labelledby="footerUpdatesTitle">
+      <div class="company-footer-updates-copy"><span class="company-footer-mail">{{ icon('mail') }}</span><div><h2 id="footerUpdatesTitle">A new read, in your inbox.</h2><p>Choose to receive new book emails. Unsubscribe from an email or change your <a href="/user/preferences">notification preferences</a> at any time.</p></div></div>
+      <form action="/newsletter/subscribe" method="post"><input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}"><label class="visually-hidden" for="footer-email">Email address for library updates</label><input class="form-control" id="footer-email" type="email" name="email" maxlength="254" placeholder="Your email address" autocomplete="email" required><button type="submit">Subscribe {{ icon('arrow-right') }}</button></form>
+    </section>
+    <div class="company-footer-bottom"><p>© 2026 DocoDive. All rights reserved.</p><p>Book rights remain with their respective authors and publishers. <a href="/contact">Report a rights concern</a></p></div>
+  </div>
+</footer>

@@ -1,0 +1,5 @@
+{% extends 'admin/admin_base.html' %}
+{% block content %}
+<div class="studio-section-heading studio-overview-heading"><div><span class="studio-eyebrow">YOUR LIBRARY, CONNECTED</span><h1>Overview<span class="studio-heading-dot">.</span></h1><p class="text-muted">A little perspective on your books, readers and community.</p></div><a class="btn btn-primary" href="{{ url_for('admin.admin') }}"><i class="bi bi-plus-lg" aria-hidden="true"></i>Upload a book</a></div>
+{% set insights_kind='all' %}{% set insights_overview=true %}{% include 'admin/_insights.html' %}
+{% endblock %}

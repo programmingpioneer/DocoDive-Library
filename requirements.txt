@@ -96,3 +96,5 @@ websockets==16.1
 Werkzeug==3.1.8
 wrapt==2.2.2
 zopfli==0.4.3
+
+argon2-cffi==25.1.0

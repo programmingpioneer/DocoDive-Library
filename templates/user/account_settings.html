@@ -1,0 +1,32 @@
+{% extends 'user/base.html' %}
+{% from 'user/_icons.html' import icon %}
+{% block title %}Account settings | DocoDive{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static',filename='css/settings.css',v='20261031-3') }}">{% endblock %}
+{% block content %}
+<section class="settings-page container">
+  <header class="settings-heading"><span class="settings-heading-icon">{{ icon('settings') }}</span><div><p class="settings-kicker">YOUR ACCOUNT</p><h1>Account settings</h1><p>Security, preferences and privacy in one place.</p></div></header>
+  <div class="settings-layout">
+    <nav class="settings-nav" aria-label="Settings sections">
+      <a href="#account">{{ icon('user') }}<span>Account</span></a><a href="#password">{{ icon('shield') }}<span>Password & security</span></a><a href="#preferences">{{ icon('sliders') }}<span>Preferences</span></a><a href="#delete-account">{{ icon('trash') }}<span>Delete account</span></a>
+    </nav>
+    <div class="settings-sections">
+      {% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<p role="status" class="settings-note">{{ message }}</p>{% endfor %}{% endwith %}
+      {% if error %}<p class="alert alert-danger" role="alert">{{ error }}</p>{% endif %}
+      <section class="settings-card" id="account"><h2>{{ icon('user') }} Account details</h2><dl class="settings-details"><div><dt>Username</dt><dd>{{ username }}</dd></div><div><dt>Email address</dt><dd>{{ email }}</dd></div></dl><a class="settings-inline-link" href="/user/profile/edit">{{ icon('edit') }} Edit profile {{ icon('arrow-right') }}</a></section>
+      <section class="settings-card" id="password"><h2>{{ icon('shield') }} Password & security</h2><p>Choose a unique password. Updating it signs out all reader and Studio sessions.</p>
+        <form method="post" action="{{ url_for('account_settings') }}" class="settings-password-form">
+          <input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}">
+          <div><label class="form-label" for="settings-current">Current password</label><input class="form-control" id="settings-current" name="current_password" type="password" autocomplete="current-password" maxlength="1024" required></div>
+          <div><label class="form-label" for="settings-password">New password</label><input class="form-control" id="settings-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" aria-describedby="password-help" required></div>
+          <div><label class="form-label" for="settings-confirm">Confirm new password</label><input class="form-control" id="settings-confirm" name="confirm_password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></div>
+          <p id="password-help" class="settings-help">8–128 characters. A longer passphrase is easier to remember.</p>
+          <button class="btn btn-primary" type="submit">{{ icon('lock') }} Change password</button>
+        </form>
+        <div class="settings-divider"><h3>{{ icon('mail') }} Need to reset your password?</h3><p>Use email recovery if you forgot your password or signed in with a social account.</p><a class="btn btn-outline-dark" href="/forgot-password">{{ icon('mail') }} Reset password by email</a></div>
+      </section>
+      <section class="settings-card" id="preferences"><h2>{{ icon('sliders') }} Preferences</h2><div class="settings-shortcuts"><a href="/user/preferences">{{ icon('bell') }}<span>Notification preferences<small>Book alerts and email frequency</small></span>{{ icon('arrow-right') }}</a><button type="button" data-cookie-settings>{{ icon('settings') }}<span>Cookie preferences<small>Optional analytics and support</small></span>{{ icon('arrow-right') }}</button><a href="/privacy">{{ icon('shield') }}<span>Privacy Policy<small>How your information is handled</small></span>{{ icon('arrow-right') }}</a></div></section>
+      <section class="settings-card settings-danger" id="delete-account"><h2>{{ icon('trash') }} Delete account</h2><p>Verify your email to request deletion. Your sessions are signed out and the request goes to an administrator.</p><p>You can restore your account within <strong>15 days of your request</strong>. Permanent deletion requires approval and an elapsed grace period. Unapproved requests remain pending.</p><details class="settings-deletion-details"><summary>What happens to my data?</summary><p>Public books stay in the library without your account association. Recently Deleted name/email records are removed 30 days after deletion. <a href="/data-deletion">Read the complete deletion guide</a>.</p></details>{% include 'user/_deletion_controls.html' %}</section>
+    </div>
+  </div>
+</section>
+{% endblock %}

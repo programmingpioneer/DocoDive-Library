@@ -1,0 +1,15 @@
+/* Home, related resources and recovery recommendations use the same slots. */
+.shelf-card{overflow:hidden;border:1px solid #e6e7ef!important;background:#fff;transition:border-color .18s,box-shadow .18s}
+.shelf-card:hover{border-color:#ccc7e5!important;box-shadow:0 10px 26px #2823410d!important}
+.shelf-card>.book-cover-outer{background:#fafbfe;text-decoration:none;border-bottom:1px solid #f1f2f7}
+.shelf-cover-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:18px;background:linear-gradient(135deg,#e6e4f4,#f1f0f9);color:#7b70a4}
+.shelf-cover-fallback>span{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border:1px solid #cbc4e2;border-radius:12px;background:#ffffff99}
+.shelf-cover-fallback strong{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;text-align:center;font-size:12px;font-weight:550;line-height:1.5}
+.shelf-card .book-title>a{color:#292344;text-decoration:none}.shelf-card .book-title>a:hover{color:#6552aa}
+.shelf-card .book-rating{display:flex;align-items:center;gap:4px}.shelf-card .book-rating .site-icon{width:13px!important;height:13px!important;color:#bd9a48}
+.shelf-card .book-meta .badge{max-width:calc(100% - 36px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shelf-card .book-counts>span{display:inline-flex;align-items:center;gap:4px}
+.shelf-card .book-history-date{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shelf-card .book-history-date .site-icon{width:12px!important;height:12px!important}
+@media(prefers-reduced-motion:reduce){.shelf-card{transition:none}}
+
+.shelf-cover-fallback{background:linear-gradient(140deg,#eae3fc,#e5f3ef);color:#6c53a1}.shelf-cover-fallback>span{background:#ffffffc9;border-color:#d5c9ec;color:#7a58aa}.shelf-card .book-rating .site-icon{color:#be8a21}

@@ -1,0 +1,86 @@
+{% extends 'user/legal_base.html' %}
+{% block meta_description %}Request DocoDive account deletion, understand the 15-day restoration period and administrator approval, and learn what happens to your data and public uploads.{% endblock %}
+{% block legal_title %}Data and account deletion{% endblock %}
+{% block legal_intro %}You can request deletion of your DocoDive account after verifying your email. This guide explains the steps, the restoration deadline and the records that need separate consideration.{% endblock %}
+{% block legal_toc %}
+<li><a href="#before-requesting">1. Before you request deletion</a></li>
+<li><a href="#request">2. Submit a request</a></li>
+<li><a href="#timeline">3. Timing and restoration</a></li>
+<li><a href="#removed">4. Records removed</a></li>
+<li><a href="#remaining">5. Records that may remain</a></li>
+<li><a href="#social-sign-in">6. Social sign-in accounts</a></li>
+<li><a href="#help">7. If you need help</a></li>
+{% endblock %}
+{% block legal_content %}
+<div class="legal-note">
+  <p class="legal-note-title">A request begins a process</p>
+  <p>Deletion needs administrator approval and a 15-day grace period from the time you submit the verified request. You can cancel it by signing in <strong>strictly before your deadline</strong>. An unapproved request remains pending after the deadline; it is not automatically completed on day 15.</p>
+</div>
+<section id="before-requesting">
+  <h2>1. Before you request deletion</h2>
+  <p>Check whether updating your profile, changing your password or stopping optional communications would address your concern. Deleting an account removes access to its saved activity and account features after the process completes. Keep a copy of information or materials you need before submitting the request.</p>
+  <p>Account deletion does not automatically remove shared public books. Their uploader account association is removed, but the document and its contents may remain in the library. If a public file contains your personal information, or you want us to review its publication, include the exact document URL in a separate message to the privacy or support contact below.</p>
+  <p>An account with an active administrator role cannot use this deletion process until that role is transferred or removed. Contact the site administrator to resolve the role first.</p>
+</section>
+<section id="request">
+  <h2>2. Submit a verified deletion request</h2>
+  <ol>
+    <li><strong>Sign in to the account you want to delete.</strong> Open account settings or the account deletion form.</li>
+    <li><strong>Request an email verification code.</strong> It is sent to the email address associated with your account. The code expires after five minutes. Resending is limited to protect your account.</li>
+    <li><strong>Enter the code and a reason.</strong> The form requires a reason of 10–2,000 characters. Do not include passwords, identity documents or sensitive information in the reason.</li>
+    <li><strong>Confirm the request.</strong> Existing sessions are revoked immediately, including the current session. The request is recorded for administrator review and a confirmation email is queued with the restoration deadline.</li>
+  </ol>
+  <div class="legal-actions">
+    <a class="legal-button" href="/user/account-deletion">Open account deletion form</a>
+    <a href="/user/settings">Account settings</a>
+  </div>
+  <p class="legal-small">If you are signed out, you will be asked to sign in first. Email delivery can take time; a missing confirmation email does not by itself mean that a submitted request failed.</p>
+</section>
+<section id="timeline">
+  <h2>3. Timing, approval and restoration</h2>
+  <div class="legal-table-wrap" role="region" aria-label="Account deletion timeline" tabindex="0">
+    <table class="legal-table">
+      <thead><tr><th scope="col">Stage</th><th scope="col">What happens</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Request submitted</th><td>Sessions are revoked and a 15-day grace period begins from the request time. The account awaits administrator review.</td></tr>
+        <tr><th scope="row">Before the deadline</th><td>A successful sign-in restores the account and cancels the pending request, including one already approved for later deletion.</td></tr>
+        <tr><th scope="row">At or after the deadline</th><td>Self-service restoration through sign-in is no longer available. Without administrator approval, the request stays pending until an administrator acts.</td></tr>
+        <tr><th scope="row">Approved and due</th><td>The scheduled maintenance process deletes eligible approved accounts after the deadline. Processing depends on that job running; completion need not occur at the exact deadline.</td></tr>
+        <tr><th scope="row">After completed deletion</th><td>A limited administrative record containing name, email and deletion timestamp is retained for 30 days from completion, then removed by scheduled cleanup.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The confirmation gives the deadline in UTC. Use that timestamp when deciding whether you can still restore your account; your local calendar date may differ. A successful sign-in before the deadline cancels deletion, so avoid signing in during the grace period if you intend the request to proceed.</p>
+  <p>An administrator can also cancel a request. If the deadline has passed and you need help with a pending request, contact us. We cannot promise that recovery will be available once deletion has completed.</p>
+</section>
+<section id="removed">
+  <h2>4. Records removed by account deletion</h2>
+  <p>The account database cleanup removes the user account and its associated personal records, including:</p>
+  <ul>
+    <li>Account profile, password record and account security records.</li>
+    <li>Favourites, download history, preferences and account notifications.</li>
+    <li>Reviews, comments, feedback, replies and related reaction records covered by the account cleanup.</li>
+    <li>Points, streaks, account activity and leaderboard records.</li>
+    <li>Account verification and lifecycle records included in the cleanup, subject to the limited administrative retention described above.</li>
+  </ul>
+  <p>Deletion is an account process, not a promise that every mention of you anywhere on the internet will disappear. See the following section before submitting a request.</p>
+</section>
+<section id="remaining">
+  <h2>5. Public documents and other retained information</h2>
+  <p><strong>Shared library documents remain available with the uploader account association removed.</strong> A file, cover image, author field or description may itself contain a name or other personal information. The account cleanup does not inspect and redact those contents. Send a separate, specific removal request if a public resource requires review.</p>
+  <p>The limited deletion record is kept for 30 days after completed deletion, then purged by scheduled cleanup. Records held in email delivery or contact services, support correspondence, security logs, backups or a rights dispute may be subject to separate retention or deletion steps. Ask us about those records rather than assuming that the account form covers every provider-held copy.</p>
+  <p>Copies downloaded by visitors, search engine caches and copies on unrelated websites are outside DocoDive's account database. We cannot delete them through this workflow. Information needed to meet an applicable legal requirement or handle a legitimate dispute may also need separate consideration.</p>
+</section>
+<section id="social-sign-in">
+  <h2>6. Google, GitHub and Facebook accounts</h2>
+  <p>If you registered using a social sign-in provider, sign in using that method and follow the same verified request process. The email associated with your DocoDive account is used for verification. Contact us if that address is unavailable or no longer accessible.</p>
+  <p>Removing DocoDive from your Google, GitHub or Facebook connected-app settings withdraws that connection; it does not by itself complete deletion of your DocoDive account. Deleting DocoDive also does not delete your account with the sign-in provider.</p>
+  <p>A Facebook deletion confirmation link or code may direct you to this guide. That reference is not proof that DocoDive account data has been deleted. Use the verified account process or contact the privacy address to ask about a specific request.</p>
+</section>
+<section id="help">
+  <h2>7. If you cannot access your account</h2>
+  <p>Email <a href="mailto:privacy@programmingpioneer.com">privacy@programmingpioneer.com</a> with the subject “Account deletion request.” Include the username, the email associated with the account and a brief explanation of the access problem. If the request concerns public content, include its exact URL.</p>
+  <p>We may need to verify ownership before acting. Do not send your password, verification codes or unnecessary identity documents. If you write from a different address, explain that in your message so we can consider an appropriate verification method.</p>
+  <p>For questions about other privacy choices, read the <a href="/privacy">privacy policy</a>. For a copyright or content report, use the instructions on the <a href="/contact">contact page</a>.</p>
+</section>
+{% endblock %}

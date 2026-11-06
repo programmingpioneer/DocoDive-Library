@@ -1,5 +1,6 @@
+(() => {
 // ================== DOCODIVE SERVICE WORKER (FIXED) ==================
-const CACHE_VERSION = 'v1.0.7';  // ⬆️ Version badha di
+const CACHE_VERSION = 'v1.0.21';
 const STATIC_CACHE = `docodive-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `docodive-images-${CACHE_VERSION}`;
 // DEV: Service worker temporarily disabled
@@ -14,8 +15,8 @@ const PRECACHE_URLS = [
   // '/'  ← REMOVED — dynamic HTML, session-dependent
   '/static/css/style.css',
   '/static/js/main.js',
-  '/static/images/docodive-og.jpg',
-  '/static/default-avatar.png',
+  '/static/images/docoDive-og.jpg',
+  '/static/images/default-avatar.jpg',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css',
   'https://unpkg.com/aos@2.3.1/dist/aos.css',
@@ -72,56 +73,17 @@ self.addEventListener('fetch', event => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
 
-  // Skip third-party analytics and chat
-  if (url.hostname.includes('brevo.com') ||
-    url.hostname.includes('conversations-widget') ||
-    url.hostname.includes('googletagmanager.com') ||
-    url.hostname.includes('google-analytics.com')) return;
-
-  // Skip social login callbacks
-  if (url.pathname.startsWith('/auth/') || url.pathname.startsWith('/login/')) return;
-
-  // Cache-first for static assets
-  if (request.url.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot)(\?.*)?$/)) {
-    event.respondWith(
-      caches.match(request).then(cached => cached || fetch(request).then(response => {
-        if (response.ok) {
-          const clone = response.clone();
-          const cacheName = url.pathname.includes('/images/') || url.pathname.includes('/covers/') ?
-            IMAGE_CACHE : STATIC_CACHE;
-          caches.open(cacheName).then(cache => cache.put(request, clone));
-        }
-        return response;
-      }))
-    );
-    return;
-  }
-
-  // ⚠️ NETWORK-ONLY for HTML pages — NEVER cache dynamic HTML
-  if (request.headers.get('Accept')?.includes('text/html')) {
-    event.respondWith(fetch(request));
-    return;
-  }
-
-    // API + debug routes: NETWORK-ONLY (never cache — sessions/CSRF sensitive)
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/debug/')) {
-    event.respondWith(fetch(request));
-    return;
-  }
-
-  // Stale-while-revalidate for other requests
-  event.respondWith(
-    caches.match(request).then(cached => {
-      const fetchPromise = fetch(request).then(response => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(STATIC_CACHE).then(cache => cache.put(request, clone));
-        }
-        return response;
-      });
-      return cached || fetchPromise;
-    })
-  );
+  // Only explicitly public, same-origin static assets may enter this cache.
+  // All HTML, account, Studio and API requests go directly to the network.
+  if (url.origin !== self.location.origin || !url.pathname.startsWith('/static/')) return;
+  event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => {
+    const policy = response.headers.get('Cache-Control') || '';
+    if (response.ok && !response.redirected && !/no-store|private/i.test(policy)) {
+      const copy = response.clone();
+      event.waitUntil(caches.open(STATIC_CACHE).then(cache => cache.put(request, copy)));
+    }
+    return response;
+  })));
 });
 
 // ================== MESSAGE HANDLER ==================
@@ -130,3 +92,4 @@ self.addEventListener('message', event => {
     caches.keys().then(names => Promise.all(names.map(n => caches.delete(n))));
   }
 });
+})();

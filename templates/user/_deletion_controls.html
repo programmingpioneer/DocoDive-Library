@@ -1,0 +1,24 @@
+{% if protected %}
+<p class="settings-note">Your administrator role protects this account from deletion. Transfer or remove the role before submitting a request.</p>
+{% else %}
+<form method="post" action="{{ url_for('account_deletion') }}">
+  <input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}">
+  <input type="hidden" name="action" value="send">
+  <input type="hidden" name="return_to" value="{{ deletion_return|default('') }}">
+  <p>A verification code will be sent to <strong>{{ email }}</strong>.</p>
+  <button class="btn btn-outline-dark">{{ 'Resend verification code' if code_sent else 'Send verification code' }}</button>
+  <p class="settings-help mt-2">Codes expire after 5 minutes. Wait 60 seconds between sends; up to 5 codes per hour.</p>
+</form>
+{% if code_sent %}
+<form method="post" action="{{ url_for('account_deletion') }}" class="mt-4" data-confirm="Submit this deletion request and sign out all your sessions?">
+  <input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}">
+  <input type="hidden" name="action" value="confirm">
+  <label for="deletion-code" class="form-label">Six-digit email code</label>
+  <input id="deletion-code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" class="form-control mb-3" required>
+  <label for="deletion-reason" class="form-label">Reason for leaving</label>
+  <textarea id="deletion-reason" name="reason" class="form-control" rows="4" minlength="10" maxlength="2000" required aria-describedby="deletion-reason-help"></textarea>
+  <p id="deletion-reason-help" class="settings-help">10–2,000 characters. Do not include passwords or other sensitive information.</p>
+  <button class="btn btn-danger mt-2">Submit deletion request</button>
+</form>
+{% endif %}
+{% endif %}

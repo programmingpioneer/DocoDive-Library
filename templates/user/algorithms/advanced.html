@@ -1,0 +1,538 @@
+{% extends 'user/_lesson_base.html' %}
+{% block title %}Algorithms Advanced Course — Advanced Graphs, String Algorithms & Competitive Patterns | DocoDive{% endblock %}
+{% block meta_description %}Master advanced algorithms with 40 free lessons: Floyd-Warshall, A*, SCC, max flow, KMP, Rabin-Karp, suffix arrays, Manacher's, bitmask DP, interval DP, Fenwick trees, and a competitive problem-solving capstone.{% endblock %}
+
+{% block extra_css %}
+<style>
+  .algo-adv-hero {
+    background:linear-gradient(135deg, var(--ui-surface-soft) 0%, var(--ui-surface-soft) 100%);
+    border:1px solid var(--ui-line);
+  }
+  .hero-stat-link { text-decoration: none; color:var(--ui-muted); transition: color 0.2s ease; cursor: pointer; }
+  .hero-stat-link:hover { color:var(--ui-accent); text-decoration: underline; }
+  .course-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .course-nav {
+    position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto;
+    background:var(--ui-surface); border:1px solid var(--ui-line); border-radius: 16px; padding: 14px;
+  }
+  .course-nav a {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border-radius: 10px; color:var(--ui-muted); text-decoration: none; font-size: 0.85rem; font-weight: 500;
+  }
+  .course-nav a:hover { background:var(--ui-surface-soft); color:var(--ui-accent); }
+  .course-nav a .nav-num { flex-shrink: 0; width: 24px; color:var(--ui-accent); font-weight: 700; }
+  .course-nav a .nav-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .course-nav-toggle { display: none; }
+  .lesson-step { scroll-margin-top: 100px; margin-bottom: 32px; }
+  .lesson-card { background:var(--ui-surface); border:1px solid var(--ui-line); border-radius: 16px; padding: 24px; }
+  .code-block { background:var(--ui-surface-alt); color:var(--ui-accent); border-radius: 12px; overflow: hidden; }
+  .code-block pre {
+    margin: 0; padding: 18px; font-family: Consolas, Monaco, monospace;
+    font-size: 0.88rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+  }
+  .callout { border-left: 4px solid; padding: 12px 16px; border-radius: 10px; font-size: 0.9rem; }
+  .callout-tip { background:var(--ui-surface-soft); border-color:var(--ui-line); color:var(--ui-accent); }
+  .callout-warning { background:var(--ui-surface-soft); border-color:var(--ui-line); color:var(--ui-accent); }
+  .callout-best { background:var(--ui-surface-soft); border-color:var(--ui-line); color:var(--ui-accent); }
+  .callout-important { background:var(--ui-surface-soft); border-color:var(--ui-line); color:var(--ui-accent); }
+  .terminal { background:var(--ui-surface-alt); color:var(--ui-accent); border-radius: 12px; overflow: hidden; font-family: Consolas, Monaco, monospace; }
+  .terminal-header {
+    background:var(--ui-surface-alt); padding: 10px 16px; display: flex; align-items: center;
+    gap: 8px; border-bottom:1px solid var(--ui-line);
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-red { background:var(--ui-primary); }
+  .dot-yellow { background:var(--ui-primary); }
+  .dot-green { background:var(--ui-primary); }
+  .terminal-title { color:var(--ui-muted); font-size: 0.75rem; margin-left: 6px; }
+  .terminal-body { padding: 14px 16px; font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .exercise-box { background:var(--ui-surface-soft); border:1px dashed var(--ui-line); border-radius: 12px; padding: 16px; }
+  .docs-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;
+    color:var(--ui-accent); text-decoration: none; font-weight: 600;
+  }
+  .docs-link:hover { text-decoration: underline; }
+  .lesson-complete { transition: all 0.2s ease; }
+  .lesson-complete.done { background:var(--ui-surface-soft); border-color:var(--ui-line); }
+
+  .output-preview { border-radius: 14px; overflow: hidden; border:1px solid var(--ui-line); background:var(--ui-surface); }
+  .output-preview-header {
+    background:var(--ui-surface-alt); color:var(--ui-muted); font-size: 0.75rem; padding: 8px 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .output-preview-body {
+    min-height: 170px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 20px;
+    background:var(--ui-surface-soft);
+    text-align: center;
+  }
+  .pv-flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .pv-arrow { color:var(--ui-accent); font-weight: 800; }
+  .pv-box { border-radius: 8px; padding: 8px 14px; font-weight: 700; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; }
+  .pv-rose { background:var(--ui-primary); color:var(--ui-on-primary); }
+  .pv-light-rose { background:var(--ui-primary); color:var(--ui-on-primary); }
+  .pv-pale { background:var(--ui-surface-soft); color:var(--ui-accent); border:1px solid var(--ui-line); }
+  .pv-green { background:var(--ui-primary); color:var(--ui-on-primary); }
+  .pv-red { background:var(--ui-primary); color:var(--ui-on-primary); }
+  .pv-blue { background:var(--ui-primary); color:var(--ui-on-primary); }
+  .pv-array { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+  .pv-cell { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; color:var(--ui-on-primary); background:var(--ui-primary); }
+  .pv-cell-alt { background:var(--ui-primary); color:var(--ui-on-primary); }
+  .pv-graph { position: relative; width: 200px; height: 140px; background:var(--ui-surface); border:1px solid var(--ui-line); border-radius: 8px; }
+  .pv-node { position: absolute; width: 30px; height: 30px; border-radius: 50%; background:var(--ui-primary); color:var(--ui-on-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.65rem; }
+  .pv-node-green { background:var(--ui-primary); }
+  .pv-dp { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .pv-dp-table { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .pv-dp-cell { width: 38px; height: 38px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7rem; background:var(--ui-primary); color:var(--ui-on-primary); }
+  .pv-dp-best { background:var(--ui-primary); color:var(--ui-on-primary); }
+  .pv-str { font-family: monospace; background:var(--ui-surface-alt); color:var(--ui-accent); padding: 10px 16px; border-radius: 8px; font-size: 0.85rem; }
+  .pv-str-match { background:var(--ui-primary); color:var(--ui-on-primary); padding: 1px 4px; border-radius: 4px; }
+  .pv-list { display: flex; align-items: center; gap: 4px; }
+  .pv-list-node { width: 34px; height: 34px; border-radius: 6px; background:var(--ui-primary); color:var(--ui-on-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7rem; }
+  .pv-list-arrow { color:var(--ui-accent); font-weight: 800; }
+  .pv-slide { display: flex; gap: 4px; }
+  .pv-slide-cell { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; color:var(--ui-on-primary); background:var(--ui-primary); }
+  .pv-slide-max { background:var(--ui-primary); }
+  .pv-bits { display: flex; gap: 4px; }
+  .pv-bit { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7rem; color:var(--ui-on-primary); background:var(--ui-primary); }
+  .pv-bit-off { background:var(--ui-primary); color:var(--ui-on-primary); }
+  .pv-chess { display: flex; flex-direction: column; gap: 2px; }
+  .pv-chess-row { display: flex; gap: 2px; }
+  .pv-chess-cell { width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; background:var(--ui-primary); }
+  .pv-chess-dark { background:var(--ui-primary); }
+  .pv-cap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .pv-cap-box { background:var(--ui-primary); color:var(--ui-on-primary); padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.7rem; }
+
+  @media (max-width: 991.98px) {
+    .course-layout { grid-template-columns: 1fr; }
+    .course-nav-toggle { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 20px; }
+    .course-nav { position: static; max-height: none; }
+    .course-nav.collapse.show { max-height: 60vh; overflow-y: auto; margin-bottom: 24px; }
+  }
+  @media (max-width: 576px) {
+    .algo-adv-hero { padding: 24px 16px; }
+    .algo-adv-hero h1 { font-size: 1.75rem; }
+    .lesson-card { padding: 16px; }
+    .code-block pre { font-size: 0.78rem; padding: 14px; }
+    .terminal-body { font-size: 0.75rem; padding: 12px; }
+    .callout { padding: 10px 12px; font-size: 0.85rem; }
+  }
+</style>
+
+{{ super() }}
+{% endblock %}
+
+{% block lesson_content %}
+{% if lessons %}
+<section class="container py-5">
+  <div class="algo-adv-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="badge rounded-pill" style="background:var(--ui-primary);color:var(--ui-on-primary);font-weight:700;">Advanced</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:var(--ui-accent);">Algorithms Advanced: Graphs, Strings & Competitive Patterns</h1>
+    <p class="text-muted mb-4">Master the algorithms behind competitive programming and production systems — advanced graphs, string algorithms, and the DP/data-structure patterns that solve the hardest problems.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 mb-3">
+      <span class="text-muted small"><i class="bi bi-clock me-1"></i>10–14 weeks</span>
+      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons</span>
+      <a href="#lesson-40" class="hero-stat-link small"><i class="bi bi-trophy me-1"></i>1 capstone</a>
+      <span class="text-muted small"><i class="bi bi-person-check me-1"></i>Algorithms Intermediate required</span>
+    </div>
+    <a href="#lesson-1" class="btn btn-primary rounded-pill px-4 py-2" style="background:var(--ui-primary);border-color:var(--ui-line);">
+      <i class="bi bi-play-circle me-2"></i>Start Learning
+    </a>
+  </div>
+
+  <button class="btn btn-outline-primary course-nav-toggle" type="button" aria-expanded="false" aria-controls="courseNav">
+    <i class="bi bi-list-ol" aria-hidden="true"></i><span data-course-toggle-label>Show Course Content</span>
+  </button>
+
+  <div class="course-layout">
+    <aside id="courseNav" class="course-nav" aria-label="Course contents">
+      <h3 class="h6 fw-bold mb-3" style="color:var(--ui-accent);"><i class="bi bi-list-ol me-2"></i>Course Content</h3>
+      {% for lesson in lessons %}
+      <a href="#lesson-{{ lesson.id }}" class="course-nav-link">
+        <span class="nav-num">{{ "%02d"|format(lesson.id) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+      </a>
+      {% endfor %}
+    </aside>
+
+    <div>
+      {% for lesson in lessons %}
+      <div id="lesson-{{ lesson.id }}" class="lesson-step">
+        <div class="lesson-card lesson-complete" data-lesson="{{ lesson.id }}">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="nav-num fw-bold" style="color:var(--ui-accent);">{{ "%02d"|format(lesson.id) }}</span>
+            <h2 class="h4 fw-bold mb-0" style="color:var(--ui-accent);">{{ lesson.title }}</h2>
+            <span class="ms-auto text-muted small"><i class="bi bi-clock me-1"></i>{{ lesson.duration }}</span>
+          </div>
+
+          <div class="mb-3">
+            <h3 class="h6 fw-bold mb-2" style="color:var(--ui-accent);"><i class="bi bi-bullseye me-2"></i>What you'll learn</h3>
+            <ul class="list-unstyled">
+              {% for obj in lesson.objectives %}
+              <li class="d-flex gap-2 mb-1">
+                <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                <span class="text-dark">{{ obj }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <p class="text-dark">{{ lesson.explanation }}</p>
+
+          <div class="code-block mb-3">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:var(--ui-surface-alt);color:var(--ui-muted);font-size:0.8rem;">
+              <span><i class="bi bi-code-slash me-1"></i>{{ lesson.code_label or 'Code' }}</span>
+              <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                <i class="bi bi-clipboard me-1"></i>Copy
+              </button>
+            </div>
+            <pre>{{ lesson.code }}</pre>
+          </div>
+
+          {% if lesson.preview and lesson.preview != 'none' %}
+          <div class="mb-3">
+            <div class="text-muted small mb-1"><i class="bi bi-eye me-1"></i>Live Preview</div>
+            <div class="output-preview">
+              <div class="output-preview-header">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+                <span class="terminal-title">{{ lesson.title }}</span>
+              </div>
+              <div class="output-preview-body">
+                {% if lesson.preview == 'floyd' %}
+                <div class="pv-dp">
+                  <div class="pv-dp-table">
+                    <div class="pv-dp-cell pv-dp-best">0</div><div class="pv-dp-cell">3</div><div class="pv-dp-cell">1</div><div class="pv-dp-cell">4</div>
+                  </div>
+                  <p class="small text-muted mb-0">All-pairs distances</p>
+                </div>
+                {% elif lesson.preview == 'astar' %}
+                <div class="pv-graph">
+                  <div class="pv-node pv-node-green" style="left:5%;top:45%;">S</div>
+                  <div class="pv-node" style="left:45%;top:5%;">A</div>
+                  <div class="pv-node" style="left:85%;top:45%;">B</div>
+                  <div class="pv-node pv-node-green" style="left:45%;top:85%;">G</div>
+                </div>
+                {% elif lesson.preview == 'scc' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">[1,0]</div>
+                  <div class="pv-box pv-light-rose">[2]</div>
+                  <div class="pv-box pv-pale">[3]</div>
+                </div>
+                {% elif lesson.preview == 'scc2' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">[0,2,1]</div>
+                  <div class="pv-box pv-light-rose">[3]</div>
+                </div>
+                {% elif lesson.preview == 'topo' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">A</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-rose">B</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-rose">C</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-rose">D</div>
+                </div>
+                {% elif lesson.preview == 'bipartite' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">Set A</div>
+                  <div class="pv-box pv-blue">Set B</div>
+                </div>
+                {% elif lesson.preview == 'maxflow' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">S</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-rose">10</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-rose">T</div>
+                  <div class="pv-box pv-green">flow=15</div>
+                </div>
+                {% elif lesson.preview == 'bridges' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">(2,3)</div>
+                  <span class="pv-arrow">⚠️</span>
+                  <div class="pv-box pv-rose">Critical edge</div>
+                </div>
+                {% elif lesson.preview == 'cycle' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">A → B → C → A</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-rose">Cycle</div>
+                </div>
+                {% elif lesson.preview == 'longest' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">0</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-rose">1</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-rose">3</div>
+                  <div class="pv-box pv-green">cost=8</div>
+                </div>
+                {% elif lesson.preview == 'euler' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">Every edge once</div>
+                  <span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">Eulerian</div>
+                </div>
+                {% elif lesson.preview == 'prim' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">(0,2,1)</div>
+                  <div class="pv-box pv-light-rose">(2,1,2)</div>
+                  <div class="pv-box pv-pale">(1,3,5)</div>
+                </div>
+                {% elif lesson.preview == 'centroid' %}
+                <div class="pv-graph">
+                  <div class="pv-node pv-node-green" style="left:45%;top:45%;">C</div>
+                  <div class="pv-node" style="left:5%;top:5%;">A</div>
+                  <div class="pv-node" style="left:85%;top:5%;">B</div>
+                  <div class="pv-node" style="left:5%;top:85%;">D</div>
+                </div>
+                {% elif lesson.preview == 'lca' %}
+                <div class="pv-graph">
+                  <div class="pv-node pv-node-green" style="left:45%;top:5%;">LCA</div>
+                  <div class="pv-node" style="left:5%;top:85%;">u</div>
+                  <div class="pv-node" style="left:85%;top:85%;">v</div>
+                </div>
+                {% elif lesson.preview == 'kmp' %}
+                <div class="pv-str">ABABDABACDAB<span class="pv-str-match">ABABCABAB</span></div>
+                {% elif lesson.preview == 'rabin' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">hash</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">match</div>
+                </div>
+                {% elif lesson.preview == 'zarray' %}
+                <div class="pv-array">
+                  <div class="pv-cell">0</div><div class="pv-cell pv-cell-alt">1</div><div class="pv-cell">0</div><div class="pv-cell pv-cell-alt">3</div><div class="pv-cell">1</div>
+                </div>
+                {% elif lesson.preview == 'suffix' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">banana</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-rose">anana</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-pale">nana</div>
+                </div>
+                {% elif lesson.preview == 'manacher' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green">ababa</div>
+                  <span class="pv-arrow">palindrome</span>
+                </div>
+                {% elif lesson.preview == 'hashing' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">h(l,r)</div><span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">O(1)</div>
+                </div>
+                {% elif lesson.preview == 'repeat' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-green">'ana'</div>
+                  <span class="pv-arrow">repeats in 'banana'</span>
+                </div>
+                {% elif lesson.preview == 'count' %}
+                <div class="pv-str">aa<span class="pv-str-match">aa</span>a → 4 matches</div>
+                {% elif lesson.preview == 'aho' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">trie</div><span class="pv-arrow">+</span>
+                  <div class="pv-box pv-light-rose">failure links</div><span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">multi-match</div>
+                </div>
+                {% elif lesson.preview == 'boyer' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">match from end</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">big skips</div>
+                </div>
+                {% elif lesson.preview == 'binary_answer' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">lo</div><span class="pv-arrow">…</span>
+                  <div class="pv-box pv-light-rose">mid</div><span class="pv-arrow">…</span>
+                  <div class="pv-box pv-rose">hi</div>
+                </div>
+                {% elif lesson.preview == 'mitm' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">2^(n/2)</div><span class="pv-arrow">+</span>
+                  <div class="pv-box pv-light-rose">2^(n/2)</div><span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">2^(n/2+1)</div>
+                </div>
+                {% elif lesson.preview == 'bitmask' %}
+                <div class="pv-bits">
+                  <div class="pv-bit">1</div><div class="pv-bit">0</div><div class="pv-bit">1</div><div class="pv-bit">0</div><div class="pv-bit">1</div>
+                </div>
+                {% elif lesson.preview == 'interval' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">[i..k]</div><span class="pv-arrow">+</span>
+                  <div class="pv-box pv-light-rose">[k+1..j]</div><span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">[i..j]</div>
+                </div>
+                {% elif lesson.preview == 'digit' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">digit by digit</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">count</div>
+                </div>
+                {% elif lesson.preview == 'dsu' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">find</div><span class="pv-arrow">+</span>
+                  <div class="pv-box pv-light-rose">union</div><span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">O(α(n))</div>
+                </div>
+                {% elif lesson.preview == 'fenwick' %}
+                <div class="pv-list">
+                  <div class="pv-list-node">i</div><span class="pv-list-arrow">+=</span>
+                  <div class="pv-list-node">i&-i</div>
+                </div>
+                {% elif lesson.preview == 'sparse' %}
+                <div class="pv-dp-table">
+                  <div class="pv-dp-cell pv-dp-best">min</div><div class="pv-dp-cell">min</div><div class="pv-dp-cell">min</div><div class="pv-dp-cell">min</div>
+                </div>
+                {% elif lesson.preview == 'mos' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">sort queries</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">slide window</div>
+                </div>
+                {% elif lesson.preview == 'slidingmax' %}
+                <div class="pv-slide">
+                  <div class="pv-slide-cell">3</div><div class="pv-slide-cell pv-slide-max">5</div><div class="pv-slide-cell pv-slide-max">6</div>
+                </div>
+                {% elif lesson.preview == 'compress' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">1000</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">2</div>
+                </div>
+                {% elif lesson.preview == 'threesum' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">fix i</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light-rose">l + r</div>
+                </div>
+                {% elif lesson.preview == 'minimax' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">max me</div><span class="pv-arrow">vs</span>
+                  <div class="pv-box pv-blue">min you</div>
+                </div>
+                {% elif lesson.preview == 'hull' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-rose">sort by angle</div><span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">hull</div>
+                </div>
+                {% elif lesson.preview == 'subsets' %}
+                <div class="pv-bits">
+                  <div class="pv-bit">Ø</div><div class="pv-bit">{1}</div><div class="pv-bit">{2}</div><div class="pv-bit">{1,2}</div><div class="pv-bit pv-bit-off">{…}</div>
+                </div>
+                {% elif lesson.preview == 'capstone' %}
+                <div class="pv-cap">
+                  <div class="pv-cap-box">Dijkstra</div><div class="pv-cap-box">KMP</div><div class="pv-cap-box">Bitmask DP</div><div class="pv-cap-box">Fenwick</div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div class="mb-3">
+            <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Output</div>
+            <div class="terminal">
+              <div class="terminal-header">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+                <span class="terminal-title">python</span>
+              </div>
+              <div class="terminal-body">{{ lesson.output }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="callout callout-{{ lesson.callout_type }} mb-3">
+            {% if lesson.callout_type == 'tip' %}<strong>💡 Tip:</strong>
+            {% elif lesson.callout_type == 'warning' %}<strong>⚠️ Common Mistake:</strong>
+            {% elif lesson.callout_type == 'best' %}<strong>✓ Best Practice:</strong>
+            {% else %}<strong>🔎 Important:</strong>{% endif %}
+            {{ lesson.callout_text }}
+          </div>
+
+          <div class="mb-3">
+            <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="docs-link">
+              <i class="bi bi-box-arrow-up-right"></i>{{ lesson.docs_label }}
+            </a>
+          </div>
+
+          <div class="exercise-box">
+            <h3 class="h6 fw-bold mb-2" style="color:var(--ui-accent);"><i class="bi bi-pencil-square me-2"></i>Try it yourself</h3>
+            <p class="mb-2">{{ lesson.exercise_prompt }}</p>
+            <div class="d-flex gap-2 mb-2 exercise-actions">
+              <button class="btn btn-outline-primary btn-sm rounded-pill" onclick="toggleHint(this)">Show Hint</button>
+              <button class="btn btn-outline-success btn-sm rounded-pill" onclick="toggleSolution(this)">Show Solution</button>
+            </div>
+            <div class="hint-box d-none small text-muted"><i class="bi bi-lightbulb me-1"></i>{{ lesson.exercise_hint }}</div>
+            <div class="solution-box d-none">
+              <div class="code-block"><pre>{{ lesson.exercise_solution }}</pre></div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer" style="border-top:1px solid var(--ui-line);">
+            {% if loop.previtem %}
+            <a href="#lesson-{{ loop.previtem.id }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+              <i class="bi bi-arrow-left me-1"></i>Lesson {{ "%02d"|format(loop.previtem.id) }}
+            </a>
+            {% else %}<span></span>{% endif %}
+
+            <button class="btn btn-outline-success btn-sm rounded-pill mark-complete" onclick="markComplete(this)">
+              <i class="bi bi-check2-circle me-1"></i>Mark Complete
+            </button>
+
+            {% if loop.nextitem %}
+            <a href="#lesson-{{ loop.nextitem.id }}" class="btn btn-primary btn-sm rounded-pill" style="background:var(--ui-primary);border-color:var(--ui-line);">
+              Next Lesson <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            {% else %}<span></span>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="text-center mt-4 p-4 rounded-4" style="background:var(--ui-surface-soft);">
+        <h2 class="h5 fw-bold" style="color:var(--ui-accent);">You've completed all {{ lessons|length }} advanced lessons. You're now an algorithms expert.</h2>
+        <p class="text-muted mb-3">Practice your skills or return to the Algorithms hub.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <a href="/learn/algorithms/practice" class="btn btn-primary rounded-pill px-4" style="background:var(--ui-primary);border-color:var(--ui-line);">
+            <i class="bi bi-collection me-2"></i>Practice Resources
+          </a>
+          <a href="/learn/algorithms" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="bi bi-grid me-2"></i>Algorithms Hub
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy'; }, 2000);
+    });
+  }
+  function toggleHint(btn) {
+    const box = btn.closest('.exercise-box').querySelector('.hint-box');
+    box.classList.toggle('d-none');
+    btn.textContent = box.classList.contains('d-none') ? 'Show Hint' : 'Hide Hint';
+  }
+  function toggleSolution(btn) {
+    const box = btn.closest('.exercise-box').querySelector('.solution-box');
+    box.classList.toggle('d-none');
+    btn.textContent = box.classList.contains('d-none') ? 'Show Solution' : 'Hide Solution';
+  }
+  function markComplete(btn) {
+    const card = btn.closest('.lesson-complete');
+    card.classList.add('done');
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Completed';
+    btn.classList.remove('btn-outline-success');
+    btn.classList.add('btn-success');
+    btn.disabled = true;
+  }
+</script>
+
+{{ super() }}
+{% endblock %}

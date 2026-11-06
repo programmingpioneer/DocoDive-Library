@@ -1,0 +1,27 @@
+{% from 'user/_icons.html' import icon %}
+{% set has_quiz = practice_items|default([],true)|length > 0 %}
+{% set stat_keys = {'python':'doco_topic_stats','javascript':'doco_js_topic_stats','java':'doco_java_topic_stats','c-c':'doco_cc_topic_stats','web-development':'doco_wd_topic_stats','data-science':'doco_ds_topic_stats','machine-learning':'doco_ml_topic_stats','algorithms':'doco_algo_topic_stats','databases':'doco_db_topic_stats','cyber-security':'doco_cyber_topic_stats','mobile-apps':'doco_ma_topic_stats'} %}
+<header class="practice-workspace" data-practice-activity data-practice-kind="{{ 'quiz' if has_quiz else 'guided' }}" data-practice-stats-key="{{ stat_keys.get(category_slug, 'docodive_guided_' ~ category_slug) }}">
+  <div class="practice-workspace-story">
+    <span class="practice-kicker">{{ icon('edit') }} YOUR PRACTICE SPACE</span>
+    <h1>{{ category }} Practice</h1>
+    <p>{% if has_quiz %}Build confidence, one challenge at a time. Choose a topic, try your answer, then use the feedback to improve.{% else %}Put your reading into practice. Follow a short self-check routine and keep track of the steps you complete.{% endif %}</p>
+    <div class="practice-facts">
+      <span>{{ icon('grid') }} {% if has_quiz %}{{ practice_items|length }} challenges{% else %}4 guided activities{% endif %}</span>
+      <span>{{ icon('check-circle') }} {% if has_quiz %}Instant feedback{% else %}Self-paced practice{% endif %}</span>
+      <span>{{ icon('clock') }} At your own pace</span>
+    </div>
+    <a class="practice-start-link" href="{{ '#setupPanel' if has_quiz else '#guidedPractice' }}">{{ 'Set up a session' if has_quiz else 'Start your checklist' }} {{ icon('arrow-right') }}</a>
+  </div>
+  <aside class="practice-activity-panel" aria-label="Your practice activity">
+    <div class="practice-activity-heading">{{ icon('sliders') }} <h2>Your {{ 'activity' if has_quiz else 'checklist' }}</h2><span>ON THIS DEVICE</span></div>
+    <dl class="practice-activity-metrics">
+      <div><dt>{{ 'Attempts' if has_quiz else 'Completed' }}</dt><dd data-practice-attempts>0</dd></div>
+      <div><dt>{{ 'Accuracy' if has_quiz else 'Progress' }}</dt><dd data-practice-accuracy>0%</dd></div>
+      <div><dt>{{ 'Topics tried' if has_quiz else 'Activities' }}</dt><dd data-practice-topics>{{ 0 if has_quiz else 4 }}</dd></div>
+    </dl>
+    <progress data-practice-progress value="0" max="100" aria-label="{{ 'Answer accuracy' if has_quiz else 'Checklist completion' }}">0%</progress>
+    <p data-practice-storage>{{ 'Practice activity' if has_quiz else 'Self-reported progress' }} · saved in this browser.</p>
+    <noscript><p>Enable JavaScript for interactive practice and local progress.</p></noscript>
+  </aside>
+</header>

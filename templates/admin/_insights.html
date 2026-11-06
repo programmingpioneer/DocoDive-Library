@@ -1,0 +1,8 @@
+<section class="insights{% if insights_overview|default(false) %} insights-overview{% endif %}" data-insights="{{ insights_kind|default('all') }}" aria-label="Website insights">
+{% if insights_overview|default(false) %}<div class="studio-registry-label"><span>LIBRARY AT A GLANCE</span><span><i class="bi bi-arrow-up-right" aria-hidden="true"></i> Open a card to explore</span></div><div class="studio-stat-grid insights-cards" aria-busy="true"></div>{% include 'admin/_overview_actions.html' %}{% endif %}
+<div class="studio-section-heading insights-heading"><div><span class="studio-eyebrow">THE BIGGER PICTURE</span><h2>Activity & insights</h2><p class="text-muted">Explore the moments and activity behind your library.</p></div><label class="insights-period-label">Period <select class="form-select insights-period"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option></select></label></div>
+<div class="insights-feedback"><p class="insights-status" role="status">Loading insights…</p><button type="button" class="btn btn-outline-primary insights-retry" hidden>Retry</button></div>
+<div class="insights-charts" aria-busy="true"><div class="studio-skeleton"></div><div class="studio-skeleton"></div></div>
+{% if not insights_overview|default(false) %}<div class="studio-stat-grid insights-cards" aria-busy="true"></div>{% endif %}
+<p class="insights-note small text-muted"></p>
+</section>

@@ -1,0 +1,53 @@
+/* Practice workspace; colors follow the active theme, and layout stays bounded at 4K. */
+.learning-page[data-practice-page] { --practice-gap:clamp(18px,2vw,28px); }
+.practice-workspace { display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.8fr);gap:var(--practice-gap);margin-bottom:28px;align-items:stretch; }
+.practice-workspace-story { padding:clamp(24px,3vw,40px);border:1px solid var(--ui-line);border-radius:20px;background:var(--ui-hero-gradient); }
+.practice-kicker { display:flex;align-items:center;gap:8px;color:var(--ui-accent);font-size:.75rem;font-weight:700;letter-spacing:.08em; }
+.practice-kicker .site-icon { width:20px;height:20px; }
+.learning-page .practice-workspace h1 { font-size:clamp(1.8rem,3vw,2.65rem);margin:16px 0 14px;line-height:1.15; }
+.practice-workspace-story>p { color:var(--ui-muted);line-height:1.75;max-width:54ch;margin-bottom:20px; }
+.practice-facts { display:flex;flex-wrap:wrap;gap:9px 18px;color:var(--ui-muted);font-size:.8125rem; }
+.practice-facts>span,.practice-start-link { display:inline-flex;align-items:center;gap:7px; }
+.practice-facts .site-icon { width:16px;height:16px;color:var(--ui-accent); }
+.practice-start-link { margin-top:22px;min-height:44px;color:var(--ui-accent);font-size:.875rem;font-weight:650;text-underline-offset:4px; }
+.practice-start-link .site-icon { width:17px;height:17px; }
+.practice-activity-panel { padding:clamp(22px,2.5vw,30px);border:1px solid var(--ui-line);border-radius:20px;background:var(--ui-surface);display:flex;flex-direction:column;justify-content:center;min-width:0; }
+.practice-activity-heading { display:flex;gap:9px;align-items:center;flex-wrap:wrap;color:var(--ui-accent); }
+.practice-activity-heading .site-icon { width:19px;height:19px; }
+.practice-activity-heading h2 { font-size:1rem;font-weight:700;margin:0; }
+.practice-activity-heading>span { margin-left:auto;font-size:.625rem;font-weight:700;letter-spacing:.06em;color:var(--ui-muted); }
+.practice-activity-metrics { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:24px 0; }
+.practice-activity-metrics>div { display:flex;flex-direction:column-reverse;gap:5px; }
+.practice-activity-metrics dt { font-size:.75rem;font-weight:500;color:var(--ui-muted); }
+.practice-activity-metrics dd { font-size:clamp(1.5rem,2vw,2rem);font-weight:750;color:var(--ui-text);margin:0;line-height:1.2; }
+.practice-activity-panel progress { appearance:none;display:block;width:100%;height:7px;border:0;border-radius:8px;overflow:hidden;background:var(--ui-surface-soft);color:var(--ui-accent); }
+.practice-activity-panel progress::-webkit-progress-bar { background:var(--ui-surface-soft); }
+.practice-activity-panel progress::-webkit-progress-value { background:var(--ui-accent);border-radius:8px; }
+.practice-activity-panel progress::-moz-progress-bar { background:var(--ui-accent); }
+.practice-activity-panel>p { color:var(--ui-muted);font-size:.75rem;line-height:1.6;margin:14px 0 0; }
+.learning-page[data-practice-page] :is(.setup-box,.challenge-card,.complete-card) { border-radius:18px;padding:clamp(20px,3vw,32px);box-shadow:none; }
+.learning-page[data-practice-page] .setup-label { font-size:.875rem;margin-bottom:12px; }
+.learning-page[data-practice-page] :is(.setup-label,.level-tab,.btn)>.site-icon { width:18px;height:18px;vertical-align:middle;flex-shrink:0; }
+.learning-page[data-practice-page] :is(.level-tab,.topic-chip) { min-height:44px;border-width:1px;border-radius:10px;line-height:1.5;padding:10px 16px;transition:background .15s ease,border-color .15s ease; }
+.learning-page[data-practice-page] :is(.level-tabs,#topicChips) { gap:8px; }
+.learning-page[data-practice-page] :is(input,select,textarea) { font-size:1rem;max-width:100%; }
+.learning-page[data-practice-page] .session-header { position:static;border:1px solid var(--ui-line);border-radius:16px;padding:20px; }
+.learning-page[data-practice-page] :is(.btn,.mcq-option) { min-height:44px;line-height:1.5; }
+.learning-page[data-practice-page] .mcq-option { font-size:.9375rem;border-radius:12px; }
+.learning-page[data-practice-page] .code-block { font-size:.875rem;line-height:1.75;overflow:auto;max-width:100%; }
+.learning-page[data-practice-page] :is(.feedback-box,.explanation-box,.hint-box,.walkthrough-box) { line-height:1.75;overflow-wrap:anywhere; }
+.learning-page[data-practice-page] #radarCanvas { max-width:100%;height:auto; }
+.practice-guided-grid { display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:var(--practice-gap);margin-block:28px; }
+.practice-guided-list { display:grid;gap:14px; }
+.practice-guided-step { display:flex;align-items:flex-start;gap:16px;padding:24px;border:1px solid var(--ui-line);border-radius:16px;background:var(--ui-surface);cursor:pointer; }
+.practice-guided-step input { width:20px;height:20px;flex:0 0 20px;accent-color:var(--ui-primary);margin-top:3px; }
+.practice-guided-step strong { display:block;color:var(--ui-text);margin-bottom:7px;font-size:1rem; }
+.practice-guided-step small { display:block;color:var(--ui-muted);font-size:.875rem;line-height:1.7; }
+.practice-guided-note { padding:24px;border-radius:16px;border:1px solid var(--ui-line);background:var(--ui-surface-alt);align-self:start; }
+.practice-guided-note h2 { font-size:1.1rem;margin-bottom:12px; }
+.practice-guided-note p { color:var(--ui-muted);font-size:.875rem;line-height:1.8; }
+.practice-guided-note a { display:flex;align-items:center;gap:8px;min-height:44px;color:var(--ui-accent);font-size:.875rem; }
+.practice-guided-note .site-icon { width:17px;height:17px; }
+@media(max-width:991.98px) { .practice-workspace { grid-template-columns:minmax(0,1fr); }.practice-guided-grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:575.98px) { .practice-workspace-story,.practice-activity-panel { padding:22px; }.practice-activity-heading>span { margin-left:0; }.learning-page[data-practice-page] .level-tabs>.level-tab { flex:1 1 130px;justify-content:center; }.learning-page[data-practice-page] .session-header .gap-3 { gap:12px!important; }.practice-guided-step { padding:20px;gap:12px; } }
+@media(prefers-reduced-motion:reduce) { .learning-page[data-practice-page] * { animation:none!important;transition:none!important;scroll-behavior:auto!important; } }

@@ -1,0 +1,18 @@
+{% from 'user/_icons.html' import icon %}
+{% set track_names = [('beginner', 'Beginner Guide'), ('intermediate', 'Intermediate'), ('advanced', 'Advanced'), ('practice', 'Practice Resources')] %}
+{% if category_slug == 'ielts' %}{% set track_names = [('listening', 'Listening'), ('reading', 'Reading'), ('writing', 'Writing'), ('speaking', 'Speaking')] %}{% endif %}
+<div class="container learning-wayfinding">
+  <nav aria-label="Breadcrumb" class="learning-breadcrumb">
+    <ol>
+      <li><a href="/">Home</a></li>
+      <li><a href="/learn/{{ category_slug }}">{{ category }}</a></li>
+      <li aria-current="page">{{ info.title }}</li>
+    </ol>
+  </nav>
+  <nav class="learning-tracks" aria-label="{{ category }} learning tracks">
+    <a class="learning-hub-link" href="/learn/{{ category_slug }}">{{ icon('book') }} {{ category }} Hub</a>
+    {% for slug, label in track_names %}
+    <a href="/learn/{{ category_slug }}/{{ slug }}"{% if info.slug == slug %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+</div>

@@ -1,0 +1,28 @@
+/* Shared controls use the same SVG size and touch target at every width. */
+body[data-public-site] .site-icon{display:inline-block;flex-shrink:0;vertical-align:middle;width:20px;height:20px}
+body[data-public-site] .account-menu-list .dropdown-item{display:flex;align-items:center;gap:10px}.account-menu-list .site-icon{color:#77758d;width:19px;height:19px}
+body[data-public-site] #notificationBell.notification-toggle{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;width:44px;height:44px;min-width:44px;padding:0;margin:0;border:1px solid transparent;border-radius:50%;background:transparent;color:#252447;line-height:1}
+#notificationBell.notification-toggle:hover,#notificationBell.notification-toggle[aria-expanded=true]{background:#eeeefa;border-color:#e2e2f1}
+#notificationBell .site-icon{width:21px;height:21px;margin:0;transform:none}
+.notification-badge{position:absolute;top:2px;right:0;min-width:17px;min-height:17px;padding:3px;font-size:10px;line-height:1;transform:none}
+body[data-public-site] #searchForm.home-search{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center;width:100%;min-height:54px;padding:4px!important;gap:4px;background:#fff;border:1px solid #dfe1ef;border-radius:30px;box-shadow:0 6px 20px #2524470c;overflow:visible}
+#searchForm.home-search:focus-within{border-color:#8a8ca6;box-shadow:0 0 0 3px #63667d12}
+#searchForm.home-search .search-field{position:relative;flex:1 1 0!important;width:auto!important;min-width:0}
+body[data-public-site] #searchForm.home-search #searchInput{width:100%;min-height:44px;height:44px;border:0!important;outline:none!important;box-shadow:none!important;border-radius:24px;padding:10px 44px 10px 15px;font-size:16px!important;background:transparent}
+#searchForm.home-search .search-clear{position:absolute;right:0;top:0;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:0;background:transparent;color:#7a7f90;border-radius:50%}
+body[data-public-site] #searchForm.home-search #findBookBtn{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 auto!important;width:auto!important;min-width:108px;min-height:44px;height:44px;padding:8px 18px!important;border-radius:24px;margin:0;white-space:nowrap;font-size:14px;box-shadow:none}
+#searchForm.home-search #findBookBtn .btn-normal{display:inline-flex;align-items:center;gap:8px}
+#searchForm.home-search #findBookBtn.loading .btn-normal{display:none}
+#searchForm.home-search #findBookBtn .site-icon{width:18px;height:18px}
+.home-stats .stat-card{position:relative;min-height:152px;height:100%;padding:22px 12px!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px solid #e9eaf3;border-radius:18px;box-shadow:0 4px 20px #25244704}
+.home-stats .stat-card .stat-icon{width:22px;height:22px;font-size:22px;margin:0!important}
+.home-stats .stat-number{font-size:clamp(1.5rem,2.5vw,1.9rem);line-height:1.2;margin:0!important;font-variant-numeric:tabular-nums}
+.home-stats .stat-label{font-size:14px!important;line-height:1.4;margin:0!important;color:#62657b}
+.counter-info{position:absolute;top:6px;right:6px;text-align:left;z-index:2}
+.counter-info summary{display:flex;align-items:center;justify-content:center;width:44px;height:44px;list-style:none;cursor:pointer;color:#74798c;border-radius:50%}
+.counter-info summary::-webkit-details-marker{display:none}.counter-info summary .site-icon{width:16px!important;height:16px!important}
+.counter-info p{position:absolute;right:0;top:42px;width:230px;max-width:calc(100vw - 50px);padding:14px;margin:0;background:#fff;border:1px solid #dfe2ec;border-radius:12px;box-shadow:0 8px 24px #2524471a;color:#515b6e;font-size:13px!important;line-height:1.6;z-index:5}
+.sample-review-label{display:inline-block;color:#64667d;background:#f0f1f7;border:1px solid #e2e4ee;padding:4px 10px;border-radius:20px;font-size:12px;margin-bottom:14px}
+.review-stars{display:flex;justify-content:center;gap:4px;color:#b77b12}.review-stars .site-icon.filled{fill:currentColor}
+.testimonial-avatar.avatar-initials{display:flex;align-items:center;justify-content:center;margin-inline:auto}.testimonial-avatar.avatar-initials .site-icon{width:30px;height:30px}
+@media(max-width:575px){body[data-public-site] #searchForm.home-search #findBookBtn{min-width:44px;width:44px!important;padding:10px!important}#searchForm .search-button-label{display:none}.home-stats .stat-card{min-height:144px;padding:20px 8px!important}.home-stats .stat-number{font-size:1.5rem}.home-stats .stat-label{font-size:13px!important}.counter-info{top:0;right:0}.counter-info p{width:calc((100vw - 64px)/2)}}

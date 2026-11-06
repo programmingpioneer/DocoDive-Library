@@ -1,0 +1,12 @@
+{% extends 'admin/auth_base.html' %}
+{% block auth_content %}
+<div class="studio-auth-heading"><span class="studio-auth-step">01 / SIGN IN</span><h2 id="studio-auth-title">Welcome back<br>to Studio.</h2><p>Your library is ready for your next idea.</p></div>
+{% if error %}<div class="studio-error" role="alert">{{ error }}</div>{% endif %}
+<form method="post" class="studio-auth-form">
+  <input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}">
+  <div class="studio-auth-field"><label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="username" required maxlength="254" placeholder="you@example.com" value="{{ request.form.get('email','') }}"></div>
+  <div class="studio-auth-field"><label for="password">Password</label><div class="studio-password-field"><input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128" placeholder="Enter your password"><button type="button" class="studio-password-toggle" data-password-toggle="password" aria-label="Show password" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+  <button class="studio-auth-submit" type="submit"><span>Continue to Studio</span><span aria-hidden="true">→</span></button>
+  <p class="studio-auth-security-note">A verification code will be sent to your registered email.</p>
+</form>
+{% endblock %}

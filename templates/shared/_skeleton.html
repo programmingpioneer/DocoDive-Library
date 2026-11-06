@@ -1,0 +1,3 @@
+{% macro list_skeleton(rows=3) -%}
+<div class="skeleton-fragment" aria-hidden="true">{% for i in range(rows) %}<div class="skeleton-row"><span class="skeleton-block skeleton-row-icon"></span><span class="skeleton-row-lines"><span class="skeleton-block skeleton-line"></span><span class="skeleton-block skeleton-line skeleton-line-short"></span></span></div>{% endfor %}</div>
+{%- endmacro %}

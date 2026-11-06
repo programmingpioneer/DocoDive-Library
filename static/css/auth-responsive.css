@@ -1,0 +1,35 @@
+/* Standalone sign-in and recovery pages share readable phone-sized forms. */
+body[data-public-auth],body[data-public-recovery]{font-size:16px;line-height:1.6;min-height:100dvh;padding:clamp(12px,3vw,28px);align-items:flex-start}
+body[data-public-recovery]{flex-direction:column}
+body[data-public-recovery]>.footer-links{width:100%;max-width:480px;margin:18px auto 0!important}
+body[data-public-auth] .auth-wrapper,body[data-public-recovery]>.container{width:100%;max-width:480px;min-width:0;margin:auto}
+body[data-public-auth] .auth-card,body[data-public-recovery] .card{background:var(--ui-surface);color:var(--ui-text);backdrop-filter:none;-webkit-backdrop-filter:none;border:1px solid var(--ui-line);box-shadow:var(--ui-shadow)}
+body[data-public-auth] .auth-card{padding:clamp(20px,5vw,30px)}
+body[data-public-auth] .form-control,body[data-public-recovery] .form-control{font-size:16px;min-height:46px;line-height:1.4;border-radius:10px;max-width:100%;min-width:0}
+body[data-public-auth] .form-label,body[data-public-recovery] .form-label{font-size:13px;font-weight:600;line-height:1.5}
+body[data-public-auth] .brand-title,body[data-public-recovery] .brand-title{font-size:clamp(1.4rem,5vw,1.8rem);line-height:1.35}
+body[data-public-auth] .brand-sub,body[data-public-recovery] .brand-sub{font-size:13px;line-height:1.6}
+body[data-public-auth] .brand-block{margin-bottom:20px}
+body[data-public-auth] :is(.auth-tab,.show-password-box,.forgot-link,.btn-primary-custom,.social-btn),body[data-public-recovery] :is(button,.btn,.back-link){font-size:14px;min-height:44px}
+body[data-public-auth] .social-btn{font-size:12px;white-space:nowrap;padding-inline:8px}
+body[data-public-auth] .footer-links,body[data-public-recovery] .footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:12px;line-height:1.6}
+body[data-public-auth] .footer-links>a,body[data-public-recovery] .footer-links>a{min-height:36px;display:inline-flex;align-items:center}
+body[data-public-auth] :is(.small,small,.feedback,.username-hint),body[data-public-recovery] :is(.small,small,.feedback,.subtitle){font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+body[data-public-auth] .bg-blob,body[data-public-recovery] .bg-blob{display:none}
+body[data-public-recovery] .content{padding:clamp(20px,5vw,30px)}
+@media(max-width:359px){body[data-public-auth] .social-buttons{flex-direction:column}body[data-public-auth] .social-btn{width:100%;font-size:13px}body[data-public-auth] .row>.col-md-6{width:100%;margin-bottom:10px!important}}
+
+/* Recovery uses the same opaque reading surface in both appearances. */
+body[data-public-recovery]{background:var(--ui-bg);color:var(--ui-text)}
+body[data-public-recovery] .brand-block{background:transparent}
+body[data-public-recovery] .card{border-radius:22px;padding:clamp(22px,5vw,32px)}
+body[data-public-recovery] :is(.brand-title,.header h2,label,.timer span){color:var(--ui-text)}
+body[data-public-recovery] :is(.brand-sub,.header p,.timer){color:var(--ui-muted)}
+body[data-public-recovery] :is(.input-wrapper input,.code-boxes input){background:var(--ui-surface);color:var(--ui-text);border-color:var(--ui-line);min-height:48px;font-size:16px}
+body[data-public-recovery] .code-boxes input{font-size:24px}
+body[data-public-recovery] :is(.input-wrapper input,.code-boxes input)::placeholder{color:var(--ui-muted);opacity:1}
+body[data-public-recovery] :is(a,button,input):focus-visible{outline:3px solid var(--ui-focus);outline-offset:3px}
+body[data-public-recovery] .footer-links>a{color:var(--ui-muted);text-underline-offset:3px}
+body[data-public-recovery] .footer-links>a:hover{color:var(--ui-accent)}
+body[data-public-recovery] .back-link>a{display:inline-flex;align-items:center;min-height:44px;color:var(--ui-accent)}
+body[data-public-recovery] .message{font-size:14px;line-height:1.5;overflow-wrap:anywhere}

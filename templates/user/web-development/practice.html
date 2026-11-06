@@ -1,0 +1,592 @@
+{% extends 'user/_lesson_base.html' %}
+{% from 'user/_icons.html' import icon %}
+{% block title %}Web Development Practice Hub — Coding Challenges, MCQs & Debugging | DocoDive{% endblock %}
+{% block meta_description %}Practice web development with interactive challenges: MCQs, output prediction, coding tasks, and debugging across HTML, CSS, JavaScript, DOM, fetch APIs, closures, and service workers — beginner to advanced.{% endblock %}
+
+{% block extra_css %}
+<style>
+  .learning-page {
+    --wdp:var(--ui-primary);
+    --wdp-dark:var(--ui-primary-hover);
+    --wdp-light:var(--ui-surface-soft);
+    --wdp-border:var(--ui-line);
+  }
+
+  .practice-hero {
+    background:linear-gradient(135deg, var(--ui-surface-soft) 0%, var(--ui-surface-soft) 100%);
+    border:1px solid var(--ui-line);
+  }
+
+  .level-tabs { display: flex; flex-wrap: wrap; gap: 10px; }
+  .level-tab {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 22px; border-radius: 50px; font-weight: 700;
+    font-size: 0.9rem; cursor: pointer; border:2px solid var(--ui-line);
+    background:var(--ui-surface); color:var(--ui-muted); transition: all 0.2s ease; user-select: none;
+  }
+  .level-tab.active { background:var(--ui-primary); color:var(--ui-on-primary); border-color:var(--ui-line); }
+  .level-tab[data-level="beginner"].active { background:var(--ui-primary); border-color:var(--ui-line); }
+  .level-tab[data-level="intermediate"].active { background:var(--ui-primary); border-color:var(--ui-line); }
+  .level-tab[data-level="advanced"].active { background:var(--ui-primary); border-color:var(--ui-line); }
+  .level-tab[data-mode="survival"].active { background:var(--ui-primary); border-color:var(--ui-line); }
+
+  .setup-label {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color:var(--ui-muted); margin-bottom: 10px;
+  }
+  .topic-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background:var(--ui-surface-soft); color:var(--ui-accent); border:1px solid var(--ui-line);
+    border-radius: 50px; padding: 6px 14px; font-size: 0.82rem;
+    font-weight: 600; cursor: pointer; transition: all 0.2s ease; user-select: none;
+  }
+  .topic-chip:hover, .topic-chip.active {
+    background:var(--ui-primary); color:var(--ui-on-primary); border-color:var(--ui-line);
+  }
+  .form-select {
+    border-radius: 50px; border:1px solid var(--ui-line); padding: 10px 16px; font-size: 0.9rem;
+  }
+  .form-select:focus { border-color:var(--ui-line); box-shadow:var(--ui-shadow); }
+
+  .setup-box { background:var(--ui-surface); border:1px solid var(--ui-line); border-radius: 16px; padding: 24px; }
+  .session-header {
+    background:var(--ui-surface); border:1px solid var(--ui-line); border-radius: 16px;
+    padding: 16px 18px; margin-bottom: 16px;
+  }
+  .progress-track { height: 8px; background:var(--ui-surface-soft); border-radius: 50px; overflow: hidden; }
+  .progress-fill { height: 100%; background:linear-gradient(90deg,var(--ui-primary),var(--ui-surface-soft)); border-radius: 50px; transition: width .4s; }
+  .challenge-card { background:var(--ui-surface); border:1px solid var(--ui-line); border-radius: 16px; padding: 22px; }
+  .code-block {
+    background:var(--ui-surface-alt); color:var(--ui-accent); border-radius: 12px; padding: 16px;
+    font-family: Consolas, Monaco, monospace; font-size: 0.88rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word; margin: 10px 0;
+  }
+  .q-tag { background:var(--ui-surface-soft); color:var(--ui-accent); border:1px solid var(--ui-line); border-radius: 50px; padding: 3px 10px; font-size: 0.7rem; font-weight: 600; }
+  .tag-easy { background:var(--ui-surface-soft); color:var(--ui-accent); border-color:var(--ui-line); }
+  .tag-medium { background:var(--ui-surface-soft); color:var(--ui-accent); border-color:var(--ui-line); }
+  .tag-hard { background:var(--ui-surface-soft); color:var(--ui-accent); border-color:var(--ui-line); }
+  .type-badge { background:var(--ui-surface-soft); color:var(--ui-accent); border-radius:6px; padding:2px 8px; font-size:0.7rem; font-weight:700; text-transform:uppercase; }
+
+  .mcq-option {
+    display:block; width:100%; text-align:left; padding:12px 16px;
+    border:1px solid var(--ui-line); border-radius:12px; background:var(--ui-surface); margin-bottom:8px;
+    cursor:pointer; transition:all .15s; font-size:.9rem;
+  }
+  .mcq-option:hover { border-color:var(--ui-line); background:var(--ui-surface-soft); }
+  .mcq-option.correct { border-color:var(--ui-line) !important; background:var(--ui-surface-soft) !important; pointer-events:none; }
+  .mcq-option.incorrect { border-color:var(--ui-line) !important; background:var(--ui-surface-soft) !important; pointer-events:none; }
+  .mcq-option.neutral { opacity:0.55; pointer-events:none; }
+
+  .answer-input {
+    width:100%; border:1px solid var(--ui-line); border-radius:12px; padding:12px 16px;
+    font-size:.9rem; font-family:Consolas,Monaco,monospace; resize:vertical;
+  }
+  .answer-input:focus { outline:none; border-color:var(--ui-line); box-shadow:var(--ui-shadow); }
+
+  .feedback-box { border-radius:12px; padding:12px 16px; margin-top:12px; font-size:.9rem; display:none; }
+  .feedback-box.success { display:block; background:var(--ui-surface-soft); color:var(--ui-accent); border-left:4px solid var(--ui-line); }
+  .feedback-box.error { display:block; background:var(--ui-surface-soft); color:var(--ui-accent); border-left:4px solid var(--ui-line); }
+
+  .hint-box { background:var(--ui-surface-soft); border-left:4px solid var(--ui-line); color:var(--ui-accent); padding:12px 16px; border-radius:10px; font-size:.9rem; margin-top:10px; display:none; }
+  .explanation-box {
+    margin-top: 12px; padding: 14px 16px; background:var(--ui-surface);
+    border:1px solid var(--ui-line); border-left:4px solid var(--ui-line);
+    border-radius: 10px; font-size: .9rem; color:var(--ui-accent);
+  }
+  .explanation-box strong { color:var(--ui-accent); }
+
+  .complete-card { background:var(--ui-surface); border:1px solid var(--ui-line); border-radius:16px; padding:36px 24px; text-align:center; }
+  .complete-icon { width:72px; height:72px; border-radius:50%; background:var(--ui-surface-soft); color:var(--ui-accent); display:flex; align-items:center; justify-content:center; font-size:2.2rem; margin:0 auto 14px; }
+  .stat-box { background:var(--ui-surface-soft); border:1px solid var(--ui-line); border-radius:14px; padding:14px; text-align:center; }
+  .stat-value { font-size:1.7rem; font-weight:800; color:var(--ui-accent); }
+  .stat-label { font-size:.75rem; color:var(--ui-muted); font-weight:600; }
+  .survival-stats { display:inline-flex; gap:12px; align-items:center; }
+  .mistake-item { border:1px solid var(--ui-line); border-radius:12px; padding:12px 14px; margin-bottom:10px; background:var(--ui-surface); }
+  #radarCanvas { max-width:100%; height:auto; }
+
+  @media (max-width:575.98px) {
+    .practice-hero { padding:24px 16px; }
+    .practice-hero h1 { font-size:1.7rem; }
+    .challenge-card { padding:16px; }
+    .setup-box { padding:16px; }
+    .level-tab { padding:8px 14px; font-size:.8rem; }
+    .survival-stats { gap:8px; font-size:.8rem; }
+  }
+</style>
+
+{{ super() }}
+{% endblock %}
+
+{% block lesson_content %}
+<section class="container py-5">
+  {% include 'user/_practice_overview.html' %}
+
+  <div id="setupPanel" class="setup-box mb-4" aria-labelledby="practice-setup-title">
+    <div class="learning-practice-intro"><span class="learning-eyebrow">EXERCISES &amp; QUIZZES</span><h2 id="practice-setup-title">Choose your practice session</h2><p>Set a level, topic and question type, then start with the ideas you want to strengthen.</p></div>
+    <div class="mb-4">
+      <div class="setup-label">{{ icon('chart', 'me-1') }}1. Choose Level</div>
+      <div class="level-tabs">
+        <button class="level-tab active" data-level="beginner" onclick="selectLevel('beginner', this)" aria-pressed="true">{{ icon('sun', '') }} Beginner</button>
+        <button class="level-tab" data-level="intermediate" onclick="selectLevel('intermediate', this)" aria-pressed="false">{{ icon('sun', '') }} Intermediate</button>
+        <button class="level-tab" data-level="advanced" onclick="selectLevel('advanced', this)" aria-pressed="false">{{ icon('arrow-up', '') }} Advanced</button>
+      </div>
+    </div>
+    <div class="mb-4">
+      <div class="setup-label">{{ icon('book', 'me-1') }}2. Choose Topic</div>
+      <div class="d-flex flex-wrap gap-2" id="topicChips"></div>
+    </div>
+    <div class="mb-4">
+      <div class="setup-label">{{ icon('sliders', 'me-1') }}3. Choose Mode</div>
+      <div class="level-tabs">
+        <button class="level-tab active" data-mode="unlimited" onclick="selectMode('unlimited', this)" aria-pressed="true">{{ icon('refresh', '') }} Unlimited</button>
+        <button class="level-tab" data-mode="survival" onclick="selectMode('survival', this)" aria-pressed="false">{{ icon('flame', '') }} Survival</button>
+      </div>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-6">
+        <label class="setup-label" for="difficultySelect">Difficulty</label>
+        <select id="difficultySelect" class="form-select">
+          <option value="all">Mixed</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-6">
+        <label class="setup-label" for="typeSelect">Type</label>
+        <select id="typeSelect" class="form-select">
+          <option value="all">Mixed</option>
+          <option value="mcq">MCQ</option>
+          <option value="output">Output</option>
+          <option value="coding">Coding</option>
+          <option value="debugging">Debugging</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary rounded-pill w-100 py-3" style="background:var(--ui-primary);border-color:var(--ui-line);" onclick="startSession()">
+      {{ icon('arrow-right', 'me-1') }}Start Practice
+    </button>
+    <div class="d-flex flex-wrap gap-2 mt-3">
+      <button class="btn btn-outline-secondary rounded-pill flex-grow-1" onclick="openMistakes()">{{ icon('book', 'me-1') }}Mistakes</button>
+      <button class="btn btn-outline-secondary rounded-pill flex-grow-1" onclick="openRadar()">{{ icon('chart', 'me-1') }}Radar</button>
+    </div>
+  </div>
+
+  <div id="sessionPanel" class="d-none">
+    <div class="session-header">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+        <div>
+          <span class="fw-bold" style="color:var(--ui-accent);" id="sessionTopic">Topic</span>
+          <span class="text-muted ms-2 small" id="sessionCounter">Solved: 0</span>
+        </div>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          <span class="text-muted small">{{ icon('check-circle', 'text-success me-1') }}<strong id="correctCount">0</strong></span>
+          <span class="text-muted small">{{ icon('close', 'text-danger me-1') }}<strong id="wrongCount">0</strong></span>
+          <span class="text-muted small">{{ icon('check-circle', 'me-1') }}<strong id="accuracyCount">0%</strong></span>
+          <span class="text-muted small">{{ icon('clock', 'me-1') }}<strong id="timerDisplay">00:00</strong></span>
+          <span class="survival-stats d-none" id="survivalStats">
+            <span>{{ icon('heart', 'text-danger me-1') }}<strong id="livesDisplay">3</strong></span>
+            <span>{{ icon('flame', 'text-warning me-1') }}<strong id="comboDisplay">0</strong></span>
+            <span>{{ icon('star', 'text-warning me-1') }}<strong id="scoreDisplay">0</strong></span>
+          </span>
+          <button class="btn btn-danger rounded-pill px-3 py-1" onclick="finishSession()">{{ icon('close', 'me-1') }}Finish</button>
+        </div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
+    </div>
+    <div class="challenge-card" id="challengeCard"></div>
+  </div>
+
+  <div id="completePanel" class="d-none">
+    <div class="complete-card">
+      <div class="complete-icon">{{ icon('trophy', '') }}</div>
+      <h2 class="fw-bold mb-2" style="color:var(--ui-accent);" id="completeTitle">Practice Session Complete 🎉</h2>
+      <p class="text-muted mb-4" id="completeText"></p>
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3"><div class="stat-box"><div class="stat-value" id="totalSolved">0</div><div class="stat-label">Solved</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat-box"><div class="stat-value text-success" id="finalCorrect">0</div><div class="stat-label">Correct</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat-box"><div class="stat-value" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat-box"><div class="stat-value" id="finalTime">0m 0s</div><div class="stat-label">Time</div></div></div>
+      </div>
+      <div class="d-flex flex-wrap justify-content-center gap-2">
+        <button class="btn btn-primary rounded-pill px-4" style="background:var(--ui-primary);border-color:var(--ui-line);" onclick="startSession()">{{ icon('refresh', 'me-1') }}Practice Again</button>
+        <button class="btn btn-outline-primary rounded-pill px-4" onclick="backToSetup()">{{ icon('grid', 'me-1') }}Change Topic</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="mistakePanel" class="setup-box mb-4 d-none">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h2 class="h5 fw-bold mb-0">{{ icon('book', 'me-1') }}Mistake Notebook</h2>
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="practiceMistakes()">{{ icon('arrow-right', 'me-1') }}Practice Mistakes</button>
+        <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="clearMistakes()">{{ icon('trash', 'me-1') }}Clear All</button>
+      </div>
+    </div>
+    <p class="small text-muted" id="mistakeCount"></p>
+    <div id="mistakeList"></div>
+    <button class="btn btn-outline-primary rounded-pill mt-3" onclick="showPanel('setupPanel')">{{ icon('arrow-left', 'me-1') }}Back</button>
+  </div>
+
+  <div id="radarPanel" class="setup-box mb-4 d-none text-center">
+    <h2 class="h5 fw-bold mb-3">{{ icon('chart', 'me-1') }}Topic Radar</h2>
+    <canvas id="radarCanvas" width="360" height="360" class="mx-auto d-block"></canvas>
+    <p class="small text-muted mt-2">Your accuracy per topic — bigger shape = stronger.</p>
+    <button class="btn btn-outline-primary rounded-pill mt-3" onclick="showPanel('setupPanel')">{{ icon('arrow-left', 'me-1') }}Back</button>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const PRACTICE_DATA = {{ practice_items|tojson }};
+  const LS_SPACED = 'doco_wd_spaced_rep';
+  const LS_MISTAKES = 'doco_wd_mistakes';
+  const LS_TOPICS = 'doco_wd_topic_stats';
+
+  let currentLevel = 'beginner';
+  let currentTopic = '';
+  let sessionMode = 'unlimited';
+  let session = null;
+  let filteredPool = [];
+  let usedIds = [];
+  let timerInterval = null;
+  let sessionStartTime = null;
+  let currentQ = null;
+  let currentAttemptAnswered = false;
+
+  let spacedRep = loadJson(LS_SPACED, {});
+  let mistakes = loadJson(LS_MISTAKES, []);
+  let topicStats = loadJson(LS_TOPICS, {});
+
+  function loadJson(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return fallback;
+      const value = JSON.parse(raw);
+      if (Array.isArray(fallback)) return Array.isArray(value) ? value.filter(item => item && typeof item === 'object' && ['string','number'].includes(typeof item.id)).slice(0,200) : fallback;
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return fallback;
+      if (key === LS_TOPICS) {
+        const count = n => typeof n === 'number' && Number.isFinite(n) && n > 0 ? Math.min(1000000,Math.floor(n)) : 0;
+        return Object.fromEntries(Object.entries(value).slice(0,500).map(([topic,stat]) => [topic,{correct:count(stat?.correct),wrong:count(stat?.wrong)}]));
+      }
+      return value;
+    } catch(e) { return fallback; }
+  }
+  function saveJson(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch(e) { return false; }
+  }
+
+  function selectLevel(level, btn) {
+    currentLevel = level;
+    currentTopic = '';
+    document.querySelectorAll('.level-tab[data-level]').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-pressed','false'); });
+    btn.classList.add('active'); btn.setAttribute('aria-pressed','true');
+    renderTopics();
+  }
+  function selectMode(mode, btn) {
+    sessionMode = mode;
+    document.querySelectorAll('.level-tab[data-mode]').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-pressed','false'); });
+    btn.classList.add('active'); btn.setAttribute('aria-pressed','true');
+  }
+  function selectTopic(topic, btn) {
+    currentTopic = topic;
+    document.querySelectorAll('.topic-chip').forEach(c => { c.classList.remove('active'); c.setAttribute('aria-pressed','false'); });
+    if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed','true'); }
+  }
+  function showPanel(id) {
+    ['setupPanel','sessionPanel','completePanel','mistakePanel','radarPanel'].forEach(p => document.getElementById(p).classList.add('d-none'));
+    document.getElementById(id).classList.remove('d-none');
+  }
+  function renderTopics() {
+    const container = document.getElementById('topicChips');
+    const topics = [...new Set(PRACTICE_DATA.filter(q => q.level === currentLevel).map(q => q.topic))];
+    container.innerHTML = '';
+    const allChip = document.createElement('button');
+    allChip.className = 'topic-chip active'; allChip.type='button'; allChip.setAttribute('aria-pressed','true');
+    allChip.textContent = 'All Topics';
+    allChip.onclick = () => selectTopic('', allChip);
+    container.appendChild(allChip);
+    topics.forEach(topic => {
+      const chip = document.createElement('button');
+      chip.className = 'topic-chip'; chip.type='button'; chip.setAttribute('aria-pressed','false');
+      chip.textContent = topic;
+      chip.onclick = () => selectTopic(topic, chip);
+      container.appendChild(chip);
+    });
+  }
+  function startSession() {
+    const difficulty = document.getElementById('difficultySelect').value;
+    const type = document.getElementById('typeSelect').value;
+    filteredPool = PRACTICE_DATA.filter(q => q.level === currentLevel);
+    if (currentTopic) filteredPool = filteredPool.filter(q => q.topic === currentTopic);
+    if (difficulty !== 'all') filteredPool = filteredPool.filter(q => q.difficulty === difficulty);
+    if (type !== 'all') filteredPool = filteredPool.filter(q => q.type === type);
+    if (filteredPool.length === 0) { alert('No challenges for this selection.'); return; }
+    beginSession(currentTopic || 'Mixed');
+  }
+  function practiceMistakes() {
+    const ids = mistakes.map(m => m.id);
+    filteredPool = PRACTICE_DATA.filter(q => ids.includes(q.id));
+    if (filteredPool.length === 0) { alert('No mistakes to practice.'); return; }
+    beginSession('Mistakes');
+  }
+  function beginSession(topicLabel) {
+    usedIds = [];
+    session = { total: 0, correct: 0, wrong: 0, topic: topicLabel, mode: sessionMode, lives: 3, combo: 0, maxCombo: 0, score: 0 };
+    sessionStartTime = Date.now();
+    clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
+    updateSurvivalUI();
+    showPanel('sessionPanel');
+    renderChallenge();
+  }
+  function spacedWeight(qid) {
+    const b = spacedRep[qid] ?? 2;
+    const weights = { 0: 6, 1: 5, 2: 3, 3: 2, 4: 1, 5: 0.5 };
+    return weights[b] ?? 3;
+  }
+  function pickChallenge() {
+    let avail = filteredPool.filter(q => !usedIds.includes(q.id));
+    if (avail.length === 0) { usedIds = []; avail = filteredPool; }
+    let totalW = 0;
+    avail.forEach(q => totalW += spacedWeight(q.id));
+    let r = Math.random() * totalW;
+    for (const q of avail) {
+      r -= spacedWeight(q.id);
+      if (r <= 0) return q;
+    }
+    return avail[0];
+  }
+  function renderChallenge() {
+    const q = pickChallenge();
+    currentQ = q;
+    currentAttemptAnswered = false;
+    document.getElementById('sessionTopic').textContent = session.topic + ' Practice';
+    document.getElementById('sessionCounter').textContent = 'Solved: ' + session.total;
+    document.getElementById('correctCount').textContent = session.correct;
+    document.getElementById('wrongCount').textContent = session.wrong;
+    document.getElementById('accuracyCount').textContent = calcAccuracy();
+    const lc = {beginner:'tag-easy',intermediate:'tag-medium',advanced:'tag-hard'}[q.level] || 'tag-medium';
+    let html = `
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <span class="q-tag">${escapeHtml(q.topic)}</span><span class="q-tag ${lc}">${escapeHtml(q.difficulty)}</span><span class="ms-auto type-badge">${escapeHtml(q.type)}</span>
+      </div>
+      <h2 class="h5 fw-bold mb-2" style="color:var(--ui-accent);">${escapeHtml(q.title)}</h2>
+      <p class="fw-semibold mb-3" style="color:var(--ui-accent);">${escapeHtml(q.question)}</p>`;
+    if (q.code) html += `<pre class="code-block">${escapeHtml(q.code)}</pre>`;
+    if (q.type === 'mcq' && q.options) {
+      html += '<div class="mb-2" id="mcqOptions">';
+      q.options.forEach(opt => { html += `<button class="mcq-option" onclick="checkMcq(this,'${q.id}')">${escapeHtml(opt)}</button>`; });
+      html += '</div>';
+    } else {
+      html += `<textarea id="answerText" class="answer-input mb-2" rows="3" placeholder="Type your answer..."></textarea>`;
+      html += `<div class="d-flex flex-wrap gap-2 mt-1"><button class="btn btn-primary rounded-pill px-4" style="background:var(--ui-primary);border-color:var(--ui-line);" onclick="checkText('${q.id}')"><i class="bi bi-check2-circle me-1"></i>Check Answer</button></div>`;
+    }
+    html += `<div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+      <button class="btn btn-outline-secondary rounded-pill px-3" onclick="skipChallenge('${q.id}')"><i class="bi bi-skip-forward me-1"></i>Skip</button>
+    </div>`;
+    html += '<div class="feedback-box" id="fb"></div><div class="explanation-box d-none" id="explanationBox"></div><div class="hint-box" id="hintBox"></div>';
+    document.getElementById('challengeCard').innerHTML = html;
+    window.scrollTo({ top: document.getElementById('challengeCard').offsetTop - 100, behavior: 'smooth' });
+  }
+  function afterAnswer(isCorrect, q, userAnswer) {
+    if (!session || currentAttemptAnswered || !q || String(q.id) !== String(currentQ?.id)) return;
+    currentAttemptAnswered = true;
+    usedIds.push(q.id);
+    session.total++; isCorrect ? session.correct++ : session.wrong++;
+    if (isCorrect) spacedRep[q.id] = Math.min(5, (spacedRep[q.id] ?? 2) + 1);
+    else spacedRep[q.id] = 0;
+    saveJson(LS_SPACED, spacedRep);
+
+    if (!isCorrect) {
+      const entry = { id: q.id, title: q.title, topic: q.topic, level: q.level, yourAnswer: userAnswer, correctAnswer: q.answer, ts: Date.now() };
+      const existing = mistakes.find(m => m.id === q.id);
+      if (existing) Object.assign(existing, entry);
+      else mistakes.unshift(entry);
+      mistakes = mistakes.slice(0, 200);
+      saveJson(LS_MISTAKES, mistakes);
+    }
+    const t = topicStats[q.topic] || { correct: 0, wrong: 0 };
+    if (isCorrect) t.correct++; else t.wrong++;
+    topicStats[q.topic] = t;
+    const activitySaved = saveJson(LS_TOPICS, topicStats);
+    document.dispatchEvent(new CustomEvent('docodive:practice-answer', {detail:{key:LS_TOPICS,stats:topicStats,saved:activitySaved}}));
+
+    let gameOver = false;
+    if (session.mode === 'survival') {
+      if (isCorrect) { session.combo++; session.maxCombo = Math.max(session.maxCombo, session.combo); session.score += session.combo * 10; }
+      else { session.lives--; session.combo = 0; }
+      updateSurvivalUI();
+      if (session.lives <= 0) gameOver = true;
+    }
+
+    const fb = document.getElementById('fb');
+    const hint = document.getElementById('hintBox');
+    const exBox = document.getElementById('explanationBox');
+    fb.className = 'feedback-box ' + (isCorrect ? 'success' : 'error');
+    fb.style.display = 'block';
+    if (isCorrect) fb.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Correct! ✓';
+    else {
+      fb.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i> Incorrect. <span class="small">Expected: ' + escapeHtml(q.answer) + '</span>';
+      hint.style.display = 'block';
+      hint.innerHTML = '<i class="bi bi-lightbulb me-1"></i><strong>Hint:</strong> ' + escapeHtml(q.hint || '');
+    }
+    exBox.classList.remove('d-none');
+    exBox.innerHTML = '<strong>💡 Explanation:</strong> ' + escapeHtml(q.explanation || 'No explanation provided.');
+
+    if (!gameOver) {
+      document.getElementById('challengeCard').insertAdjacentHTML('beforeend', '<div class="text-center mt-3"><button class="btn btn-primary rounded-pill px-4" onclick="nextChallenge()"><i class="bi bi-arrow-right-circle me-1"></i>Next Challenge</button></div>');
+    }
+    updateStats();
+    if (gameOver) { finishSession(); }
+  }
+  function checkMcq(btn, qid) {
+    const q = PRACTICE_DATA.find(x => x.id == qid);
+    if (!q) return;
+    const selected = btn.textContent.trim();
+    const isCorrect = selected === q.answer;
+    const container = document.getElementById('mcqOptions');
+    if (container) {
+      container.querySelectorAll('.mcq-option').forEach(o => {
+        o.style.pointerEvents = 'none';
+        const optText = o.textContent.trim();
+        if (optText === q.answer) o.classList.add('correct');
+        else if (optText === selected && !isCorrect) o.classList.add('incorrect');
+        else o.classList.add('neutral');
+      });
+    }
+    afterAnswer(isCorrect, q, selected);
+  }
+  function checkText(qid) {
+    const q = PRACTICE_DATA.find(x => x.id == qid);
+    if (!q) return;
+    const val = document.getElementById('answerText').value.trim();
+    if (!val) { alert('Type your answer first.'); return; }
+    const norm = s => s.toLowerCase().replace(/\s+/g, ' ').trim();
+    const isCorrect = norm(val) === norm(q.answer);
+    afterAnswer(isCorrect, q, val);
+  }
+  function nextChallenge() { renderChallenge(); }
+  function skipChallenge(qid) { usedIds.push(Number(qid)); renderChallenge(); }
+  function calcAccuracy() { const t = session.correct + session.wrong; return t === 0 ? '0%' : Math.round((session.correct / t) * 100) + '%'; }
+  function updateStats() {
+    document.getElementById('correctCount').textContent = session.correct;
+    document.getElementById('wrongCount').textContent = session.wrong;
+    document.getElementById('accuracyCount').textContent = calcAccuracy();
+    document.getElementById('sessionCounter').textContent = 'Solved: ' + session.total;
+    const pct = filteredPool.length ? Math.min(100, Math.round((usedIds.length / filteredPool.length) * 100)) : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+  }
+  function updateSurvivalUI() {
+    const el = document.getElementById('survivalStats');
+    if (!session) return;
+    if (session.mode === 'survival') {
+      el.classList.remove('d-none');
+      document.getElementById('livesDisplay').textContent = session.lives;
+      document.getElementById('comboDisplay').textContent = session.combo;
+      document.getElementById('scoreDisplay').textContent = session.score;
+    } else el.classList.add('d-none');
+  }
+  function updateTimer() {
+    if (!sessionStartTime) return;
+    const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('timerDisplay').textContent = m + ':' + s;
+  }
+  function formatDuration(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    return Math.floor(totalSec / 60) + 'm ' + (totalSec % 60) + 's';
+  }
+  function finishSession() {
+    clearInterval(timerInterval);
+    showPanel('completePanel');
+    if (session.mode === 'survival') {
+      document.getElementById('completeTitle').textContent = session.lives <= 0 ? '💀 Game Over' : '🎉 Survival Complete';
+      document.getElementById('completeText').textContent = 'Score: ' + session.score + ' | Best combo: ' + session.maxCombo;
+    } else {
+      document.getElementById('completeTitle').textContent = 'Practice Session Complete 🎉';
+      document.getElementById('completeText').textContent = 'You solved ' + session.total + ' challenges in ' + session.topic + '.';
+    }
+    document.getElementById('totalSolved').textContent = session.total;
+    document.getElementById('finalCorrect').textContent = session.correct;
+    document.getElementById('finalAccuracy').textContent = calcAccuracy();
+    const elapsed = sessionStartTime ? Date.now() - sessionStartTime : 0;
+    document.getElementById('finalTime').textContent = formatDuration(elapsed);
+    sessionStartTime = null;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function backToSetup() {
+    clearInterval(timerInterval);
+    sessionStartTime = null;
+    session = null;
+    showPanel('setupPanel');
+  }
+  function openMistakes() { renderMistakes(); showPanel('mistakePanel'); }
+  function renderMistakes() {
+    const list = document.getElementById('mistakeList');
+    document.getElementById('mistakeCount').textContent = mistakes.length + ' saved mistake(s)';
+    if (!mistakes.length) list.innerHTML = '<p class="text-muted text-center py-4">No mistakes yet. Great job! 🎉</p>';
+    else list.innerHTML = mistakes.map(m => `
+      <div class="mistake-item">
+        <div class="fw-bold">${escapeHtml(m.title)}</div>
+        <div class="small text-muted">${escapeHtml(m.topic)} · ${escapeHtml(m.level)}</div>
+        <div class="small mt-1 text-danger">Your answer: ${escapeHtml(m.yourAnswer)}</div>
+        <div class="small text-success">Correct: ${escapeHtml(m.correctAnswer)}</div>
+      </div>`).join('');
+  }
+  function clearMistakes() { mistakes = []; saveJson(LS_MISTAKES, mistakes); renderMistakes(); }
+  function openRadar() { drawRadar(); showPanel('radarPanel'); }
+  function drawRadar() {
+    const radarToken = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    const canvas = document.getElementById('radarCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const topics = Object.keys(topicStats).filter(t => (topicStats[t].correct + topicStats[t].wrong) > 0);
+    if (topics.length < 3) {
+      ctx.fillStyle = radarToken('--ui-muted'); ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('Solve at least 3 topics to see the radar.', canvas.width / 2, canvas.height / 2);
+      return;
+    }
+    const cx = canvas.width / 2, cy = canvas.height / 2, R = Math.min(cx, cy) - 50;
+    const n = topics.length;
+    const angleStep = (2 * Math.PI) / n - Math.PI / 2;
+    for (let ring = 1; ring <= 4; ring++) {
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const a = angleStep * i;
+        const x = cx + Math.cos(a) * R * ring / 4;
+        const y = cy + Math.sin(a) * R * ring / 4;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.closePath(); ctx.strokeStyle = radarToken('--ui-line'); ctx.stroke();
+    }
+    for (let i = 0; i < n; i++) {
+      const a = angleStep * i;
+      const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y);
+      ctx.strokeStyle = radarToken('--ui-line'); ctx.stroke();
+      ctx.fillStyle = radarToken('--ui-text'); ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(topics[i], cx + Math.cos(a) * (R + 22), cy + Math.sin(a) * (R + 22));
+    }
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const s = topicStats[topics[i]];
+      const acc = s.correct / (s.correct + s.wrong);
+      const a = angleStep * i;
+      const x = cx + Math.cos(a) * R * acc;
+      const y = cy + Math.sin(a) * R * acc;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.globalAlpha = 0.25; ctx.fillStyle = radarToken('--ui-primary'); ctx.fill();
+    ctx.globalAlpha = 1; ctx.strokeStyle = radarToken('--ui-primary'); ctx.lineWidth = 2; ctx.stroke();
+  }
+  function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
+  document.addEventListener('DOMContentLoaded', renderTopics);
+</script>
+
+{{ super() }}
+{% endblock %}

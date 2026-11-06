@@ -1,0 +1,100 @@
+{% from 'user/_icons.html' import icon %}
+{% set signing_up = mode == 'signup' %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+{% include 'shared/_experience_init.html' %}
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,follow">
+  <meta name="csrf-token" content="{{ session.get('_csrf_token','') }}">
+  <title>{{ 'Create an account' if signing_up else 'Sign in' }} · DocoDive</title>
+  <link rel="icon" href="{{ url_for('static',filename='images/favicon.png') }}">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static',filename='css/reader-auth.css',v='20261101-1') }}">
+  <script src="{{ url_for('static',filename='js/csrf.js') }}" defer></script>
+  <script src="{{ url_for('static',filename='js/reader-auth.js',v='20261101-1') }}" defer></script>
+{% include 'shared/_experience_assets.html' %}
+</head>
+<body data-reader-auth data-auth-mode="{{ 'signup' if signing_up else 'login' }}">
+{% include 'shared/_page_skeleton.html' %}
+<div class="appearance-standalone">{% include 'shared/_theme_toggle.html' %}</div>
+  <a href="#auth-main" class="auth-skip">Skip to sign in</a>
+  <div class="reader-auth-layout">
+    <aside class="reader-auth-story" aria-label="Discover DocoDive">
+      <a href="/" class="reader-auth-brand"><span class="reader-brand-icon">{{ icon('book') }}</span><span>DocoDive<small>A WORLD WORTH READING</small></span></a>
+      <div class="reader-story-content">
+        <span class="reader-story-kicker"><span></span> YOUR NEXT CHAPTER STARTS HERE</span>
+        <h2>One little book.<br>A whole new<br><em>world of ideas.</em></h2>
+        <p>Find your next great read, follow a learning path, and make the library your own.</p>
+        <div class="reader-book-art" aria-hidden="true">
+          <div class="reader-art-circle"></div>
+          <div class="reader-art-book reader-book-back"><small>STAY CURIOUS</small><strong>Ideas<br>worth<br>exploring.</strong><span>THE DOCODIVE LIBRARY</span></div>
+          <div class="reader-art-book reader-book-front">{{ icon('book') }}<small>THE NEXT CHAPTER</small><strong>Read.<br>Learn.<br>Discover.</strong><span>DOCODIVE COLLECTION</span></div>
+          <span class="reader-art-spark">{{ icon('lightbulb') }}</span>
+          <span class="reader-art-caption">{{ icon('heart') }} A little curiosity goes a long way.</span>
+        </div>
+      </div>
+      <div class="reader-story-footer"><span>{{ icon('bookmark') }} Save your favorites</span><span>{{ icon('chart') }} Follow your progress</span></div>
+    </aside>
+
+    <main id="auth-main" class="reader-auth-workspace">
+      <div class="reader-auth-card">
+        <a href="/" class="reader-auth-back">{{ icon('arrow-left') }} Back to the library</a>
+        <header class="reader-auth-heading">
+          <span class="reader-access-label">{{ icon('library') }} YOUR PERSONAL LIBRARY</span>
+          <h1 id="reader-auth-title">{{ 'Your next chapter awaits.' if signing_up else 'Welcome back.' }}</h1>
+          <p id="reader-auth-description">{{ 'Create your free account and start exploring.' if signing_up else 'Sign in to pick up where you left off.' }}</p>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for category, message in messages %}
+          <div class="reader-auth-alert {{ 'success' if category == 'success' else 'notice' if category in ('info','message') else 'warning' }}" role="{{ 'status' if category in ('success','info','message') else 'alert' }}">{{ icon('check-circle' if category == 'success' else 'info') }}<span>{{ message }}</span></div>
+          {% endfor %}
+        {% endwith %}
+        {% if error %}<div class="reader-auth-alert warning" role="alert">{{ icon('info') }}<span>{{ error }}</span></div>{% endif %}
+
+        <nav class="reader-auth-tabs" role="tablist" aria-label="Account access">
+          <a href="/user/login" id="login-tab-control" role="tab" data-auth-tab="login" aria-controls="login-tab" aria-selected="{{ 'false' if signing_up else 'true' }}" tabindex="{{ '-1' if signing_up else '0' }}">Sign in</a>
+          <a href="/user/signup" id="signup-tab-control" role="tab" data-auth-tab="signup" aria-controls="signup-tab" aria-selected="{{ 'true' if signing_up else 'false' }}" tabindex="{{ '0' if signing_up else '-1' }}">Create account</a>
+        </nav>
+
+        <section id="login-tab" role="tabpanel" aria-labelledby="login-tab-control" {% if signing_up %}hidden{% endif %}>
+          <form method="post" action="/user/login" class="reader-auth-form">
+            <input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}">
+            <div class="reader-auth-field"><label for="login-email">Email address</label><div class="reader-input-wrap">{{ icon('mail') }}<input id="login-email" name="email" type="email" autocomplete="username" placeholder="you@example.com" required maxlength="254" value="{{ request.form.get('email','') if not signing_up else '' }}"></div></div>
+            <div class="reader-auth-field"><div class="reader-label-row"><label for="login-password">Password</label><a href="/forgot-password">Forgot password?</a></div><div class="reader-input-wrap">{{ icon('lock') }}<input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required maxlength="128"><button type="button" class="reader-password-toggle" data-auth-password="login-password" aria-label="Show password" aria-pressed="false"><span data-eye-open>{{ icon('eye') }}</span><span data-eye-closed hidden>{{ icon('eye-off') }}</span></button></div></div>
+            <button type="submit" class="reader-auth-submit">Sign in to DocoDive {{ icon('arrow-right') }}</button>
+          </form>
+          <p class="reader-auth-switch">New to the library? <a href="/user/signup" data-auth-switch="signup">Create a free account</a></p>
+        </section>
+
+        <section id="signup-tab" role="tabpanel" aria-labelledby="signup-tab-control" {% if not signing_up %}hidden{% endif %}>
+          <form method="post" action="/user/signup" class="reader-auth-form reader-signup-form">
+            <input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}">
+            <div class="reader-name-row">
+              <div class="reader-auth-field"><label for="first-name">First name</label><input id="first-name" name="first_name" autocomplete="given-name" placeholder="First name" required maxlength="50" value="{{ request.form.get('first_name','') if signing_up else '' }}"></div>
+              <div class="reader-auth-field"><label for="last-name">Last name</label><input id="last-name" name="last_name" autocomplete="family-name" placeholder="Last name" required maxlength="50" value="{{ request.form.get('last_name','') if signing_up else '' }}"></div>
+            </div>
+            <div class="reader-auth-field"><label for="username">Username</label><input id="username" name="username" autocomplete="username" placeholder="Your reader name" required minlength="3" maxlength="20" pattern="[A-Za-z0-9]{3,20}" aria-describedby="username-help username-feedback" data-availability="username" value="{{ request.form.get('username','') if signing_up else '' }}"><small id="username-help">3–20 letters and numbers, without spaces.</small><span class="reader-field-feedback" id="username-feedback" aria-live="polite"></span></div>
+            <div class="reader-auth-field"><label for="email">Email address</label><div class="reader-input-wrap">{{ icon('mail') }}<input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required maxlength="254" data-availability="email" aria-describedby="email-feedback" value="{{ request.form.get('email','') if signing_up else '' }}"></div><span class="reader-field-feedback" id="email-feedback" aria-live="polite"></span></div>
+            <div class="reader-auth-field"><label for="signup-password">Password</label><div class="reader-input-wrap">{{ icon('lock') }}<input id="signup-password" name="password" type="password" autocomplete="new-password" placeholder="Create a password" required minlength="8" maxlength="128" aria-describedby="signup-password-help"><button type="button" class="reader-password-toggle" data-auth-password="signup-password" aria-label="Show password" aria-pressed="false"><span data-eye-open>{{ icon('eye') }}</span><span data-eye-closed hidden>{{ icon('eye-off') }}</span></button></div><small id="signup-password-help">8+ characters, with uppercase, lowercase and a number.</small></div>
+            <button type="submit" class="reader-auth-submit">Create free account {{ icon('arrow-right') }}</button>
+          </form>
+          <p class="reader-signup-note">By creating an account, you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
+          <p class="reader-auth-switch">Already a member? <a href="/user/login" data-auth-switch="login">Sign in</a></p>
+        </section>
+
+        <div class="reader-social-divider"><span>or continue with</span></div>
+        <div class="reader-social-buttons">
+          <a href="/login/google" class="reader-social-google">{{ icon('google') }} Google</a>
+          <a href="/login/github">{{ icon('github') }} GitHub</a>
+          <a href="/login/facebook" class="reader-social-facebook">{{ icon('facebook') }} Facebook</a>
+        </div>
+        <nav class="reader-auth-legal" aria-label="Help and privacy"><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/cookies">Cookies</a><a href="/data-deletion">Data deletion</a><a href="/contact">Contact</a></nav>
+      </div>
+      <p class="reader-auth-footnote">{{ icon('shield') }} Your library, your pace.</p>
+    </main>
+  </div>
+</body>
+</html>

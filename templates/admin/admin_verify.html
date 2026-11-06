@@ -1,0 +1,8 @@
+{% extends 'admin/auth_base.html' %}
+{% block title %}Verify your email · DocoDive Studio{% endblock %}
+{% block auth_content %}
+<div class="studio-auth-heading"><span class="studio-auth-step">02 / EMAIL VERIFICATION</span><h2 id="studio-auth-title">Check your inbox.</h2><p>Enter the 6-digit code sent to your registered email.</p></div>
+{% if error %}<div class="studio-error" role="alert">{{ error }}</div>{% endif %}
+<form method="post" class="studio-auth-form"><input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}"><div class="studio-auth-field"><label for="otp-code">Verification code</label><input class="studio-otp-input" id="otp-code" name="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autofocus placeholder="000000" aria-describedby="otp-help"><small id="otp-help">Valid for 5 minutes. Maximum 3 attempts.</small></div><button class="studio-auth-submit" type="submit"><span>Verify & enter Studio</span><span aria-hidden="true">→</span></button></form>
+<div class="studio-resend"><span>Didn't receive it?</span><form action="{{ url_for('admin.resend_code') }}" method="post"><input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}"><button type="submit">Resend code</button></form></div><p class="studio-auth-security-note">Wait 60 seconds between resends. Maximum 5 sends per hour.</p><a class="studio-auth-restart" href="{{ url_for('admin.login',restart=1) }}">Use another account</a>
+{% endblock %}

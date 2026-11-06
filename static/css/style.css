@@ -96,82 +96,25 @@ body {
   color: var(--secondary) !important;
 }
 
-/* ---- DARK MODE (complete coverage) ---- */
-[data-bs-theme="dark"] body {
-  background-color: #1e1e2f !important;
-  color: #e0e0e0;
-}
-[data-bs-theme="dark"] .card {
-  background-color: #2a2a3d !important;
-  color: #e0e0e0;
-}
-[data-bs-theme="dark"] .card .text-muted {
-  color: #ccc !important;
-}
-[data-bs-theme="dark"] .bg-light {
-  background-color: #333 !important;
-}
-[data-bs-theme="dark"] .hero-section {
-  background: linear-gradient(135deg, #2a2a3d 0%, #1e1e2f 100%) !important;
-}
-[data-bs-theme="dark"] .about-section {
-  background-color: #2a2a3d !important;
-}
-[data-bs-theme="dark"] .navbar {
-  background: rgba(42, 42, 61, 0.95) !important;
-}
-[data-bs-theme="dark"] .nav-link {
-  color: #e0e0e0 !important;
-}
-[data-bs-theme="dark"] .nav-link.active,
-[data-bs-theme="dark"] .nav-link:hover {
-  color: var(--primary) !important;
-}
-[data-bs-theme="dark"] .btn-outline-primary {
-  border-color: #818cf8;
-  color: #818cf8;
-}
-[data-bs-theme="dark"] .btn-outline-primary:hover {
-  background-color: #818cf8;
-  color: #fff;
-}
-
-/* Dark mode – badges */
-[data-bs-theme="dark"] .badge.bg-light {
-  background-color: #3a3a4d !important;
-  color: #e0e0e0 !important;
-}
-/* Dark mode – form inputs & search bar */
-[data-bs-theme="dark"] .form-control {
-  background-color: #3a3a4d !important;
-  color: #fff !important;
-  border-color: #555;
-}
-[data-bs-theme="dark"] .form-control::placeholder {
-  color: #aaa;
-}
-[data-bs-theme="dark"] .input-group .btn {
-  background-color: #1e1b4b !important;
-  border-color: #1e1b4b !important;
-}
-/* Dark mode – carousel controls */
-[data-bs-theme="dark"] .carousel-control-prev-icon,
-[data-bs-theme="dark"] .carousel-control-next-icon {
-  background-color: #555 !important;
-  border-radius: 50%;
-  background-size: 60%;
-}
-/* Dark mode – pagination */
-[data-bs-theme="dark"] .pagination .page-link {
-  background-color: #2a2a3d;
-  color: #e0e0e0;
-  border-color: #444;
-}
-[data-bs-theme="dark"] .pagination .active .page-link {
-  background-color: #4338ca;
-  border-color: #4338ca;
-  color: #fff;
-}
+/* Legacy selectors use the same semantic roles as current components. */
+[data-bs-theme="dark"] body { background-color:var(--ui-bg)!important; color:var(--ui-text); }
+[data-bs-theme="dark"] .card { background-color:var(--ui-surface)!important; color:var(--ui-text); }
+[data-bs-theme="dark"] .card .text-muted { color:var(--ui-muted)!important; }
+[data-bs-theme="dark"] .bg-light { background-color:var(--ui-surface-alt)!important; }
+[data-bs-theme="dark"] .hero-section { background:var(--ui-hero-gradient)!important; }
+[data-bs-theme="dark"] .about-section { background-color:var(--ui-surface-alt)!important; }
+[data-bs-theme="dark"] .navbar { background:var(--ui-surface)!important; }
+[data-bs-theme="dark"] .nav-link { color:var(--ui-text)!important; }
+[data-bs-theme="dark"] .nav-link.active,[data-bs-theme="dark"] .nav-link:hover { color:var(--ui-accent)!important; }
+[data-bs-theme="dark"] .btn-outline-primary { border-color:var(--ui-line); color:var(--ui-accent); }
+[data-bs-theme="dark"] .btn-outline-primary:hover { background-color:var(--ui-primary); border-color:var(--ui-primary); color:var(--ui-on-primary); }
+[data-bs-theme="dark"] .badge.bg-light { background-color:var(--ui-surface-alt)!important; color:var(--ui-muted)!important; }
+[data-bs-theme="dark"] .form-control { background-color:var(--ui-surface-alt)!important; color:var(--ui-text)!important; border-color:var(--ui-line); }
+[data-bs-theme="dark"] .form-control::placeholder { color:var(--ui-muted); }
+[data-bs-theme="dark"] .input-group .btn { background-color:var(--ui-primary)!important; border-color:var(--ui-primary)!important; color:var(--ui-on-primary); }
+[data-bs-theme="dark"] .carousel-control-prev-icon,[data-bs-theme="dark"] .carousel-control-next-icon { background-color:var(--ui-line)!important; border-radius:50%; background-size:60%; }
+[data-bs-theme="dark"] .pagination .page-link { background-color:var(--ui-surface); color:var(--ui-accent); border-color:var(--ui-line); }
+[data-bs-theme="dark"] .pagination .active .page-link { background-color:var(--ui-primary); border-color:var(--ui-primary); color:var(--ui-on-primary); }
 
 /* ---- SCROLL FADE ---- */
 .scroll-fade {

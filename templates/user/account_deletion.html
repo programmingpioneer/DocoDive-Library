@@ -1,0 +1,14 @@
+{% extends 'user/base.html' %}
+{% block title %}Account deletion | DocoDive{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static',filename='css/settings.css',v='20261031') }}">{% endblock %}
+{% block content %}
+<section class="settings-page container">
+  <div class="settings-card mx-auto" style="max-width:740px">
+    <p class="settings-kicker">ACCOUNT & PRIVACY</p><h1 class="h2">Request account deletion</h1>
+    <p>Verify your email to submit a request for administrator approval. Your sessions are signed out immediately when the verified request is submitted.</p>
+    <div class="settings-note"><p>Sign in to restore your account strictly before the <strong>15-day deadline</strong> from your request. An approved request is deleted by scheduled maintenance after that deadline; an unapproved request remains pending.</p><p>Shared public books remain with your account association removed. Limited name/email deletion records are removed 30 days after completed deletion.</p></div>
+    {% include 'user/_deletion_controls.html' %}
+    <div class="settings-links mt-4"><a href="/user/settings#delete-account">Back to account settings</a><a href="/data-deletion">Read the complete deletion guide</a></div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,643 @@
+{% extends 'user/_lesson_base.html' %}
+{% block title %}Python Advanced Guide — Master Professional Python | DocoDive{% endblock %}
+{% block meta_description %}Master professional Python with 20 advanced lessons: async, concurrency, memory, performance, packaging, security, and production patterns.{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ===== BASE (RED THEME) ===== */
+  .lesson-hero {
+    background:linear-gradient(135deg, var(--ui-surface-soft) 0%, var(--ui-surface-soft) 100%);
+    border:1px solid var(--ui-line);
+  }
+  .hero-stat-link {
+    text-decoration: none;
+    color:var(--ui-muted);
+    transition: color 0.2s ease;
+  }
+  .hero-stat-link:hover {
+    color:var(--ui-accent);
+  }
+
+  .course-layout {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  .course-nav {
+    position: sticky;
+    top: 90px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    background:var(--ui-surface);
+    border:1px solid var(--ui-line);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .course-nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    color:var(--ui-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .course-nav a:hover { background:var(--ui-surface-soft); color:var(--ui-accent); }
+  .course-nav a .nav-num {
+    flex-shrink: 0; width: 24px; color:var(--ui-accent); font-weight: 700;
+  }
+  .course-nav a .nav-title {
+    flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .course-nav a .nav-duration {
+    flex-shrink: 0; font-size: 0.72rem; color:var(--ui-muted);
+  }
+  .course-nav-toggle { display: none; }
+
+  /* ===== LESSON STYLING ===== */
+  .lesson-step { scroll-margin-top: 100px; margin-bottom: 32px; }
+  .lesson-card {
+    background:var(--ui-surface); border:1px solid var(--ui-line); border-radius: 16px; padding: 24px;
+  }
+  .code-block {
+    background:var(--ui-surface-alt); color:var(--ui-accent); border-radius: 12px; overflow: hidden;
+  }
+  .code-block pre {
+    margin: 0; padding: 18px; font-family: Consolas, Monaco, 'Courier New', monospace;
+    font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+  }
+  .callout {
+    border-left: 4px solid; padding: 12px 16px; border-radius: 10px; font-size: 0.9rem;
+  }
+  .callout-tip     { background:var(--ui-surface-soft); border-color:var(--ui-line); color:var(--ui-accent); }
+  .callout-warning { background:var(--ui-surface-soft); border-color:var(--ui-line); color:var(--ui-accent); }
+  .callout-best    { background:var(--ui-surface-soft); border-color:var(--ui-line); color:var(--ui-accent); }
+  .callout-important { background:var(--ui-surface-soft); border-color:var(--ui-line); color:var(--ui-accent); }
+  .exercise-box {
+    background:var(--ui-surface-soft); border:1px dashed var(--ui-line); border-radius: 12px; padding: 16px;
+  }
+  .docs-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;
+    color:var(--ui-accent); text-decoration: none; font-weight: 600;
+  }
+  .docs-link:hover { text-decoration: underline; }
+  .lesson-complete { transition: all 0.2s ease; }
+  .lesson-complete.done { background:var(--ui-surface-soft); border-color:var(--ui-line); }
+
+  /* ===== TERMINAL STYLE ===== */
+  .terminal {
+    background:var(--ui-surface-alt); color:var(--ui-accent); border-radius: 12px; overflow: hidden;
+    font-family: Consolas, Monaco, monospace;
+  }
+  .terminal-header {
+    background:var(--ui-surface-alt); padding: 10px 16px;
+    display: flex; align-items: center; gap: 8px; border-bottom:1px solid var(--ui-line);
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-red { background:var(--ui-primary); }
+  .dot-yellow { background:var(--ui-primary); }
+  .dot-green { background:var(--ui-primary); }
+  .terminal-title {
+    color:var(--ui-muted); font-size: 0.75rem; margin-left: 6px;
+  }
+  .terminal-body {
+    padding: 14px 16px; font-size: 0.82rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+
+  /* ===== PROJECTS ACCORDION ===== */
+  .projects-section .accordion-item {
+    border:1px solid var(--ui-line);
+    border-radius: 16px !important;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .projects-section .accordion-button {
+    background:var(--ui-surface);
+    color:var(--ui-accent);
+    font-weight: 700;
+    padding: 18px 20px;
+    border-radius: 0 !important;
+  }
+  .projects-section .accordion-button:not(.collapsed) {
+    background:var(--ui-surface-soft);
+    color:var(--ui-accent);
+  }
+  .projects-section .accordion-button:focus {
+    box-shadow: none;
+    border-color: transparent;
+  }
+  .project-badge {
+    background:var(--ui-surface-soft); color:var(--ui-accent); font-weight: 700;
+    padding: 5px 12px; border-radius: 50px; font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+  .project-guide {
+    background:var(--ui-surface-soft); border-radius: 12px; padding: 16px;
+  }
+  .project-guide h6 {
+    color:var(--ui-accent); font-weight: 700; margin-bottom: 8px;
+  }
+  .concept-chip {
+    background:var(--ui-surface-soft); color:var(--ui-accent); border:1px solid var(--ui-line);
+    border-radius: 50px; padding: 3px 10px; font-size: 0.72rem; font-weight: 600;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 991.98px) {
+    .course-layout { grid-template-columns: 1fr; }
+    .course-nav-toggle {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; margin-bottom: 20px;
+    }
+    .course-nav { position: static; max-height: none; }
+    .course-nav.collapse.show { max-height: 60vh; overflow-y: auto; margin-bottom: 24px; }
+  }
+  @media (max-width: 576px) {
+    .lesson-hero { padding: 24px 16px; }
+    .lesson-hero h1 { font-size: 1.75rem; }
+    .lesson-card { padding: 16px; }
+    .lesson-card h2.h4 { font-size: 1.1rem; }
+    .code-block pre { font-size: 0.78rem; padding: 14px; }
+    .terminal-body { font-size: 0.75rem; padding: 12px; }
+    .callout { padding: 10px 12px; font-size: 0.85rem; }
+    .exercise-box { padding: 12px; }
+    .exercise-actions { flex-direction: column; width: 100%; }
+    .exercise-actions .btn { width: 100%; }
+    .lesson-footer { flex-direction: column; gap: 10px; }
+    .lesson-footer .btn { width: 100%; }
+    .project-guide { padding: 12px; }
+    .projects-section .accordion-button { padding: 14px 16px; font-size: 0.9rem; }
+  }
+</style>
+
+{{ super() }}
+{% endblock %}
+
+{% block lesson_content %}
+{% if lessons %}
+<section class="container py-5">
+  <!-- HERO -->
+  <div class="lesson-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="badge rounded-pill" style="background:var(--ui-primary);color:var(--ui-on-primary);font-weight:700;">Advanced</span>
+      <span class="badge rounded-pill bg-light text-dark border">Professional Python</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:var(--ui-accent);">Python Advanced Guide</h1>
+    <p class="text-muted mb-4">Master professional Python: async, concurrency, memory, performance, packaging, security, and production patterns used in real-world systems.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 mb-3">
+      <span class="text-muted small"><i class="bi bi-clock me-1"></i>5–7 weeks</span>
+      <span class="text-muted small"><i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons</span>
+      <a href="#advanced-projects" class="hero-stat-link small">
+        <i class="bi bi-code-square me-1"></i>3 projects
+      </a>
+      <a href="#lesson-20" class="hero-stat-link small">
+        <i class="bi bi-trophy me-1"></i>1 capstone
+      </a>
+      <span class="text-muted small"><i class="bi bi-mortarboard me-1"></i>Intermediate path required</span>
+    </div>
+    <a href="#lesson-1" class="btn btn-primary rounded-pill px-4 py-2" style="background:var(--ui-primary);border-color:var(--ui-line);">
+      <i class="bi bi-rocket-takeoff me-2"></i>Start Learning
+    </a>
+  </div>
+
+  <!-- MOBILE TOGGLE -->
+  <button class="btn btn-outline-primary course-nav-toggle" type="button" aria-expanded="false" aria-controls="courseNav">
+    <i class="bi bi-list-ol" aria-hidden="true"></i><span data-course-toggle-label>Show Course Content</span>
+  </button>
+
+  <div class="course-layout">
+    <!-- SIDEBAR -->
+    <aside id="courseNav" class="course-nav" aria-label="Course contents">
+      <h3 class="h6 fw-bold mb-3" style="color:var(--ui-accent);"><i class="bi bi-list-ol me-2"></i>Course Content</h3>
+      {% for lesson in lessons %}
+      <a href="#lesson-{{ lesson.id }}" class="course-nav-link">
+        <span class="nav-num">{{ "%02d"|format(lesson.id) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+        <span class="nav-duration">{{ lesson.duration }}</span>
+      </a>
+      {% endfor %}
+      <a href="#advanced-projects" class="course-nav-link">
+        <span class="nav-num"><i class="bi bi-hammer"></i></span>
+        <span class="nav-title">Advanced Projects</span>
+      </a>
+    </aside>
+
+    <!-- LESSONS -->
+    <div>
+      {% for lesson in lessons %}
+      <div id="lesson-{{ lesson.id }}" class="lesson-step">
+        <div class="lesson-card lesson-complete" data-lesson="{{ lesson.id }}">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="nav-num fw-bold" style="color:var(--ui-accent);">{{ "%02d"|format(lesson.id) }}</span>
+            <h2 class="h4 fw-bold mb-0" style="color:var(--ui-accent);">{{ lesson.title }}</h2>
+            <span class="nav-duration ms-auto text-muted small"><i class="bi bi-clock me-1"></i>{{ lesson.duration }}</span>
+          </div>
+
+          <div class="mb-3">
+            <h3 class="h6 fw-bold mb-2" style="color:var(--ui-accent);"><i class="bi bi-bullseye me-2"></i>What you'll learn</h3>
+            <ul class="list-unstyled">
+              {% for obj in lesson.objectives %}
+              <li class="d-flex gap-2 mb-1">
+                <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                <span class="text-dark">{{ obj }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <p class="text-dark">{{ lesson.explanation }}</p>
+
+          <div class="code-block mb-3">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:var(--ui-surface-alt);color:var(--ui-muted);font-size:0.8rem;">
+              <span><i class="bi bi-filetype-py me-1"></i>Python</span>
+              <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                <i class="bi bi-clipboard me-1"></i>Copy
+              </button>
+            </div>
+            <pre>{{ lesson.code }}</pre>
+          </div>
+
+          <div class="mb-3">
+            <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Output</div>
+            <div class="terminal">
+              <div class="terminal-header">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+                <span class="terminal-title">python</span>
+              </div>
+              <div class="terminal-body">{{ lesson.output }}</div>
+            </div>
+          </div>
+
+          <div class="callout callout-{{ lesson.callout_type }} mb-3">
+            {% if lesson.callout_type == 'tip' %}<strong>💡 Tip:</strong>
+            {% elif lesson.callout_type == 'warning' %}<strong>⚠️ Common Mistake:</strong>
+            {% elif lesson.callout_type == 'best' %}<strong>✓ Best Practice:</strong>
+            {% else %}<strong>🔎 Important:</strong>{% endif %}
+            {{ lesson.callout_text }}
+          </div>
+
+          <div class="mb-3">
+            <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="docs-link">
+              <i class="bi bi-box-arrow-up-right"></i>{{ lesson.docs_label }} — Official Documentation
+            </a>
+          </div>
+
+          <div class="exercise-box">
+            <h3 class="h6 fw-bold mb-2" style="color:var(--ui-accent);"><i class="bi bi-pencil-square me-2"></i>Try it yourself</h3>
+            <p class="mb-2">{{ lesson.exercise_prompt }}</p>
+            <div class="d-flex gap-2 mb-3 exercise-actions">
+              <button class="btn btn-outline-primary btn-sm rounded-pill" onclick="toggleHint(this)">Show Hint</button>
+              <button class="btn btn-outline-success btn-sm rounded-pill" onclick="toggleSolution(this)">Show Solution</button>
+            </div>
+            <div class="hint-box d-none small text-muted"><i class="bi bi-lightbulb me-1"></i>{{ lesson.exercise_hint }}</div>
+            <div class="solution-box d-none">
+              <div class="code-block"><pre>{{ lesson.exercise_solution }}</pre></div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer" style="border-top:1px solid var(--ui-line);">
+            {% if loop.previtem %}
+            <a href="#lesson-{{ loop.previtem.id }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+              <i class="bi bi-arrow-left me-1"></i>Lesson {{ "%02d"|format(loop.previtem.id) }}
+            </a>
+            {% else %}
+            <span></span>
+            {% endif %}
+
+            <button class="btn btn-outline-success btn-sm rounded-pill mark-complete" onclick="markComplete(this)">
+              <i class="bi bi-check2-circle me-1"></i>Mark Complete
+            </button>
+
+            {% if loop.nextitem %}
+            <a href="#lesson-{{ loop.nextitem.id }}" class="btn btn-primary btn-sm rounded-pill">
+              Next Lesson <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            {% else %}
+            <span></span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- ==================== ADVANCED PROJECTS ==================== -->
+      <div class="projects-section mt-5" id="advanced-projects">
+        <h2 class="fw-bold mb-4" style="color:var(--ui-accent);">
+          <i class="bi bi-hammer me-2"></i>Advanced Projects
+        </h2>
+        <p class="text-muted mb-4">Professional-grade projects with real inputs, concurrency, and clean architecture. Click each project to open its full guide.</p>
+
+        <div class="accordion" id="projectsAccordion">
+
+          <!-- PROJECT 1 -->
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#project1">
+                <span class="project-badge me-3">Project 1</span>
+                Concurrent URL Fetcher
+              </button>
+            </h3>
+            <div id="project1" class="accordion-collapse collapse show" data-bs-parent="#projectsAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h4 class="h6"><i class="bi bi-info-circle me-2"></i>About this project</h4>
+                  <p class="small text-dark mb-2">Fetch multiple URLs concurrently using asyncio. This is the real-world pattern used by web scrapers and API clients — dozens of requests at once without waiting for each one.</p>
+
+                  <h4 class="h6"><i class="bi bi-box me-2"></i>What you'll practice</h4>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">asyncio</span>
+                    <span class="concept-chip">aiohttp (async I/O)</span>
+                    <span class="concept-chip">asyncio.gather</span>
+                    <span class="concept-chip">error handling</span>
+                    <span class="concept-chip">timing</span>
+                  </div>
+
+                  <h3 class="h6"><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h3>
+                  <ol class="small text-dark mb-0">
+                    <li>Define a list of URLs to fetch.</li>
+                    <li>Write an async <code>fetch()</code> function that waits on network I/O.</li>
+                    <li>Use <code>asyncio.gather()</code> to run all fetches at the same time.</li>
+                    <li>Measure total time to prove concurrency beats sequential requests.</li>
+                    <li>Catch per-request errors so one failure doesn't stop the rest.</li>
+                  </ol>
+                </div>
+
+                <div class="code-block mb-3">
+                  <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:var(--ui-surface-alt);color:var(--ui-muted);font-size:0.8rem;">
+                    <span><i class="bi bi-filetype-py me-1"></i>Python</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>import asyncio
+import time
+
+async def fetch(url, delay):
+    # Simulate network I/O with an async sleep
+    await asyncio.sleep(delay)
+    return f"{url} -> done"
+
+async def main():
+    urls = [("site-a.com", 2), ("site-b.com", 1), ("site-c.com", 3)]
+
+    start = time.perf_counter()
+    results = await asyncio.gather(
+        *(fetch(url, delay) for url, delay in urls)
+    )
+    elapsed = time.perf_counter() - start
+
+    for result in results:
+        print(result)
+
+    print(f"All fetched in {elapsed:.2f}s (not 6s!)")
+
+asyncio.run(main())</pre>
+                </div>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">python concurrent_fetch.py</span>
+                  </div>
+                  <div class="terminal-body">site-a.com -> done
+site-b.com -> done
+site-c.com -> done
+All fetched in 3.00s (not 6s!)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROJECT 2 -->
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#project2">
+                <span class="project-badge me-3">Project 2</span>
+                Command-Line Password Manager
+              </button>
+            </h3>
+            <div id="project2" class="accordion-collapse collapse" data-bs-parent="#projectsAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h4 class="h6"><i class="bi bi-info-circle me-2"></i>About this project</h4>
+                  <p class="small text-dark mb-2">Build a secure CLI password manager with user input, hashing, and JSON storage. It demonstrates real security: secrets module, hashlib, and file persistence — all from a terminal.</p>
+
+                  <h4 class="h6"><i class="bi bi-box me-2"></i>What you'll practice</h4>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">hashlib (SHA-256)</span>
+                    <span class="concept-chip">secrets (salting)</span>
+                    <span class="concept-chip">input()</span>
+                    <span class="concept-chip">JSON file I/O</span>
+                    <span class="concept-chip">pathlib</span>
+                  </div>
+
+                  <h3 class="h6"><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h3>
+                  <ol class="small text-dark mb-0">
+                    <li>User enters a username and password via <code>input()</code>.</li>
+                    <li>A random salt is generated with <code>secrets.token_hex(8)</code>.</li>
+                    <li>The password is hashed with <code>hashlib.sha256(salt + password)</code>.</li>
+                    <li>The hash + salt + username are saved to a JSON file.</li>
+                    <li>The example verifies a login by re-hashing and comparing.</li>
+                  </ol>
+                </div>
+
+                <div class="code-block mb-3">
+                  <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:var(--ui-surface-alt);color:var(--ui-muted);font-size:0.8rem;">
+                    <span><i class="bi bi-filetype-py me-1"></i>Python</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>import hashlib
+import secrets
+import json
+from pathlib import Path
+
+def hash_password(password, salt):
+    return hashlib.sha256((salt + password).encode()).hexdigest()
+
+def register(username, password):
+    salt = secrets.token_hex(8)
+    digest = hash_password(password, salt)
+    record = {"username": username, "salt": salt, "digest": digest}
+    Path("vault.json").write_text(json.dumps(record))
+    print(f"User {username} registered.")
+
+def login(username, password):
+    record = json.loads(Path("vault.json").read_text())
+    if record["username"] != username:
+        print("User not found.")
+        return
+    digest = hash_password(password, record["salt"])
+    if digest == record["digest"]:
+        print("Login successful!")
+    else:
+        print("Wrong password.")
+
+# Simulate user input
+name = input("Username: ")
+secret = input("Password: ")
+register(name, secret)
+login(name, secret)</pre>
+                </div>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">python password_manager.py</span>
+                  </div>
+                  <div class="terminal-body">Username: sufyan
+Password: ********
+User sufyan registered.
+Login successful!</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROJECT 3 -->
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#project3">
+                <span class="project-badge me-3">Project 3</span>
+                Log File Analyzer
+              </button>
+            </h3>
+            <div id="project3" class="accordion-collapse collapse" data-bs-parent="#projectsAccordion">
+              <div class="accordion-body">
+                <div class="project-guide mb-3">
+                  <h4 class="h6"><i class="bi bi-info-circle me-2"></i>About this project</h4>
+                  <p class="small text-dark mb-2">Analyze a log file to count errors, warnings, and info messages using regex and collections. This is the same pattern monitoring tools use in production.</p>
+
+                  <h4 class="h6"><i class="bi bi-box me-2"></i>What you'll practice</h4>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="concept-chip">re (regex)</span>
+                    <span class="concept-chip">Counter</span>
+                    <span class="concept-chip">pathlib</span>
+                    <span class="concept-chip">file reading</span>
+                    <span class="concept-chip">data analysis</span>
+                  </div>
+
+                  <h3 class="h6"><i class="bi bi-list-check me-2"></i>Step-by-step: How it works</h3>
+                  <ol class="small text-dark mb-0">
+                    <li>Read a sample log file line by line.</li>
+                    <li>Use <code>re.search()</code> to extract the log level from each line.</li>
+                    <li>Count occurrences with <code>collections.Counter</code>.</li>
+                    <li>Print a clean summary of ERROR, WARNING, and INFO counts.</li>
+                    <li>Extend it to filter errors by timestamp or keyword.</li>
+                  </ol>
+                </div>
+
+                <div class="code-block mb-3">
+                  <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background:var(--ui-surface-alt);color:var(--ui-muted);font-size:0.8rem;">
+                    <span><i class="bi bi-filetype-py me-1"></i>Python</span>
+                    <button class="btn btn-sm text-light" onclick="copyCode(this)" style="font-size:0.75rem;">
+                      <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                  </div>
+                  <pre>import re
+from collections import Counter
+
+LOG_SAMPLE = """
+2026-08-24 10:00:00 INFO Server started
+2026-08-24 10:01:00 ERROR Disk full
+2026-08-24 10:02:00 WARNING High memory
+2026-08-24 10:03:00 INFO User logged in
+2026-08-24 10:04:00 ERROR Failed to connect
+2026-08-24 10:05:00 INFO Request served
+"""
+
+pattern = r"(INFO|WARNING|ERROR)"
+
+levels = re.findall(pattern, LOG_SAMPLE)
+summary = Counter(levels)
+
+for level, count in summary.items():
+    print(f"{level}: {count}")
+
+print(f"Total log lines: {len(summary.values())}")</pre>
+                </div>
+
+                <div class="text-muted small mb-1"><i class="bi bi-terminal me-1"></i>Sample Run</div>
+                <div class="terminal">
+                  <div class="terminal-header">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                    <span class="terminal-title">python log_analyzer.py</span>
+                  </div>
+                  <div class="terminal-body">INFO: 3
+ERROR: 2
+WARNING: 1
+Total log lines: 3</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Next Level CTA -->
+      <div class="text-center mt-4 p-4 rounded-4" style="background:var(--ui-surface-soft);">
+        <h2 class="h5 fw-bold" style="color:var(--ui-accent);">You've completed all {{ lessons|length }} lessons. Ready to continue?</h2>
+        <p class="text-muted mb-3">Solidify your skills with practice exercises, coding challenges, and debugging drills.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <a href="/learn/python/practice" class="btn btn-primary rounded-pill px-4" style="background:var(--ui-primary);border-color:var(--ui-line);">
+            <i class="bi bi-lightning-charge me-2"></i>Practice Resources
+          </a>
+          <a href="/learn/python" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="bi bi-collection me-2"></i>Python Hub
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy'; }, 2000);
+    });
+  }
+  function toggleHint(btn) {
+    const box = btn.closest('.exercise-box').querySelector('.hint-box');
+    box.classList.toggle('d-none');
+    btn.textContent = box.classList.contains('d-none') ? 'Show Hint' : 'Hide Hint';
+  }
+  function toggleSolution(btn) {
+    const box = btn.closest('.exercise-box').querySelector('.solution-box');
+    box.classList.toggle('d-none');
+    btn.textContent = box.classList.contains('d-none') ? 'Show Solution' : 'Hide Solution';
+  }
+  function markComplete(btn) {
+    const card = btn.closest('.lesson-complete');
+    card.classList.add('done');
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Completed';
+    btn.classList.remove('btn-outline-success');
+    btn.classList.add('btn-success');
+    btn.disabled = true;
+  }
+</script>
+
+{{ super() }}
+{% endblock %}

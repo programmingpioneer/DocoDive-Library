@@ -1,0 +1,39 @@
+{% set references = namespace(urls=[]) %}
+<section class="container learning-resources" aria-labelledby="learning-resources-title">
+  <div class="learning-section-intro">
+    <span class="learning-eyebrow">YOUR NEXT STEP</span>
+    <h2 id="learning-resources-title">Keep learning {{ category }}</h2>
+    <p>Use the guide, check your understanding, then return to the ideas you want to strengthen.</p>
+  </div>
+  <div class="learning-resource-grid">
+    <article class="learning-resource-card">
+      <h3>A useful study routine</h3>
+      <ul>{% for tip in info.tips[:3] %}<li>{{ tip }}</li>{% endfor %}</ul>
+      {% if info.slug == 'practice' %}<p class="learning-resource-note">Choose a level and topic, attempt a question before opening a hint, and review your mistakes.</p>{% else %}<p class="learning-resource-note">Work through one lesson at a time. Try the examples yourself before comparing your result.</p>{% endif %}
+    </article>
+    <article class="learning-resource-card">
+      <h3>Reference shelf</h3>
+      {% if lessons %}
+      <ul class="learning-reference-list">
+        {% for lesson in lessons %}
+        {% if lesson.docs_url and lesson.docs_url not in references.urls and references.urls|length < 4 %}
+        {% set references.urls = references.urls + [lesson.docs_url] %}
+        <li><a href="{{ lesson.docs_url }}" target="_blank" rel="noopener">{{ lesson.docs_label or lesson.title }} <span aria-hidden="true">↗</span></a></li>
+        {% endif %}
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% if not references.urls %}<p>Find a book to support your practice, or revisit a guide when you need a worked example.</p>{% endif %}
+      <a href="/learn/{{ category_slug }}" class="learning-text-link">Browse {{ category }} books →</a>
+    </article>
+    <article class="learning-resource-card">
+      <h3>Continue your path</h3>
+      <p>Move between guides and exercises as your confidence grows.</p>
+      <div class="learning-next-links">
+        {% set next_tracks = [('beginner', 'Revisit the foundations'), ('intermediate', 'Explore intermediate lessons'), ('advanced', 'Explore advanced lessons'), ('practice', 'Try exercises & quizzes')] %}
+        {% if category_slug == 'ielts' %}{% set next_tracks = [('listening', 'Practice listening'), ('reading', 'Practice reading'), ('writing', 'Practice writing'), ('speaking', 'Practice speaking')] %}{% endif %}
+        {% for slug, label in next_tracks %}{% if info.slug != slug %}<a href="/learn/{{ category_slug }}/{{ slug }}">{{ label }} <span aria-hidden="true">→</span></a>{% endif %}{% endfor %}
+      </div>
+    </article>
+  </div>
+</section>

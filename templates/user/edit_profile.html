@@ -1,0 +1,32 @@
+{% extends 'user/base.html' %}
+{% from 'user/_icons.html' import icon %}
+{% block title %}Edit profile | DocoDive{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static',filename='css/edit-profile.css',v='20261105-final-2') }}">{% endblock %}
+{% block content %}
+<div class="container edit-profile-page">
+  <a class="edit-profile-back" data-profile-return href="{{ url_for('user_profile',username=profile.username) }}">{{ icon('arrow-left') }} Back to your profile</a>
+  <header class="edit-profile-heading"><span class="edit-profile-feature">{{ icon('edit') }}</span><div><p class="edit-profile-kicker">YOUR COMMUNITY PROFILE</p><h1>Edit profile</h1><p>Make your profile feel more like you.</p></div></header>
+  <div id="profileFlash" role="status" aria-live="polite"></div>
+  <form method="POST" action="/user/profile/edit" enctype="multipart/form-data" id="editProfileForm" class="edit-profile-layout" data-original-username="{{ profile.username }}" data-default-avatar="{{ url_for('static',filename='images/default-avatar.jpg') }}">
+    <input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}">
+    <input type="hidden" name="social_links" id="socialLinksInput" value="{{ profile.social_links if profile.social_links is string else profile.social_links|tojson|forceescape }}">
+    <div class="edit-profile-fields">
+      <section class="edit-profile-card"><header><span class="edit-profile-section-icon">{{ icon('user') }}</span><div><h2>The basics</h2><p>Help other readers recognize you.</p></div></header>
+        <div class="edit-profile-name-grid">
+          <div class="edit-profile-field"><label for="profileFirstName">First name</label><input type="text" name="first_name" id="profileFirstName" class="form-control" value="{{ profile.first_name or '' }}" maxlength="50" autocomplete="given-name" placeholder="Your first name"></div>
+          <div class="edit-profile-field"><label for="profileLastName">Last name</label><input type="text" name="last_name" id="profileLastName" class="form-control" value="{{ profile.last_name or '' }}" maxlength="50" autocomplete="family-name" placeholder="Your last name"></div>
+        </div>
+        <div class="edit-profile-field"><label for="usernameInput">Username <span class="edit-profile-label-icon">{{ icon('user') }}</span></label><div class="edit-profile-username"><span aria-hidden="true">@</span><input type="text" name="username" id="usernameInput" class="form-control" value="{{ profile.username or '' }}" minlength="3" maxlength="20" pattern="[A-Za-z0-9]{3,20}" autocomplete="username" aria-describedby="profileUsernameHelp usernameError" title="Use 3 to 20 letters and numbers."><span id="usernameCheck" class="edit-profile-availability" aria-live="polite" hidden></span></div><p class="edit-profile-help" id="profileUsernameHelp">3–20 letters and numbers. You can change your username once every 30 days.</p><p class="edit-profile-error" id="usernameError" aria-live="polite" hidden></p></div>
+        <div class="edit-profile-field"><label for="profileBio">About you <span class="edit-profile-optional">Optional</span></label><textarea name="bio" id="profileBio" class="form-control" rows="4" maxlength="500" placeholder="What are you learning or reading?" aria-describedby="profileBioHelp">{{ profile.bio or '' }}</textarea><p class="edit-profile-help" id="profileBioHelp">Share a little about your interests. Up to 500 characters.</p></div>
+      </section>
+      <section class="edit-profile-card"><header><span class="edit-profile-section-icon">{{ icon('link') }}</span><div><h2>Find you elsewhere</h2><p>Add your social profiles or personal website.</p></div></header><div id="socialLinksContainer"></div><button type="button" id="addSocialLinkBtn" class="edit-profile-button secondary">{{ icon('plus') }} Add a link</button><p class="edit-profile-help">Use a full http:// or https:// address. Links appear on your public profile.</p></section>
+    </div>
+    <aside class="edit-profile-aside">
+      <section class="edit-profile-card edit-profile-photo"><header><span class="edit-profile-section-icon">{{ icon('image') }}</span><div><h2>Profile photo</h2><p>A familiar face for the community.</p></div></header><div class="edit-profile-avatar"><img id="avatarPreview" src="{{ profile.avatar_url or url_for('static',filename='images/default-avatar.jpg') }}" width="120" height="120" alt="Your profile photo preview"><span aria-hidden="true">{{ icon('image') }}</span></div><label for="avatarInput">Choose a photo</label><input type="file" name="avatar" id="avatarInput" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" aria-describedby="avatarHelp avatarStatus"><p class="edit-profile-help" id="avatarHelp">JPG, PNG, GIF or WebP. Up to 10 MB; large photos are resized when saved.</p><div id="avatarProgressWrap" hidden><progress id="avatarProgressBar" max="100" value="0" aria-label="Profile upload progress">0%</progress></div><p id="avatarStatus" class="edit-profile-help" role="status" aria-live="polite"></p></section>
+      <section class="edit-profile-privacy">{{ icon('shield') }}<div><h2>Your public profile</h2><p>Your name, photo, bio and links are visible to other readers. Your email stays private.</p><a href="/user/settings">Account settings {{ icon('arrow-right') }}</a></div></section>
+    </aside>
+    <div class="edit-profile-save"><p>{{ icon('info') }} Changes take effect when you save.</p><div><a class="edit-profile-button secondary" data-profile-return href="{{ url_for('user_profile',username=profile.username) }}">Cancel</a><button type="submit" id="saveProfileBtn" class="edit-profile-button">{{ icon('check') }}<span class="btn-text">Save changes</span><span class="spinner-border spinner-border-sm" id="saveSpinner" aria-hidden="true" hidden></span></button></div></div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}<script defer src="{{ url_for('static',filename='js/edit-profile.js',v='20261105-final-2') }}"></script>{% endblock %}

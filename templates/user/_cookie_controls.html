@@ -1,0 +1,62 @@
+<section id="cookie-banner" class="cookie-banner" aria-labelledby="cookie-banner-title" hidden>
+  <div class="cookie-banner__copy">
+    <h2 id="cookie-banner-title">Your privacy, your choice</h2>
+    <p>We use essential cookies to keep DocoDive working. With your permission, we also use analytics to understand visits and support chat to help you. Optional tools stay off until you choose.</p>
+    <a href="{{ url_for('cookies_policy') }}">Read our Cookie Policy</a>
+  </div>
+  <div class="cookie-banner__actions">
+    <button type="button" class="cookie-button" data-cookie-action="essential">Essential only</button>
+    <button type="button" class="cookie-button" data-cookie-action="accept">Accept optional</button>
+    <button type="button" class="cookie-button cookie-button--text" data-cookie-settings>Preferences</button>
+  </div>
+</section>
+
+<dialog id="cookie-preferences" class="cookie-dialog" aria-labelledby="cookie-preferences-title" aria-describedby="cookie-preferences-description">
+  <form id="cookie-form" class="cookie-form">
+    <div class="cookie-dialog__heading">
+      <div>
+        <span class="cookie-eyebrow">Privacy controls</span>
+        <h2 id="cookie-preferences-title">Cookie preferences</h2>
+      </div>
+      <button type="button" class="cookie-close" data-cookie-action="cancel" aria-label="Close cookie preferences">&times;</button>
+    </div>
+    <p id="cookie-preferences-description">Choose which optional tools DocoDive can use in this browser. Essential cookies keep your account and the website working.</p>
+
+    <div class="cookie-option cookie-option--essential">
+      <div>
+        <h3>Essential</h3>
+        <p>Sign-in, security and site functions. These cannot be turned off here.</p>
+      </div>
+      <span class="cookie-required">Always on</span>
+    </div>
+
+    <div class="cookie-option">
+      <label class="cookie-option__label" for="cookie-analytics">
+        <span><strong>Analytics</strong><span class="cookie-option__description">Google Analytics helps us understand how visitors use the library and where we can improve.</span></span>
+        <input id="cookie-analytics" name="analytics" type="checkbox" aria-describedby="cookie-analytics-provider">
+      </label>
+      <p id="cookie-analytics-provider" class="cookie-provider">Provider: Google Analytics</p>
+    </div>
+
+    <div class="cookie-option">
+      <label class="cookie-option__label" for="cookie-support">
+        <span><strong>Support chat</strong><span class="cookie-option__description">Brevo Conversations enables the chat widget on our home page. You can still contact us without enabling chat.</span></span>
+        <input id="cookie-support" name="support" type="checkbox" aria-describedby="cookie-support-provider">
+      </label>
+      <p id="cookie-support-provider" class="cookie-provider">Provider: Brevo Conversations</p>
+    </div>
+
+    <p id="cookie-dialog-status" class="cookie-note"></p>
+    <p class="cookie-note">If you turn off an optional tool already running on this page, we will reload the page to stop it.</p>
+    <p class="cookie-policy-link"><a href="{{ url_for('cookies_policy') }}">Cookie Policy</a><span aria-hidden="true"> &middot; </span><a href="{{ url_for('privacy_policy') }}">Privacy Policy</a></p>
+    <div class="cookie-dialog__actions">
+      <button type="button" class="cookie-button" data-cookie-action="cancel">Cancel</button>
+      <button type="submit" class="cookie-button cookie-button--primary">Save choices</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="cookie-status" class="cookie-status" hidden>
+  <p id="cookie-status-message" role="status" aria-live="polite" aria-atomic="true"></p>
+  <button type="button" class="cookie-close" data-cookie-action="dismiss" aria-label="Dismiss cookie preference message">&times;</button>
+</div>
