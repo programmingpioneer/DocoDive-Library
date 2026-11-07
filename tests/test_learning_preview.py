@@ -133,6 +133,13 @@ async function authWaitsForPreviewToClose(){
   f.modal.dispatch('hidden.bs.modal');
   assert.deepEqual(f.transitions,['hide preview','show auth']);assert.equal(f.auth.length,1);
 }
+async function authWaitsForPreviewEntrance(){
+  const f=fixture();await f.open(false);f.modal.dataset.previewEntering='true';
+  f.find('shared-preview-download').onclick(event());
+  assert.deepEqual(f.transitions,[],'Do not ask Bootstrap to hide during its entrance transition');
+  f.modal.dataset.previewEntering='false';f.modal.dispatch('shown.bs.modal');
+  assert.deepEqual(f.transitions,['hide preview','show auth']);
+}
 async function supersededAuthHandoffStaysQuiet(){
   const f=fixture();await f.open(false);f.modal.holdHide=true;
   f.find('shared-preview-download').onclick(event());
@@ -144,7 +151,7 @@ async function supersededAuthHandoffStaysQuiet(){
 (async()=>{
   await ({metadataAndGuestGate,favoriteAndReviewCsrf,invalidIdMakesNoRequest,
     reviewSessionRedirectKeepsDraft,errorsAndUnconfirmedResultsKeepState,
-    staleActionCannotInterruptCurrentPreview,authWaitsForPreviewToClose,
+    staleActionCannotInterruptCurrentPreview,authWaitsForPreviewToClose,authWaitsForPreviewEntrance,
     supersededAuthHandoffStaysQuiet})[process.argv[2]]();
   console.log(process.argv[2]+' passed');
 })().catch(error=>{console.error(error);process.exitCode=1});
@@ -155,7 +162,7 @@ class LearningPreviewTests(unittest.TestCase):
     def test_metadata_protected_actions_and_csrf(self):
         for scenario in ('metadataAndGuestGate', 'favoriteAndReviewCsrf', 'invalidIdMakesNoRequest',
                          'reviewSessionRedirectKeepsDraft', 'errorsAndUnconfirmedResultsKeepState',
-                         'staleActionCannotInterruptCurrentPreview', 'authWaitsForPreviewToClose',
+                         'staleActionCannotInterruptCurrentPreview', 'authWaitsForPreviewToClose', 'authWaitsForPreviewEntrance',
                          'supersededAuthHandoffStaysQuiet'):
             with self.subTest(scenario=scenario):
                 result = subprocess.run([shutil.which('node'), '-e', CHECK,

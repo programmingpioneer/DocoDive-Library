@@ -75,7 +75,8 @@ def page(name):
         context.update(downloads=12,favorites=2,reviews=3,
                        unlocked_badges=[dict(key=b['key'],name=b['name'],icon='preview-'+b['key'],threshold=b['threshold']) for b in context['achievements']['items'] if b['unlocked']])
     if name == 'reader':
-        context.update(book_title=sample_book['title'],book_id=4,pdf_url=url_for('book_pdf',book_id=4))
+        reader_id={'html':9001,'missing':9002,'expired':9003}.get(request.args.get('state'),4)
+        context.update(book_title=sample_book['title'],book_id=reader_id,pdf_url=url_for('book_pdf',book_id=reader_id))
     if name == 'leaderboard':
         context.update(leaderboard=rank_leaders([
             dict(user_id=i,username='sample_reader_'+str(i),name=n,avatar_url=None,points=points,
@@ -213,6 +214,9 @@ app.view_functions['api_book_detail']=lambda book_id:jsonify(dict(
     description='A sample book preview. This fixture does not update views, downloads or any real record.'))
 
 def fixture_pdf(book_id, slug=None, attachment=False):
+    if book_id==9001:return '<!doctype html><title>Wrong HTML response</title><h1>Sample homepage returned instead of PDF</h1>'
+    if book_id==9002:return '<h1>Sample file missing</h1>',404
+    if book_id==9003:return jsonify(error='Sample login expired'),401
     import fitz
     with fitz.open() as document:
         page=document.new_page()
@@ -230,6 +234,14 @@ def fixture_book_qr(book_id, slug=None):
     payload=BytesIO();image.save(payload,format='PNG');payload.seek(0)
     return send_file(payload,mimetype='image/png')
 app.view_functions['book_qr']=fixture_book_qr
+
+@app.get('/preview/catalogue-update')
+def fixture_catalogue_update():
+    return '''<!doctype html><title>Local catalogue update fixture</title>
+    <h1>Synthetic catalogue update</h1><p>No real book or service is changed.</p>
+    <button type="button" id="send">Send sample catalogue update</button><p id="sent" role="status"></p>
+    <script>const channel=new BroadcastChannel('docodive_upload');
+    document.getElementById('send').onclick=()=>{channel.postMessage('refresh');document.getElementById('sent').textContent='Sample update sent';};</script>'''
 
 # The isolated route builder keeps only the first decorator for each view.
 # Include the numeric aliases used by the real reader and shared preview.

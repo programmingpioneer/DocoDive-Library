@@ -68,6 +68,7 @@ class PDFRouteTests(unittest.TestCase):
                      extract_r2_key=lambda value:'docodive/uploads/real_unique.pdf' if value.startswith('https://assets.example.test/') else None,
                      trusted_public_pdf_url=lambda *args:None, open_pdf_object=open_object,
                      PDFDeliveryError=DeliveryError)
+        self.scope = scope
         for name in ('_pdf_error_response', '_pdf_filename', '_serve_book_pdf', 'download_book', 'book_pdf', 'read_book'):
             load_function(name, scope)
         self.app.add_url_rule('/', 'home', lambda:'home')
@@ -131,6 +132,26 @@ class PDFRouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(self.calls, [])
         self.assertEqual(self.writes(), [])
+
+    def test_legacy_uploader_pdf_reaches_storage_without_a_prefix_rewrite(self):
+        from pdf_delivery import resolve_r2_key, open_pdf_object, PDFDeliveryError
+        from test_pdf_delivery import SDK, PDF
+        key='uploads/Book_Name_@DocoDive.pdf'
+        self.scope['extract_r2_key']=lambda value:resolve_r2_key(value,public_base='https://assets.example.test')
+        self.scope['open_pdf_object']=open_pdf_object
+        self.scope['PDFDeliveryError']=PDFDeliveryError
+        self.row=('https://assets.example.test/'+key,'Original upload','original-upload')
+        for endpoint in ('pdf','download'):
+            with self.subTest(endpoint=endpoint):
+                sdk=SDK(ContentType='application/octet-stream')
+                self.scope['r2_client']=sdk
+                response=self.client.get('/book/4/'+endpoint,buffered=True)
+                self.assertEqual(response.status_code,200)
+                self.assertEqual(response.mimetype,'application/pdf')
+                self.assertEqual(response.data,PDF)
+                self.assertEqual(sdk.calls[0][1]['Key'],key)
+                response.close()
+                self.assertEqual(sdk.body.close_count,1)
 
     def test_metrics_cursor_failure_cannot_abort_pdf_delivery(self):
         original = self.connection.cursor
@@ -198,7 +219,9 @@ class PDFRouteTests(unittest.TestCase):
         fixture = CommunityViewTests(); fixture.setUp()
         html = fixture.render('read_online', book_id=4, book_title='A <safe> book', book_slug='book', pdf_url='/book/4/pdf')
         document = BeautifulSoup(html, 'html.parser')
-        self.assertEqual(document.select_one('#pdfIframe')['src'], '/book/4/pdf')
+        self.assertIsNone(document.select_one('#pdfIframe').get('src'),'Never embed an unchecked HTML response')
+        self.assertEqual(document.select_one('#pdfIframe')['data-pdf-url'], '/book/4/pdf')
+        self.assertIsNotNone(document.select_one('script[src*="js/pdf-reader.js"]'))
         self.assertIn('PDF reader:', document.select_one('#pdfIframe')['title'])
         self.assertEqual(len(document.select('a[href="/book/4/download"]')), 1)
         self.assertNotIn('/api/download/', html)

@@ -79,7 +79,7 @@
   #shared-book-preview .modal-title { font-size: 1rem; }
   .shared-preview-layout { padding: 1rem; gap: 1.25rem; }
   .shared-preview-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
-  .shared-preview-actions .btn { padding-inline: .45rem; white-space: normal; }
+  .shared-preview-actions .btn { padding-inline:.45rem!important;gap:.35rem;font-size:.75rem;white-space:nowrap; }
 }
 .shared-preview-glyph{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;flex:0 0 17px;vertical-align:middle}.shared-preview-glyph svg{display:block;width:100%;height:100%}.shared-preview-monogram .shared-preview-glyph{width:32px;height:32px;flex-basis:32px}.shared-preview-favorite[aria-pressed=true] .shared-preview-glyph svg{fill:currentColor}
 

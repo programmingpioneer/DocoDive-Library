@@ -14,6 +14,7 @@ class Element {
   get textContent(){return this._text+this.children.map(child=>child.textContent).join('');}
   append(...children){this.children.push(...children);}
   replaceChildren(...children){this._text='';this.children=[...children];}
+  addEventListener(name,callback){((this.handlers??={})[name]??=[]).push(callback);}
 }
 function fixture(){
   const body=new Element(),modal=new Element(),requests=[],loading=[];

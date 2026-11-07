@@ -13,6 +13,7 @@ import requests
 
 
 CHUNK_SIZE = 64 * 1024
+_KEY_PREFIXES = ("docodive/", "uploads/", "covers/")
 _MAX_INTEGER = (1 << 63) - 1
 _MESSAGES = {
     "missing": "This PDF is not available.",
@@ -59,7 +60,7 @@ def _path(parsed):
 
 
 def _key(value):
-    if (not isinstance(value, str) or not value.startswith("docodive/")
+    if (not isinstance(value, str) or not value.startswith(_KEY_PREFIXES)
             or "\\" in value or re.search(r"[\x00-\x1f\x7f]", value)):
         return None
     try:
@@ -90,7 +91,7 @@ def resolve_r2_key(reference, public_base="", bucket="", endpoint_url=""):
     Raw keys are not URL-decoded. URL paths are decoded once and their query and
     fragment are never included in the object key. No filename is fabricated.
     """
-    if isinstance(reference, str) and reference.startswith("docodive/"):
+    if isinstance(reference, str) and reference.startswith(_KEY_PREFIXES):
         return _key(reference)
     parsed = _url(reference)
     if parsed is None:
@@ -178,7 +179,9 @@ def _provider_error(error):
     metadata = response.get("ResponseMetadata", {})
     code = str(response.get("Error", {}).get("Code", ""))
     status = metadata.get("HTTPStatusCode")
-    if code in ("NoSuchKey", "NotFound", "NoSuchBucket", "404") or status == 404:
+    if code == "NoSuchBucket":
+        return PDFDeliveryError("unavailable")
+    if code in ("NoSuchKey", "NotFound", "404") or status == 404:
         return PDFDeliveryError("missing")
     if code in ("InvalidRange", "RequestedRangeNotSatisfiable", "416") or status == 416:
         return PDFDeliveryError("range", _error_range(metadata.get("HTTPHeaders")))

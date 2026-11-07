@@ -110,6 +110,18 @@ class R2ReferenceTests(unittest.TestCase):
                 self.assertEqual(self.resolve(value), expected)
         self.assertEqual(self.resolve(PUBLIC + "/" + KEY, public_base=PUBLIC + "/"), KEY)
 
+    def test_first_generation_upload_and_cover_keys_keep_their_exact_paths(self):
+        # The original uploader wrote uploads/Book_Name_@DocoDive.pdf, without
+        # the later docodive/ prefix. Do not replace it with a new-style key.
+        for key in ('uploads/Book_Name_@DocoDive.pdf', 'covers/Book_Name_@DocoDive.jpg'):
+            for reference in (key, PUBLIC+'/'+key, ENDPOINT+'/bucket/'+key,
+                              'https://bucket.account.r2.cloudflarestorage.com/'+key):
+                with self.subTest(reference=reference):
+                    self.assertEqual(self.resolve(reference), key)
+        self.assertIsNone(self.resolve('https://untrusted.example.test/uploads/Book.pdf'))
+        self.assertIsNone(self.resolve('uploads/../secret.pdf'))
+        self.assertIsNone(self.resolve('uploads/%2e%2e/secret.pdf'))
+
     def test_bucket_and_object_prefix_with_same_name_are_not_confused(self):
         value = ENDPOINT + "/docodive/" + KEY
         self.assertEqual(resolve_r2_key(value, bucket="docodive", endpoint_url=ENDPOINT), KEY)
@@ -143,6 +155,12 @@ class R2ReferenceTests(unittest.TestCase):
 
 
 class PDFObjectTests(unittest.TestCase):
+    def test_missing_bucket_is_a_service_problem_not_a_missing_book(self):
+        with self.assertRaises(PDFDeliveryError) as caught:
+            open_pdf_object(SDK(error=sdk_error('NoSuchBucket',404)), 'bucket', KEY)
+        self.assertEqual(caught.exception.status_code,503)
+        self.assertEqual(caught.exception.category,'unavailable')
+
     def test_sdk_stream_uses_bounded_reads_and_closes_once_on_exhaustion(self):
         sdk, http = SDK(), HTTP()
         resource = open_pdf_object(sdk, "bucket", KEY, http_client=http)

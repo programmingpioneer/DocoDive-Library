@@ -2731,6 +2731,7 @@
 </section>
 {% endif %}
 {% endblock %} {% block scripts %}
+<script defer src="{{ url_for('static',filename='js/library-refresh.js',v='20261107-reader-1') }}"></script>
 
 <script>
    var firstBookId = {{ (pdfs[0].id if pdfs and pdfs|length > 0 else 1) if not search_query else 1 }};
@@ -2753,11 +2754,6 @@
         .catch(() => {});
     }
     setInterval(updateCategoryCounts, 10000);
-
-    const channel = new BroadcastChannel("docodive_upload");
-    channel.onmessage = (e) => {
-      if (e.data === "refresh") location.reload();
-    };
 
     const navbar = document.querySelector(".navbar");
     window.addEventListener("scroll", () =>

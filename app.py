@@ -4186,7 +4186,8 @@ def _serve_book_pdf(book_id, slug=None, attachment=False):
     if not book:
         abort(404)
     key = extract_r2_key(book[0])
-    if not key or not key.lower().endswith(".pdf") or not key.startswith("docodive/uploads/"):
+    if not key or not key.lower().endswith(".pdf") or not key.startswith(("docodive/uploads/", "uploads/")):
+        app.logger.warning("PDF reference unavailable for book %s (unsupported reference)", book_id)
         return _pdf_error_response(404)
     try:
         resource = open_pdf_object(

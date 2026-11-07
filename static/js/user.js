@@ -178,7 +178,9 @@ function renderSharedBookPreview(body, book, id, requestRevision) {
       const preview = modal && window.bootstrap?.Modal.getInstance?.(modal);
       if (preview && modal.classList.contains('show')) {
         modal.addEventListener('hidden.bs.modal', showAuth, {once:true});
-        preview.hide();
+        if(modal.dataset.previewEntering==='true')
+          modal.addEventListener('shown.bs.modal',()=>{if(current())preview.hide();},{once:true});
+        else preview.hide();
       } else showAuth();
     } else location.href = '/user/login?next=' + encodeURIComponent(location.pathname + location.search);
     return false;
@@ -343,7 +345,7 @@ function renderSharedBookPreview(body, book, id, requestRevision) {
 window.openBookModal = async function (id, opener) {
   if (!/^\d+$/.test(String(id))) return;
   window.closeBookQr();
-  if (!window.bootstrap) { location.href='/book/'+id; return; }
+  if (!window.bootstrap?.Modal) { location.href='/book/'+id; return; }
   let modal=document.getElementById('shared-book-preview');
   if (!modal) {
     modal=document.createElement('div'); modal.id='shared-book-preview';modal.className='modal fade';modal.tabIndex=-1;
@@ -359,6 +361,13 @@ window.openBookModal = async function (id, opener) {
       </div></div>`;
     document.body.append(modal);
   }
+  if(!modal.dataset.previewLifecycleBound){
+    modal.dataset.previewLifecycleBound='true';
+    modal.addEventListener('show.bs.modal',()=>{modal.dataset.previewEntering='true';});
+    modal.addEventListener('shown.bs.modal',()=>{modal.dataset.previewEntering='false';});
+    modal.addEventListener('hidden.bs.modal',()=>{modal.dataset.previewOpen='false';});
+  }
+  modal.dataset.previewOpen='true';
   const requestRevision=++sharedPreviewRevision;
   const body=modal.querySelector('.modal-body');
   const scrollController=sharedPreviewScrollController(modal,body);

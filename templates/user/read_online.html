@@ -21,6 +21,8 @@
   }
   .reader-toolbar .title {
     flex: 1;
+    min-width:0;
+    white-space:nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     font-weight: 600;
@@ -52,24 +54,39 @@
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
     background: white;
   }
+  .reader-container { position:relative; }
+  .reader-status { width:100%;align-self:center;text-align:center;padding:clamp(24px,5vw,60px);background:var(--ui-surface);border:1px solid var(--ui-line);border-radius:16px;color:var(--ui-text);box-shadow:var(--ui-shadow); }
+  .reader-status>svg { width:42px;height:42px;color:var(--ui-accent);margin-bottom:16px; }
+  .reader-status h1 { font-size:clamp(1.25rem,3vw,1.75rem);font-weight:700; }
+  .reader-status p { color:var(--ui-muted);line-height:1.8;max-width:48ch;margin:12px auto 20px; }
+  .reader-status-actions { display:flex;justify-content:center;gap:12px;flex-wrap:wrap; }
+  .reader-status [hidden],.reader-container iframe[hidden],.reader-status[hidden] { display:none!important; }
 
   /* Mobile adjustments */
   @media (max-width: 768px) {
     .reader-toolbar {
-      height: 48px;
-      padding: 0 0.5rem;
-      gap: 0.4rem;
+      height:88px;
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto auto;
+      grid-template-areas:"title title title title" "back download fullscreen theme";
+      padding:.3rem .6rem;
+      gap:.2rem .4rem;
     }
     .reader-toolbar .title {
-      font-size: 0.85rem;
+      grid-area:title;font-size:.8rem;line-height:1.5;
     }
+    .reader-toolbar>a:first-child{grid-area:back}
+    .reader-toolbar>a:nth-of-type(2){grid-area:download;justify-self:end}
+    .reader-toolbar>button[title="Fullscreen"]{grid-area:fullscreen}
+    .reader-toolbar>[data-theme-toggle]{grid-area:theme}
+    .reader-toolbar>.btn{padding:.4rem .65rem!important;min-height:40px;font-size:.78rem}
     body {
-      padding-top: 48px;
+      padding-top:88px;
     }
     .reader-container {
       margin: 0.5rem auto;
       padding: 0 0.5rem;
-      min-height: calc(100vh - 48px - 1rem);
+      min-height:calc(100dvh - 88px - 1rem);
     }
     .reader-container iframe {
       border-radius: 8px;
@@ -146,14 +163,26 @@
   {% include 'shared/_theme_toggle.html' %}
 </div>
 
-<div class="reader-container">
-  <iframe src="{{ pdf_url }}" id="pdfIframe" title="PDF reader: {{ book_title }}" allowfullscreen></iframe>
+<div class="reader-container" id="readerContainer" aria-busy="true">
+  <section class="reader-status" id="readerStatus" role="status" aria-live="polite">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 5v15M3 4.5C6 3.5 9 4 12 5c3-1 6-1.5 9-.5v15c-3-1-6-.5-9 .5-3-1-6-1.5-9-.5Z"/></svg>
+    <h1>Your book reader</h1>
+    <p id="readerMessage">Preparing your PDF…</p>
+    <div class="reader-status-actions">
+      <button type="button" class="btn btn-primary rounded-pill" id="readerRetry" hidden>Try again</button>
+      <a href="/user/login" class="btn btn-outline-primary rounded-pill" id="readerSignin" hidden>Sign in</a>
+      <a href="/contact" class="btn btn-outline-secondary rounded-pill">Contact support</a>
+    </div>
+    <noscript><p>Enable JavaScript to check the PDF, or <a href="{{ pdf_url }}">open the PDF directly</a>.</p></noscript>
+  </section>
+  <iframe data-pdf-url="{{ pdf_url }}" id="pdfIframe" title="PDF reader: {{ book_title }}" allowfullscreen hidden></iframe>
 </div>
-<p class="reader-fallback" style="max-width:1100px;margin:.75rem auto;padding:0 1rem;color:var(--ui-muted)">PDF not displaying? <a href="{{ pdf_url }}" target="_blank" rel="noopener">Open PDF in a new tab</a>.</p>
+<p class="reader-fallback" id="readerDirect" hidden style="max-width:1100px;margin:.75rem auto;padding:0 1rem;color:var(--ui-muted)">PDF not displaying? <a href="{{ pdf_url }}" target="_blank" rel="noopener">Open PDF in a new tab</a>.</p>
 
 <script>
   function toggleFullscreen() {
     const iframe = document.getElementById("pdfIframe");
+    if (iframe.hidden) return;
     if (!document.fullscreenElement) {
       iframe.requestFullscreen().catch((err) => {});
     } else {
@@ -163,3 +192,4 @@
 
 </script>
 {% endblock %}
+{% block scripts %}<script defer src="{{ url_for('static',filename='js/pdf-reader.js',v='20261107-reader-1') }}"></script>{% endblock %}
