@@ -1,9 +1,9 @@
-/* Apply a valid local appearance choice before the document is painted. */
+/* Apply a saved appearance choice, or Light, before the document is painted. */
 (() => {
   'use strict';
-  let choice='system';
+  let choice='light';
   try{const saved=window.localStorage.getItem('docodive_theme');if(saved==='light'||saved==='dark')choice=saved;}catch(error){}
-  const dark=choice==='dark'||(choice==='system'&&typeof window.matchMedia==='function'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const dark=choice==='dark';
   const root=document.documentElement;
   root.dataset.themeChoice=choice;root.dataset.bsTheme=dark?'dark':'light';root.style.colorScheme=dark?'dark':'light';
 })();

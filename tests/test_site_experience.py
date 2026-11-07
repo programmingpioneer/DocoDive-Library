@@ -16,14 +16,21 @@ function setup(saved=null,osDark=false,blocked=false){
  const window={location:{href:'http://local.test/user/settings'},localStorage:{getItem:()=>{if(blocked)throw Error('blocked');return saved;},setItem:(k,v)=>{if(blocked)throw Error('blocked');writes.push([k,v]);}},setTimeout:f=>{f();return 0;},clearTimeout(){},matchMedia:()=>media,addEventListener:(n,f)=>events[n]=f,requestAnimationFrame:f=>f()};
  class CE{constructor(type,options){this.type=type;this.detail=options?.detail;}}
  const ctx={document,window,CustomEvent:CE,URL,requestAnimationFrame:f=>f()};vm.createContext(ctx);
- vm.runInContext(fs.readFileSync(process.argv[1],'utf8'),ctx);vm.runInContext(fs.readFileSync(process.argv[2],'utf8'),ctx);
- return {root,toggle,loader,events,writes,media,changes,window};
+ vm.runInContext(fs.readFileSync(process.argv[1],'utf8'),ctx);
+ const firstPaint={theme:root.dataset.bsTheme,choice:root.dataset.themeChoice,colorScheme:root.style.colorScheme};
+ vm.runInContext(fs.readFileSync(process.argv[2],'utf8'),ctx);
+ return {root,toggle,loader,events,writes,media,changes,window,firstPaint};
 }
-let x=setup(null,true);assert.equal(x.root.dataset.bsTheme,'dark');assert.equal(x.writes.length,0);assert.equal(x.toggle.getAttribute('aria-pressed'),'true');assert.match(x.toggle.getAttribute('aria-label'),/light/i);assert.equal(x.loader.hidden,true);
-x.toggle.events.click();assert.equal(x.root.dataset.bsTheme,'light');assert.deepEqual(x.writes[0],['docodive_theme','light']);assert.match(x.toggle.getAttribute('aria-label'),/dark/i);x.media.matches=true;x.events.os({matches:true});assert.equal(x.root.dataset.bsTheme,'light');
-x=setup('invalid',false);assert.equal(x.root.dataset.bsTheme,'light');x.media.matches=true;x.events.os({matches:true});assert.equal(x.root.dataset.bsTheme,'dark');
-x=setup('light',true);assert.equal(x.root.dataset.bsTheme,'light');x.events.storage({key:'docodive_theme',newValue:'dark'});assert.equal(x.root.dataset.bsTheme,'dark');x.media.matches=false;x.events.storage({key:'docodive_theme',newValue:null});assert.equal(x.root.dataset.bsTheme,'light');
-x=setup(null,false,true);x.toggle.events.click();assert.equal(x.root.dataset.bsTheme,'dark');assert.equal(x.writes.length,0);assert.equal(x.loader.hidden,true);
+let x;
+for(const saved of [null,'invalid','system'])for(const osDark of [false,true]){
+ x=setup(saved,osDark);assert.equal(x.firstPaint.theme,'light','A new visitor sees Light before the page paints, even on a dark device');assert.equal(x.firstPaint.colorScheme,'light');assert.equal(x.root.dataset.bsTheme,'light');assert.equal(x.writes.length,0);assert.equal(x.toggle.getAttribute('aria-pressed'),'false');assert.match(x.toggle.getAttribute('aria-label'),/dark/i);assert.equal(x.loader.hidden,true);
+ x.media.matches=!osDark;x.events.os?.({matches:!osDark});assert.equal(x.root.dataset.bsTheme,'light','Device appearance cannot override the site default');
+}
+for(const saved of ['light','dark'])for(const osDark of [false,true]){x=setup(saved,osDark);assert.equal(x.firstPaint.theme,saved);assert.equal(x.root.dataset.bsTheme,saved,'An explicit visitor preference survives a new page');}
+x=setup(null,true);x.toggle.events.click();assert.equal(x.root.dataset.bsTheme,'dark');assert.deepEqual(x.writes[0],['docodive_theme','dark']);assert.match(x.toggle.getAttribute('aria-label'),/light/i);x.media.matches=false;x.events.os?.({matches:false});assert.equal(x.root.dataset.bsTheme,'dark');x.toggle.events.click();assert.equal(x.root.dataset.bsTheme,'light');assert.deepEqual(x.writes[1],['docodive_theme','light']);
+x=setup('light',true);x.events.storage({key:'unrelated',newValue:'dark'});assert.equal(x.root.dataset.bsTheme,'light');x.events.storage({key:'docodive_theme',newValue:'dark'});assert.equal(x.root.dataset.bsTheme,'dark');x.events.storage({key:'docodive_theme',newValue:null});assert.equal(x.root.dataset.bsTheme,'light','Clearing a preference returns to Light even on a dark device');x.events.storage({key:'docodive_theme',newValue:'invalid'});assert.equal(x.root.dataset.bsTheme,'light');
+x=setup('dark',true);x.window.localStorage.getItem=()=>null;x.events.pageshow({persisted:true});assert.equal(x.root.dataset.bsTheme,'light','Back navigation resynchronizes a removed preference to Light');
+x=setup(null,true,true);assert.equal(x.firstPaint.theme,'light');assert.equal(x.root.dataset.bsTheme,'light');x.toggle.events.click();assert.equal(x.root.dataset.bsTheme,'dark');assert.equal(x.writes.length,0);assert.equal(x.loader.hidden,true);
 const box=new E(),done=x.window.DocoDiveLoading.fill(box,{rows:2});assert.equal(box.getAttribute('aria-busy'),'true');assert.equal(box.children[0].children.length,2);done();assert.equal(box.getAttribute('aria-busy'),undefined);
 x=setup('light',false);const confirmForm={dataset:{},action:'http://local.test/user/account-deletion',target:'',hasAttribute:n=>n==='data-confirm'};
 x.events.submit?.({target:confirmForm,defaultPrevented:false});assert.equal(x.loader.hidden,true,'Unconfirmed forms must not cover a canceled confirmation');confirmForm.dataset.confirmed='true';x.events.submit?.({target:confirmForm,defaultPrevented:false});assert.equal(x.loader.hidden,true,'Outgoing forms must not show the wrong page skeleton');x.events.pageshow({persisted:false});assert.equal(x.loader.hidden,true);
@@ -32,7 +39,7 @@ console.log('Appearance preference and safe outgoing navigation scenarios passed
 """
 
 class SiteExperienceTests(unittest.TestCase):
-    def test_preference_system_manual_storage_and_loading(self):
+    def test_light_default_manual_preference_storage_and_loading(self):
         r=subprocess.run([shutil.which('node'),'-e',CHECKS,str(ROOT/'static/js/theme-init.js'),str(ROOT/'static/js/site-experience.js')],capture_output=True,text=True,timeout=20)
         self.assertEqual(r.returncode,0,r.stdout+r.stderr)
 

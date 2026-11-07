@@ -3,8 +3,7 @@
   'use strict';
   function init(){
     const root=document.documentElement;
-    const media=typeof window.matchMedia==='function'?window.matchMedia('(prefers-color-scheme: dark)'):null;
-    let choice=['light','dark'].includes(root.dataset.themeChoice)?root.dataset.themeChoice:'system';
+    let choice=['light','dark'].includes(root.dataset.themeChoice)?root.dataset.themeChoice:'light';
     const controls=Array.from(document.querySelectorAll('[data-theme-toggle]'));
     const feedback=document.createElement('span');feedback.className='experience-sr-only';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');document.body.append(feedback);
     function apply(theme,persist=false){
@@ -13,12 +12,9 @@
       if(persist){choice=theme;root.dataset.themeChoice=theme;try{window.localStorage.setItem('docodive_theme',theme);feedback.textContent=(theme==='dark'?'Dark':'Light')+' mode is on.';}catch(error){feedback.textContent=(theme==='dark'?'Dark':'Light')+' mode is on for this page. Your browser could not save this preference.';}}
       document.dispatchEvent(new CustomEvent('docodive:themechange',{detail:{theme}}));
     }
-    const system=()=>media?.matches?'dark':'light';
-    apply(choice==='system'?system():choice);
+    apply(choice);
     controls.forEach(button=>button.addEventListener('click',()=>apply(root.dataset.bsTheme==='dark'?'light':'dark',true)));
-    const onSystem=()=>{if(choice==='system')apply(system());};
-    if(media?.addEventListener)media.addEventListener('change',onSystem);else if(media?.addListener)media.addListener(onSystem);
-    window.addEventListener('storage',event=>{if(event.key!=='docodive_theme')return;choice=['light','dark'].includes(event.newValue)?event.newValue:'system';root.dataset.themeChoice=choice;apply(choice==='system'?system():choice);});
+    window.addEventListener('storage',event=>{if(event.key!=='docodive_theme')return;choice=['light','dark'].includes(event.newValue)?event.newValue:'light';root.dataset.themeChoice=choice;apply(choice);});
 
     const frame=callback=>typeof window.requestAnimationFrame==='function'?window.requestAnimationFrame(callback):callback();
     const loader=document.getElementById('page-loader');
@@ -61,8 +57,8 @@
       showOwnPage('restore');
       try{
         const saved=window.localStorage.getItem('docodive_theme');
-        choice=['light','dark'].includes(saved)?saved:'system';root.dataset.themeChoice=choice;
-        apply(choice==='system'?system():choice);
+        choice=['light','dark'].includes(saved)?saved:'light';root.dataset.themeChoice=choice;
+        apply(choice);
       }catch(error){/* Keep this page's current choice when storage is unavailable. */}
     });
 
