@@ -76,6 +76,17 @@ except ImportError:
     HAS_MAIL = False
 
 app = Flask(__name__)
+
+
+@app.before_request
+def serve_healthcheck():
+    """Keep process health probes ahead of redirects, sessions and rate limits."""
+    if request.method in ("GET", "HEAD") and request.path in ("/healthz", "/healthhz"):
+        return Response("ok\n", mimetype="text/plain", headers={
+            "Cache-Control": "no-store", "X-Robots-Tag": "noindex",
+        })
+
+
 IS_PRODUCTION = os.getenv("FLASK_ENV", "").lower() == "production"
 
 
