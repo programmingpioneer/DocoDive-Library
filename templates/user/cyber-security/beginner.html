@@ -1,0 +1,789 @@
+{% extends 'user/_lesson_base.html' %} {% block title %}Cybersecurity Beginner Course — Learn
+CIA Triad, Malware, Encryption & Security Fundamentals | DocoDive{% endblock %}
+{% block meta_description %}Start cybersecurity with 20 free beginner lessons:
+CIA triad, threats vs risks, malware, phishing, authentication, MFA, encryption,
+firewalls, patching, OWASP, backups, incident response, and a career path
+capstone.{% endblock %} {% block extra_css %}
+<style>
+  .cyber-hero {
+    background:linear-gradient(135deg, var(--ui-surface-soft) 0%, var(--ui-surface-soft) 100%);
+    border:1px solid var(--ui-line);
+  }
+  .hero-stat-link {
+    text-decoration: none;
+    color:var(--ui-muted);
+    transition: color 0.2s ease;
+    cursor: pointer;
+  }
+  .hero-stat-link:hover {
+    color:var(--ui-accent);
+    text-decoration: underline;
+  }
+  .course-layout {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .course-nav {
+    position: sticky;
+    top: 90px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    background:var(--ui-surface);
+    border:1px solid var(--ui-line);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .course-nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    color:var(--ui-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .course-nav a:hover {
+    background:var(--ui-surface-soft);
+    color:var(--ui-accent);
+  }
+  .course-nav a .nav-num {
+    flex-shrink: 0;
+    width: 24px;
+    color:var(--ui-accent);
+    font-weight: 700;
+  }
+  .course-nav a .nav-title {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .course-nav-toggle {
+    display: none;
+  }
+  .lesson-step {
+    scroll-margin-top: 100px;
+    margin-bottom: 32px;
+  }
+  .lesson-card {
+    background:var(--ui-surface);
+    border:1px solid var(--ui-line);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .code-block {
+    background:var(--ui-surface-alt);
+    color:var(--ui-accent);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .code-block pre {
+    margin: 0;
+    padding: 18px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .callout {
+    border-left: 4px solid;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+  }
+  .callout-tip {
+    background:var(--ui-surface-soft);
+    border-color:var(--ui-line);
+    color:var(--ui-accent);
+  }
+  .callout-warning {
+    background:var(--ui-surface-soft);
+    border-color:var(--ui-line);
+    color:var(--ui-accent);
+  }
+  .callout-best {
+    background:var(--ui-surface-soft);
+    border-color:var(--ui-line);
+    color:var(--ui-accent);
+  }
+  .callout-important {
+    background:var(--ui-surface-soft);
+    border-color:var(--ui-line);
+    color:var(--ui-accent);
+  }
+  .terminal {
+    background:var(--ui-surface-alt);
+    color:var(--ui-accent);
+    border-radius: 12px;
+    overflow: hidden;
+    font-family: Consolas, Monaco, monospace;
+  }
+  .terminal-header {
+    background:var(--ui-surface-alt);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom:1px solid var(--ui-line);
+  }
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  .dot-red {
+    background:var(--ui-primary);
+  }
+  .dot-yellow {
+    background:var(--ui-primary);
+  }
+  .dot-green {
+    background:var(--ui-primary);
+  }
+  .terminal-title {
+    color:var(--ui-muted);
+    font-size: 0.75rem;
+    margin-left: 6px;
+  }
+  .terminal-body {
+    padding: 14px 16px;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .exercise-box {
+    background:var(--ui-surface-soft);
+    border:1px dashed var(--ui-line);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .docs-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color:var(--ui-accent);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .docs-link:hover {
+    text-decoration: underline;
+  }
+  .lesson-complete {
+    transition: all 0.2s ease;
+  }
+  .lesson-complete.done {
+    background:var(--ui-surface-soft);
+    border-color:var(--ui-line);
+  }
+
+  .output-preview {
+    border-radius: 14px;
+    overflow: hidden;
+    border:1px solid var(--ui-line);
+    background:var(--ui-surface);
+  }
+  .output-preview-header {
+    background:var(--ui-surface-alt);
+    color:var(--ui-muted);
+    font-size: 0.75rem;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .output-preview-body {
+    min-height: 170px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 20px;
+    background:var(--ui-surface-soft);
+    text-align: center;
+  }
+  .pv-flow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .pv-arrow {
+    color:var(--ui-accent);
+    font-weight: 800;
+  }
+  .pv-box {
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pv-emerald {
+    background:var(--ui-primary);
+    color:var(--ui-on-primary);
+  }
+  .pv-light {
+    background:var(--ui-primary);
+    color:var(--ui-on-primary);
+  }
+  .pv-pale {
+    background:var(--ui-surface-soft);
+    color:var(--ui-accent);
+    border:1px solid var(--ui-line);
+  }
+  .pv-green {
+    background:var(--ui-primary);
+    color:var(--ui-on-primary);
+  }
+  .pv-red {
+    background:var(--ui-primary);
+    color:var(--ui-on-primary);
+  }
+  .pv-amber {
+    background:var(--ui-primary);
+    color:var(--ui-on-primary);
+  }
+  .pv-navy {
+    background:var(--ui-surface-alt);
+    color:var(--ui-text);
+  }
+  .pv-schema {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+  }
+  .pv-schema-box {
+    background:var(--ui-surface-soft);
+    border:2px solid var(--ui-line);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 700;
+    font-size: 0.7rem;
+    color:var(--ui-accent);
+  }
+  .pv-agg {
+    display: flex;
+    gap: 10px;
+  }
+  .pv-agg-box {
+    background:var(--ui-surface);
+    border:2px solid var(--ui-line);
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: center;
+  }
+  .pv-agg-value {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color:var(--ui-accent);
+  }
+  .pv-agg-label {
+    font-size: 0.62rem;
+    color:var(--ui-muted);
+    font-weight: 600;
+  }
+  .pv-shield {
+    font-size: 2.6rem;
+  }
+
+  @media (max-width: 991.98px) {
+    .course-layout {
+      grid-template-columns: 1fr;
+    }
+    .course-nav-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .course-nav {
+      position: static;
+      max-height: none;
+    }
+    .course-nav.collapse.show {
+      max-height: 60vh;
+      overflow-y: auto;
+      margin-bottom: 24px;
+    }
+  }
+  @media (max-width: 576px) {
+    .cyber-hero {
+      padding: 24px 16px;
+    }
+    .cyber-hero h1 {
+      font-size: 1.75rem;
+    }
+    .lesson-card {
+      padding: 16px;
+    }
+    .code-block pre {
+      font-size: 0.78rem;
+      padding: 14px;
+    }
+    .terminal-body {
+      font-size: 0.75rem;
+      padding: 12px;
+    }
+    .callout {
+      padding: 10px 12px;
+      font-size: 0.85rem;
+    }
+  }
+</style>
+
+{{ super() }}
+{% endblock %} {% block lesson_content %} {% if lessons %}
+<section class="container py-5">
+  <div class="cyber-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span
+        class="badge rounded-pill"
+        style="background:var(--ui-primary); color:var(--ui-on-primary); font-weight: 700"
+        >Beginner</span
+      >
+      <span class="badge rounded-pill bg-light text-dark border"
+        >Free Learning Path</span
+      >
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:var(--ui-accent)">
+      Cybersecurity Beginner Course
+    </h1>
+    <p class="text-muted mb-4">
+      Learn how to defend systems and data. Master the CIA triad, malware,
+      phishing, encryption, firewalls, authentication, incident response, and
+      build a rock-solid security foundation.
+    </p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 mb-3">
+      <span class="text-muted small"
+        ><i class="bi bi-clock me-1"></i>4–6 weeks</span
+      >
+      <span class="text-muted small"
+        ><i class="bi bi-journal-text me-1"></i>{{ lessons|length }}
+        lessons</span
+      >
+      <a href="#lesson-20" class="hero-stat-link small"
+        ><i class="bi bi-trophy me-1"></i>1 career capstone</a
+      >
+      <span class="text-muted small"
+        ><i class="bi bi-person-check me-1"></i>Basic networking helpful</span
+      >
+    </div>
+    <a
+      href="#lesson-1"
+      class="btn btn-primary rounded-pill px-4 py-2"
+      style="background:var(--ui-primary); border-color:var(--ui-line)"
+    >
+      <i class="bi bi-shield-lock me-2"></i>Start Learning
+    </a>
+  </div>
+
+  <button class="btn btn-outline-primary course-nav-toggle" type="button" aria-expanded="false" aria-controls="courseNav">
+    <i class="bi bi-list-ol" aria-hidden="true"></i><span data-course-toggle-label>Show Course Content</span>
+  </button>
+
+  <div class="course-layout">
+    <aside id="courseNav" class="course-nav" aria-label="Course contents">
+      <h3 class="h6 fw-bold mb-3" style="color:var(--ui-accent)">
+        <i class="bi bi-list-ol me-2"></i>Course Content
+      </h3>
+      {% for lesson in lessons %}
+      <a href="#lesson-{{ lesson.id }}" class="course-nav-link">
+        <span class="nav-num">{{ "%02d"|format(lesson.id) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+      </a>
+      {% endfor %}
+    </aside>
+
+    <div>
+      {% for lesson in lessons %}
+      <div id="lesson-{{ lesson.id }}" class="lesson-step">
+        <div class="lesson-card lesson-complete" data-lesson="{{ lesson.id }}">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="nav-num fw-bold" style="color:var(--ui-accent)"
+              >{{ "%02d"|format(lesson.id) }}</span
+            >
+            <h2 class="h4 fw-bold mb-0" style="color:var(--ui-accent)">
+              {{ lesson.title }}
+            </h2>
+            <span class="ms-auto text-muted small"
+              ><i class="bi bi-clock me-1"></i>{{ lesson.duration }}</span
+            >
+          </div>
+
+          <div class="mb-3">
+            <h3 class="h6 fw-bold mb-2" style="color:var(--ui-accent)">
+              <i class="bi bi-bullseye me-2"></i>What you'll learn
+            </h3>
+            <ul class="list-unstyled">
+              {% for obj in lesson.objectives %}
+              <li class="d-flex gap-2 mb-1">
+                <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                <span class="text-dark">{{ obj }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <p class="text-dark">{{ lesson.explanation }}</p>
+
+          {% if lesson.code %}
+          <div class="code-block mb-3">
+            <div
+              class="d-flex justify-content-between align-items-center px-3 py-2"
+              style="background:var(--ui-surface-alt); color:var(--ui-muted); font-size: 0.8rem"
+            >
+              <span
+                ><i class="bi bi-code-slash me-1"></i>{{ lesson.code_label or
+                'Code' }}</span
+              >
+              <button
+                class="btn btn-sm text-light"
+                onclick="copyCode(this)"
+                style="font-size: 0.75rem"
+              >
+                <i class="bi bi-clipboard me-1"></i>Copy
+              </button>
+            </div>
+            <pre>{{ lesson.code }}</pre>
+          </div>
+          {% endif %} {% if lesson.preview and lesson.preview != 'none' %}
+          <div class="mb-3">
+            <div class="text-muted small mb-1">
+              <i class="bi bi-eye me-1"></i>Live Preview
+            </div>
+            <div class="output-preview">
+              <div class="output-preview-header">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+                <span class="terminal-title">{{ lesson.title }}</span>
+              </div>
+              <div class="output-preview-body">
+                {% if lesson.preview == 'cia' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-emerald">Confidentiality</div>
+                  <div class="pv-box pv-light">Integrity</div>
+                  <div class="pv-box pv-emerald">Availability</div>
+                </div>
+                {% elif lesson.preview == 'risk' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">Vulnerability</div>
+                  <span class="pv-arrow">×</span>
+                  <div class="pv-box pv-red">Threat</div>
+                  <span class="pv-arrow">=</span>
+                  <div class="pv-box pv-amber">Risk</div>
+                </div>
+                {% elif lesson.preview == 'malware' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">Virus</div>
+                  <div class="pv-box pv-amber">Worm</div>
+                  <div class="pv-box pv-navy">Trojan</div>
+                </div>
+                {% elif lesson.preview == 'phishing' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">✉️ email</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-amber">fake link</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-red">⚠ stolen</div>
+                </div>
+                {% elif lesson.preview == 'password' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-emerald">plaintext</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-light">salt + hash</div>
+                  <span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">🔒 stored</div>
+                </div>
+                {% elif lesson.preview == 'mfa' %}
+                <div class="pv-schema">
+                  <div class="pv-schema-box">🔑 something you know</div>
+                  <div class="pv-schema-box">📱 something you have</div>
+                  <div class="pv-schema-box">👆 something you are</div>
+                </div>
+                {% elif lesson.preview == 'encryption' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-emerald">plaintext</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-navy">ciphertext</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">🔒 secret</div>
+                </div>
+                {% elif lesson.preview == 'network' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">:22 ssh</div>
+                  <div class="pv-box pv-navy">:80 http</div>
+                  <div class="pv-box pv-red">:443 https</div>
+                </div>
+                {% elif lesson.preview == 'firewall' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">block all</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">allow some</div>
+                </div>
+                {% elif lesson.preview == 'edr' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">signature</div>
+                  <span class="pv-arrow">+</span>
+                  <div class="pv-box pv-emerald">behavior</div>
+                  <span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">🛡 detection</div>
+                </div>
+                {% elif lesson.preview == 'patch' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">unpatched</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-emerald">updated</div>
+                  <span class="pv-arrow">=</span>
+                  <div class="pv-box pv-green">safe</div>
+                </div>
+                {% elif lesson.preview == 'owasp' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-red">⚠ injection</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-emerald">? params</div>
+                </div>
+                {% elif lesson.preview == 'wifi' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">WPA2</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-emerald">WPA3</div>
+                </div>
+                {% elif lesson.preview == 'backup' %}
+                <div class="pv-agg">
+                  <div class="pv-agg-box">
+                    <div class="pv-agg-value">3</div>
+                    <div class="pv-agg-label">copies</div>
+                  </div>
+                  <div class="pv-agg-box">
+                    <div class="pv-agg-value">2</div>
+                    <div class="pv-agg-label">media</div>
+                  </div>
+                  <div class="pv-agg-box">
+                    <div class="pv-agg-value">1</div>
+                    <div class="pv-agg-label">offsite</div>
+                  </div>
+                </div>
+                {% elif lesson.preview == 'physical' %}
+                <div class="pv-shield">🔒</div>
+                {% elif lesson.preview == 'policy' %}
+                <div class="pv-schema">
+                  <div class="pv-schema-box">password policy</div>
+                  <div class="pv-schema-box">acceptable use</div>
+                  <div class="pv-schema-box">incident response</div>
+                </div>
+                {% elif lesson.preview == 'ir' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">detect</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-amber">contain</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">recover</div>
+                </div>
+                {% elif lesson.preview == 'ethics' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-emerald">white hat ✓</div>
+                  <div class="pv-box pv-red">black hat ✗</div>
+                </div>
+                {% elif lesson.preview == 'privacy' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-emerald">collect less</div>
+                  <span class="pv-arrow">+</span>
+                  <div class="pv-box pv-light">store less</div>
+                  <span class="pv-arrow">+</span>
+                  <div class="pv-box pv-green">encrypt</div>
+                </div>
+                {% elif lesson.preview == 'careers' %}
+                <div class="pv-flow">
+                  <div class="pv-box pv-navy">networking</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-emerald">linux</div>
+                  <span class="pv-arrow">→</span>
+                  <div class="pv-box pv-green">specialize</div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% elif lesson.output %}
+          <div class="mb-3">
+            <div class="text-muted small mb-1">
+              <i class="bi bi-terminal me-1"></i>Output
+            </div>
+            <div class="terminal">
+              <div class="terminal-header">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+                <span class="terminal-title">bash</span>
+              </div>
+              <div class="terminal-body">{{ lesson.output }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="callout callout-{{ lesson.callout_type }} mb-3">
+            {% if lesson.callout_type == 'tip' %}<strong>💡 Tip:</strong> {%
+            elif lesson.callout_type == 'warning' %}<strong
+              >⚠️ Common Mistake:</strong
+            >
+            {% elif lesson.callout_type == 'best' %}<strong
+              >✓ Best Practice:</strong
+            >
+            {% else %}<strong>🔎 Important:</strong>{% endif %} {{
+            lesson.callout_text }}
+          </div>
+
+          <div class="mb-3">
+            <a
+              href="{{ lesson.docs_url }}"
+              target="_blank"
+              rel="noopener"
+              class="docs-link"
+            >
+              <i class="bi bi-box-arrow-up-right"></i>{{ lesson.docs_label }}
+            </a>
+          </div>
+
+          <div class="exercise-box">
+            <h3 class="h6 fw-bold mb-2" style="color:var(--ui-accent)">
+              <i class="bi bi-pencil-square me-2"></i>Try it yourself
+            </h3>
+            <p class="mb-2">{{ lesson.exercise_prompt }}</p>
+            <div class="d-flex gap-2 mb-2 exercise-actions">
+              <button
+                class="btn btn-outline-primary btn-sm rounded-pill"
+                onclick="toggleHint(this)"
+              >
+                Show Hint
+              </button>
+              <button
+                class="btn btn-outline-success btn-sm rounded-pill"
+                onclick="toggleSolution(this)"
+              >
+                Show Solution
+              </button>
+            </div>
+            <div class="hint-box d-none small text-muted">
+              <i class="bi bi-lightbulb me-1"></i>{{ lesson.exercise_hint }}
+            </div>
+            <div class="solution-box d-none">
+              <div class="code-block">
+                <pre>{{ lesson.exercise_solution }}</pre>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 lesson-footer"
+            style="border-top:1px solid var(--ui-line)"
+          >
+            {% if loop.previtem %}
+            <a
+              href="#lesson-{{ loop.previtem.id }}"
+              class="btn btn-outline-secondary btn-sm rounded-pill"
+            >
+              <i class="bi bi-arrow-left me-1"></i>Lesson {{
+              "%02d"|format(loop.previtem.id) }}
+            </a>
+            {% else %}<span></span>{% endif %}
+
+            <button
+              class="btn btn-outline-success btn-sm rounded-pill mark-complete"
+              onclick="markComplete(this)"
+            >
+              <i class="bi bi-check2-circle me-1"></i>Mark Complete
+            </button>
+
+            {% if loop.nextitem %}
+            <a
+              href="#lesson-{{ loop.nextitem.id }}"
+              class="btn btn-primary btn-sm rounded-pill"
+              style="background:var(--ui-primary); border-color:var(--ui-line)"
+            >
+              Next Lesson <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            {% else %}<span></span>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="text-center mt-4 p-4 rounded-4" style="background:var(--ui-surface-soft)">
+        <h2 class="h5 fw-bold" style="color:var(--ui-accent)">
+          You've completed all {{ lessons|length }} lessons. Ready for more?
+        </h2>
+        <p class="text-muted mb-3">
+          Continue to Cybersecurity Intermediate for network defense,
+          penetration testing, and security operations.
+        </p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <a
+            href="/learn/cyber-security/intermediate"
+            class="btn btn-primary rounded-pill px-4"
+            style="background:var(--ui-primary); border-color:var(--ui-line)"
+          >
+            <i class="bi bi-arrow-right me-2"></i>Continue to Intermediate
+          </a>
+          <a
+            href="/learn/cyber-security"
+            class="btn btn-outline-primary rounded-pill px-4"
+          >
+            <i class="bi bi-collection me-2"></i>Cybersecurity Hub
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %} {% endblock %} {% block scripts %}
+<script>
+  function copyCode(btn) {
+    const pre = btn.closest(".code-block").querySelector("pre");
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
+      setTimeout(() => {
+        btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy';
+      }, 2000);
+    });
+  }
+  function toggleHint(btn) {
+    const box = btn.closest(".exercise-box").querySelector(".hint-box");
+    box.classList.toggle("d-none");
+    btn.textContent = box.classList.contains("d-none")
+      ? "Show Hint"
+      : "Hide Hint";
+  }
+  function toggleSolution(btn) {
+    const box = btn.closest(".exercise-box").querySelector(".solution-box");
+    box.classList.toggle("d-none");
+    btn.textContent = box.classList.contains("d-none")
+      ? "Show Solution"
+      : "Hide Solution";
+  }
+  function markComplete(btn) {
+    const card = btn.closest(".lesson-complete");
+    card.classList.add("done");
+    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Completed';
+    btn.classList.remove("btn-outline-success");
+    btn.classList.add("btn-success");
+    btn.disabled = true;
+  }
+</script>
+
+{{ super() }}
+{% endblock %}

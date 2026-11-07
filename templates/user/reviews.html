@@ -1,0 +1,88 @@
+{% extends 'user/base.html' %}
+{% from 'user/_icons.html' import icon %}
+{% block title %}Reader Reviews | DocoDive{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static',filename='css/reviews.css',v='20261106-previews-reviews-1') }}">{% endblock %}
+{% block content %}
+{% set written_total = breakdown.values()|sum %}
+<div class="reviews-page" id="reviewPage">
+  <div class="container reviews-container">
+    <header class="reviews-hero">
+      <div><span class="reviews-eyebrow">{{ icon('message') }} THE READER COMMUNITY</span><h1>Every reader has a story.</h1><p>Reviews, discoveries and honest feedback from the DocoDive community.</p></div>
+      <button class="reviews-button reviews-button-primary" type="button" data-write-review>{{ icon('edit') }} Add Review</button>
+    </header>
+    <div class="reviews-layout">
+      <aside class="reviews-overview" aria-label="Community ratings overview">
+        <section class="reviews-summary" aria-labelledby="ratingHeading">
+          <span class="reviews-small-label" id="ratingHeading">COMMUNITY RATING</span>
+          <div class="reviews-score">{% if written_total %}<strong>{{ avg_rating }}</strong><span>out of 5</span>{% else %}<strong>—</strong><span>No ratings yet</span>{% endif %}</div>
+          <div class="reviews-stars" role="img" aria-label="{{ avg_rating }} out of 5 stars">{% set full = avg_rating|int %}{% for i in range(5) %}{{ icon('star','is-filled' if i < full else '') }}{% endfor %}</div>
+          <p class="reviews-total">{{ icon('users') }} {{ total_reviews }} written {{ 'review' if total_reviews == 1 else 'reviews' }}</p>
+          <div class="reviews-breakdown" aria-label="Rating distribution">
+            {% for star in [5,4,3,2,1] %}{% set pct = (breakdown[star] / written_total * 100) if written_total else 0 %}
+            <div class="reviews-rating-row"><span>{{ star }} {{ icon('star') }}</span><span class="reviews-rating-track" role="img" aria-label="{{ star }} stars: {{ breakdown[star] }} reviews"><span style="width:{{ pct }}%"></span></span><span class="reviews-rating-count">{{ breakdown[star] }}</span></div>
+            {% endfor %}
+          </div>
+          <p class="reviews-rating-note">Based on written reader reviews of books and DocoDive.</p>
+        </section>
+        <section class="reviews-invitation"><span class="reviews-invitation-icon">{{ icon('lightbulb') }}</span><h2>Your experience matters.</h2><p>Found a useful book? Share what worked for you and what could be better.</p><button class="reviews-text-button" type="button" data-write-review>Write a review {{ icon('arrow-right') }}</button><a href="/community-guidelines">Read our community guidelines</a></section>
+      </aside>
+      <section class="reviews-feed" aria-labelledby="reviewListHeading">
+        <div class="reviews-section-heading"><div><span class="reviews-small-label">FROM THE COMMUNITY</span><h2 id="reviewListHeading">Reader reviews</h2></div><span class="reviews-feed-label">{{ icon('clock') }} Most recent</span></div>
+        <div class="reviews-list">
+          {% for r in reviews %}{% set rating = [5, [0,r.rating|int]|max]|min %}
+          <article class="reader-review">
+            <header class="reader-review-header">
+              <a class="reader-review-identity" href="/user/profile/{{ r.username }}">
+                {% if r.avatar %}<img src="{{ r.avatar }}" alt="" class="reader-review-avatar" width="44" height="44" loading="lazy" referrerpolicy="no-referrer">{% else %}<span class="reader-review-avatar reader-review-initial" aria-hidden="true">{{ (r.full_name or r.username or 'R')[:1]|upper }}</span>{% endif %}
+                <span><strong>{{ r.full_name or r.username }}</strong><span class="reader-review-date">{{ icon('calendar') }} {{ r.created_at }}</span></span>
+              </a>
+              <span class="reader-review-score" aria-label="{{ rating }} out of 5 stars">{{ icon('star') }} {{ rating }}<span>/5</span></span>
+            </header>
+            <p class="reader-review-comment">{{ r.comment }}</p>
+            {% if r.book_id %}
+              {% if r.book_title %}<a class="reader-review-book" href="{{ url_for('book_detail',slug=r.book_slug or r.book_id,book_id=r.book_id) }}" title="{{ r.book_title }}">{{ icon('book') }}<span>{{ r.book_title }}</span></a>{% else %}<span class="reader-review-book">{{ icon('book') }}<span>Book unavailable</span></span>{% endif %}
+            {% else %}<span class="reader-review-book">{{ icon('message') }}<span>DocoDive feedback</span></span>{% endif %}
+            <div class="reader-review-bottom"><span class="reviews-stars" role="img" aria-label="{{ rating }} out of 5 stars">{% for i in range(5) %}{{ icon('star','is-filled' if i < rating else '') }}{% endfor %}</span><a href="/user/profile/{{ r.username }}">View reader {{ icon('arrow-right') }}</a></div>
+          </article>
+          {% else %}
+          <div class="reviews-empty"><span>{{ icon('message') }}</span><h3>No written reviews yet</h3><p>Be the first to share a book that made a difference to your learning.</p><button class="reviews-button reviews-button-primary" type="button" data-write-review>{{ icon('edit') }} Write the first review</button></div>
+          {% endfor %}
+        </div>
+        {% if total_pages > 1 %}<nav class="reviews-pagination" aria-label="Reviews pages">{% if page > 1 %}<a href="{{ url_for('reviews_page',page=page-1) }}">{{ icon('arrow-left') }} Previous</a>{% endif %}<span>Page {{ page }} of {{ total_pages }}</span>{% if page < total_pages %}<a href="{{ url_for('reviews_page',page=page+1) }}">Next {{ icon('arrow-right') }}</a>{% endif %}</nav>{% endif %}
+      </section>
+    </div>
+    <section class="reviews-topics" aria-labelledby="reviewTopicsHeading"><div class="reviews-topics-heading"><span class="reviews-small-label">A LITTLE INSPIRATION</span><h2 id="reviewTopicsHeading">What readers value</h2><p>Not sure what to write? Start with one of these.</p></div><div class="reviews-topic-grid">
+      {% for symbol,title,description,tone in [('check-circle','Content Quality','How useful was the resource?','indigo'),('download','Download Speed','How was the download experience?','teal'),('search','Ease of Use','Was your next read easy to find?','rose'),('users','Community & Support','How did the community help?','indigo'),('book','Free Access','What did you discover?','amber')] %}
+      <div class="reviews-topic reviews-topic-{{ tone }}"><span>{{ icon(symbol) }}</span><h3>{{ title }}</h3><p>{{ description }}</p></div>
+      {% endfor %}
+    </div></section>
+    <div class="reviews-feedback-note">{{ icon('message') }}<p>Have an idea for the website? <a href="/feedback">Share a suggestion</a>.</p></div>
+  </div>
+</div>
+<div class="modal fade reviews-modal" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+    <div class="modal-header"><div><span class="reviews-eyebrow">{{ icon('edit') }} YOUR READING EXPERIENCE</span><h2 id="reviewModalTitle">Share your review</h2></div><button type="button" class="reviews-close" data-bs-dismiss="modal" aria-label="Close review form">{{ icon('close') }}</button></div>
+    <div class="modal-body">
+      <p class="reviews-form-intro">Share your experience with DocoDive, or link a book you have read.</p>
+      <form id="reviewForm">
+        <input type="hidden" name="_csrf_token" value="{{ session.get('_csrf_token','') }}">
+        <label for="reviewBookSearch">Book <span class="reviews-optional">optional</span></label>
+        <div data-review-book-native><label class="visually-hidden" for="reviewBookSelect">Choose a book, optional</label><select id="reviewBookSelect" name="book_id" class="form-select"><option value="" selected>No book — general feedback</option>{% for b in books %}<option value="{{ b.id }}">{{ b.title }}</option>{% endfor %}</select></div>
+        <div class="review-book-search" data-review-book-search hidden>
+          <div class="review-book-combobox">{{ icon('search') }}<input id="reviewBookSearch" type="search" role="combobox" aria-autocomplete="list" aria-controls="reviewBookResults" aria-expanded="false" aria-describedby="reviewBookHelp reviewBookSearchStatus" autocomplete="off" maxlength="100" placeholder="Search by title or author"><button type="button" data-review-book-clear aria-label="Clear book selection" hidden>{{ icon('close') }}</button></div>
+          <div id="reviewBookResults" class="review-book-results" role="listbox" aria-label="Matching books" hidden></div>
+          <p id="reviewBookSearchStatus" class="review-book-search-status" role="status" aria-live="polite"></p>
+        </div>
+        <p class="reviews-form-help" id="reviewBookHelp">Leave empty for general feedback. To link a book, choose a search result.</p>
+        <div class="review-book-selection" data-review-book-selection hidden>{{ icon('book') }}<span data-review-book-title></span></div>
+        <fieldset class="reviews-rating-fieldset"><legend>Your rating</legend><div class="reviews-rating-options" id="reviewRatingStars">{% for i in range(1,6) %}<label class="reviews-rating-option"><input type="radio" name="rating" value="{{ i }}" aria-label="{{ i }} {{ 'star' if i == 1 else 'stars' }}" {% if i == 5 %}checked{% endif %} required><span>{{ icon('star') }}<small>{{ i }}</small></span></label>{% endfor %}</div><p data-rating-description aria-live="polite">5 out of 5 · Excellent</p></fieldset>
+        <label for="reviewComment">Your review</label><textarea id="reviewComment" name="comment" class="form-control" rows="4" maxlength="5000" placeholder="What worked well? What could be better?" required></textarea>
+        <p class="reviews-form-help">Keep it honest, helpful and respectful. <a href="/community-guidelines">Community guidelines</a></p>
+        <p id="reviewFormStatus" class="reviews-form-status" role="alert" hidden></p>
+        <button type="submit" class="reviews-button reviews-button-primary" id="submitReviewBtn">{{ icon('send') }} <span data-submit-label>Submit Review</span></button>
+      </form>
+    </div>
+  </div></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='js/review-book-search.js',v='20261106-reviews-1') }}" defer></script><script src="{{ url_for('static',filename='js/reviews.js',v='20261106-reviews-1') }}" defer></script>{% endblock %}

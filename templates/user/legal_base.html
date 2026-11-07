@@ -1,0 +1,42 @@
+{% extends 'user/base.html' %}
+{% from 'user/_icons.html' import icon %}
+{% block title %}{{ self.legal_title()|striptags|trim }} | DocoDive{% endblock %}
+{% block extra_css %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static',filename='css/legal.css',v='20261105-final-2') }}">
+{% endblock %}
+{% block content %}
+<div class="legal-page" id="legal-top">
+  <div class="legal-shell">
+    <nav class="legal-breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a><span aria-hidden="true">/</span><span>Legal &amp; help</span>
+    </nav>
+    <header class="legal-header">
+      <p class="legal-eyebrow"><span class="legal-brand-icon">{{ icon('book') }}</span>DocoDive <span aria-hidden="true">/</span> Legal &amp; help</p>
+      <h1 id="legal-page-title">{% block legal_title %}{% endblock %}</h1>
+      <p class="legal-introduction">{% block legal_intro %}{% endblock %}</p>
+      <p class="legal-updated">Last updated <time datetime="2026-10-31">31 October 2026</time></p>
+    </header>
+    <nav class="legal-page-nav" aria-label="Legal and help pages">
+      {% for path, label in [('/privacy', 'Privacy'), ('/terms', 'Terms'), ('/cookies', 'Cookies'), ('/data-deletion', 'Data deletion'), ('/community-guidelines', 'Community guidelines'), ('/accessibility', 'Accessibility'), ('/contact', 'Contact')] %}
+      <a href="{{ path }}"{% if request.path == path %} aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="legal-layout">
+      <aside class="legal-sidebar">
+        <nav class="legal-contents" aria-label="On this page">
+          <h2>{{ icon('menu') }} On this page</h2>
+          <ol>{% block legal_toc %}{% endblock %}</ol>
+        </nav>
+      </aside>
+      <article class="legal-document" aria-labelledby="legal-page-title">
+        {% block legal_content %}{% endblock %}
+        <div class="legal-document-end">
+          <p>Need help with this page? <a href="/contact">Contact DocoDive</a>.</p>
+          <a href="#legal-top">Back to top</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</div>
+{% endblock %}

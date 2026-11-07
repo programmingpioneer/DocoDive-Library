@@ -1,0 +1,14 @@
+{% from 'user/_icons.html' import icon %}
+<div class="dropdown reader-account-dropdown">
+  <button class="btn account-menu-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="readerAccountMenu" aria-label="Open account menu">
+    {% if session.get('avatar_url') %}<img id="navbarAvatar" src="{{ session.get('avatar_url') }}" alt="" width="30" height="30" onerror="this.onerror=null;this.src='{{ url_for('static',filename='images/default-avatar.jpg') }}';">{% else %}<span class="avatar-fallback">{{ (session.get('user_display_name') or session.get('user_name') or 'UU')[:2]|upper }}</span>{% endif %}
+    <span class="account-trigger-name">{{ session.get('user_display_name') or session.get('user_name') }}{% if current_user_is_official %} {{ icon('check-circle') }}{% endif %}</span>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end account-menu-list" id="readerAccountMenu">
+    <li class="account-menu-identity"><span>YOUR DOCODIVE ACCOUNT</span><strong>{{ session.get('user_display_name') or session.get('user_name') }}</strong><small>@{{ session.get('user_name') }}</small></li>
+    {% for href,label,symbol,tone in [('/user/profile/' ~ session.get('user_name',''),'My Profile','user','indigo'),('/user/favorites','My Favorites','heart','rose'),('/user/history','Download History','clock','teal'),('/user/stats','My Library Stats','chart','blue'),('/user/preferences','Notification preferences','bell','amber'),('/user/settings','Account settings','settings','slate')] %}
+    <li><a class="dropdown-item" href="{{ href }}"><span class="account-menu-icon nav-tone-{{ tone }}">{{ icon(symbol) }}</span><span>{{ label }}</span></a></li>
+    {% endfor %}
+    <li><hr class="dropdown-divider"></li><li><a class="dropdown-item account-logout" href="/user/logout"><span class="account-menu-icon nav-tone-rose">{{ icon('logout') }}</span><span>Log out</span></a></li>
+  </ul>
+</div>

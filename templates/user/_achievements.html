@@ -1,0 +1,20 @@
+{% from 'user/_icons.html' import icon %}
+{% macro achievement_panel(summary, owner=false) %}
+<section class="achievement-panel" data-achievements>
+  <header class="panel-heading"><div><p class="community-kicker">LEARNING MILESTONES</p><h2>{{ icon('award') }} {{ 'Your achievements' if owner else 'Achievements' }}</h2></div><span class="achievement-count">{{ summary.unlocked_count }} / {{ summary['items']|length }} unlocked</span></header>
+  <p class="panel-intro">Every small step counts. Milestones reflect recorded downloads, favorites, reviews and the longest daily streak.</p>
+  <div class="achievement-overview"><progress value="{{ summary.completion }}" max="100" aria-label="Achievement completion">{{ summary.completion }}%</progress><span>{{ summary.completion }}% complete</span></div>
+  <nav class="achievement-filters" aria-label="Filter achievements"><button type="button" data-achievement-filter="all" aria-pressed="true">All milestones</button><button type="button" data-achievement-filter="unlocked" aria-pressed="false">{{ icon('check-circle') }} Unlocked</button><button type="button" data-achievement-filter="locked" aria-pressed="false">{{ icon('lock') }} In progress</button></nav>
+  <div class="achievement-grid">
+    {% for b in summary['items'] %}
+    <article class="achievement-card{% if b.unlocked %} is-unlocked{% endif %}" data-milestone="{{ b.key }}" data-achievement-state="{{ 'unlocked' if b.unlocked else 'locked' }}">
+      <div class="milestone-heading"><span class="milestone-icon">{{ icon(b.icon) }}</span><span class="milestone-status">{{ icon('check' if b.unlocked else 'lock') }} {{ 'Unlocked' if b.unlocked else 'In progress' }}</span></div>
+      <h3>{{ b.name }}</h3><p class="milestone-target">{{ b.threshold }} {{ b.unit }}</p>
+      <progress value="{{ b.progress }}" max="100" aria-label="{{ b.name }} progress">{{ b.progress }}%</progress>
+      <div class="milestone-progress-text"><strong>{{ [b.current,b.threshold]|min }} / {{ b.threshold }}</strong><span>{{ 'Complete' if b.unlocked else (b.remaining|string) ~ ' to go' }}</span></div>
+    </article>
+    {% endfor %}
+  </div>
+  <p class="community-empty" data-achievement-empty hidden>No milestones in this view yet. Keep exploring at your own pace.</p>
+</section>
+{% endmacro %}

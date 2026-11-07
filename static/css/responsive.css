@@ -1,0 +1,418 @@
+/* Public interface: load after page styles and user.css. */
+html:has(body[data-public-site]) {
+  overflow-x: visible !important;
+  scrollbar-gutter: auto;
+}
+
+body[data-public-site] {
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: visible !important;
+}
+
+body[data-public-site] :is(main, section, article, form, .row, [class*="col-"], .card-body, .input-group) {
+  min-width: 0;
+}
+
+body[data-public-site] :is(p, li, h1, h2, h3, h4, h5, h6, .alert, .dropdown-item) {
+  overflow-wrap: anywhere;
+}
+
+body[data-public-site] main p {
+  line-height: 1.65;
+}
+
+body[data-public-site] main :is(.small, small, .form-text) {
+  font-size: .875rem;
+}
+
+body[data-public-site] :is(input, select, textarea, .form-control, .form-select) {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 1rem;
+}
+
+body[data-public-site] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, .form-control, .form-select) {
+  min-height: 44px;
+}
+
+body[data-public-site] :is(.btn, .page-link, .nav-link, .dropdown-item) {
+  min-height: 44px;
+}
+
+body[data-public-site] :is(.btn, .dropdown-item) {
+  white-space: normal;
+}
+
+body[data-public-site] :is(pre, .table-responsive) {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+body[data-public-site] pre {
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+body[data-public-site] main table:not(.table-responsive table) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+body[data-public-site] [data-aos] {
+  overflow: visible;
+}
+
+body[data-public-site] .site-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  vertical-align: -.18em;
+}
+
+/* Bounded menus stay readable without pushing the page sideways. */
+body[data-public-site] .navbar .dropdown-menu {
+  max-width: calc(100vw - 24px);
+}
+
+body[data-public-site] .navbar .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .875rem;
+  line-height: 1.4;
+}
+
+body[data-public-site] .navbar .dropdown-item > :is(i, svg) {
+  flex-shrink: 0;
+}
+
+body[data-public-site] .navbar .dropdown-toggle .fw-semibold {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body[data-public-site] .mega-title { font-size: .875rem; }
+body[data-public-site] .mega-sub { font-size: .75rem; }
+body[data-public-site] .mega-head { font-size: .75rem; }
+body[data-public-site] .mega-footer a { min-height: 44px; font-size: .875rem; }
+body[data-public-site] .notif-dd-name { font-size: .8125rem; }
+body[data-public-site] .notif-dd-status { font-size: .8125rem; }
+body[data-public-site] .notif-dd-time { font-size: .75rem; }
+
+/* All library lists share the same cover and text/action slots. */
+body[data-public-site] .book-card-inner {
+  --cover-height: 180px;
+  border-radius: 16px !important;
+  min-width: 0;
+}
+
+body[data-public-site] .book-card-inner > .book-cover-outer,
+body[data-public-site] :is(#recommendedCarousel, #newArrivalsCarousel) .book-card-inner > .book-cover-outer {
+  flex: 0 0 var(--cover-height);
+  height: var(--cover-height) !important;
+  min-height: var(--cover-height) !important;
+  padding: 10px !important;
+  overflow: hidden;
+}
+
+body[data-public-site] .book-card-inner .flat-book-cover {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  aspect-ratio: auto;
+}
+
+body[data-public-site] .book-card-inner > .card-body,
+body[data-public-site] :is(#recommendedCarousel, #newArrivalsCarousel) .book-card-inner > .card-body {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 20px 40px 18px minmax(20px, auto) minmax(44px, auto) auto;
+  gap: 5px;
+  padding: 10px !important;
+  align-content: start;
+}
+
+body[data-public-site] .book-card-inner .book-meta {
+  grid-row: 1;
+  gap: 6px;
+  margin: 0 !important;
+}
+
+body[data-public-site] .book-card-inner .book-meta > :is(span, .badge) {
+  font-size: 11px !important;
+  line-height: 16px;
+}
+
+body[data-public-site] .book-card-inner .book-meta > .text-warning {
+  color:var(--ui-warning)!important;
+}
+
+body[data-public-site] .book-card-inner .book-title {
+  grid-row: 2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 0 !important;
+  font-size: 14px !important;
+  line-height: 20px;
+  font-weight: 600 !important;
+  white-space: normal;
+}
+
+body[data-public-site] .book-card-inner .book-author {
+  grid-row: 3;
+  margin: 0 !important;
+  font-size: 12px !important;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body[data-public-site] .book-card-inner :is(.book-rating, .book-history-date) {
+  grid-row: 4;
+  font-size: 11px !important;
+  line-height: 18px;
+  margin: 0 !important;
+}
+
+body[data-public-site] .book-card-inner .book-actions {
+  grid-row: 5;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 6px !important;
+  margin: 0 !important;
+}
+
+body[data-public-site] .book-card-inner .book-actions .btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 44px !important;
+  padding: 6px 3px !important;
+  border-radius: 9px !important;
+  border: 1px solid var(--ui-line);
+  background:var(--ui-surface-alt);
+  color:var(--ui-accent);
+  font-size: 11px !important;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: normal;
+  box-shadow: none !important;
+}
+
+body[data-public-site] .book-actions .site-icon {
+  width: 17px;
+  height: 17px;
+}
+
+body[data-public-site] .book-card-inner .book-actions .btn:hover {
+  color:var(--ui-accent);
+  background:var(--ui-surface-soft);
+  border-color: var(--ui-accent);
+  transform: none;
+}
+
+body[data-public-site] .book-card-inner .card-body .book-counts {
+  grid-row: 6;
+  align-self: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px !important;
+  margin: 0 !important;
+}
+
+body[data-public-site] .book-counts > span {
+  gap: 4px !important;
+  padding: 3px 5px !important;
+  font-size: 11px !important;
+  line-height: 16px;
+  color: var(--ui-accent) !important;
+  background: var(--ui-surface-soft) !important;
+  border-radius: 5px !important;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+body[data-public-site] .book-counts .site-icon {
+  width: 14px;
+  height: 14px;
+}
+
+body[data-public-site] .book-card-inner .book-cover-outer > div {
+  max-height: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+body[data-public-site] .book-cover-outer .book-fallback-title {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+body[data-public-site] .ab-chip,
+body[data-public-site] .lh-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: .875rem;
+}
+
+body[data-public-site] :is(.ab-chip, .lh-chip) .badge { font-size: .75rem; }
+body[data-public-site] .lh-stat-card .lbl { font-size: .875rem; }
+body[data-public-site] .stat-note { font-size: .75rem !important; line-height: 1.5; color: #646174; margin: 6px 0 0; }
+
+/* The fixed control stays clear of the phone edge and footer. */
+body[data-public-site] #backToTop {
+  right: max(16px, env(safe-area-inset-right)) !important;
+  bottom: max(24px, env(safe-area-inset-bottom)) !important;
+  width: 44px !important;
+  height: 44px !important;
+}
+
+@media (max-width: 991.98px) {
+  body[data-public-site] .navbar > :is(.container, .container-fluid) {
+    flex-wrap: wrap;
+    column-gap: 8px;
+    row-gap: 0;
+  }
+  body[data-public-site] .navbar .gh-pill { display: none !important; }
+  body[data-public-site] .navbar-brand {
+    flex: 0 0 auto;
+    gap: 7px !important;
+    margin-right: auto;
+    font-size: 16px !important;
+  }
+  body[data-public-site] .navbar-brand > .bg-primary {
+    width: 32px !important;
+    height: 32px !important;
+    flex: 0 0 32px;
+  }
+  body[data-public-site] .navbar .d-flex.order-lg-last {
+    flex: 0 0 auto;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+  }
+  body[data-public-site] .navbar :is(.navbar-toggler, #notificationBell) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 8px !important;
+    margin: 0 !important;
+  }
+  body[data-public-site] .navbar .site-auth-button {
+    padding-inline: 10px !important;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  body[data-public-site] .navbar .dropdown-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 6px !important;
+  }
+  body[data-public-site] .navbar .avatar-fallback,
+  body[data-public-site] .navbar .dropdown img.rounded-circle {
+    width: 30px !important;
+    height: 30px !important;
+    flex: 0 0 30px;
+  }
+  body[data-public-site] .navbar-collapse {
+    flex-basis: 100%;
+    padding-top: 8px;
+    max-height: calc(100dvh - 80px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  body[data-public-site] .navbar .mega-menu { width: 100%; }
+  body[data-public-site] .navbar .mega-item { min-height: 64px; }
+  body[data-public-site] .navbar .mega-title { font-size: .8125rem; }
+}
+
+@media (max-width: 767.98px) {
+  body[data-public-site] :is(.container, .container-fluid) { --bs-gutter-x: 1.5rem; }
+  body[data-public-site] main :is(h1, .display-3, .display-4) { font-size: clamp(1.75rem, 7vw, 2.5rem); }
+  body[data-public-site] :is(.ab-hero, .lh-hero) h1 { font-size: clamp(1.9rem, 7vw, 2.5rem); }
+  body[data-public-site] main :is(.lead, .ab-hero p, .lh-hero p) { font-size: 1rem; }
+  body[data-public-site] #about :is(p, .small),
+  body[data-public-site] :is(.feedback-page, .rv-page, .account-panel) p {
+    font-size: 1rem !important;
+    line-height: 1.65;
+  }
+  body[data-public-site] #about :is(.stat-label, .trust-badge) { font-size: .875rem !important; }
+  body[data-public-site] #about .stat-note { font-size: .75rem !important; }
+  body[data-public-site] #about .stat-card { height: 100%; padding: 20px 12px; }
+  body[data-public-site] #about .stat-number { font-size: clamp(1.4rem, 6vw, 2rem); }
+  body[data-public-site] :is(.notif-page-head, .notif-line1) { flex-wrap: wrap; gap: 8px; }
+  body[data-public-site] .notif-msg { font-size: .9375rem; }
+  body[data-public-site] .notif-time { font-size: .75rem; }
+  body[data-public-site] .notif-view-btn { min-height: 44px; display: inline-flex; align-items: center; }
+  body[data-public-site] :is(#qrPopup, #qrShareModal) { max-width: calc(100vw - 24px) !important; }
+}
+
+@media (max-width: 575.98px) {
+  body[data-public-site] .navbar { padding-block: 10px !important; }
+  body[data-public-site] .navbar .dropdown-menu-end:not(.notif-dropdown) {
+    position: fixed !important;
+    inset: 68px 12px auto auto !important;
+    width: min(280px, calc(100vw - 24px));
+    max-height: calc(100dvh - 84px);
+    overflow-y: auto;
+    margin: 0 !important;
+  }
+  body[data-public-site] .navbar .notif-dropdown {
+    position: fixed !important;
+    inset: 68px 12px auto 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+  }
+  body[data-public-site] .book-card-inner { --cover-height: 160px; }
+  body[data-public-site] .book-card-inner > .card-body,
+  body[data-public-site] :is(#recommendedCarousel, #newArrivalsCarousel) .book-card-inner > .card-body {
+    padding: 9px 8px !important;
+  }
+  body[data-public-site] .book-card-inner .book-actions .btn {
+    flex-direction: column;
+    gap: 3px;
+    padding-block: 6px !important;
+  }
+  body[data-public-site] :is(#recommendedCarousel, #newArrivalsCarousel) .carousel-item .row {
+    justify-content: flex-start !important;
+    flex-wrap: nowrap;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    padding-bottom: 6px;
+  }
+  body[data-public-site] :is(#recommendedCarousel, #newArrivalsCarousel) .carousel-item .col-4 {
+    flex: 0 0 50%;
+    max-width: 50%;
+    scroll-snap-align: start;
+  }
+  body[data-public-site] .pagination { gap: 4px; }
+  body[data-public-site] .pagination .page-link { margin: 0; padding-inline: 12px; }
+  body[data-public-site] #searchForm { overflow: visible !important; }
+  body[data-public-site] #findBookBtn { min-height: 48px; }
+  body[data-public-site] :is(.ab-toolbar, .lh-toolbar) .input-group { flex-wrap: nowrap; }
+}
+
+@media (min-width: 1600px) {
+  body[data-public-site] .book-card-inner { --cover-height: 210px; }
+}

@@ -1,0 +1,21 @@
+{% extends 'user/base.html' %}
+
+{% block meta_description %}Explore {{ category }} {{ info.title|lower }} on DocoDive, with a clear route to the subject's lessons, practice resources and book collection.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static',filename='css/learning.css',v='20261105-practice-4') }}">
+{% if info.slug == 'practice' %}<link rel="stylesheet" href="{{ url_for('static',filename='css/practice.css',v='20261105-practice-4') }}">{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="learning-page" data-learning-page{% if info.slug == 'practice' %} data-practice-page{% endif %}>
+  {% include 'user/_lesson_wayfinding.html' %}
+  {% block lesson_content %}{% endblock %}
+  {% include 'user/_lesson_resources.html' %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script defer src="{{ url_for('static',filename='js/learning.js',v='20261105-final-2') }}"></script>
+{% if info.slug == 'practice' %}<script defer src="{{ url_for('static',filename='js/practice-activity.js',v='20261105-practice-4') }}"></script>{% endif %}
+{% endblock %}

@@ -1,0 +1,455 @@
+{% extends 'user/_lesson_base.html' %}
+{% block title %}IELTS Reading — Complete Guide: Passages, Question Types & Strategies | DocoDive{% endblock %}
+{% block meta_description %}Master IELTS Reading with our complete responsive text guide: test format, skimming, scanning, paraphrasing, TRUE/FALSE/NOT GIVEN, matching, and a full strategy — target Band 7+.{% endblock %}
+
+{% block extra_css %}
+<style>
+  .ielts-hero {
+    background:linear-gradient(135deg, var(--ui-surface-soft) 0%, var(--ui-surface-soft) 100%);
+    border:1px solid var(--ui-line);
+  }
+
+  .ielts-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .lesson-nav {
+    display: none;
+    position: sticky;
+    top: 90px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    background:var(--ui-surface);
+    border:1px solid var(--ui-line);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .lesson-nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    color:var(--ui-muted);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+  .lesson-nav a:hover { background:var(--ui-surface-soft); color:var(--ui-accent); }
+  .lesson-nav a .nav-num { flex-shrink: 0; width: 22px; color:var(--ui-accent); font-weight: 700; }
+  .lesson-nav a .nav-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .tips-side {
+    display: none;
+    position: sticky;
+    top: 90px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .tip-static {
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+  }
+  .tip-static strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .tip-blue   { background:var(--ui-surface-soft); border-left:4px solid var(--ui-line); color:var(--ui-accent); }
+  .tip-red    { background:var(--ui-surface-soft); border-left:4px solid var(--ui-line); color:var(--ui-accent); }
+  .tip-green  { background:var(--ui-surface-soft); border-left:4px solid var(--ui-line); color:var(--ui-accent); }
+  .tip-amber  { background:var(--ui-surface-soft); border-left:4px solid var(--ui-line); color:var(--ui-accent); }
+
+  .qa-card {
+    display: block;
+    background:var(--ui-surface);
+    border:1px solid var(--ui-line);
+    border-radius: 12px;
+    padding: 12px;
+    height: 100%;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .qa-card:hover { border-color:var(--ui-line); background:var(--ui-surface-soft); }
+  .qa-card .qa-num { color:var(--ui-accent); font-weight: 700; font-size: 0.8rem; }
+  .qa-card .qa-title { color:var(--ui-accent); font-size: 0.82rem; font-weight: 600; }
+
+  .lesson-card {
+    background:var(--ui-surface);
+    border:1px solid var(--ui-line);
+    border-radius: 16px;
+    padding: 20px;
+    scroll-margin-top: 90px;
+  }
+  .section-head {
+    color:var(--ui-accent);
+    border-bottom:3px solid var(--ui-line);
+    padding-bottom: 8px;
+    margin: 32px 0 16px;
+  }
+  .example-box {
+    background:var(--ui-surface-soft);
+    border-left:4px solid var(--ui-line);
+    border-radius: 10px;
+    padding: 16px;
+    line-height: 1.8;
+  }
+  .trap-box {
+    background:var(--ui-surface-soft);
+    border-left:4px solid var(--ui-line);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .tip-box {
+    border-radius: 12px;
+    padding: 14px 16px;
+    height: 100%;
+  }
+  .tip-box strong { display: block; margin-bottom: 4px; font-size: 0.78rem; }
+  .tip-box.band { background:var(--ui-surface-soft); color:var(--ui-accent); }
+  .tip-box.time { background:var(--ui-surface-soft); color:var(--ui-accent); }
+
+  @media (max-width: 767.98px) {
+    .btn { min-height: 44px; }
+    .lesson-card { padding: 16px; }
+    .ielts-hero h1 { font-size: 1.6rem; }
+    .ielts-hero p { font-size: 0.95rem; }
+    .prev-next { flex-direction: column; gap: 8px; }
+    .prev-next .btn { width: 100%; }
+  }
+
+  @media (min-width: 992px) {
+    .ielts-grid {
+      grid-template-columns: 220px minmax(0, 1fr) 260px;
+      gap: 24px;
+    }
+    .lesson-nav { display: block; }
+    .tips-side { display: flex; }
+    .ielts-hero h1 { font-size: 2rem; }
+    .lesson-card { padding: 28px; }
+  }
+    /* ===== ANIMATIONS ===== */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes popIn {
+    0% { transform: scale(.94); opacity: 0; }
+    60% { transform: scale(1.03); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Lesson cards + quick access hover lift */
+  .lesson-card,
+  .qa-card {
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, opacity .4s ease;
+  }
+  .lesson-card:hover {
+    transform: translateY(-4px);
+    box-shadow:var(--ui-shadow);
+  }
+  .qa-card:hover {
+    transform: translateY(-3px);
+    box-shadow:var(--ui-shadow);
+  }
+
+  /* Scroll-reveal */
+  .reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  .reveal-on-scroll.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Button click pop */
+  .btn:active {
+    transform: scale(.96);
+  }
+
+  /* Smooth anchor scrolling for the whole page */
+  html {
+    scroll-behavior: smooth;
+  }
+</style>
+
+{{ super() }}
+{% endblock %}
+
+{% block lesson_content %}
+<div class="container py-4 py-md-5">
+
+  <!-- HERO -->
+  <div class="ielts-hero rounded-4 p-4 p-md-5 mb-4">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <span class="badge rounded-pill" style="background:var(--ui-primary);color:var(--ui-on-primary);">Reading</span>
+      <span class="badge rounded-pill bg-light text-dark border">Free Learning Path</span>
+      <span class="badge rounded-pill" style="background:var(--ui-surface-soft);color:var(--ui-accent);">Band 7+ Target</span>
+    </div>
+    <h1 class="fw-bolder mb-2" style="color:var(--ui-accent);">IELTS Reading: Complete Guide</h1>
+    <p class="text-muted mb-3">The test format, every question type, skimming and scanning skills, and a full strategy — all in clear, simple text.</p>
+    <div class="d-flex flex-wrap gap-3 gap-md-4 small text-muted">
+      <span><i class="bi bi-clock me-1"></i>3–4 weeks</span>
+      <span><i class="bi bi-journal-text me-1"></i>{{ lessons|length }} lessons</span>
+      <span><i class="bi bi-book me-1"></i>3 passages · 40 questions · 60 min</span>
+    </div>
+  </div>
+
+  <!-- QUICK ACCESS -->
+  <h2 class="h5 fw-bold mb-3" style="color:var(--ui-accent);">⚡ Quick Access — Jump to Any Topic</h2>
+  <div class="row g-2 mb-4">
+    {% for lesson in lessons %}
+    <div class="col-6 col-md-4 col-lg-3">
+      <a href="#lesson-{{ lesson.id }}" class="qa-card">
+        <div class="qa-num">{{ "%02d"|format(lesson.id) }}</div>
+        <div class="qa-title">{{ lesson.title }}</div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- BAND SCORE -->
+  <h2 class="h4 fw-bold mb-3" style="color:var(--ui-accent);">📊 Band Score Conversion</h2>
+  <div class="table-responsive mb-4">
+    <table class="table table-bordered text-center align-middle bg-white mb-0" style="font-size:0.9rem;">
+      <thead style="background:var(--ui-primary);color:var(--ui-on-primary);">
+        <tr><th>Band</th><th>Correct (out of 40)</th><th>Level</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="fw-bold text-success">9.0</td><td>39–40</td><td>Expert</td></tr>
+        <tr><td class="fw-bold text-success">8.0</td><td>35–36</td><td>Very good</td></tr>
+        <tr><td class="fw-bold text-primary">7.0</td><td>30–31</td><td>Good</td></tr>
+        <tr><td class="fw-bold text-warning">6.0</td><td>23–25</td><td>Competent</td></tr>
+        <tr><td class="fw-bold text-danger">5.0</td><td>16–17</td><td>Modest</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 3-COLUMN GRID -->
+  <button class="btn btn-outline-primary course-nav-toggle" type="button" aria-expanded="false" aria-controls="courseNav">
+    <i class="bi bi-list-ol" aria-hidden="true"></i><span data-course-toggle-label>Show Course Content</span>
+  </button>
+  <div class="ielts-grid">
+
+    <!-- LEFT: LESSON NAV -->
+    <aside id="courseNav" class="lesson-nav course-nav" aria-label="Course contents">
+      <h3 class="h6 fw-bold mb-3" style="color:var(--ui-accent);"><i class="bi bi-list-ol me-2"></i>Lessons</h3>
+      {% for lesson in lessons %}
+      <a href="#lesson-{{ lesson.id }}">
+        <span class="nav-num">{{ "%02d"|format(lesson.id) }}</span>
+        <span class="nav-title">{{ lesson.title }}</span>
+      </a>
+      {% endfor %}
+    </aside>
+
+    <!-- CENTER: LESSONS -->
+    <div>
+      {% for lesson in lessons %}
+
+      {% if lesson.id == 1 %}
+      <h2 class="h4 fw-bold section-head">📘 Introduction</h2>
+      {% elif lesson.id == 2 %}
+      <h2 class="h4 fw-bold section-head">🎯 Core Skills</h2>
+      {% elif lesson.id == 5 %}
+      <h2 class="h4 fw-bold section-head">❓ Question Types</h2>
+      {% elif lesson.id == 14 %}
+      <h2 class="h4 fw-bold section-head">🏁 Final Strategy</h2>
+      {% endif %}
+
+      <div id="lesson-{{ lesson.id }}" class="lesson-card mb-4">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <span class="badge rounded-pill" style="background:var(--ui-primary);color:var(--ui-on-primary);">{{ "%02d"|format(lesson.id) }}</span>
+          <h3 class="h5 fw-bold mb-0" style="color:var(--ui-accent);">{{ lesson.title }}</h3>
+          <span class="ms-auto text-muted small"><i class="bi bi-clock me-1"></i>{{ lesson.duration }}</span>
+        </div>
+
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ui-accent);"><i class="bi bi-bullseye me-1"></i>What you will learn</h4>
+        <ul class="list-unstyled text-dark mb-4">
+          {% for obj in lesson.objectives %}
+          <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ obj }}</li>
+          {% endfor %}
+        </ul>
+
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ui-accent);"><i class="bi bi-book me-1"></i>Main Concept</h4>
+        <p class="text-dark mb-4" style="font-size:1rem;line-height:1.8;">{{ lesson.explanation }}</p>
+
+        {% if lesson.example %}
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ui-accent);"><i class="bi bi-pencil me-1"></i>Example</h4>
+        <div class="example-box mb-4">{{ lesson.example }}</div>
+        {% endif %}
+
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ui-accent);"><i class="bi bi-exclamation-triangle me-1"></i>Common Mistake</h4>
+        <div class="trap-box mb-4">{{ lesson.common_trap }}</div>
+
+        <h4 class="h6 fw-bold mb-2" style="color:var(--ui-accent);"><i class="bi bi-lightbulb me-1"></i>Quick Strategy</h4>
+        <div class="row g-2 mb-4">
+          <div class="col-md-4">
+            <div class="tip-box" style="background:var(--ui-surface-soft);border-left:4px solid var(--ui-line);">
+              <strong style="color:var(--ui-accent);">💡 Strategy</strong>
+              <span class="small text-dark">{{ lesson.quick_tip }}</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="tip-box band">
+              <strong>🎯 Score Booster</strong>
+              <span class="small text-dark">{{ lesson.band_upgrade }}</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="tip-box time">
+              <strong>⏱ Time Saver</strong>
+              <span class="small text-dark">{{ lesson.time_saver }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert mb-3 py-3" style="background:var(--ui-surface-soft);color:var(--ui-accent);border:1px solid var(--ui-line);">
+          <strong>🔎 Key takeaway:</strong> {{ lesson.callout_text }}
+        </div>
+
+        <a href="{{ lesson.docs_url }}" target="_blank" rel="noopener" class="small fw-semibold text-decoration-none" style="color:var(--ui-accent);">
+          <i class="bi bi-box-arrow-up-right me-1"></i>{{ lesson.docs_label }}
+        </a>
+
+        <div class="mt-3 p-3 p-md-4 rounded-3" style="background:var(--ui-surface-soft);border:1px dashed var(--ui-line);">
+          <h4 class="h6 fw-bold mb-2" style="color:var(--ui-accent);"><i class="bi bi-pencil-square me-1"></i>Try it yourself</h4>
+          <p class="text-dark mb-3">{{ lesson.exercise_prompt }}</p>
+          <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="toggleBox(this,'hint-{{ lesson.id }}')">Show Hint</button>
+          <button class="btn btn-sm btn-outline-success rounded-pill ms-2" onclick="toggleBox(this,'sol-{{ lesson.id }}')">Show Solution</button>
+          <div id="hint-{{ lesson.id }}" class="d-none small text-muted mt-2"><i class="bi bi-lightbulb me-1"></i>{{ lesson.exercise_hint }}</div>
+          <div id="sol-{{ lesson.id }}" class="d-none small mt-2 p-3 rounded-3" style="background:var(--ui-surface-soft);color:var(--ui-accent);">✓ {{ lesson.exercise_solution }}</div>
+        </div>
+
+        <div class="d-flex prev-next justify-content-between align-items-center mt-4 pt-3" style="border-top:1px solid var(--ui-line);">
+          {% if loop.previtem %}
+          <a href="#lesson-{{ loop.previtem.id }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+            <i class="bi bi-arrow-left me-1"></i>Previous
+          </a>
+          {% else %}<span></span>{% endif %}
+
+          <span class="text-muted small d-none d-md-inline">{{ "%02d"|format(lesson.id) }} / {{ lessons|length }}</span>
+
+          {% if loop.nextitem %}
+          <a href="#lesson-{{ loop.nextitem.id }}" class="btn btn-sm rounded-pill" style="background:var(--ui-primary);color:var(--ui-on-primary);">
+            Next <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+          {% else %}<span></span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="text-center p-4 p-md-5 rounded-4" style="background:var(--ui-surface-soft);">
+        <h2 class="h5 fw-bold" style="color:var(--ui-accent);">You have completed all {{ lessons|length }} reading lessons.</h2>
+        <p class="text-muted mb-3">Move on to IELTS Writing for Task 1 and Task 2 strategies.</p>
+        <a href="/learn/ielts/writing" class="btn rounded-pill px-4" style="background:var(--ui-primary);color:var(--ui-on-primary);">
+          Continue to Writing <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- RIGHT: TIPS SIDEBAR -->
+    <aside class="tips-side">
+      <h3 class="h6 fw-bold mb-1" style="color:var(--ui-accent);"><i class="bi bi-lightbulb me-2"></i>Smart Tips</h3>
+      <div class="tip-static tip-blue">
+        <strong>💡 General Strategy</strong>
+        Skim for structure, scan for answers. Never read the whole passage twice.
+      </div>
+      <div class="tip-static tip-red">
+        <strong>⚠️ Biggest Trap</strong>
+        NOT GIVEN means no information exists — do not confuse it with FALSE.
+      </div>
+      <div class="tip-static tip-green">
+        <strong>🎯 Band Booster</strong>
+        Band 7 needs about 30 correct. Pacing at 20 minutes per passage is the key.
+      </div>
+      <div class="tip-static tip-amber">
+        <strong>⏱ Time Saver</strong>
+        Do easier question types first; skip hard ones and return with fresh eyes.
+      </div>
+    </aside>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  /* ============================================================
+     IELTS READING — ANIMATED INTERACTIONS
+     - Staggered reveal on load + scroll-triggered fade-in
+     - Button pop + animated hint/solution toggle
+     ============================================================ */
+
+  /* ---------- Hint / Solution toggle with animation ---------- */
+
+  function toggleBox(btn, id) {
+    const box = document.getElementById(id);
+    const isOpening = box.classList.contains('d-none');
+    box.classList.toggle('d-none');
+    const hidden = box.classList.contains('d-none');
+    const isHint = btn.textContent.includes('Hint');
+    btn.textContent = hidden
+      ? (isHint ? 'Show Hint' : 'Show Solution')
+      : (isHint ? 'Hide Hint' : 'Hide Solution');
+
+    if (isOpening) {
+      box.style.animation = 'none';
+      void box.offsetHeight;
+      box.style.animation = 'popIn .35s ease both';
+    }
+  }
+
+  /* ---------- Staggered reveal on page load ---------- */
+
+  function revealCardsStaggered() {
+    const cards = document.querySelectorAll('.lesson-card, .qa-card');
+    cards.forEach((card, i) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(14px)';
+      setTimeout(() => {
+        card.style.transition = 'opacity .4s ease, transform .4s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, i * 35);
+    });
+  }
+
+  /* ---------- Scroll-triggered reveal (subtle) ---------- */
+
+  document.addEventListener('DOMContentLoaded', () => {
+    revealCardsStaggered();
+
+    const targets = document.querySelectorAll('.lesson-card, .example-box, .trap-box, .tip-box, .qa-card');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+
+    targets.forEach(el => {
+      el.classList.add('reveal-on-scroll');
+      observer.observe(el);
+    });
+  });
+</script>
+
+{{ super() }}
+{% endblock %}

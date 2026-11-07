@@ -1,0 +1,1 @@
+<span class="studio-member-identity"><span class="studio-member-avatar">{% if member.avatar_url %}<img src="{{ member.avatar_url }}" alt="" loading="lazy">{% else %}{{ (member.name|trim or member.username)[:1]|upper }}{% endif %}</span><span><strong>{{ member.name|trim or member.username }}</strong><small>@{{ member.username }}</small></span></span>

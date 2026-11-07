@@ -1,0 +1,5 @@
+{% extends 'user/base.html' %}
+{% block title %}My Favorites | DocoDive{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static',filename='css/reader-pages.css',v='20261105-final-2') }}">{% endblock %}
+{% block content %}{% set history = false %}{% include 'user/_reader_library.html' %}{% endblock %}
+{% block scripts %}<script defer src="{{ url_for('static',filename='js/reader-pages.js',v='20261101-1') }}"></script>{% endblock %}

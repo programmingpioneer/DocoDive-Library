@@ -1,0 +1,72 @@
+/* Semantic colour roles. Components consume roles instead of defining palettes. */
+:root {
+  --ui-dialog-backdrop: #1118278c;
+  --ui-qr-paper: #ffffff;
+  --ui-qr-paper-line: #d7dee8;
+  --ui-bg: #f8fafc;
+  --ui-surface: #ffffff;
+  --ui-surface-alt: #f1f5f9;
+  --ui-surface-soft: #e8eef8;
+  --ui-text: #172033;
+  --ui-muted: #526176;
+  --ui-line: #d7dee8;
+  --ui-primary: #3b4fbd;
+  --ui-primary-hover: #30429d;
+  --ui-on-primary: #ffffff;
+  --ui-accent: #3459bc;
+  --ui-focus: #486bc9;
+  --ui-success: #176b4a;
+  --ui-success-soft: #e9f6ef;
+  --ui-warning: #805200;
+  --ui-warning-soft: #fff6df;
+  --ui-danger: #b33145;
+  --ui-danger-soft: #fff0f2;
+  --ui-highlight: #a86b00;
+  --ui-code-bg: #f1f5f9;
+  --ui-code-text: #263650;
+  --ui-skeleton: #dde4ee;
+  --ui-shimmer: #ffffff90;
+  --ui-backdrop: #0b102080;
+  --ui-shadow: 0 12px 38px #17203312;
+  --ui-hero-gradient: linear-gradient(130deg, var(--ui-surface-soft), var(--ui-surface-alt));
+  --ui-content-max: 1440px;
+}
+html[data-bs-theme=dark] {
+  --ui-bg: #10141c;
+  --ui-surface: #191f2b;
+  --ui-surface-alt: #222b3a;
+  --ui-surface-soft: #283349;
+  --ui-text: #edf1f7;
+  --ui-muted: #b1bed0;
+  --ui-line: #3b4659;
+  --ui-primary: #536bc5;
+  --ui-primary-hover: #465db7;
+  --ui-on-primary: #ffffff;
+  --ui-accent: #adc2ff;
+  --ui-focus: #a9bdff;
+  --ui-success: #94dfbb;
+  --ui-success-soft: #18392d;
+  --ui-warning: #f4d387;
+  --ui-warning-soft: #3e3420;
+  --ui-danger: #ffbac5;
+  --ui-danger-soft: #452532;
+  --ui-highlight: #f4c763;
+  --ui-code-bg: #111722;
+  --ui-code-text: #dae5f6;
+  --ui-skeleton: #303c50;
+  --ui-shimmer: #ffffff12;
+  --ui-backdrop: #00000080;
+  --ui-shadow: 0 14px 40px #00000030;
+  --ui-hero-gradient: linear-gradient(130deg, var(--ui-surface-soft), var(--ui-surface));
+}
+/* Compatibility roles keep existing reader/Studio components on the same palette. */
+body :is(.text-primary,.text-info){color:var(--ui-accent)!important}
+body .text-muted{color:var(--ui-muted)!important}
+body .text-success{color:var(--ui-success)!important}
+body .text-warning{color:var(--ui-warning)!important}
+body .text-danger{color:var(--ui-danger)!important}
+:root,html[data-bs-theme=dark] {
+  --appearance-bg:var(--ui-bg);--appearance-surface:var(--ui-surface);--appearance-raised:var(--ui-surface-alt);--appearance-line:var(--ui-line);--appearance-ink:var(--ui-text);--appearance-muted:var(--ui-muted);--appearance-accent:var(--ui-accent);
+  --bs-body-bg:var(--ui-bg);--bs-body-color:var(--ui-text);--bs-secondary-color:var(--ui-muted);--bs-tertiary-bg:var(--ui-surface-alt);--bs-secondary-bg:var(--ui-surface-alt);--bs-border-color:var(--ui-line);--bs-heading-color:var(--ui-text);--bs-link-color:var(--ui-accent);--bs-link-hover-color:var(--ui-accent);
+  --studio-ink:var(--ui-text);--studio-muted:var(--ui-muted);--studio-line:var(--ui-line);--studio-accent:var(--ui-primary);--studio-accent-hover:var(--ui-primary-hover);--studio-soft:var(--ui-surface-soft);--studio-bg:var(--ui-bg);--studio-sidebar:var(--ui-surface);--studio-teal:var(--ui-success);
+}

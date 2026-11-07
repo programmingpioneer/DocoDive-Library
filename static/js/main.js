@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
         easing: 'ease-out-cubic',
         throttleDelay: 50,
         anchorPlacement: 'top-bottom',
-        disable: false,
+        disable: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         startEvent: 'DOMContentLoaded',
         disableMutationObserver: true
       });
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       var flash = document.getElementById('modalFlash');
       if (!flash) return;
-      flash.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show py-2 small" role="alert">' + msg + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+      flash.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show py-2 small" role="alert">' + window.escapeHTML(msg) + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
     } catch (e) { }
   }
 
@@ -365,167 +365,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   } catch (e) { }
 
-    // ================== NOTIFICATIONS ==================
-    window.markAllRead = function () {
-      fetch('/api/notifications/read-all', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      })
-        .then(function () {
-          location.reload();
-        })
-        .catch(function () {
-          location.reload();
-        });
-    };
-
-  try {
-    window.timeAgo = function (dateString) {
-      try {
-        var dbDate = dateString.replace(' ', 'T') + 'Z';
-        var now = new Date();
-        var past = new Date(dbDate);
-        if (isNaN(past.getTime())) return dateString;
-        var diffMs = now - past;
-        var diffSec = Math.floor(diffMs / 1000);
-        var diffMin = Math.floor(diffSec / 60);
-        var diffHr = Math.floor(diffMin / 60);
-        var diffDay = Math.floor(diffHr / 24);
-        if (diffDay > 0) return diffDay + 'd ago';
-        if (diffHr > 0) return diffHr + 'h ago';
-        if (diffMin > 0) return diffMin + 'm ago';
-        return 'Just now';
-      } catch (e) { return dateString; }
-    };
-
-    window.goToNotif = function (url) { window.location = url; };
-
-    window.updateNotifications = function () {
-      try {
-        fetch('/api/notifications/unread-count')
-          .then(function (r) { return r.json(); })
-          .then(function (d) {
-            var badge = document.getElementById('notifBadge');
-            if (badge) {
-              if (d.count > 0) { badge.style.display = 'inline'; badge.textContent = d.count; }
-              else { badge.style.display = 'none'; }
-            }
-          }).catch(function () { });
-
-        fetch('/api/notifications')
-          .then(function (r) { return r.json(); })
-          .then(function (list) {
-            var container = document.getElementById('notifList');
-            if (!container) return;
-            if (!list || list.length === 0) {
-              container.innerHTML = '<div class="text-center text-muted py-4"><i class="bi bi-bell-slash fs-2 d-block mb-2"></i><small>No notifications yet</small></div>';
-              return;
-            }
-            var html = '';
-            list.forEach(function (n) {
-              var ago = window.timeAgo(n.created_at);
-              var targetUrl = n.link || '/user/notifications';
-              var name = n.actor_name || 'DocoDive';
-              var statusText = 'New notification';
-              var statusClass = '';
-              if (n.type === 'approval') {
-                statusText = 'Your book was approved by DocoDive';
-                statusClass = 'notif-dd-success';
-              } else if (n.type === 'rejection') {
-                statusText = 'Your book was declined by DocoDive';
-                statusClass = 'notif-dd-danger';
-              } else if (n.type === 'general_comment') {
-                statusText = 'commented on your book';
-              } else if (n.type === 'reply') {
-                statusText = 'replied to your comment';
-              }
-
-              var visual = '';
-              if ((n.type === 'approval' || n.type === 'rejection') && n.book_cover) {
-                visual = '<img src="' + n.book_cover + '" alt="" class="notif-dd-cover" loading="lazy">';
-              } else if ((n.type === 'general_comment' || n.type === 'reply') && n.actor_avatar) {
-                visual = '<img src="' + n.actor_avatar + '" alt="" class="notif-dd-avatar" loading="lazy">';
-              } else {
-                var icon = 'bi-bell-fill';
-                var fbClass = '';
-                if (n.type === 'approval') { icon = 'bi-check-circle-fill'; fbClass = 'fb-ok'; }
-                else if (n.type === 'rejection') { icon = 'bi-x-circle-fill'; fbClass = 'fb-no'; }
-                else if (n.type === 'general_comment') { icon = 'bi-chat-fill'; }
-                else if (n.type === 'reply') { icon = 'bi-reply-fill'; }
-                visual = '<div class="notif-dd-fallback ' + fbClass + '"><i class="bi ' + icon + '"></i></div>';
-              }
-
-              var dot = !n.is_read ? '<span class="notif-dd-dot"></span>' : '';
-
-              html += '<div class="notif-dd-row ' + (!n.is_read ? 'is-unread' : '') + '" data-url="' + targetUrl + '">' +
-                '<div class="notif-dd-visual">' + visual + '</div>' +
-                '<div class="notif-dd-body">' +
-                  '<div class="notif-dd-head">' +
-                    '<span class="notif-dd-name">' + name + '</span>' +
-                    '<span class="notif-dd-time">' + ago + '</span>' +
-                  '</div>' +
-                  '<div class="notif-dd-status ' + statusClass + '">' + statusText + '</div>' +
-                '</div>' +
-                '<div class="notif-dd-right">' + dot + '</div>' +
-              '</div>';
-            });
-            container.innerHTML = html;
-            container.querySelectorAll('.notif-dd-row').forEach(function(row) {
-              row.addEventListener('click', function() {
-                window.goToNotif(row.dataset.url);
-              });
-            });
-          }).catch(function () { });
-      } catch (e) { }
-    };
-
-     window.markAllRead = function () {
-      fetch('/api/notifications/read-all', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      }).then(function () {
-        location.reload();
-      }).catch(function () {
-        location.reload();
-      });
-    };
-
-    window.updateNotifications();
-    setInterval(window.updateNotifications, 30000);
-  } catch (e) { console.warn('Notifications init failed:', e); }
-
-  // ================== QR CODE POPUP ==================
-  try {
-    var qrPopup = document.getElementById('qrPopup');
-    if (qrPopup) {
-      var qrCloseBtn = qrPopup.querySelector('button');
-      if (qrCloseBtn) {
-        qrCloseBtn.addEventListener('click', function () { qrPopup.style.display = 'none'; });
-      }
-    }
-  } catch (e) { }
-
-  // ================== HIDE LOADER ==================
-  (function () {
-    var loader = document.getElementById('page-loader');
-    if (!loader) return;
-    var MIN_DISPLAY_TIME = 2000;
-    var pageLoaded = false, timerDone = false;
-    function doHide() {
-      if (!loader) return;
-      loader.classList.add('hidden');
-      setTimeout(function () {
-        if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
-      }, 300);
-    }
-    function tryHide() { if (pageLoaded && timerDone) doHide(); }
-    window.addEventListener('load', function () { pageLoaded = true; tryHide(); });
-    setTimeout(function () { timerDone = true; tryHide(); }, MIN_DISPLAY_TIME);
-    setTimeout(function () {
-      if (loader && !loader.classList.contains('hidden')) doHide();
-    }, 8000);
-  })();
-
   // ================== SERVICE WORKER ==================
   try {
     if ('serviceWorker' in navigator) {
@@ -557,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function () {
           var imgContainer = document.getElementById('modalImageContainer');
           if (imgContainer) {
             if (img && img !== 'None' && img.trim() !== '') {
-              imgContainer.innerHTML = '<img src="' + img + '" class="img-fluid shadow-sm w-100" style="object-fit:cover;max-height:400px;border-radius:15px;">';
+              imgContainer.innerHTML = '<img src="' + window.safeURL(img) + '" class="img-fluid shadow-sm w-100" style="object-fit:cover;max-height:400px;border-radius:15px;">';
             } else {
               imgContainer.innerHTML = '<div class="bg-light d-flex justify-content-center align-items-center" style="height:350px;"><i class="bi bi-journal-code text-primary" style="font-size:6rem;"></i></div>';
             }
@@ -607,30 +446,13 @@ document.addEventListener('DOMContentLoaded', function () {
     console.warn('Scroll reveal failed:', e);
   }
 
-  // ================== BACK TO TOP ==================
-  try {
-    var backToTop = document.getElementById('backToTop');
-    if (!backToTop) {
-      backToTop = document.createElement('button');
-      backToTop.id = 'backToTop';
-      backToTop.innerHTML = '<i class="bi bi-arrow-up"></i>';
-      backToTop.setAttribute('aria-label', 'Back to top');
-      backToTop.style.cssText = 'position:fixed;bottom:24px;right:24px;width:44px;height:44px;display:none;align-items:center;justify-content:center;z-index:1050;border:none;border-radius:50%;background:#1e1b4b;color:#fff;box-shadow:0 8px 24px rgba(30,27,75,.35);cursor:pointer;';
-      document.body.appendChild(backToTop);
-    }
-    window.addEventListener('scroll', function () {
-      backToTop.style.display = window.scrollY > 300 ? 'flex' : 'none';
-    }, { passive: true });
-    backToTop.addEventListener('click', function () {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  } catch (e) { console.warn('Back-to-top failed:', e); }
+  // Scroll controls are managed by reading-controls.js.
 
   // ================== COUNT-UP ANIMATION ==================
   try {
     var countEls = document.querySelectorAll('[data-count]');
     if (countEls.length) {
-      var reduceMotion = false;
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       function animateCount(el) {
         var target = parseInt(el.getAttribute('data-count'), 10) || 0;
         if (reduceMotion) {

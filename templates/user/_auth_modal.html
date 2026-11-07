@@ -1,0 +1,139 @@
+{% from 'user/_icons.html' import icon %}
+{# main.js owns tab switching, AJAX submissions, and pendingRedirectUrl. #}
+<div class="modal fade auth-modal" id="authModal" tabindex="-1"
+     aria-labelledby="authModalTitle" aria-describedby="authModalDescription"
+     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content auth-modal-card">
+      <button type="button" class="auth-modal-close" data-bs-dismiss="modal"
+              aria-label="Close sign in">{{ icon('close') }}</button>
+      <div class="modal-body">
+        <header class="text-center auth-welcome">
+          <span class="auth-brand-mark">{{ icon('book') }}</span>
+          <h2 id="authModalTitle" class="auth-modal-title">Welcome to DocoDive</h2>
+          <p id="authModalDescription">Your next great read starts here.</p>
+        </header>
+
+        <div id="modalFlash" aria-live="polite" aria-atomic="true"></div>
+
+        <div class="auth-tabs" role="group" aria-label="Choose account access">
+          <button type="button" class="auth-tab active" data-tab="login"
+                  aria-controls="modalLoginForm">{{ icon('lock') }}<span>Login</span></button>
+          <button type="button" class="auth-tab" data-tab="signup"
+                  aria-controls="modalSignupForm">{{ icon('user') }}<span>Sign up</span></button>
+        </div>
+
+        <form id="modalLoginForm" class="auth-form" method="post" action="/user/login"
+              data-form="login" data-ajax="true" aria-label="Login">
+          <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
+          <input type="hidden" name="next_url" value="{{ next_url|default('', true) }}">
+          <div class="mb-3">
+            <label class="form-label" for="modalLoginEmail">Email address</label>
+            <div class="auth-input-wrap">
+              {{ icon('mail') }}
+              <input type="email" name="email" id="modalLoginEmail" class="form-control"
+                     placeholder="you@example.com" autocomplete="username" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="modalLoginPassword">Password</label>
+            <div class="auth-input-wrap">
+              {{ icon('lock') }}
+              <input type="password" name="password" id="modalLoginPassword" class="form-control"
+                     placeholder="Enter your password" autocomplete="current-password" required>
+            </div>
+          </div>
+          <div class="show-password-box">
+            <input type="checkbox" id="modalLoginShowCheckbox"
+                   aria-controls="modalLoginPassword"
+                   onchange="document.getElementById('modalLoginPassword').type = this.checked ? 'text' : 'password'">
+            <label for="modalLoginShowCheckbox">Show password</label>
+          </div>
+          <button type="submit" class="btn-primary-custom w-100">
+            <span class="btn-text">Login {{ icon('arrow-right') }}</span>
+            <span class="loading-text">Logging in <span class="book-spinner">{{ icon('book') }}</span></span>
+          </button>
+          <p class="auth-switch">New here? <a href="/user/signup" class="text-link"
+              onclick="if (window.switchTab) { switchTab('signup'); return false; }">Create an account</a></p>
+        </form>
+
+        <form id="modalSignupForm" class="auth-form d-none" method="post" action="/user/signup"
+              data-form="signup" data-ajax="true" aria-label="Create an account">
+          <input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}">
+          <input type="hidden" name="next_url" value="{{ next_url|default('', true) }}">
+          <div class="row mb-3 auth-name-row">
+            <div class="col-6">
+              <label class="form-label" for="modalFirstName">First name <span aria-hidden="true">*</span></label>
+              <input type="text" name="first_name" id="modalFirstName" class="form-control"
+                     placeholder="First name" autocomplete="given-name" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="modalLastName">Last name <span aria-hidden="true">*</span></label>
+              <input type="text" name="last_name" id="modalLastName" class="form-control"
+                     placeholder="Last name" autocomplete="family-name" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="modalUsername">Username</label>
+            <input type="text" name="username" id="modalUsername" class="form-control"
+                   placeholder="Your reader name" autocomplete="username" autocapitalize="none"
+                   spellcheck="false" aria-describedby="modalUsernameHelp modalUsernameFeedback" required>
+            <div class="username-hint" id="modalUsernameHelp">{{ icon('info') }}
+              <span>3–20 letters and numbers. Reserved words are not available.</span>
+            </div>
+            <div class="feedback small mt-1" id="modalUsernameFeedback" aria-live="polite"></div>
+            <div class="username-suggestions d-flex flex-wrap gap-1 mt-2"
+                 aria-label="Suggested usernames"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="modalEmail">Email address</label>
+            <div class="auth-input-wrap">
+              {{ icon('mail') }}
+              <input type="email" name="email" id="modalEmail" class="form-control"
+                     placeholder="you@example.com" autocomplete="email"
+                     aria-describedby="modalEmailFeedback" required>
+            </div>
+            <div class="feedback small mt-1" id="modalEmailFeedback" aria-live="polite"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="modalSignupPassword">Password</label>
+            <div class="auth-input-wrap">
+              {{ icon('lock') }}
+              <input type="password" name="password" id="modalSignupPassword" class="form-control"
+                     placeholder="Create a password" autocomplete="new-password" required>
+            </div>
+          </div>
+          <div class="show-password-box">
+            <input type="checkbox" id="modalSignupShowCheckbox"
+                   aria-controls="modalSignupPassword"
+                   onchange="document.getElementById('modalSignupPassword').type = this.checked ? 'text' : 'password'">
+            <label for="modalSignupShowCheckbox">Show password</label>
+          </div>
+          <button type="submit" class="btn-primary-custom w-100">
+            <span class="btn-text">Create free account {{ icon('arrow-right') }}</span>
+            <span class="loading-text">Creating account <span class="book-spinner">{{ icon('book') }}</span></span>
+          </button>
+          <p class="auth-switch">Already registered? <a href="/user/login" class="text-link"
+              onclick="if (window.switchTab) { switchTab('login'); return false; }">Login</a></p>
+        </form>
+
+        <div class="modal-bottom-links">
+          <a href="/forgot-password" class="forgot-link">{{ icon('lock') }}<span>Forgot password?</span></a>
+          <div class="social-login">
+            <div class="social-divider"><span>or continue with</span></div>
+            <div class="social-buttons">
+              <a href="/login/google" class="social-btn google">{{ icon('google') }}<span>Google</span></a>
+              <a href="/login/github" class="social-btn github">{{ icon('github') }}<span>GitHub</span></a>
+              <a href="/login/facebook" class="social-btn facebook">{{ icon('facebook') }}<span>Facebook</span></a>
+            </div>
+          </div>
+          <nav class="footer-links" aria-label="Account policies">
+            <a href="/privacy">{{ icon('shield') }}<span>Privacy Policy</span></a>
+            <a href="/terms">{{ icon('file') }}<span>Terms of Service</span></a>
+            <a href="/data-deletion">{{ icon('trash') }}<span>Data Deletion</span></a>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

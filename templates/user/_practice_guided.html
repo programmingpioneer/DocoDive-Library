@@ -1,0 +1,23 @@
+{% from 'user/_icons.html' import icon %}
+<section class="container py-5">
+  {% include 'user/_practice_overview.html' %}
+  <div class="practice-guided-grid" id="guidedPractice">
+    <div class="practice-guided-list" role="group" aria-label="Guided practice checklist">
+      {% for title, text in [
+        ('Choose one concept', 'Pick a concept from a ' ~ category ~ ' book or guide. Write down what you expect it to do before trying an example.'),
+        ('Build a small example', 'Create the smallest example you can run or work through yourself. Keep notes about the steps and the result.'),
+        ('Check the edge cases', 'Try a normal case and an unusual input or condition. Compare what happened with what you expected, then improve your example.'),
+        ('Explain and review', 'Explain the idea in your own words. Note one mistake you corrected and one question to revisit next time.')
+      ] %}
+      <label class="practice-guided-step"><input type="checkbox" data-practice-step="{{ loop.index }}"><span><strong>{{ '%02d'|format(loop.index) }} · {{ title }}</strong><small>{{ text }}</small></span></label>
+      {% endfor %}
+    </div>
+    <aside class="practice-guided-note">
+      <h2>A useful practice routine</h2>
+      <p>These are guided self-checks. Automated quizzes for this subject are not available yet. Mark a step when you have completed it yourself.</p>
+      <p>Your checklist is stored on this device. Clearing browser data will clear it.</p>
+      <a href="/learn/{{ category_slug }}">{{ icon('book') }} Find a {{ category }} book</a>
+      <a href="/learn/{{ category_slug }}/beginner">{{ icon('arrow-right') }} Revisit the foundations</a>
+    </aside>
+  </div>
+</section>

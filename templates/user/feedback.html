@@ -1,0 +1,322 @@
+{% extends 'user/base.html' %}{% from 'user/_icons.html' import icon %}
+{% block title %}Community Suggestions | DocoDive{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static',filename='css/community.css',v='20261106-previews-reviews-1') }}"><link rel="stylesheet" href="{{ url_for('static',filename='css/suggestions.css',v='20261105-learning-theme-3') }}">{% endblock %}
+{% block content %}
+<div class="container community-page feedback-page" id="suggestionsPage" data-suggestion-board>
+  <header class="community-heading"><span class="community-feature-icon">{{ icon('lightbulb') }}</span><div><p class="community-kicker">BUILT WITH OUR COMMUNITY</p><h1>Community Suggestions</h1><p>Share an idea, support a useful improvement, or join the conversation.</p></div><a href="/community-guidelines" class="community-button secondary">{{ icon('shield') }} Guidelines</a></header>
+  {% if session.get('user_id') %}
+  <details class="feedback-form-card suggestion-composer">
+    <summary class="suggestion-composer-title">{{ icon('plus') }} Share your next idea</summary><p class="panel-intro">Tell us what would make your learning experience better. Give your idea a clear title and a little context.</p>
+    <form method="POST">
+      <input
+        type="hidden"
+        name="_csrf_token"
+        value="{{ session.get('_csrf_token', '') }}"
+      />
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="suggestion-subject">Subject</label>
+        <input
+          type="text"
+          class="form-control rounded-3"
+          name="subject" id="suggestion-subject" maxlength="200"
+          placeholder="e.g., Dark mode, Reading list..."
+          required
+        />
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="suggestion-message">Details</label>
+        <textarea
+          class="form-control rounded-3"
+          name="message" id="suggestion-message" maxlength="5000" aria-describedby="suggestion-help"
+          rows="3"
+          placeholder="Describe your idea..."
+          required
+        ></textarea>
+      </div>
+      <p id="suggestion-help" class="suggestion-help">Up to 200 characters for the subject and 5,000 for details. Please leave out passwords or private account information.</p><button type="submit" class="community-button">
+        <span class="btn-text"
+          >{{ icon('send') }} Post Suggestion</span
+        >
+        <span class="book-spinner"><i class="bi bi-book"></i></span>
+      </button>
+    </form>
+  </details>
+  {% else %}
+  <div class="text-center mb-4">
+    <p class="text-muted">
+      Please
+      <a
+        href="#"
+        onclick="
+          showAuthModal(window.location.href);
+          return false;
+        "
+        >login</a
+      >
+      to submit or vote on suggestions.
+    </p>
+  </div>
+  {% endif %}
+  <section class="suggestion-board-toolbar"><div class="section-heading"><h2>{{ icon('message') }} Latest ideas</h2><span>{{ feedbacks|length }} on this page</span></div><div class="suggestion-board-controls"><label class="suggestion-search">{{ icon('search') }}<span class="visually-hidden">Search suggestions on this page</span><input type="search" data-suggestion-search placeholder="Search this page" autocomplete="off"></label><div class="suggestion-filters" aria-label="Filter suggestions on this page"><button type="button" data-suggestion-filter="all" aria-pressed="true">All ideas</button><button type="button" data-suggestion-filter="answered" aria-pressed="false">{{ icon('check-circle') }} Team replied</button></div></div><p class="suggestion-filter-note" data-suggestion-count aria-live="polite">Showing {{ feedbacks|length }} suggestions on this page</p></section>
+  <p class="community-empty suggestion-filter-empty" data-suggestion-empty hidden>No suggestions match this search. Try another word or choose All ideas.</p>
+  {% for feedback in feedbacks %}
+  <div
+    class="feedback-card" data-suggestion-card data-answered="{{ 'true' if feedback.official_reply else 'false' }}"
+    data-aos="fade-up"
+    data-aos-delay="{{ loop.index0 * 50 }}"
+  >
+    <div class="d-flex align-items-start gap-3">
+      <a
+        href="/user/profile/{{ feedback.username }}"
+        class="text-decoration-none flex-shrink-0"
+      >
+        {% if feedback.avatar_url %}
+        <img
+          src="{{ feedback.avatar_url }}"
+          class="user-avatar"
+          alt="{{ feedback.username }}"
+        />
+        {% else %}
+        <div
+          class="user-avatar-fallback bg-primary text-white"
+        >
+          {{ feedback.username[:1].upper() }}
+        </div>
+        {% endif %}
+      </a>
+      <div class="flex-grow-1 min-width-0">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div class="min-width-0">
+            <strong class="d-block text-truncate">
+              <a
+                href="/user/profile/{{ feedback.username }}"
+                class="feedback-author-link"
+              >
+                {{ feedback.username }}
+              </a>
+            </strong>
+            <small class="text-muted d-block"
+              >{{ feedback.created_at.strftime('%b %d, %Y') if
+              feedback.created_at else '' }}</small
+            >
+          </div>
+          {% if session.get('user_id') and (session.get('user_id') ==
+          feedback.user_id or is_moderator) %}
+          <div class="three-dot-menu flex-shrink-0">
+            <button
+              class="btn btn-sm btn-light rounded-circle"
+              data-bs-toggle="dropdown" aria-label="Suggestion actions"
+            >
+              {{ icon('menu') }}
+            </button>
+            <div class="dropdown-menu dropdown-menu-end">
+              <a
+                class="dropdown-item"
+                href="#"
+                onclick="startEditFeedback({{ feedback.id|tojson }});return false;"
+                ><i class="bi bi-pencil me-2"></i>Edit</a
+              >
+              <a
+                class="dropdown-item text-danger"
+                href="#"
+                onclick="deleteFeedback({{ feedback.id|tojson }});return false;"
+                ><i class="bi bi-trash me-2"></i>Delete</a
+              >
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <span class="suggestion-response-status{% if feedback.official_reply %} answered{% endif %}">{{ icon('check-circle' if feedback.official_reply else 'message') }} {{ 'Team replied' if feedback.official_reply else 'Community idea' }}</span><h2 class="suggestion-title" id="subject-{{ feedback.id }}">
+          {{ feedback.subject }}
+        </h2>
+        <div
+          class="text-muted small mb-2 feedback-message-container"
+          id="message-container-{{ feedback.id }}"
+        >
+          <span id="message-{{ feedback.id }}">{{ feedback.message }}</span>
+          <div class="d-none" id="edit-message-{{ feedback.id }}">
+            <textarea
+              class="form-control form-control-sm edit-textarea"
+              rows="3"
+              id="edit-textarea-{{ feedback.id }}"
+            >
+{{ feedback.message }}</textarea
+            >
+            <div class="inline-edit-btns">
+              <button
+                class="btn btn-sm btn-primary"
+                onclick="saveEditFeedback(event, {{ feedback.id }})"
+              >
+                <span class="btn-text">Save</span
+                ><span class="book-spinner" style="font-size: 0.8rem"
+                  ><i class="bi bi-book"></i
+                ></span>
+              </button>
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                onclick="cancelEditFeedback({{ feedback.id }})"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          <button type="button" class="like-btn {% if feedback.is_liked %}liked{% endif %}" data-feedback-id="{{ feedback.id }}" aria-label="Support this suggestion" aria-pressed="{{ 'true' if feedback.is_liked else 'false' }}" onclick="toggleLike({{ feedback.id }}, this)">{{ icon('heart') }}<span class="like-count">{{ feedback.like_count }}</span><span>Support</span></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-suggestion-discussion="{{ feedback.id }}" aria-expanded="false" aria-controls="replies-{{ feedback.id }}">{{ icon('message') }} Discussion</button>
+          {% if session.get('user_id') %}
+          <button type="button"
+            class="btn btn-sm btn-outline-secondary rounded-pill reply-toggle"
+            data-id="{{ feedback.id }}"
+          >
+            <span class="btn-text">{{ icon('reply') }} Reply</span>
+            <span class="book-spinner" style="font-size: 0.8rem"
+              ><i class="bi bi-book"></i
+            ></span>
+          </button>
+          {% endif %} {% if is_moderator %}
+          <button
+            class="btn btn-sm btn-outline-primary rounded-pill official-reply-toggle"
+            data-id="{{ feedback.id }}"
+          >
+            <span class="btn-text"
+              >{{ icon('shield') }} Official Reply</span
+            >
+            <span class="book-spinner" style="font-size: 0.8rem"
+              ><i class="bi bi-book"></i
+            ></span>
+          </button>
+          {% endif %}
+        </div>
+
+        {% if feedback.official_reply %}
+        <div
+          class="official-reply-box mt-3"
+          id="official-reply-{{ feedback.id }}"
+        >
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+              <i class="bi bi-patch-check-fill text-primary"></i>
+              <strong class="text-primary">DocoDive Official</strong>
+              <small class="text-muted"
+                >{{ feedback.official_replied_at.strftime('%b %d') if
+                feedback.official_replied_at else '' }}</small
+              >
+            </div>
+            {% if is_moderator %}
+            <div class="three-dot-menu flex-shrink-0">
+              <button
+                class="btn btn-sm btn-light rounded-circle"
+                data-bs-toggle="dropdown" aria-label="Suggestion actions"
+              >
+                {{ icon('menu') }}
+              </button>
+              <div class="dropdown-menu dropdown-menu-end">
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  onclick="startEditOfficialReply({{ feedback.id }})"
+                  ><i class="bi bi-pencil me-2"></i>Edit</a
+                >
+                <a
+                  class="dropdown-item text-danger"
+                  href="#"
+                  onclick="deleteOfficialReply({{ feedback.id }})"
+                  ><i class="bi bi-trash me-2"></i>Delete</a
+                >
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          <div
+            class="official-reply-text"
+            id="official-reply-text-{{ feedback.id }}"
+          >
+            <p class="mb-0 small">{{ feedback.official_reply }}</p>
+          </div>
+          <div class="d-none" id="edit-official-reply-{{ feedback.id }}">
+            <textarea
+              class="form-control form-control-sm edit-textarea"
+              rows="2"
+              id="edit-official-textarea-{{ feedback.id }}"
+            >
+{{ feedback.official_reply }}</textarea
+            >
+            <div class="inline-edit-btns mt-2">
+              <button
+                class="btn btn-sm btn-primary"
+                onclick="saveEditOfficialReply(event, {{ feedback.id }})"
+              >
+                <span class="btn-text">Save</span
+                ><span class="book-spinner" style="font-size: 0.8rem"
+                  ><i class="bi bi-book"></i
+                ></span>
+              </button>
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                onclick="cancelEditOfficialReply({{ feedback.id }})"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+        {% endif %} {% if is_moderator %}
+        <div
+          class="official-reply-form mt-2 d-none"
+          id="officialReplyForm-{{ feedback.id }}"
+        >
+          <textarea
+            class="form-control form-control-sm mb-2"
+            rows="2"
+            placeholder="Write official reply..."
+          ></textarea>
+          <button
+            class="btn btn-sm btn-primary submit-official-reply"
+            data-feedback-id="{{ feedback.id }}"
+          >
+            <span class="btn-text">Post Reply</span>
+            <span class="book-spinner" style="font-size: 0.8rem"
+              ><i class="bi bi-book"></i
+            ></span>
+          </button>
+        </div>
+        {% endif %}
+
+        <div
+          class="replies-container mt-3"
+          id="replies-{{ feedback.id }}" hidden
+        ></div>
+        {% if session.get('user_id') %}
+        <div class="reply-form mt-2 d-none" id="replyForm-{{ feedback.id }}">
+          <textarea
+            class="form-control form-control-sm mb-2"
+            rows="2"
+            placeholder="Write a reply..."
+          ></textarea>
+          <button
+            class="btn btn-sm btn-primary submit-reply"
+            data-feedback-id="{{ feedback.id }}"
+          >
+            <span class="btn-text">Post Reply</span>
+            <span class="book-spinner" style="font-size: 0.8rem"
+              ><i class="bi bi-book"></i
+            ></span>
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <i class="bi bi-inbox display-4 text-muted"></i>
+    <p class="text-muted mt-3">No suggestions yet. Be the first!</p>
+  </div>
+  {% endfor %}
+</div>
+<nav class="d-flex justify-content-center align-items-center gap-3 my-4" aria-label="Suggestion pages">
+{% if page > 1 %}<a class="btn btn-outline-primary" href="{{ url_for('user_feedback',page=page-1) }}">Previous</a>{% endif %}<span>Page {{ page }}</span>{% if has_next %}<a class="btn btn-outline-primary" href="{{ url_for('user_feedback',page=page+1) }}">Next</a>{% endif %}</nav>
+{% endblock %}
+{% block scripts %}<script type="application/json" id="suggestions-config">{{ {'loggedIn':session.get('user_id') is not none,'userId':session.get('user_id'),'moderator':is_moderator|default(false),'ids':feedbacks|map(attribute='id')|list}|tojson }}</script><script defer src="{{ url_for('static',filename='js/suggestions.js',v='20261031-community-1') }}"></script>{% endblock %}

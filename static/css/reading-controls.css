@@ -1,0 +1,8 @@
+.reading-scroll-controls { position:fixed;left:auto;right:max(8px,env(safe-area-inset-right));top:50%;bottom:auto;transform:translateY(-50%);z-index:1035;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0;border:0;background:transparent;box-shadow:none;pointer-events:none; }
+body[data-public-site] .reading-scroll-controls :is(#backToTop,#scrollDown) { position:static!important;display:inline-flex;align-items:center;justify-content:center;width:44px!important;height:44px!important;min-width:44px;padding:10px;border:1px solid transparent;border-radius:12px;background:transparent!important;color:var(--ui-accent)!important;box-shadow:none;cursor:pointer;pointer-events:auto;transition:color .15s ease; }
+body[data-public-site] .reading-scroll-controls button:hover { background:transparent!important;color:var(--ui-text)!important; }
+body[data-public-site] .reading-scroll-controls .site-icon { filter:drop-shadow(0 1px 1px var(--ui-surface)); }
+body[data-public-site] .reading-scroll-controls button:focus-visible { outline:3px solid var(--ui-focus);outline-offset:3px; }
+.reading-scroll-controls[hidden],body[data-public-site] .reading-scroll-controls button[hidden] { display:none!important; }
+body:has(.modal.show) .reading-scroll-controls,body:has(dialog[open]) .reading-scroll-controls { visibility:hidden;pointer-events:none; }
+@media(prefers-reduced-motion:reduce) { .reading-scroll-controls button { transition:none!important; } }

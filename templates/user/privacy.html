@@ -1,0 +1,114 @@
+{% extends 'user/legal_base.html' %}
+{% block meta_description %}Learn how DocoDive uses account information, public contributions, service providers and cookies, and how to exercise your privacy choices.{% endblock %}
+{% block legal_title %}Privacy policy{% endblock %}
+{% block legal_intro %}This policy explains what information DocoDive uses, why we use it, and the choices available to you when you browse, create an account or contribute to the library.{% endblock %}
+{% block legal_toc %}
+<li><a href="#scope">1. About this policy</a></li>
+<li><a href="#information">2. Information we use</a></li>
+<li><a href="#purposes">3. How we use information</a></li>
+<li><a href="#public-content">4. Public contributions</a></li>
+<li><a href="#providers">5. Service providers</a></li>
+<li><a href="#cookies">6. Cookies and choices</a></li>
+<li><a href="#retention">7. Keeping and deleting data</a></li>
+<li><a href="#security">8. Account security</a></li>
+<li><a href="#rights">9. Requests and rights</a></li>
+<li><a href="#children">10. Younger visitors</a></li>
+<li><a href="#changes">11. Updates and contact</a></li>
+{% endblock %}
+{% block legal_content %}
+<div class="legal-note">
+  <p class="legal-note-title">Your main privacy choices</p>
+  <p>You can use the library without accepting optional analytics or support chat. You can update your account information, contact us about your data, or follow the <a href="/data-deletion">account deletion process</a>. Publicly shared books have different removal rules from private account records.</p>
+</div>
+<section id="scope">
+  <h2>1. About this policy</h2>
+  <p>DocoDive is a digital library and learning platform. In this policy, “DocoDive,” “we” and “us” refer to the team operating this service. The policy covers the DocoDive website and the account, reading, uploading and community features offered through it.</p>
+  <p>Questions or requests about personal information can be sent to <a href="mailto:privacy@programmingpioneer.com">privacy@programmingpioneer.com</a>. Please identify the account or content concerned so we can understand your request. Websites, sign-in providers and other services you reach through our links operate under their own policies.</p>
+</section>
+<section id="information">
+  <h2>2. Information we use</h2>
+  <p>The information associated with you depends on which features you use. Please provide only information needed for the feature or request.</p>
+  <div class="legal-table-wrap" role="region" aria-label="Types of personal information" tabindex="0">
+    <table class="legal-table">
+      <thead><tr><th scope="col">Information</th><th scope="col">Examples and source</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Account and profile</th><td>Username, email address, name, profile image, account settings and account creation details that you provide or update.</td></tr>
+        <tr><th scope="row">Sign-in and verification</th><td>A password hash for email accounts, verification and recovery records, session information, and security checks. We store a password hash rather than your readable password.</td></tr>
+        <tr><th scope="row">Social sign-in</th><td>Google, GitHub or Facebook may provide an account identifier, email address, name or profile image according to the provider and permissions you approve. We do not receive your provider password.</td></tr>
+        <tr><th scope="row">Library activity</th><td>Download history, favourites, reviews, comments, uploads, notifications, preferences, points, streaks and leaderboard records connected to the features you use.</td></tr>
+        <tr><th scope="row">Messages and requests</th><td>Feedback, support correspondence, newsletter sign-ups, privacy requests and account deletion requests, including a reason supplied in the deletion form.</td></tr>
+        <tr><th scope="row">Technical information</th><td>Information used to deliver and protect the site, such as network requests, IP address, browser information, security events and error diagnostics. Optional analytics and chat can collect additional usage or conversation information when enabled.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Files you upload may contain personal information, including information within the document, its metadata or its cover image. Review these materials before submitting them. Do not upload confidential records, identity documents or another person's personal information without appropriate permission.</p>
+</section>
+<section id="purposes">
+  <h2>3. How we use information</h2>
+  <p>We use information to operate DocoDive and respond to the actions you take. This includes:</p>
+  <ul>
+    <li>Creating and maintaining accounts, signing you in, verifying email ownership and helping you recover access.</li>
+    <li>Providing reading and download features, saving favourites and preferences, displaying contributions and maintaining learning activity.</li>
+    <li>Sending account verification, password recovery, security, deletion and other service messages; handling support and feedback.</li>
+    <li>Reviewing uploaded content, dealing with rights or safety reports, enforcing the <a href="/terms">terms of service</a> and investigating misuse.</li>
+    <li>Diagnosing failures and protecting accounts, infrastructure and service availability.</li>
+    <li>Understanding site use through optional analytics when you allow it, and providing optional support chat when enabled.</li>
+  </ul>
+  <p>Our email service can hold account contact details for delivery and contact management. If you subscribe to updates, we also use the email address you provide for that subscription. Account and security messages are separate from optional updates. To ask about stopping nonessential messages, use an unsubscribe option where provided or contact support.</p>
+  <p>Where a legal basis for processing is required, the basis depends on the purpose and applicable law: providing requested account services, consent for optional technologies or communications where required, reasonable interests in securing and operating the service, and applicable legal obligations. You can ask us about the basis relevant to a particular use of your information.</p>
+</section>
+<section id="public-content">
+  <h2>4. Public profiles and contributions</h2>
+  <p>Books, document details, reviews, comments, community feedback and activity displayed in public features may be visible to other visitors. A username, profile image, contribution attribution or leaderboard position can appear alongside that material. Do not include information in a public contribution that you intend to keep private.</p>
+  <p>Public content can be copied, downloaded or indexed by others. Removing information from DocoDive cannot remove copies already held by visitors, search engines or unrelated websites. Contact us if public material contains personal information that should be reviewed for removal.</p>
+  <p>Deleting an account removes the account records described below. Shared library documents are retained with their uploader account association removed. This does not automatically remove names or other information embedded in a file, cover or description. A request to remove a particular public document should identify its URL and explain the privacy, ownership or safety concern.</p>
+</section>
+<section id="providers">
+  <h2>5. Services that support DocoDive</h2>
+  <p>Operating a website involves processing information through other services. The application supports the following providers; their use depends on deployment configuration and the feature you use.</p>
+  <ul>
+    <li><strong>Database and media storage:</strong> TiDB supports database records, and Cloudflare R2 stores and serves uploaded media and documents.</li>
+    <li><strong>Email and contact management:</strong> Brevo or the configured email delivery service processes recipient information and message contents. Name and email may be synchronised to Brevo for contact management.</li>
+    <li><strong>Sign-in providers:</strong> Google, GitHub and Facebook process their own authentication steps when you choose one of those sign-in options.</li>
+    <li><strong>Error reporting:</strong> Sentry, when configured, receives server error and performance diagnostics. The integration disables its default collection of personally identifying information, but diagnostic context may still contain information from a request.</li>
+    <li><strong>Optional site tools:</strong> Google Analytics is used for usage measurement and Brevo Conversations for support chat only when the relevant optional preference is enabled.</li>
+    <li><strong>Content delivery:</strong> Third-party services deliver some fonts, styles and scripts. A request to those services shares technical information such as your IP address and browser request details.</li>
+  </ul>
+  <p>Providers and their infrastructure may process information in countries different from your own. This policy does not promise that every copy of information is stored in a particular country. Contact us if you need details about a provider, processing location or protections relevant to your request.</p>
+  <p>We may also disclose information when reasonably necessary to respond to a valid legal requirement, investigate abuse, protect people or establish and defend legal claims. If operation of the service changes hands, information needed to continue operating it may be transferred, with notice where required.</p>
+</section>
+<section id="cookies">
+  <h2>6. Cookies and browser choices</h2>
+  <p>Essential browser storage supports sign-in, security and your saved privacy choices. Signed-in sessions are configured with a seven-day lifetime; signing out, account security actions or account deletion can end access sooner.</p>
+  <p>Optional analytics and support chat are off by default. Your choice is saved in this browser for up to 180 days. You can change it using cookie settings. Clearing browser storage or changing devices may require a new choice. See the <a href="/cookies">cookie policy</a> for categories, storage details and the effect of withdrawing permission.</p>
+  <div class="legal-actions"><button type="button" class="legal-button" data-cookie-settings>Manage cookie preferences</button></div>
+</section>
+<section id="retention">
+  <h2>7. Keeping and deleting information</h2>
+  <p>Account information is generally kept while the account exists so the associated features continue to work. Other information is kept according to its purpose, operational requirements and any applicable legal obligations. We do not claim a single fixed retention period for every log, message, provider copy or backup.</p>
+  <p>Our account deletion workflow has specific timings. A verified request immediately revokes existing sessions and starts a <strong>15-day restoration period</strong>. Deletion also requires administrator approval. Signing in strictly before the stated deadline restores the account and cancels the request. At or after that deadline, self-service restoration ends. A request without approval remains pending until an administrator acts.</p>
+  <p>Once approval is recorded and the deadline has passed, the scheduled deletion process removes the user account and associated records such as favourites, download history, reviews, comments, feedback, preferences, notifications and learning activity. It removes the uploader account association from shared library documents rather than deleting the documents.</p>
+  <p>The completed deletion request record, including name, email and deletion timestamp, is retained for <strong>30 days after deletion</strong>, then removed by scheduled cleanup. Associated lifecycle email records also have a limited cleanup period. Provider-held contacts, support messages, security logs, backup copies and information subject to a separate legal requirement may need separate review; they are not all removed by the account database workflow. Contact us about those records or about information contained within a public file.</p>
+  <p>The <a href="/data-deletion">data deletion guide</a> explains how to request deletion, what remains and what to do if you cannot sign in.</p>
+</section>
+<section id="security">
+  <h2>8. Account security</h2>
+  <p>Measures in the application include password hashing, email verification for sensitive actions, session revocation and controls on repeated authentication attempts. Access to account administration is restricted to authorised roles. These measures reduce risk; no online service can guarantee absolute security.</p>
+  <p>Use a unique password, keep access to your email account secure and sign out on shared devices. Never send us your password, a verification code or a recovery link. Contact <a href="mailto:support@programmingpioneer.com">support@programmingpioneer.com</a> if you believe your account has been misused.</p>
+</section>
+<section id="rights">
+  <h2>9. Privacy requests and your rights</h2>
+  <p>You can update supported profile details and preferences through your account. You can also ask us to review information, correct an error, provide access to your personal information, or consider deletion, restriction, objection or portability where applicable law provides those rights. The rights available and any exceptions depend on your location and circumstances.</p>
+  <p>Email <a href="mailto:privacy@programmingpioneer.com">privacy@programmingpioneer.com</a> with a clear description of your request and the relevant account email or public URL. We may ask for proportionate information to verify ownership and protect other people. Do not send government identification unless we explain why it is necessary and agree a suitable method.</p>
+  <p>We will consider requests under the rules that apply to them. A request may need clarification or may be limited by another person's rights, legal duties or a need to preserve information for a legitimate dispute. If you are dissatisfied, you may have the right to contact the relevant data protection authority in your location.</p>
+</section>
+<section id="children">
+  <h2>10. Younger visitors</h2>
+  <p>The library contains material for a broad audience and is not designed as a service specifically for young children. An account should only be created by someone able to agree to the terms and provide any consent required by the law where they live. A parent or guardian should contact us if a child has provided personal information without the necessary permission, or if a document exposes a child's personal information.</p>
+</section>
+<section id="changes">
+  <h2>11. Updates and contact</h2>
+  <p>We may revise this policy when the service or its information practices change. The date at the top identifies the latest version. Where a change requires additional notice or a new choice, we will provide it through an appropriate part of the service.</p>
+  <p>For privacy questions, write to <a href="mailto:privacy@programmingpioneer.com">privacy@programmingpioneer.com</a>. For account help, copyright concerns or general questions, see our <a href="/contact">contact page</a>.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% from 'user/_icons.html' import icon %}
+{% macro book_card(book, history=false) -%}
+{% set title = (book.title|default('Untitled book',true)|replace('_',' '))|trim or 'Untitled book' %}
+{% set cover = book.image_url|default('',true)|string|trim %}
+<article class="card product-card border-0 shadow-sm h-100 book-card-inner shelf-card" data-library-card="{{ book.id }}">
+  <a class="book-cover-outer d-flex align-items-center justify-content-center" href="/book/{{ book.slug or book.id }}/{{ book.id }}" aria-label="Open {{ title }}">
+    {% if cover and cover != 'None' %}<img src="{{ cover }}" class="flat-book-cover" alt="Cover of {{ title }}" loading="lazy" width="180" height="180">{% else %}<div class="shelf-cover-fallback"><span>{{ icon('book') }}</span><strong>{{ title }}</strong></div>{% endif %}
+  </a>
+  <div class="card-body p-2"><div class="book-meta d-flex justify-content-between align-items-center"><span class="badge bg-light text-muted">{{ book.level|default('Library',true) }}</span><span class="fw-bold text-warning">FREE</span></div><h3 class="book-title" title="{{ title }}"><a href="/book/{{ book.slug or book.id }}/{{ book.id }}">{{ title }}</a></h3><p class="book-author text-muted" title="{{ book.author|default('Unknown author',true) }}">By {{ book.author|default('Unknown author',true) }}</p>
+    {% if history %}<p class="book-history-date text-muted">{{ icon('clock') }} {{ book.downloaded_at }}</p>{% else %}<div class="book-rating text-muted">{% if book.avg_rating|default(0) %}{{ icon('star') }} {{ book.avg_rating }} / 5{% else %}<span class="visually-hidden">No rating yet</span>{% endif %}</div>{% endif %}
+    <div class="book-actions"><a class="btn book-action" href="/book/{{ book.slug or book.id }}/{{ book.id }}" title="View Details">{{ icon('info') }}<span>Details</span></a>{% if history %}<a class="btn book-action" href="/book/{{ book.slug or book.id }}/{{ book.id }}/download" title="Download book">{{ icon('download') }}<span>Download</span></a>{% else %}<button class="btn book-action shared-preview-trigger" type="button" data-book-id="{{ book.id }}" title="Quick Preview">{{ icon('search') }}<span>Preview</span></button>{% endif %}</div>
+    <div class="book-counts"><span>{{ icon('download') }}<span class="visually-hidden">Downloads: </span>{{ book.download_count if book.download_count is defined else '—' }}</span><span>{{ icon('eye') }}<span class="visually-hidden">Views: </span>{{ book.view_count if book.view_count is defined else '—' }}</span></div>
+  </div>
+</article>
+{%- endmacro %}

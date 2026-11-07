@@ -1,0 +1,19 @@
+{% from 'user/_icons.html' import icon %}
+<dialog id="community-share-dialog" class="community-share-dialog" aria-labelledby="community-share-title" aria-describedby="community-share-description">
+  <form method="dialog"><button class="community-icon-button" aria-label="Close share dialog">{{ icon('close') }}</button></form>
+  <span class="community-feature-icon">{{ icon('share') }}</span>
+  <h2 id="community-share-title">Share your progress</h2>
+  <p id="community-share-description">Celebrate a little progress. Invite someone to find their next great read.</p>
+  <section class="share-progress-card" aria-label="Your recorded progress">
+    <p class="share-progress-brand">{{ icon('book') }} My DocoDive journey</p>
+    <dl class="share-progress-metrics">{% for label,value in [('Downloads',downloads),('Favorites',favorites),('Reviews',reviews)] %}<div><dt>{{ label }}</dt><dd>{{ '{:,}'.format(value) if value is not none else '—' }}</dd></div>{% endfor %}</dl>
+    {% if achievements %}<p class="share-progress-milestones">{{ icon('award') }} {{ achievements.unlocked_count }} of {{ achievements['items']|length }} milestones unlocked{% if streak is not none %} · {{ streak }} day current streak{% endif %}</p>{% endif %}
+  </section>
+  <label for="community-share-summary" class="share-summary-label">Your share message</label>
+  <textarea id="community-share-summary" class="share-summary" data-share-summary readonly rows="4"></textarea>
+  <div class="community-share-links"><a data-share-platform="whatsapp" target="_blank" rel="noopener noreferrer">{{ icon('message') }} WhatsApp</a><a data-share-platform="twitter" target="_blank" rel="noopener noreferrer">{{ icon('x') }} X</a><a data-share-platform="facebook" target="_blank" rel="noopener noreferrer">{{ icon('facebook') }} Facebook</a><a data-share-platform="telegram" target="_blank" rel="noopener noreferrer">{{ icon('telegram') }} Telegram</a></div>
+  <button type="button" class="community-button" data-share-copy>{{ icon('copy') }} Copy stats and link</button>
+  <button type="button" class="community-button secondary share-native-button" data-share-native hidden>{{ icon('share') }} More sharing options</button>
+  <p role="status" aria-live="polite" data-share-status></p>
+  <p class="share-privacy-note">{{ icon('shield') }} Only the stats shown here and the DocoDive link are shared. Your email and account details stay private.</p>
+</dialog>

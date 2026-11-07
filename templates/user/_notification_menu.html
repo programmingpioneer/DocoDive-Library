@@ -1,0 +1,12 @@
+{% from 'user/_icons.html' import icon %}
+{% from 'shared/_skeleton.html' import list_skeleton %}
+<div class="dropdown reader-notification-dropdown">
+  <button type="button" class="notification-toggle position-relative" id="notificationBell" aria-label="Open notifications" aria-controls="readerNotificationMenu" data-bs-toggle="dropdown" aria-expanded="false">{{ icon('bell') }}<span class="notification-badge" id="notifBadge" style="display:none">0</span></button>
+  <div class="dropdown-menu dropdown-menu-end notif-dropdown" id="readerNotificationMenu" aria-labelledby="notificationBell">
+    <header class="notif-menu-heading"><div><strong>{{ icon('bell') }} Notifications</strong><span>A little update from your library.</span></div><button type="button" id="notifMarkAll" onclick="markAllRead()" title="Mark all notifications as read">{{ icon('check') }}<span>Mark all read</span></button></header>
+    <p id="notifStatus" class="notif-menu-status" role="status" hidden></p>
+    <div id="notifList" class="nav-notification-list" aria-label="Recent notifications">{{ list_skeleton(3) }}</div>
+    <footer class="notif-menu-footer"><a href="/user/notifications">View inbox {{ icon('arrow-right') }}</a><a href="/user/preferences">{{ icon('sliders') }} Preferences</a></footer>
+  </div>
+</div>
+{% for kind,symbol in [('default','bell'),('approval','check-circle'),('rejection','info'),('reply','reply'),('general_comment','message'),('new_book','book')] %}<template id="notif-symbol-{{ kind }}">{{ icon(symbol) }}</template>{% endfor %}

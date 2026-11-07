@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 venv/
+.venv/
 instance/
 
 # Env / secrets
@@ -24,3 +25,8 @@ static/covers/
 migrations/.backup/
 migrations/*.local.sql
 migrations/*.bak
+
+# Local delivery packages, database snapshots and legacy local runner
+/deliverables/
+/backup_docodive*.sql
+/run_migration.py

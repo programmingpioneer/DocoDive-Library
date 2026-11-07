@@ -1,0 +1,82 @@
+{% extends 'user/legal_base.html' %}
+{% from 'user/_icons.html' import icon %}
+{% block meta_description %}Contact DocoDive for account help, privacy requests, copyright reports, community concerns and accessibility feedback.{% endblock %}
+{% block legal_title %}Contact and support{% endblock %}
+{% block legal_intro %}Choose the contact that matches your question and include enough detail for us to find the relevant account, page or resource. The guidance below helps us handle your message with less back-and-forth.{% endblock %}
+{% block legal_toc %}
+<li><a href="#contacts">1. Contact details</a></li>
+<li><a href="#account-help">2. Account and technical help</a></li>
+<li><a href="#privacy-requests">3. Privacy and deletion</a></li>
+<li><a href="#copyright">4. Copyright reports</a></li>
+<li><a href="#community-reports">5. Community concerns</a></li>
+<li><a href="#accessibility-feedback">6. Accessibility feedback</a></li>
+<li><a href="#handling">7. What happens next</a></li>
+{% endblock %}
+{% block legal_content %}
+<section id="contacts">
+  <h2>1. Contact details</h2>
+  <div class="legal-contact-grid">
+    <div class="legal-contact-card">
+      <span class="legal-contact-symbol">{{ icon('mail') }}</span>
+      <h3>General support</h3>
+      <p>Account access, technical problems, content reports, copyright and accessibility feedback.</p>
+      <a href="mailto:support@programmingpioneer.com">support@programmingpioneer.com {{ icon('arrow-right') }}</a>
+    </div>
+    <div class="legal-contact-card">
+      <span class="legal-contact-symbol">{{ icon('shield') }}</span>
+      <h3>Privacy enquiries</h3>
+      <p>Questions about personal information, correction, access, public data exposure or deletion.</p>
+      <a href="mailto:privacy@programmingpioneer.com">privacy@programmingpioneer.com {{ icon('arrow-right') }}</a>
+    </div>
+  </div>
+  <p>These links open your device's email application. You can also copy an address into your preferred email service. Optional support chat may be available after you enable it in <a href="/cookies">cookie settings</a>; you do not need to enable chat to email us.</p>
+  <p>For general product ideas, you can use the <a href="/feedback">community feedback page</a>. Public feedback is visible to other visitors, so use email for account details, privacy matters or security concerns.</p>
+</section>
+<section id="account-help">
+  <h2>2. Account and technical help</h2>
+  <p>Use a subject such as “Account access” or “Technical issue.” Include:</p>
+  <ul>
+    <li>The email associated with your account and your username, if the problem is account-specific.</li>
+    <li>The page or document URL and the approximate time the problem occurred, including your time zone.</li>
+    <li>What you were trying to do, what you expected and what happened instead.</li>
+    <li>Your browser and device type, any error message and a screenshot if useful.</li>
+  </ul>
+  <p>Remove private information from screenshots. Do not send passwords, verification codes, recovery links, session cookies or payment information. We may need to confirm account ownership before changing account information or discussing private records.</p>
+  <p>If you suspect a security weakness, report the affected URL and a concise description privately to support. Do not test against someone else's account, retrieve private data or publish exploit details while a report is being reviewed.</p>
+</section>
+<section id="privacy-requests">
+  <h2>3. Privacy and deletion requests</h2>
+  <p>Write to the privacy address with the type of request, the account email or username concerned and any relevant public URLs. Please distinguish between deleting your account, removing a public document and asking about information held in a provider or support record; these may involve different steps.</p>
+  <p>For account deletion, start with the <a href="/data-deletion">data deletion guide</a>. It explains email verification, the 15-day restoration period, administrator approval and records that may remain. If you cannot sign in, explain the access problem in your email.</p>
+  <p>We may ask for proportionate information to verify a request and protect others. Do not send government identification or sensitive documents unless we explain why it is necessary and arrange an appropriate method. See the <a href="/privacy">privacy policy</a> for more context.</p>
+</section>
+<section id="copyright">
+  <h2>4. Copyright and ownership reports</h2>
+  <p>Send an email to <a href="mailto:support@programmingpioneer.com?subject=Copyright%20report">support@programmingpioneer.com</a> with the subject “Copyright report.” To help us assess a claim, include:</p>
+  <ol>
+    <li>Your name and contact email, and whether you are the rights holder or an authorised representative.</li>
+    <li>A description of the work you believe is protected and an original or authorised source where available.</li>
+    <li>The exact DocoDive URLs or file identifiers you want reviewed. A general link to the homepage usually does not identify the material.</li>
+    <li>The reason you believe the use is unauthorised, including relevant ownership or permission information.</li>
+    <li>A statement that you believe the use is unauthorised and the information in the report is accurate, plus any authorisation, signature or other information required under the law applicable to your claim.</li>
+  </ol>
+  <p>We may need additional information, may restrict access during review and may contact the contributor where appropriate. If you are challenging a removal, identify the resource and explain the licence, permission or other reason publication is permitted. Include evidence rather than re-uploading the disputed file.</p>
+  <p>Send only information needed for the claim. Relevant details may need to be shared with the affected contributor or an appropriate authority to handle the dispute. Knowingly false reports can harm other users and may lead to restrictions.</p>
+</section>
+<section id="community-reports">
+  <h2>5. Community and content concerns</h2>
+  <p>For harassment, spam, misleading uploads, exposed personal information or other concerns, send the exact URL, the username involved if relevant, and a factual explanation. Include the specific words or behaviour at issue and any useful context. For personal information exposure, use the privacy address.</p>
+  <p>Do not repeat harmful material unnecessarily or start a public argument with the person you are reporting. We may review the context and take action under the <a href="/community-guidelines">community guidelines</a> and <a href="/terms">terms of service</a>. If you are asking us to reconsider a moderation decision, explain which decision and what information you believe was missed.</p>
+  <p>This support channel is not an emergency service. If a situation involves immediate danger, seek appropriate local emergency assistance.</p>
+</section>
+<section id="accessibility-feedback">
+  <h2>6. Accessibility feedback</h2>
+  <p>We welcome reports of barriers to reading, navigation and account features. Use the subject “Accessibility feedback” and include the page URL, the task you could not complete and, if you are comfortable sharing it, the browser or assistive technology involved.</p>
+  <p>Tell us if another format or way to receive the information would help. We will consider what we can reasonably provide. You do not need to disclose a diagnosis or medical information. Our <a href="/accessibility">accessibility statement</a> explains our approach and known limitations.</p>
+</section>
+<section id="handling">
+  <h2>7. What happens after you contact us</h2>
+  <p>We use your message to understand the issue, locate the relevant information and respond. Requests may require ownership checks, additional details or review of a document or account. The time needed depends on the issue and any legal requirements that apply; this page does not promise a fixed response time or continuous staffing.</p>
+  <p>If you follow up, reply in the same email thread and include any new information. Avoid sending the same report to multiple addresses unless the subject requires it. Our <a href="/privacy">privacy policy</a> describes how support and request information is handled.</p>
+</section>
+{% endblock %}

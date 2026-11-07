@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+{% include 'shared/_experience_init.html' %}<meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>{% block title %}Sign in · DocoDive Studio{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static',filename='images/favicon.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static',filename='css/admin.css') }}">
+{% include 'shared/_experience_assets.html' %}
+</head>
+<body class="studio-auth">
+{% with skeleton_layout='auth' %}{% include 'shared/_page_skeleton.html' %}{% endwith %}
+<div class="appearance-standalone">{% include 'shared/_theme_toggle.html' %}</div>
+  <main class="studio-auth-layout">
+    <section class="studio-auth-story" aria-label="DocoDive Studio">
+      <a class="studio-auth-brand" href="{{ url_for('home') }}"><span class="studio-brand-mark" aria-hidden="true">D<span>.</span></span><span>DocoDive <small>ADMIN STUDIO</small></span></a>
+      <div class="studio-auth-narrative">
+        <span class="studio-auth-kicker">A WORKSPACE FOR YOUR LIBRARY</span>
+        <h1>Great reads.<br>Thoughtful curation.<br><span>One Studio.</span></h1>
+        <p>Bring your books, community and learning resources together. Make room for the next great discovery.</p>
+        <div class="studio-library-art" aria-hidden="true">
+          <div class="studio-art-orbit"></div>
+          <div class="studio-art-book book-back"><span>THE ART OF<br>DISCOVERY</span><i></i></div>
+          <div class="studio-art-book book-front"><span>DOCODIVE<br>COLLECTION</span><strong>A world<br>worth<br>reading.</strong><small>CURATED WITH CARE · EST. 2024</small></div>
+          <div class="studio-art-caption"><span>✦</span> Your next chapter starts here.</div>
+        </div>
+      </div>
+      <p class="studio-auth-footer">DocoDive Studio <span>Built for the people behind the books.</span></p>
+    </section>
+    <section class="studio-auth-workspace" aria-labelledby="studio-auth-title">
+      <div class="studio-auth-card">
+        <span class="studio-access-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z"/><path d="m8 12 3 3 5-6"/></svg> ADMINISTRATOR ACCESS</span>
+        {% block auth_content %}{% endblock %}
+      </div>
+      <a class="studio-auth-back" href="{{ url_for('home') }}">← Back to DocoDive</a>
+    </section>
+  </main>
+  <script src="{{ url_for('static',filename='js/studio-auth.js') }}"></script>
+</body>
+</html>
